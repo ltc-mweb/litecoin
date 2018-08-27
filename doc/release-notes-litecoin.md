@@ -124,6 +124,8 @@ weights.
 - #13300 `d9c5630` qa: Initialize lockstack to prevent null pointer deref (MarcoFalke)
 - #13545 `e15e3a9` tests: Fix test case `streams_serializedata_xor` Remove Boost dependency. (practicalswift)
 - #13304 `cbdabef` qa: Fix `wallet_listreceivedby` race (MarcoFalke)
+- #13852 `b64f02f` Make signrawtransaction give an error when amount is needed but missing (ajtowns)
+- #13797 `6518bcd` bitcoinconsensus: invalid flags should be set to bitcoinconsensus_error type, add test cases covering bitcoinconsensus error codes (Thomas Kerin)
 
 ### Miscellaneous
 - #12518 `a17fecf` Bump leveldb subtree (MarcoFalke)
@@ -141,6 +143,7 @@ weights.
 - #13184 `4087dd0` RPC Docs: `gettxout*`: clarify bestblock and unspent counts (harding)
 - #13246 `6de7543` Bump to Ubuntu Bionic 18.04 in build-windows.md (ken2812221)
 - #12556 `e730b82` Fix version typo in getpeerinfo RPC call help (tamasblummer)
+- #13852 `9e116a6` [0.16] doc: correct the help output for -prune (hebasto)
 
 Credits
 =======
