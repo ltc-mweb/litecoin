@@ -241,6 +241,8 @@ struct CNodeState {
     bool fHaveWitness;
     //! Whether this peer wants witnesses in cmpctblocks/blocktxns
     bool fWantsCmpctWitness;
+    //! Whether this peer wants MW transactions in cmpctblocks/blocktxns
+    bool fWantsCmpctMW;
     /**
      * If we've announced NODE_WITNESS to this peer: whether the peer sends witnesses in cmpctblocks/blocktxns,
      * otherwise: whether this peer sends non-witnesses in cmpctblocks/blocktxns.
@@ -464,7 +466,7 @@ static void MaybeSetPeerAsAnnouncingHeaderAndIDs(NodeId nodeid, CConnman* connma
         }
         connman->ForNode(nodeid, [connman](CNode* pfrom){
             AssertLockHeld(cs_main);
-            uint64_t nCMPCTBLOCKVersion = (pfrom->GetLocalServices() & NODE_WITNESS) ? 2 : 1;
+            uint64_t nCMPCTBLOCKVersion = pfrom->GetCmpctBlockVersion();
             if (lNodesAnnouncingHeaderAndIDs.size() >= 3) {
                 // As per BIP152, we only get 3 of our peers to announce
                 // blocks using compact encodings.
@@ -1246,6 +1248,7 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
                 // and we don't feel like constructing the object for them, so
                 // instead we respond with the full, non-compact block.
                 bool fPeerWantsWitness = State(pfrom->GetId())->fWantsCmpctWitness;
+                bool fPeerWantsMW = State(pfrom->GetId())->fWantsCmpctMW;
                 int nSendFlags = fPeerWantsWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
                 if (CanDirectFetch(consensusParams) && pindex->nHeight >= chainActive.Height() - MAX_CMPCTBLOCK_DEPTH) {
                     if ((fPeerWantsWitness || !fWitnessesPresentInARecentCompactBlock) && a_recent_compact_block && a_recent_compact_block->header.GetHash() == pindex->GetBlockHash()) {
@@ -1898,13 +1901,16 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::SENDHEADERS));
         }
         if (pfrom->nVersion >= SHORT_IDS_BLOCKS_VERSION) {
-            // Tell our peer we are willing to provide version 1 or 2 cmpctblocks
+            // Tell our peer we are willing to provide version 1, 2, or 3 cmpctblocks
             // However, we do not request new block announcements using
             // cmpctblock messages.
             // We send this to non-NODE NETWORK peers as well, because
             // they may wish to request compact blocks from us
             bool fAnnounceUsingCMPCTBLOCK = false;
-            uint64_t nCMPCTBLOCKVersion = 2;
+            uint64_t nCMPCTBLOCKVersion = 3;
+            if (pfrom->GetLocalServices() & NODE_MW)
+                connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::SENDCMPCT, fAnnounceUsingCMPCTBLOCK, nCMPCTBLOCKVersion));
+            nCMPCTBLOCKVersion = 2;
             if (pfrom->GetLocalServices() & NODE_WITNESS)
                 connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::SENDCMPCT, fAnnounceUsingCMPCTBLOCK, nCMPCTBLOCKVersion));
             nCMPCTBLOCKVersion = 1;
@@ -1982,17 +1988,20 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         bool fAnnounceUsingCMPCTBLOCK = false;
         uint64_t nCMPCTBLOCKVersion = 0;
         vRecv >> fAnnounceUsingCMPCTBLOCK >> nCMPCTBLOCKVersion;
-        if (nCMPCTBLOCKVersion == 1 || ((pfrom->GetLocalServices() & NODE_WITNESS) && nCMPCTBLOCKVersion == 2)) {
+        if (nCMPCTBLOCKVersion == 1 || ((pfrom->GetLocalServices() & NODE_WITNESS) && nCMPCTBLOCKVersion == 2) || ((pfrom->GetLocalServices() & NODE_MW) && nCMPCTBLOCKVersion == 3)) {
             LOCK(cs_main);
             // fProvidesHeaderAndIDs is used to "lock in" version of compact blocks we send (fWantsCmpctWitness)
             if (!State(pfrom->GetId())->fProvidesHeaderAndIDs) {
                 State(pfrom->GetId())->fProvidesHeaderAndIDs = true;
-                State(pfrom->GetId())->fWantsCmpctWitness = nCMPCTBLOCKVersion == 2;
+                State(pfrom->GetId())->fWantsCmpctWitness = nCMPCTBLOCKVersion >= 2;
+                State(pfrom->GetId())->fWantsCmpctMW = nCMPCTBLOCKVersion >= 3;
             }
-            if (State(pfrom->GetId())->fWantsCmpctWitness == (nCMPCTBLOCKVersion == 2)) // ignore later version announces
+            if (State(pfrom->GetId())->fWantsCmpctWitness == (nCMPCTBLOCKVersion >= 2) && State(pfrom->GetId())->fWantsCmpctMW == (nCMPCTBLOCKVersion >= 3))
                 State(pfrom->GetId())->fPreferHeaderAndIDs = fAnnounceUsingCMPCTBLOCK;
             if (!State(pfrom->GetId())->fSupportsDesiredCmpctVersion) {
-                if (pfrom->GetLocalServices() & NODE_WITNESS)
+                if (pfrom->GetLocalServices() & NODE_MW)
+                    State(pfrom->GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 3);
+                else if (pfrom->GetLocalServices() & NODE_WITNESS)
                     State(pfrom->GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 2);
                 else
                     State(pfrom->GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 1);
@@ -2504,6 +2513,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (IsWitnessEnabled(pindex->pprev, chainparams.GetConsensus()) && !nodestate->fSupportsDesiredCmpctVersion) {
             // Don't bother trying to process compact blocks from v1 peers
             // after segwit activates.
+            return true;
+        }
+
+        if (IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus()) && !nodestate->fSupportsDesiredCmpctVersion) {
+            // Don't bother trying to process compact blocks from v1/v2 peers
+            // after mimblewimble activates.
             return true;
         }
 

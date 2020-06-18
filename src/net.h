@@ -876,6 +876,15 @@ public:
         return nLocalServices;
     }
 
+    uint64_t GetCmpctBlockVersion() const noexcept
+    {
+        if (nLocalServices & NODE_MW) {
+            return 3;
+        }
+
+        return (nLocalServices & NODE_WITNESS) ? 2 : 1;
+    }
+
     std::string GetAddrName() const;
     //! Sets the addrName only if it was not previously set
     void MaybeSetAddrName(const std::string& addrNameIn);
