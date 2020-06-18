@@ -268,8 +268,11 @@ enum ServiceFlags : uint64_t {
     // serving the last 288 (2 day) blocks
     // See BIP159 for details on how this is implemented.
     NODE_NETWORK_LIMITED = (1 << 10),
+    // NODE_MW indicates that a node can be asked for blocks and transactions including
+    // mimblewimble extension block data.
+    NODE_MW = (1 << 24)
 
-    // Bits 24-31 are reserved for temporary experiments. Just pick a bit that
+    // Bits 25-31 are reserved for temporary experiments. Just pick a bit that
     // isn't getting used, or one not being used much, and notify the
     // bitcoin-development mailing list. Remember that service bits are just
     // unauthenticated advertisements, so your code must be robust against
@@ -362,6 +365,7 @@ public:
 
 /** getdata message type flags */
 const uint32_t MSG_WITNESS_FLAG = 1 << 30;
+const uint32_t MSG_MW_FLAG = 1 << 31;
 const uint32_t MSG_TYPE_MASK    = 0xffffffff >> 2;
 
 /** getdata / inv message types.
@@ -377,7 +381,8 @@ enum GetDataMsg
     MSG_FILTERED_BLOCK = 3,  //!< Defined in BIP37
     MSG_CMPCT_BLOCK = 4,     //!< Defined in BIP152
     MSG_WITNESS_BLOCK = MSG_BLOCK | MSG_WITNESS_FLAG, //!< Defined in BIP144
-    MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,       //!< Defined in BIP144
+    MSG_MW_BLOCK = MSG_WITNESS_BLOCK | MSG_MW_FLAG,   //!< Defined in BIP144
+    MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,       //!< Defined in BIP144 // MW: Define a MSG_MW_TX
     MSG_FILTERED_WITNESS_BLOCK = MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG,
 };
 
