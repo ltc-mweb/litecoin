@@ -9,6 +9,9 @@
 #include <primitives/transaction.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <mimblewimble/models.h>
+
+static const int SERIALIZE_BLOCK_NO_MW = 0x80000000;
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -80,6 +83,8 @@ public:
     // memory only
     mutable bool fChecked;
 
+    CMWBlock mwBlock;
+
     CBlock()
     {
         SetNull();
@@ -97,6 +102,9 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITEAS(CBlockHeader, *this);
         READWRITE(vtx);
+        if (!(s.GetVersion() & SERIALIZE_BLOCK_NO_MW)) {
+            READWRITE(mwBlock.bytes);
+        }
     }
 
     void SetNull()
@@ -104,6 +112,7 @@ public:
         CBlockHeader::SetNull();
         vtx.clear();
         fChecked = false;
+        mwBlock.SetNull();
     }
 
     CBlockHeader GetBlockHeader() const

@@ -1070,6 +1070,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
         }
     case MSG_BLOCK:
     case MSG_WITNESS_BLOCK:
+    case MSG_MW_BLOCK:
         return LookupBlockIndex(inv.hash) != nullptr;
     }
     // Don't know what it is, just say we already got one
@@ -1194,7 +1195,7 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
         std::shared_ptr<const CBlock> pblock;
         if (a_recent_block && a_recent_block->GetHash() == pindex->GetBlockHash()) {
             pblock = a_recent_block;
-        } else if (inv.type == MSG_WITNESS_BLOCK) {
+        } else if (inv.type == MSG_MW_BLOCK) {
             // Fast-path: in this case it is possible to serve the block directly from disk,
             // as the network format matches the format on disk
             std::vector<uint8_t> block_data;
@@ -1212,8 +1213,10 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
         }
         if (pblock) {
             if (inv.type == MSG_BLOCK)
-                connman->PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, *pblock));
+                connman->PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_BLOCK_NO_MW, NetMsgType::BLOCK, *pblock));
             else if (inv.type == MSG_WITNESS_BLOCK)
+                connman->PushMessage(pfrom, msgMaker.Make(SERIALIZE_BLOCK_NO_MW, NetMsgType::BLOCK, *pblock));
+            else if (inv.type == MSG_MW_BLOCK)
                 connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::BLOCK, *pblock));
             else if (inv.type == MSG_FILTERED_BLOCK)
             {
@@ -1236,7 +1239,7 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
                     // however we MUST always provide at least what the remote peer needs
                     typedef std::pair<unsigned int, uint256> PairType;
                     for (PairType& pair : merkleBlock.vMatchedTxn)
-                        connman->PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::TX, *pblock->vtx[pair.first]));
+                        connman->PushMessage(pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::TX, *pblock->vtx[pair.first])); // MW: Should we use SERIALIZE_BLOCK_NO_MW?
                 }
                 // else
                     // no response
@@ -1250,6 +1253,8 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
                 bool fPeerWantsWitness = State(pfrom->GetId())->fWantsCmpctWitness;
                 bool fPeerWantsMW = State(pfrom->GetId())->fWantsCmpctMW;
                 int nSendFlags = fPeerWantsWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
+                nSendFlags |= fPeerWantsMW ? 0 : SERIALIZE_BLOCK_NO_MW;
+
                 if (CanDirectFetch(consensusParams) && pindex->nHeight >= chainActive.Height() - MAX_CMPCTBLOCK_DEPTH) {
                     if ((fPeerWantsWitness || !fWitnessesPresentInARecentCompactBlock) && a_recent_compact_block && a_recent_compact_block->header.GetHash() == pindex->GetBlockHash()) {
                         connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, *a_recent_compact_block));
@@ -1321,7 +1326,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
 
     if (it != pfrom->vRecvGetData.end() && !pfrom->fPauseSend) {
         const CInv &inv = *it;
-        if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK || inv.type == MSG_CMPCT_BLOCK || inv.type == MSG_WITNESS_BLOCK) {
+        if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK || inv.type == MSG_CMPCT_BLOCK || inv.type == MSG_WITNESS_BLOCK || inv.type == MSG_MW_BLOCK) {
             it++;
             ProcessGetBlockData(pfrom, chainparams, inv, connman);
         }
@@ -1362,6 +1367,7 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     LOCK(cs_main);
     const CNetMsgMaker msgMaker(pfrom->GetSendVersion());
     int nSendFlags = State(pfrom->GetId())->fWantsCmpctWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
+    // MW: Determine when to set SERIALIZE_BLOCK_NO_MW
     connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::BLOCKTXN, resp));
 }
 
@@ -3463,6 +3469,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                             vHeaders.front().GetHash().ToString(), pto->GetId());
 
                     int nSendFlags = state.fWantsCmpctWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
+                    nSendFlags |= state.fWantsCmpctMW ? 0 : SERIALIZE_BLOCK_NO_MW;
 
                     bool fGotBlockFromCache = false;
                     {

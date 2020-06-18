@@ -160,21 +160,35 @@ bool DecodeHexBlockHeader(CBlockHeader& header, const std::string& hex_header)
     return true;
 }
 
-bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk)
+// MW: Check consumers to determine values of try_no_mw & try_mw
+bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk, const bool try_no_mw, const bool try_mw)
 {
     if (!IsHex(strHexBlk))
         return false;
 
     std::vector<unsigned char> blockData(ParseHex(strHexBlk));
-    CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
-    try {
-        ssBlock >> block;
-    }
-    catch (const std::exception&) {
-        return false;
+
+    if (try_no_mw) {
+        CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_BLOCK_NO_MW);
+        try {
+            ssBlock >> block;
+            return true;
+        } catch (const std::exception&) {
+            // Fall through.
+        }
     }
 
-    return true;
+    if (try_mw) {
+        CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
+        try {
+            ssBlock >> block;
+            return true;
+        } catch (const std::exception&) {
+            // Fall through.
+        }
+    }
+
+    return false;
 }
 
 bool DecodeBase64PSBT(PartiallySignedTransaction& psbt, const std::string& base64_tx, std::string& error)
