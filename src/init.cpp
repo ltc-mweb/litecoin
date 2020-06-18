@@ -1682,6 +1682,10 @@ bool AppInitMain(InitInterfaces& interfaces)
         nLocalServices = ServiceFlags(nLocalServices | NODE_WITNESS);
     }
 
+    if (chainparams.GetConsensus().vDeployments[Consensus::DEPLOYMENT_MW].nTimeout != 0) {
+        nLocalServices = ServiceFlags(nLocalServices | NODE_MW);
+    }
+
     // ********************************************************* Step 11: import blocks
 
     if (!CheckDiskSpace(/* additional_bytes */ 0, /* blocks_dir */ false)) {
