@@ -11,8 +11,10 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <consensus/params.h>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
+static const int SERIALIZE_NO_MIMBLEWIMBLE = 0x80000000;
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
 class COutPoint
@@ -198,6 +200,7 @@ struct CMutableTransaction;
 template<typename Stream, typename TxType>
 inline void UnserializeTransaction(TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
+    const bool fAllowMW = !(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE);
 
     s >> tx.nVersion;
     unsigned char flags = 0;
@@ -227,6 +230,11 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
             throw std::ios_base::failure("Superfluous witness record");
         }
     }
+    if ((flags & 8) && fAllowMW) {
+        /* The mimblewimble flag is present, and we support mimblewimble. */
+        flags ^= 8;
+        tx.m_hogEx = true;
+    }
     if (flags) {
         /* Unknown flag in the serialization */
         throw std::ios_base::failure("Unknown transaction optional data");
@@ -237,6 +245,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 template<typename Stream, typename TxType>
 inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
+    const bool fAllowMW = !(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE);
 
     s << tx.nVersion;
     unsigned char flags = 0;
@@ -247,6 +256,12 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
             flags |= 1;
         }
     }
+    if (fAllowMW) {
+        if (tx.m_hogEx) {
+            flags |= 8;
+        }
+    }
+
     if (flags) {
         /* Use extended format in case witnesses are to be serialized. */
         std::vector<CTxIn> vinDummy;
@@ -288,6 +303,9 @@ public:
     const std::vector<CTxOut> vout;
     const int32_t nVersion;
     const uint32_t nLockTime;
+    
+    /** Memory only. */
+    const bool m_hogEx;
 
 private:
     /** Memory only. */
@@ -360,6 +378,21 @@ public:
         }
         return false;
     }
+
+    bool IsHogEx(uint256& hash) const noexcept
+    {
+        if (m_hogEx && !vout.empty()) {
+            int version;
+            std::vector<unsigned char> program;
+            if (vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
+                if (program.size() == 32 && version == Consensus::Mimblewimble::WITNESS_VERSION) {
+                    hash = uint256(program);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 };
 
 /** A mutable version of CTransaction. */
@@ -369,6 +402,9 @@ struct CMutableTransaction
     std::vector<CTxOut> vout;
     int32_t nVersion;
     uint32_t nLockTime;
+
+    /** Memory only. */
+    bool m_hogEx;
 
     CMutableTransaction();
     explicit CMutableTransaction(const CTransaction& tx);

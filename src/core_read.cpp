@@ -169,7 +169,7 @@ bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk, const bool try_no
     std::vector<unsigned char> blockData(ParseHex(strHexBlk));
 
     if (try_no_mw) {
-        CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_BLOCK_NO_MW);
+        CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_NO_MIMBLEWIMBLE);
         try {
             ssBlock >> block;
             return true;

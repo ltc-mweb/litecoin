@@ -11,8 +11,6 @@
 #include <uint256.h>
 #include <mimblewimble/models.h>
 
-static const int SERIALIZE_BLOCK_NO_MW = 0x80000000;
-
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -102,8 +100,11 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITEAS(CBlockHeader, *this);
         READWRITE(vtx);
-        if (!(s.GetVersion() & SERIALIZE_BLOCK_NO_MW)) {
-            READWRITE(mwBlock.bytes);
+        if (!(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE)) {
+            uint256 hash;
+            if (HasHogEx(hash)) {
+                READWRITE(mwBlock.bytes);
+            }
         }
     }
 
@@ -128,6 +129,11 @@ public:
     }
 
     std::string ToString() const;
+
+    bool HasHogEx(uint256& hash) const noexcept
+    {
+        return !vtx.empty() && vtx.back()->IsHogEx(hash);
+    }
 };
 
 /** Describes a place in the block chain to another node such that if the
