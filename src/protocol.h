@@ -381,9 +381,10 @@ enum GetDataMsg
     MSG_FILTERED_BLOCK = 3,  //!< Defined in BIP37
     MSG_CMPCT_BLOCK = 4,     //!< Defined in BIP152
     MSG_WITNESS_BLOCK = MSG_BLOCK | MSG_WITNESS_FLAG, //!< Defined in BIP144
-    MSG_MW_BLOCK = MSG_WITNESS_BLOCK | MSG_MW_FLAG,   //!< Defined in BIP144
-    MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,       //!< Defined in BIP144 // MW: Define a MSG_MW_TX
+    MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,       //!< Defined in BIP144
     MSG_FILTERED_WITNESS_BLOCK = MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG,
+    MSG_MW_BLOCK = MSG_WITNESS_BLOCK | MSG_MW_FLAG,
+    MSG_MW_TX = MSG_WITNESS_TX | MSG_MW_FLAG,
 };
 
 /** inv message data */

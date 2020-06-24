@@ -239,6 +239,8 @@ struct CNodeState {
     bool fProvidesHeaderAndIDs;
     //! Whether this peer can give us witnesses
     bool fHaveWitness;
+    //! Whether this peer can give us mimblewimble extension block data
+    bool fHaveMW;
     //! Whether this peer wants witnesses in cmpctblocks/blocktxns
     bool fWantsCmpctWitness;
     //! Whether this peer wants MW transactions in cmpctblocks/blocktxns
@@ -299,7 +301,9 @@ struct CNodeState {
         fPreferHeaderAndIDs = false;
         fProvidesHeaderAndIDs = false;
         fHaveWitness = false;
+        fHaveMW = false;
         fWantsCmpctWitness = false;
+        fWantsCmpctMW = false;
         fSupportsDesiredCmpctVersion = false;
         m_chain_sync = { 0, nullptr, false, false };
         m_last_block_announcement = 0;
@@ -1046,6 +1050,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
     {
     case MSG_TX:
     case MSG_WITNESS_TX:
+    case MSG_MW_TX:
         {
             assert(recentRejects);
             if (chainActive.Tip()->GetBlockHash() != hashRecentRejectsChainTip)
@@ -1066,7 +1071,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
             return recentRejects->contains(inv.hash) ||
                    mempool.exists(inv.hash) ||
                    pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 0)) || // Best effort: only try output 0 and 1
-                   pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 1));
+                   pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 1)); // MW: Also check Mimblewimble mempool
         }
     case MSG_BLOCK:
     case MSG_WITNESS_BLOCK:
@@ -1292,7 +1297,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
     {
         LOCK(cs_main);
 
-        while (it != pfrom->vRecvGetData.end() && (it->type == MSG_TX || it->type == MSG_WITNESS_TX)) {
+        while (it != pfrom->vRecvGetData.end() && (it->type == MSG_TX || it->type == MSG_WITNESS_TX || it->type == MSG_MW_TX)) {
             if (interruptMsgProc)
                 return;
             // Don't bother if send buffer is too full to respond anyway
@@ -1306,6 +1311,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
             bool push = false;
             auto mi = mapRelay.find(inv.hash);
             int nSendFlags = (inv.type == MSG_TX ? SERIALIZE_TRANSACTION_NO_WITNESS : 0);
+            nSendFlags |= (inv.type != MSG_MW_TX ? SERIALIZE_NO_MIMBLEWIMBLE : 0);
             if (mi != mapRelay.end()) {
                 connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *mi->second));
                 push = true;
@@ -1350,6 +1356,9 @@ static uint32_t GetFetchFlags(CNode* pfrom) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
     uint32_t nFetchFlags = 0;
     if ((pfrom->GetLocalServices() & NODE_WITNESS) && State(pfrom->GetId())->fHaveWitness) {
         nFetchFlags |= MSG_WITNESS_FLAG;
+    }
+    if ((pfrom->GetLocalServices() & NODE_MW) && State(pfrom->GetId())->fHaveMW) {
+        nFetchFlags |= MSG_MW_FLAG;
     }
     return nFetchFlags;
 }
@@ -1814,6 +1823,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         {
             LOCK(cs_main);
             State(pfrom->GetId())->fHaveWitness = true;
+
+            if (nServices & NODE_MW) {
+                State(pfrom->GetId())->fHaveMW = true;
+            }
         }
 
         // Potentially mark this peer as a preferred download peer.
