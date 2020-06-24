@@ -24,9 +24,17 @@ struct CMWBlock
         bytes.clear();
         bytes.shrink_to_fit();
     }
+};
 
+struct CMWTx {
+    using CPtr = std::shared_ptr<CMWTx>;
 
-    //std::string ToString() const;
+    std::vector<unsigned char> bytes;
+
+    // Some compilers complain without a default constructor
+    CMWTx() {}
+
+    bool IsNull() const { return bytes.empty(); }
 };
 
 #endif // LITECOIN_MIMBLEWIMBLE_MODELS_H

@@ -12,6 +12,7 @@
 #include <serialize.h>
 #include <uint256.h>
 #include <consensus/params.h>
+#include <mimblewimble/models.h>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 static const int SERIALIZE_NO_MIMBLEWIMBLE = 0x80000000;
@@ -195,6 +196,8 @@ struct CMutableTransaction;
  * - std::vector<CTxOut> vout
  * - if (flags & 1):
  *   - CTxWitness wit;
+ * - if (flags & 8):
+ *   - CMWTx m_mwtx
  * - uint32_t nLockTime
  */
 template<typename Stream, typename TxType>
@@ -233,7 +236,12 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     if ((flags & 8) && fAllowMW) {
         /* The mimblewimble flag is present, and we support mimblewimble. */
         flags ^= 8;
-        tx.m_hogEx = true;
+
+        s >> tx.m_mwtx.bytes;
+        if (tx.m_mwtx.IsNull()) {
+            /* If the mw flag is set, but there are no mw txs, assume hogEx txn. */
+            tx.m_hogEx = true;
+        }
     }
     if (flags) {
         /* Unknown flag in the serialization */
@@ -257,7 +265,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         }
     }
     if (fAllowMW) {
-        if (tx.m_hogEx) {
+        if (tx.m_hogEx || !tx.m_mwtx.IsNull()) {
             flags |= 8;
         }
     }
@@ -274,6 +282,9 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         for (size_t i = 0; i < tx.vin.size(); i++) {
             s << tx.vin[i].scriptWitness.stack;
         }
+    }
+    if (flags & 8) {
+        s << tx.m_mwtx.bytes;
     }
     s << tx.nLockTime;
 }
@@ -303,6 +314,7 @@ public:
     const std::vector<CTxOut> vout;
     const int32_t nVersion;
     const uint32_t nLockTime;
+    const CMWTx m_mwtx;
     
     /** Memory only. */
     const bool m_hogEx;
@@ -402,6 +414,7 @@ struct CMutableTransaction
     std::vector<CTxOut> vout;
     int32_t nVersion;
     uint32_t nLockTime;
+    CMWTx m_mwtx;
 
     /** Memory only. */
     bool m_hogEx;
