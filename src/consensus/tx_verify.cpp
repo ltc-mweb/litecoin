@@ -159,12 +159,17 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
 bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fCheckDuplicateInputs)
 {
     // Basic checks that don't depend on any context
-    if (tx.vin.empty())
-        return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
-    if (tx.vout.empty())
-        return state.DoS(10, false, REJECT_INVALID, "bad-txns-vout-empty");
+
+    if (!tx.m_mwtx.IsNull() && tx.vin.empty() && tx.vout.empty()) {
+        // Do nothing. A mimblewimble tx with 0 inputs & 0 outputs is valid.
+    } else {
+        if (tx.vin.empty())
+            return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
+        if (tx.vout.empty())
+            return state.DoS(10, false, REJECT_INVALID, "bad-txns-vout-empty");
+    }
     // Size limits (this doesn't take the witness into account, as that hasn't been checked for malleability)
-    if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
+    if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-oversize");
 
     // Check for negative or overflow output values
