@@ -237,7 +237,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
         /* The mimblewimble flag is present, and we support mimblewimble. */
         flags ^= 8;
 
-        s >> tx.m_mwtx.bytes;
+        s >> tx.m_mwtx;
         if (tx.m_mwtx.IsNull()) {
             /* If the mw flag is set, but there are no mw txs, assume hogEx txn. */
             tx.m_hogEx = true;
@@ -284,7 +284,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         }
     }
     if (flags & 8) {
-        s << tx.m_mwtx.bytes;
+        s << tx.m_mwtx;
     }
     s << tx.nLockTime;
 }
@@ -390,6 +390,8 @@ public:
         }
         return false;
     }
+
+    bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
 
     bool IsHogEx(uint256& hash) const noexcept
     {

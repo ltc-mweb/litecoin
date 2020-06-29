@@ -103,7 +103,7 @@ public:
         if (!(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE)) {
             uint256 hash;
             if (HasHogEx(hash)) {
-                READWRITE(mwBlock.bytes);
+                READWRITE(mwBlock);
             }
         }
     }

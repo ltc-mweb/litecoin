@@ -3113,7 +3113,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // checks that use witness data may be performed here.
 
     // Size limits
-    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
+    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-length", false, "size limits failed");
 
     // First transaction must be coinbase, the rest must not be
@@ -3351,6 +3351,29 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     // the block hash, so we couldn't mark the block as permanently
     // failed).
     if (GetBlockWeight(block) > MAX_BLOCK_WEIGHT) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
+    }
+
+    // No mw data is allowed in blocks that don't commit to mw data, as this would otherwise leave room for spam
+    uint256 mwBlockHash;
+    const bool hasHogEx = block.HasHogEx(mwBlockHash);
+    if (!hasHogEx) {
+        if (!block.mwBlock.IsNull()) {
+            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : unexpected mimblewimble data found", __func__));
+        }
+    }
+
+    // Transactions in the mempool or broadcast via p2p may have mimblewimble transaction data attached.
+    // All mw tx data must be moved to the EB when it's mined in a block though.
+    // So at this point, no txs should contain mw data.
+    for (const auto& tx : block.vtx) {
+        if (tx->HasMWData()) {
+            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : unexpected mimblewimble data found", __func__));
+        }
+    }
+
+    // Check max size of mimblewimble extension block data
+    if (::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE) {
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
