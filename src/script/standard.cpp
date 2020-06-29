@@ -36,6 +36,8 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_NULL_DATA: return "nulldata";
     case TX_WITNESS_V0_KEYHASH: return "witness_v0_keyhash";
     case TX_WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
+    case TX_WITNESS_MW_HEADERHASH: return "witness_mw_headerhash";
+    case TX_WITNESS_MW_PEGIN: return "witness_mw_pegin";
     case TX_WITNESS_UNKNOWN: return "witness_unknown";
     }
     return nullptr;
@@ -110,6 +112,14 @@ txnouttype Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned 
         if (witnessversion == 0 && witnessprogram.size() == WITNESS_V0_SCRIPTHASH_SIZE) {
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_V0_SCRIPTHASH;
+        }
+        if (witnessversion == Consensus::Mimblewimble::WITNESS_VERSION && witnessprogram.size() == WITNESS_MW_HEADERHASH_SIZE) {
+            vSolutionsRet.push_back(witnessprogram);
+            return TX_WITNESS_MW_HEADERHASH;
+        }
+        if (witnessversion == Consensus::Mimblewimble::WITNESS_VERSION && witnessprogram.size() == WITNESS_MW_PEGIN_SIZE) {
+            vSolutionsRet.push_back(witnessprogram);
+            return TX_WITNESS_MW_PEGIN;
         }
         if (witnessversion != 0) {
             vSolutionsRet.push_back(std::vector<unsigned char>{(unsigned char)witnessversion});

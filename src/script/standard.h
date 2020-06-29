@@ -64,6 +64,8 @@ enum txnouttype
     TX_NULL_DATA, //!< unspendable OP_RETURN script that carries data
     TX_WITNESS_V0_SCRIPTHASH,
     TX_WITNESS_V0_KEYHASH,
+    TX_WITNESS_MW_HEADERHASH, //!< Used by HogEx to represent the hash of the extension block header
+    TX_WITNESS_MW_PEGIN, //!< Commitment value of the peg-in kernel
     TX_WITNESS_UNKNOWN, //!< Only for Witness versions not already defined above
 };
 
