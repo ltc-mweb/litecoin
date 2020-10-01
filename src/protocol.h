@@ -237,7 +237,18 @@ extern const char *GETBLOCKTXN;
  * Sent in response to a "getblocktxn" message.
  * @since protocol version 70014 as described by BIP 152
  */
-extern const char *BLOCKTXN;
+extern const char* BLOCKTXN;
+/**
+ * Contains a MWStateRequest.
+ * @since protocol version ?? as described by LIP ?? // MW: Document version & LIP
+ */
+extern const char* GETMWSTATE;
+/**
+ * Contains a MWState.
+ * Sent in response to a "getmwstate" message.
+ * @since protocol version ?? as described by LIP ?? // MW: Document version & LIP
+ */
+extern const char* MWSTATE;
 };
 
 /* Get a vector of all valid message types (see above) */
@@ -365,7 +376,7 @@ public:
 
 /** getdata message type flags */
 const uint32_t MSG_WITNESS_FLAG = 1 << 30;
-const uint32_t MSG_MW_FLAG = 1 << 31;
+const uint32_t MSG_MW_FLAG = 1 << 29;
 const uint32_t MSG_TYPE_MASK    = 0xffffffff >> 2;
 
 /** getdata / inv message types.

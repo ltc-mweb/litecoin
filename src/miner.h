@@ -10,6 +10,7 @@
 #include <primitives/block.h>
 #include <txmempool.h>
 #include <validation.h>
+#include <libmw/libmw.h>
 
 #include <memory>
 #include <stdint.h>
@@ -130,6 +131,8 @@ private:
     std::unique_ptr<CBlockTemplate> pblocktemplate;
     // A convenience pointer that always refers to the CBlock in pblocktemplate
     CBlock* pblock;
+    // Mimblewimble transactions to include in the block.
+    std::vector<libmw::TxRef> m_mwTxs;
 
     // Configuration parameters for the block size
     bool fIncludeWitness;
@@ -196,6 +199,8 @@ private:
       * state updated assuming given transactions are inBlock. Returns number
       * of updated descendants. */
     int UpdatePackagesForAdded(const CTxMemPool::setEntries& alreadyAdded, indexed_modified_transaction_set &mapModifiedTx) EXCLUSIVE_LOCKS_REQUIRED(mempool.cs);
+
+    void AddHogExTransaction(const CBlockIndex* pIndexPrev);
 };
 
 /** Modify the extranonce in a block */

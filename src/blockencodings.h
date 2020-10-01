@@ -191,6 +191,8 @@ public:
 
         if (ser_action.ForRead())
             FillShortTxIDSelector();
+
+        // MW: Add mimblewimble block
     }
 };
 

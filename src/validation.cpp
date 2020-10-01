@@ -491,7 +491,7 @@ static bool IsCurrentForFeeEstimation() EXCLUSIVE_LOCKS_REQUIRED(cs_main)
  * Passing fAddToMempool=false will skip trying to add the transactions back,
  * and instead just erase from the mempool as needed.
  */
-
+// MW: Handle mempool txs during reorgs
 static void UpdateMempoolForReorg(DisconnectedBlockTransactions &disconnectpool, bool fAddToMempool) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     AssertLockHeld(cs_main);
@@ -1484,21 +1484,28 @@ bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint
 static bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex *pindex)
 {
     CDiskBlockPos pos = pindex->GetUndoPos();
-    if (pos.IsNull()) {
+    if (pos.IsNull() || pos.nPos < 4) {
         return error("%s: no undo data available", __func__);
     }
+
+    // Rewind 4 bytes in order to read the size
+    pos.nPos -= 4;
 
     // Open history file to read
     CAutoFile filein(OpenUndoFile(pos, true), SER_DISK, CLIENT_VERSION);
     if (filein.IsNull())
         return error("%s: OpenUndoFile failed", __func__);
 
+    // Read undo size
+    unsigned int undo_size = 0;
+    filein >> undo_size;
+
     // Read block
     uint256 hashChecksum;
     CHashVerifier<CAutoFile> verifier(&filein); // We need a CHashVerifier as reserializing may lose data
     try {
         verifier << pindex->pprev->GetBlockHash();
-        verifier >> blockundo;
+        UnserializeBlockUndo(blockundo, verifier, undo_size);
         filein >> hashChecksum;
     }
     catch (const std::exception& e) {
@@ -1617,6 +1624,10 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
             }
             // At this point, all of txundo.vprevout should have been moved out.
         }
+    }
+
+    if (blockUndo.mwundo.pUndo != nullptr) {
+        libmw::node::DisconnectBlock(blockUndo.mwundo, view.GetMWView());
     }
 
     // move best block pointer to prevout block
@@ -1758,6 +1769,8 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
     if (IsNullDummyEnabled(pindex->pprev, consensusparams)) {
         flags |= SCRIPT_VERIFY_NULLDUMMY;
     }
+
+    // MW: Handle activation
 
     return flags;
 }
@@ -2037,6 +2050,23 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
+
+    // MW: Check activation
+    const bool mw_enabled = IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus());
+    if (mw_enabled == block.mwBlock.IsNull()) {
+        return state.DoS(100, error("ConnectBlock(): Mimblewimble activation not honored"),
+            REJECT_INVALID, "bad-mw-data");
+    }
+
+    // MW: Connect block to chain
+    if (!block.mwBlock.IsNull()) {
+        try {
+            blockundo.mwundo = libmw::node::ConnectBlock(block.mwBlock.m_block, view.GetMWView());
+        } catch (const std::exception& e) {
+            return state.DoS(100, error("ConnectBlock(): Failed to connect mw block: %s", e.what()),
+                REJECT_INVALID, "mw-connect-failed");
+        }
+    }
 
     if (fJustCheck)
         return true;
@@ -3113,7 +3143,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // checks that use witness data may be performed here.
 
     // Size limits
-    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE)
+    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE) // MW: Probably replace size check with MW weight check (different weights for kernels vs inputs/outputs)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-length", false, "size limits failed");
 
     // First transaction must be coinbase, the rest must not be
@@ -3137,6 +3167,17 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (nSigOps * WITNESS_SCALE_FACTOR > MAX_BLOCK_SIGOPS_COST)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
+    // MW: Ensure full MW block provided (except during IBD)
+    if (!block.mwBlock.IsNull()) {
+        // MW: TODO - Check fees & HogEx transaction
+        try {
+            libmw::node::CheckBlock(block.mwBlock.m_block, block.GetPegInCoins(), block.GetPegOutCoins());
+        } catch (const std::exception& e) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, 
+                strprintf("libmw::node::CheckBlock failed: %s", e.what()));
+        }
+    }
+
     if (fCheckPOW && fCheckMerkleRoot)
         block.fChecked = true;
 
@@ -3157,7 +3198,7 @@ bool IsNullDummyEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& 
 
 bool IsMimblewimbleEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
-    LOCK(cs_main); // MW: Why do we lock here?
+    LOCK(cs_main);
     return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_MW, versionbitscache) == ThresholdState::ACTIVE);
 }
 

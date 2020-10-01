@@ -47,7 +47,8 @@ bench_bench_litecoin_LDADD = \
   $(LIBLEVELDB_SSE42) \
   $(LIBMEMENV) \
   $(LIBSECP256K1) \
-  $(LIBUNIVALUE)
+  $(LIBUNIVALUE) \
+  $(MW_LIBS)
 
 if ENABLE_ZMQ
 bench_bench_litecoin_LDADD += $(LIBBITCOIN_ZMQ) $(ZMQ_LIBS)

@@ -15,7 +15,7 @@
 #include <mimblewimble/models.h>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
-static const int SERIALIZE_NO_MIMBLEWIMBLE = 0x80000000;
+static const int SERIALIZE_NO_MIMBLEWIMBLE = 0x20000000;
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
 class COutPoint

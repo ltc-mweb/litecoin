@@ -6,8 +6,7 @@
 #define LITECOIN_MIMBLEWIMBLE_MODELS_H
 
 #include <serialize.h>
-#include <mw/models/block/Block.h>
-#include <mw/models/tx/Transaction.h>
+#include <libmw/libmw.h>
 #include <vector>
 #include <memory>
 
@@ -15,10 +14,9 @@ struct CMWBlock
 {
     using CPtr = std::shared_ptr<CMWBlock>;
 
-    mw::Block::Ptr m_pBlock;
+    libmw::BlockRef m_block;
 
-    // Some compilers complain without a default constructor
-    CMWBlock() {}
+    CMWBlock() = default;
 
     ADD_SERIALIZE_METHODS;
 
@@ -31,13 +29,12 @@ struct CMWBlock
             READWRITE(bytes);
 
             if (!bytes.empty()) {
-                Deserializer deserializer{std::move(bytes)};
-                m_pBlock = std::make_shared<mw::Block>(mw::Block::Deserialize(deserializer));
+                m_block = libmw::DeserializeBlock(std::move(bytes));
             }
         } else {
             // Serialize
-            if (m_pBlock != nullptr) {
-                std::vector<uint8_t> bytes = Serializer().Append(*m_pBlock).vec();
+            if (!IsNull()) {
+                std::vector<uint8_t> bytes = libmw::SerializeBlock(m_block);
                 READWRITE(bytes);
             } else {
                 READWRITE(std::vector<uint8_t>{});
@@ -45,18 +42,17 @@ struct CMWBlock
         }
     }
 
-    bool IsNull() const noexcept { return m_pBlock == nullptr; }
-    void SetNull() noexcept { m_pBlock = nullptr; }
+    bool IsNull() const noexcept { return m_block.pBlock == nullptr; }
+    void SetNull() noexcept { m_block = libmw::BlockRef{ nullptr }; }
 };
 
 struct CMWTx
 {
     using CPtr = std::shared_ptr<CMWTx>;
 
-    mw::Transaction::CPtr m_pTransaction;
+    libmw::TxRef m_transaction;
 
-    // Some compilers complain without a default constructor
-    CMWTx() {}
+    CMWTx() = default;
 
     ADD_SERIALIZE_METHODS;
 
@@ -69,13 +65,12 @@ struct CMWTx
             READWRITE(bytes);
 
             if (!bytes.empty()) {
-                Deserializer deserializer{std::move(bytes)};
-                m_pTransaction = std::make_shared<mw::Transaction>(mw::Transaction::Deserialize(deserializer));
+                m_transaction = libmw::DeserializeTx(std::move(bytes));
             }
         } else {
             // Serialize
-            if (m_pTransaction != nullptr) {
-                std::vector<uint8_t> bytes = Serializer().Append(*m_pTransaction).vec();
+            if (!IsNull()) {
+                std::vector<uint8_t> bytes = libmw::SerializeTx(m_transaction);
                 READWRITE(bytes);
             } else {
                 READWRITE(std::vector<uint8_t>{});
@@ -83,7 +78,7 @@ struct CMWTx
         }
     }
 
-    bool IsNull() const noexcept { return m_pTransaction == nullptr; }
+    bool IsNull() const noexcept { return m_transaction.pTransaction == nullptr; }
 };
 
 #endif // LITECOIN_MIMBLEWIMBLE_MODELS_H

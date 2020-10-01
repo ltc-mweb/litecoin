@@ -12,6 +12,7 @@
 #include <primitives/transaction.h>
 #include <serialize.h>
 #include <version.h>
+#include <memory>
 
 /** Undo information for a CTxIn
  *
@@ -102,13 +103,39 @@ class CBlockUndo
 {
 public:
     std::vector<CTxUndo> vtxundo; // for all but the coinbase
+    libmw::BlockUndoRef mwundo;
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(vtxundo);
+
+        if (mwundo.pUndo != nullptr) {
+            std::vector<uint8_t> bytes;
+            READWRITE(bytes);
+            mwundo = libmw::DeserializeBlockUndo(bytes);
+        }
     }
 };
+
+template <typename Stream>
+inline void UnserializeBlockUndo(CBlockUndo& blockundo, Stream& s, const unsigned int num_bytes)
+{
+    const uint64_t num_txs = ::ReadCompactSize(s);
+    blockundo.vtxundo.reserve(num_txs);
+    for (uint64_t i = 0; i < num_txs; i++) {
+        CTxUndo txundo;
+        s >> txundo;
+        blockundo.vtxundo.emplace_back(std::move(txundo));
+    }
+
+    if (::GetSerializeSize(blockundo) < num_bytes) {
+        // There's more data to read. Mimblewimble rewind data must be available.
+        std::vector<uint8_t> mwundo_bytes;
+        s >> mwundo_bytes;
+        blockundo.mwundo = libmw::DeserializeBlockUndo(mwundo_bytes);
+    }
+}
 
 #endif // BITCOIN_UNDO_H

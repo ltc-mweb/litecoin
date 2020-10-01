@@ -10,6 +10,7 @@
 #include <dbwrapper.h>
 #include <chain.h>
 #include <primitives/block.h>
+#include <libmw/libmw.h>
 
 #include <map>
 #include <memory>
@@ -45,6 +46,8 @@ class CCoinsViewDB final : public CCoinsView
 {
 protected:
     CDBWrapper db;
+    libmw::CoinsViewRef mw_view;
+
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
 
@@ -52,8 +55,11 @@ public:
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
+    CDBWrapper* GetDB() noexcept { return &db; }
+    void SetMWView(const libmw::CoinsViewRef& view) { mw_view = view; }
+    libmw::CoinsViewRef GetMWView() final { return mw_view; }
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();

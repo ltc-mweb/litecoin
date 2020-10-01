@@ -13,6 +13,7 @@
 #include <memusage.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <libmw/libmw.h>
 
 #include <assert.h>
 #include <stdint.h>
@@ -165,7 +166,7 @@ public:
 
     //! Do a bulk modification (multiple Coin changes + BestBlock change).
     //! The passed mapCoins can be modified.
-    virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
+    virtual bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView);
 
     //! Get a cursor to iterate over the whole state
     virtual CCoinsViewCursor *Cursor() const;
@@ -175,6 +176,8 @@ public:
 
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }
+
+    virtual libmw::CoinsViewRef GetMWView() { return libmw::CoinsViewRef{nullptr}; }
 };
 
 
@@ -182,8 +185,7 @@ public:
 class CCoinsViewBacked : public CCoinsView
 {
 protected:
-    CCoinsView *base;
-
+    CCoinsView* base;
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
@@ -191,9 +193,10 @@ public:
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
+    libmw::CoinsViewRef GetMWView() override;
 };
 
 
@@ -211,6 +214,8 @@ protected:
     /* Cached dynamic memory usage for the inner Coin objects. */
     mutable size_t cachedCoinsUsage;
 
+    libmw::CoinsViewRef mw_view;
+
 public:
     CCoinsViewCache(CCoinsView *baseIn);
 
@@ -224,10 +229,12 @@ public:
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) override;
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) override;
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
+
+    libmw::CoinsViewRef GetMWView() final { return mw_view; }
 
     /**
      * Check if we have the given utxo already loaded in this cache.

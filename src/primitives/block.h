@@ -134,6 +134,9 @@ public:
     {
         return !vtx.empty() && vtx.back()->IsHogEx(hash);
     }
+
+    std::vector<libmw::PegIn> GetPegInCoins() const noexcept;
+    std::vector<libmw::PegOut> GetPegOutCoins() const noexcept;
 };
 
 /** Describes a place in the block chain to another node such that if the

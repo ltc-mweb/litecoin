@@ -25,6 +25,8 @@
 #include <key.h>
 #include <validation.h>
 #include <miner.h>
+#include <mimblewimble/db.h>
+#include <libmw/libmw.h>
 #include <netbase.h>
 #include <net.h>
 #include <net_processing.h>
@@ -86,6 +88,7 @@ static constexpr int DUMP_BANS_INTERVAL = 60 * 15;
 std::unique_ptr<CConnman> g_connman;
 std::unique_ptr<PeerLogicValidation> peerLogic;
 std::unique_ptr<BanMan> g_banman;
+libmw::CoinsViewRef g_dbview;
 
 #ifdef WIN32
 // Win32 LevelDB doesn't use filedescriptors, and the ones used for
@@ -1535,6 +1538,14 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 pcoinsdbview.reset(new CCoinsViewDB(nCoinDBCache, false, fReset || fReindexChainState));
                 pcoinscatcher.reset(new CCoinsViewErrorCatcher(pcoinsdbview.get()));
+
+                const uint256 best_block = pcoinsdbview->GetBestBlock();
+                g_dbview = libmw::node::Initialize(
+                    libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
+                    { nullptr }, // MW: Load this first
+                    std::make_shared<MWDBWrapper>(pcoinsdbview->GetDB())
+                );
+                pcoinsdbview->SetMWView(g_dbview);
 
                 // If necessary, upgrade from older database format.
                 // This is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate

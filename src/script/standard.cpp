@@ -201,6 +201,8 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
         unk.length = vSolutions[1].size();
         addressRet = unk;
         return true;
+    } else if (whichType == TX_WITNESS_MW_PEGIN) {
+        // MW: Should we return the kernel address?
     }
     // Multisig txns have more than one address...
     return false;

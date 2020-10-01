@@ -14,6 +14,8 @@
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
 #include <hash.h>
+#include <key_io.h>
+#include <libmw/libmw.h>
 #include <net.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
@@ -140,6 +142,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     int nDescendantsUpdated = 0;
     addPackageTxs(nPackagesSelected, nDescendantsUpdated);
 
+    if (IsMimblewimbleEnabled(pindexPrev, Params().GetConsensus())) {
+        AddHogExTransaction(pindexPrev);
+    }
+
     int64_t nTime1 = GetTimeMicros();
 
     m_last_block_num_txs = nBlockTx;
@@ -217,6 +223,17 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
 
 void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
+    if (iter->GetSharedTx()->HasMWData()) {
+        libmw::TxRef transactionRef = iter->GetSharedTx()->m_mwtx.m_transaction;
+        m_mwTxs.push_back(transactionRef);
+
+        if (iter->GetSharedTx()->vin.empty()) {
+            //nFees += transactionRef.GetTotalFee();
+            inBlock.insert(iter);
+            return;
+        }
+    }
+
     pblock->vtx.emplace_back(iter->GetSharedTx());
     pblocktemplate->vTxFees.push_back(iter->GetFee());
     pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
@@ -444,4 +461,99 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
     pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
+}
+
+// MW: Generate and add HogEx transaction
+void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
+{    
+    CMutableTransaction hogExTransaction;
+    hogExTransaction.m_hogEx = true;
+
+    CBlock prevBlock;
+    assert(ReadBlockFromDisk(prevBlock, pIndexPrev, Params().GetConsensus()));
+
+    uint64_t pegin_total = 0;
+    uint64_t pegout_total = 0;
+
+    //
+    // Add previous HogEx output as new HogEx input
+    //
+    uint256 hogex_hash;
+    if (prevBlock.vtx.size() >= 2 && prevBlock.vtx.back()->IsHogEx(hogex_hash)) {
+        assert(!prevBlock.vtx.back()->vout.empty());
+        pegin_total = prevBlock.vtx.back()->vout[0].nValue;
+
+        CTxIn prevHogExIn(prevBlock.vtx.back()->GetHash(), 0);
+        hogExTransaction.vin.push_back(std::move(prevHogExIn));
+    }
+
+    //
+    // Add Peg-in inputs
+    //
+    std::vector<libmw::PegIn> pegins;
+    for (const auto& pTx : pblock->vtx) {
+        if (pTx->HasMWData()) {
+            for (size_t nOut = 0; nOut < pTx->vout.size(); nOut++) {
+                const auto& output = pTx->vout[nOut];
+                int version;
+                std::vector<uint8_t> program;
+                if (output.scriptPubKey.IsWitnessProgram(version, program)) {
+                    if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MW_PEGIN_SIZE) {
+                        CTxIn txIn(pTx->GetHash(), (uint32_t)nOut); // MW: scriptWitness?
+                        hogExTransaction.vin.push_back(std::move(txIn));
+
+                        libmw::PegIn pegin;
+                        pegin.amount = output.nValue;
+                        std::move(program.begin(), program.begin() + WITNESS_MW_PEGIN_SIZE, pegin.commitment.begin());
+                        pegins.push_back(std::move(pegin));
+                        pegin_total += output.nValue;
+                    }
+                }
+            }
+        }
+    }
+
+    //
+    // Add Peg-out outputs
+    //
+    hogExTransaction.vout.push_back(CTxOut()); // Reserve output for mw block hash
+
+    std::vector<libmw::PegOut> block_pegouts;
+    for (const libmw::TxRef& mwTx : m_mwTxs) {
+        std::vector<libmw::PegOut> pegouts = mwTx.GetPegouts();
+        for (const libmw::PegOut& pegout : pegouts) {
+            CTxDestination destination = DecodeDestination(pegout.address);
+            if (!IsValidDestination(destination)) {
+                // MW: Handle invalid destination
+                continue;
+            }
+
+            CScript scriptPubKey = GetScriptForDestination(destination);
+            hogExTransaction.vout.push_back(CTxOut{CAmount(pegout.amount), scriptPubKey});
+            block_pegouts.push_back(pegout);
+            pegout_total += pegout.amount;
+        }
+    }
+
+    uint64_t mw_fee = 0;
+    for (const libmw::TxRef& mwTx : m_mwTxs) {
+        mw_fee += mwTx.GetTotalFee();
+    }
+    nFees += mw_fee;
+
+    //
+    // Add Block hash
+    //
+    libmw::BlockRef mw_block = libmw::node::BuildNextBlock(nHeight, pcoinsTip->GetMWView(), m_mwTxs, pegins, block_pegouts);
+    std::vector<uint8_t> serialized_mw_block = libmw::SerializeBlock(mw_block);
+    std::vector<uint8_t> mw_block_hash(32);
+    CSHA256().Write(serialized_mw_block.data(), serialized_mw_block.size()).Finalize(mw_block_hash.data());
+    hogExTransaction.vout[0].scriptPubKey = CScript() << OP_9 << mw_block_hash;
+
+    assert(pegin_total >= (pegout_total + mw_fee));
+    hogExTransaction.vout[0].nValue = pegin_total - (pegout_total + mw_fee);
+
+    pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
+    pblocktemplate->vTxFees.push_back(CAmount(mw_fee));
+    pblocktemplate->vTxSigOpsCost.push_back(WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx.back()));
 }
