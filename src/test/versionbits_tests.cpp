@@ -350,5 +350,52 @@ BOOST_AUTO_TEST_CASE(versionbits_computeblockversion)
     //BOOST_CHECK_EQUAL(ComputeBlockVersion(lastBlock, mainnetParams) & VERSIONBITS_TOP_MASK, VERSIONBITS_TOP_BITS);
 }
 
+BOOST_AUTO_TEST_CASE(versionbits_computeblockversion_mweb)
+{
+    // Check that ComputeBlockVersion will set the appropriate bit correctly
+    // on mainnet.
+    const auto chainParams = CreateChainParams(CBaseChainParams::TESTNET);
+    const Consensus::Params& testnetParams = chainParams->GetConsensus();
+
+    int64_t bit = testnetParams.vDeployments[Consensus::DEPLOYMENT_MW].bit;
+    int64_t nStartTime = testnetParams.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime;
+    int64_t nTimeout = testnetParams.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout;
+
+    assert(nStartTime < nTimeout);
+
+    // In the first chain, test that the bit is set by CBV until it has failed.
+    // In the second chain, test the bit is set by CBV while STARTED and
+    // LOCKED-IN, and then no longer set while ACTIVE.
+    VersionBitsTester firstChain;
+
+    // Start generating blocks before nStartTime
+    int64_t nTime = nStartTime - 1;
+
+    // Before MedianTimePast of the chain has crossed nStartTime, the bit
+    // should not be set.
+    CBlockIndex* lastBlock = firstChain.Mine(252, nTime, VERSIONBITS_TOP_BITS).Tip();
+    BOOST_CHECK_EQUAL(ComputeBlockVersion(lastBlock, testnetParams) & (1 << bit), 0);
+
+    // Mine 251 more blocks at the old time, and check that CBV isn't setting the bit yet.
+    for (int i = 1; i < 252; i++) {
+        lastBlock = firstChain.Mine(252 + i, nTime, VERSIONBITS_TOP_BITS).Tip();
+        BOOST_CHECK_EQUAL(ComputeBlockVersion(lastBlock, testnetParams) & (1 << bit), 0);
+    }
+    // Now mine 5 more blocks at the start time -- MTP should not have passed yet, so
+    // CBV should still not yet set the bit.
+    nTime = nStartTime;
+    for (int i = 252; i <= 256; i++) {
+        lastBlock = firstChain.Mine(252 + i, nTime, VERSIONBITS_TOP_BITS).Tip();
+        BOOST_CHECK_EQUAL(ComputeBlockVersion(lastBlock, testnetParams) & (1 << bit), 0);
+    }
+
+    // Advance to the next period and transition to STARTED,
+    lastBlock = firstChain.Mine(756, nTime, VERSIONBITS_TOP_BITS).Tip();
+    // so ComputeBlockVersion should now set the bit,
+    BOOST_CHECK((ComputeBlockVersion(lastBlock, testnetParams) & (1 << bit)) != 0);
+    // and should also be using the VERSIONBITS_TOP_BITS.
+    BOOST_CHECK_EQUAL(ComputeBlockVersion(lastBlock, testnetParams) & VERSIONBITS_TOP_MASK, VERSIONBITS_TOP_BITS);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

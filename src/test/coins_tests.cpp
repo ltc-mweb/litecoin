@@ -35,8 +35,17 @@ class CCoinsViewTest : public CCoinsView
 {
     uint256 hashBestBlock_;
     std::map<COutPoint, Coin> map_;
+    libmw::CoinsViewRef mw_view_;
 
 public:
+    CCoinsViewTest()
+    {
+        mw_view_ = libmw::node::Initialize(
+            libmw::ChainParams{GetDataDir().string(), "thrp"},
+            {nullptr}, // MW: Load this first
+            nullptr);
+    }
+
     NODISCARD bool GetCoin(const COutPoint& outpoint, Coin& coin) const override
     {
         std::map<COutPoint, Coin>::const_iterator it = map_.find(outpoint);
@@ -69,6 +78,11 @@ public:
         if (!hashBlock.IsNull())
             hashBestBlock_ = hashBlock;
         return true;
+    }
+    
+    libmw::CoinsViewRef GetMWView() override
+    {
+        return mw_view_;
     }
 };
 
@@ -587,26 +601,38 @@ void GetCoinsMapEntry(const CCoinsMap& map, CAmount& value, char& flags)
     }
 }
 
-void WriteCoinsViewEntry(CCoinsView& view, CAmount value, char flags)
+void WriteCoinsViewEntry(CCoinsView& view, libmw::CoinsViewRef mw_view, CAmount value, char flags)
 {
     CCoinsMap map;
     InsertCoinsMapEntry(map, value, flags);
-    libmw::CoinsViewRef coinsView{ nullptr };
-    BOOST_CHECK(view.BatchWrite(map, {}, coinsView));
+    BOOST_CHECK(view.BatchWrite(map, {}, mw_view));
 }
 
 class SingleEntryCacheTest
 {
 public:
     SingleEntryCacheTest(CAmount base_value, CAmount cache_value, char cache_flags)
+        : root(GetCoinsViewDB()), base(root.get()), cache(&base)
     {
-        WriteCoinsViewEntry(base, base_value, base_value == ABSENT ? NO_ENTRY : DIRTY);
+        WriteCoinsViewEntry(base, cache.GetMWView(), base_value, base_value == ABSENT ? NO_ENTRY : DIRTY);
         cache.usage() += InsertCoinsMapEntry(cache.map(), cache_value, cache_flags);
     }
 
-    CCoinsView root;
-    CCoinsViewCacheTest base{&root};
-    CCoinsViewCacheTest cache{&base};
+    static std::unique_ptr<CCoinsViewDB> GetCoinsViewDB()
+    {
+        std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
+        libmw::CoinsViewRef mw_view = libmw::node::Initialize(
+            libmw::ChainParams{GetDataDir().string(), "thrp"},
+            {nullptr}, // MW: Load this first
+            nullptr);
+        root->SetMWView(mw_view);
+        return root;
+    }
+
+    std::unique_ptr<CCoinsViewDB> root;
+
+    CCoinsViewCacheTest base;
+    CCoinsViewCacheTest cache;
 };
 
 static void CheckAccessCoin(CAmount base_value, CAmount cache_value, CAmount expected_value, char cache_flags, char expected_flags)
@@ -781,7 +807,7 @@ void CheckWriteCoins(CAmount parent_value, CAmount child_value, CAmount expected
     CAmount result_value;
     char result_flags;
     try {
-        WriteCoinsViewEntry(test.cache, child_value, child_flags);
+        WriteCoinsViewEntry(test.cache, test.cache.GetMWView().CreateCache(), child_value, child_flags);
         test.cache.SelfTest();
         GetCoinsMapEntry(test.cache.map(), result_value, result_flags);
     } catch (std::logic_error&) {

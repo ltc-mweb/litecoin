@@ -10,6 +10,7 @@
 #include <consensus/params.h>
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
+#include <mimblewimble/db.h>
 #include <miner.h>
 #include <net_processing.h>
 #include <noui.h>
@@ -80,6 +81,13 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         mempool.setSanityCheck(1.0);
         pblocktree.reset(new CBlockTreeDB(1 << 20, true));
         pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
+
+        libmw::CoinsViewRef mw_view = libmw::node::Initialize(
+            libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
+            {nullptr}, // MW: Load this first
+            std::make_shared<MWDBWrapper>(pcoinsdbview->GetDB()));
+        pcoinsdbview->SetMWView(mw_view);
+
         pcoinsTip.reset(new CCoinsViewCache(pcoinsdbview.get()));
         if (!LoadGenesisBlock(chainparams)) {
             throw std::runtime_error("LoadGenesisBlock failed.");

@@ -91,9 +91,9 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1517356801; // January 31st, 2018
 
         // Deployment of Mimblewimble (LIP-0002 and LIP-0003)
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 9; // MW: Figure out bit, nStartTime, and nTimeout
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 2; // MW: Figure out bit, nStartTime, and nTimeout
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = 0;// Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000002ee655bf00bf13b4cca");
@@ -213,9 +213,9 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1517356801; // January 31st, 2018
 
         // Deployment of Mimblewimble (LIP-0002 and LIP-0003)
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 9; // MW: Figure out bit, nStartTime, and nTimeout
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 2; // MW: Figure out bit, nStartTime, and nTimeout
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = 0; //Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000035ed7ece35dc93");
@@ -302,25 +302,25 @@ public:
         consensus.nPowTargetSpacing = 2.5 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
-        consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
-        consensus.nMinerConfirmationWindow = 2016;       // nPowTargetTimespan / nPowTargetSpacing
+        consensus.nRuleChangeActivationThreshold = 189; // 75% for testchains
+        consensus.nMinerConfirmationWindow = 252;       // nPowTargetTimespan / nPowTargetSpacing
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999;   // December 31, 2008
 
-        // Deployment of BIP68, BIP112, and BIP113.
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1483228800; // January 1, 2017
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1517356801;   // January 31st, 2018
+        //// Deployment of BIP68, BIP112, and BIP113.
+        //consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
+        //consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1483228800; // January 1, 2017
+        //consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1517356801;   // January 31st, 2018
 
-        // Deployment of SegWit (BIP141, BIP143, and BIP147)
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1483228800; // January 1, 2017
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1517356801;   // January 31st, 2018
+        //// Deployment of SegWit (BIP141, BIP143, and BIP147)
+        //consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
+        //consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1483228800; // January 1, 2017
+        //consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1517356801;   // January 31st, 2018
 
         // Deployment of Mimblewimble (LIP-0002 and LIP-0003)
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 9; // MW: Figure out bit, nStartTime, and nTimeout
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = 1601424000; // September 30, 2020
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 2; // MW: Figure out bit, nStartTime, and nTimeout
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = 1601450001; // September 30, 2020
         consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = 1632960000;   // Spetember 30, 2021
         
         // The best chain should have at least this much work.
@@ -352,7 +352,7 @@ public:
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
-        bech32_hrp = "tmwltc";
+        bech32_hrp = "tltc";
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_mwtest, pnSeed6_mwtest + ARRAYLEN(pnSeed6_mwtest));
 
@@ -404,7 +404,7 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // Deployment of Mimblewimble (LIP-0002 and LIP-0003)
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 9; // MW: Figure out bit, nStartTime, and nTimeout
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 2; // MW: Figure out bit, nStartTime, and nTimeout
         consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
