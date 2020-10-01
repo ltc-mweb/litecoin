@@ -1178,7 +1178,7 @@ fi
 
 
 dnl AC_CHECK_LIB([fmt],[main],MW_LIBS=-lfmt,AC_MSG_ERROR(libfmt missing))
-AC_CHECK_LIB([libmw],[main],MW_LIBS=-llibmw,AC_MSG_ERROR(libmw missing))
+AC_CHECK_LIB([mw],[main],MW_LIBS=-lmw,AC_MSG_ERROR(libmw missing))
 dnl MW_LIBS+= -ldl
 
 save_CXXFLAGS="${CXXFLAGS}"

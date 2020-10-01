@@ -510,7 +510,7 @@ litecoind_LDADD = \
   $(LIBSECP256K1) \
   $(MW_LIBS)
 
-#MW_LIBS = -llibmw
+#MW_LIBS = -lmw
 litecoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
 # bitcoin-cli binary #
