@@ -1541,8 +1541,10 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 CBlock block;
                 CBlockIndex* pindex = LookupBlockIndex(pcoinsdbview->GetBestBlock());
-                if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
-                    return error("AppInitMain(): ReadBlockFromDisk() failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
+                if (pindex != nullptr) {
+                    if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
+                        return error("AppInitMain(): ReadBlockFromDisk() failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
+                    }
                 }
 
                 g_dbview = libmw::node::Initialize(
