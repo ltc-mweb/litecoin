@@ -136,6 +136,7 @@ private:
 
     // Configuration parameters for the block size
     bool fIncludeWitness;
+    bool fIncludeMWEB;
     unsigned int nBlockMaxWeight;
     CFeeRate blockMinFeeRate;
 

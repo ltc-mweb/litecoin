@@ -348,6 +348,176 @@ static CTransactionRef SendMoney(interfaces::Chain::Lock& locked_chain, CWallet 
     return tx;
 }
 
+static UniValue pegin(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "pegin",
+                "\nSend an amount to the MWEB (Peg-In)." +
+                    HelpRequiringPassphrase(pwallet) + "\n",
+                {
+                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
+                },
+                RPCResult{
+                    "\"txid\"                  (string) The transaction id.\n"},
+                RPCExamples{
+                    HelpExampleCli("pegin", "10.0")},
+            }
+                .ToString());
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+
+    // Amount
+    CAmount nAmount = AmountFromValue(request.params[0]);
+    if (nAmount <= 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+    }
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    CAmount curBalance = pwallet->GetBalance();
+
+    // Check amount
+    if (nAmount > curBalance) {
+        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
+    }
+
+    if (pwallet->GetBroadcastTransactions() && !g_connman) {
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    }
+
+    auto pegin_tx = libmw::wallet::CreatePegInTx(pwallet->GetMWWallet(), nAmount);
+
+    // Create and send the transaction
+    mapValue_t mapValue;
+    mapValue["commitment"] = HexStr(std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend()), false);
+
+    CReserveKey reservekey(pwallet);
+    CAmount nFeeRequired;
+    std::string strError;
+    std::vector<CRecipient> vecSend;
+    int nChangePosRet = -1;
+
+    CScript pegin_script;
+    pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+    pegin_script << std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
+
+    CRecipient recipient = {pegin_script, nAmount, false};
+    vecSend.push_back(recipient);
+    CTransactionRef tx;
+    if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, CMWTx(pegin_tx.first))) {
+        if (nAmount + nFeeRequired > curBalance)
+            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    CValidationState state;
+    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
+        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    return tx->GetHash().GetHex();
+}
+
+static UniValue pegout(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 2)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "pegout",
+                "\nSend an amount back to the canonical LTC chain (Peg-Out)." +
+                    HelpRequiringPassphrase(pwallet) + "\n",
+                {
+                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
+                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The litecoin address to send to."},
+                },
+                RPCResult{
+                    "\"txid\"                  (string) The transaction id.\n"},
+                RPCExamples{
+                    HelpExampleCli("pegout", "10.0 tltc1qd9hf4rh9zlrdxqwvqwa88nq67pzz0agstxmql6")},
+            }
+                .ToString());
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+
+    // Amount
+    CAmount nAmount = AmountFromValue(request.params[0]);
+    if (nAmount <= 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+    }
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    // MW: TODO - Lookup MWEB balance
+    //CAmount curBalance = pwallet->GetBalance();
+
+    //// Check amount
+    //if (nAmount > curBalance) {
+    //    throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
+    //}
+
+    if (pwallet->GetBroadcastTransactions() && !g_connman) {
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    }
+
+    if (!request.params[1].isStr()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a valid address");
+    }
+    std::string address = request.params[1].get_str();
+    auto pegout_tx = libmw::wallet::CreatePegOutTx(pwallet->GetMWWallet(), nAmount, address);
+
+    // Create and send the transaction
+    mapValue_t mapValue;
+
+    CReserveKey reservekey(pwallet);
+    CAmount nFeeRequired;
+    std::string strError;
+    std::vector<CRecipient> vecSend;
+    int nChangePosRet = -1;
+
+    CScript pegout_script;
+
+    CMutableTransaction txNew;
+    txNew.m_mwtx = CMWTx(pegout_tx.first);
+
+    CTransactionRef tx = MakeTransactionRef(txNew);
+    //if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, CMWTx(pegout_tx.first))) {
+    //    //if (nAmount + nFeeRequired > curBalance)
+    //    //    strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
+    //    throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    //}
+    CValidationState state;
+    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
+        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    return tx->GetHash().GetHex();
+}
+
 static UniValue sendtoaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -4209,6 +4379,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "listwallets",                      &listwallets,                   {} },
     { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },
     { "wallet",             "lockunspent",                      &lockunspent,                   {"unlock","transactions"} },
+    { "wallet",             "pegin",                            &pegin,                         {"amount"} },
+    { "wallet",             "pegout",                           &pegout,                        {"amount"} },
     { "wallet",             "removeprunedfunds",                &removeprunedfunds,             {"txid"} },
     { "wallet",             "rescanblockchain",                 &rescanblockchain,              {"start_height", "stop_height"} },
     { "wallet",             "sendmany",                         &sendmany,                      {"dummy","amounts","minconf","comment","subtractfeefrom","replaceable","conf_target","estimate_mode"} },

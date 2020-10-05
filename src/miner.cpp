@@ -83,6 +83,7 @@ void BlockAssembler::resetBlock()
     nBlockWeight = 4000;
     nBlockSigOpsCost = 400;
     fIncludeWitness = false;
+    fIncludeMWEB = false;
 
     // These counters do not include coinbase tx
     nBlockTx = 0;
@@ -137,6 +138,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // TODO: replace this with a call to main to assess validity of a mempool
     // transaction (which in most cases can be a no-op).
     fIncludeWitness = IsWitnessEnabled(pindexPrev, chainparams.GetConsensus());
+
+    fIncludeMWEB = IsMimblewimbleEnabled(pindexPrev, chainparams.GetConsensus());
 
     int nPackagesSelected = 0;
     int nDescendantsUpdated = 0;
@@ -217,6 +220,9 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
             return false;
         if (!fIncludeWitness && it->GetTx().HasWitness())
             return false;
+        if (!fIncludeMWEB && it->GetTx().HasMWData()) {
+            return false;
+        }
     }
     return true;
 }
@@ -466,6 +472,7 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 // MW: Generate and add HogEx transaction
 void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
 {    
+    LogPrintf("Adding HogEx \n");
     CMutableTransaction hogExTransaction;
     hogExTransaction.m_hogEx = true;
 
@@ -491,8 +498,9 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     // Add Peg-in inputs
     //
     std::vector<libmw::PegIn> pegins;
-    for (const auto& pTx : pblock->vtx) {
-        if (pTx->HasMWData()) {
+    for (size_t i = 0; i < pblock->vtx.size(); i++) {
+        CTransactionRef pTx = pblock->vtx[i];
+        if (pTx != nullptr && pTx->HasMWData()) {
             for (size_t nOut = 0; nOut < pTx->vout.size(); nOut++) {
                 const auto& output = pTx->vout[nOut];
                 int version;
@@ -510,6 +518,10 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
                     }
                 }
             }
+
+            CMutableTransaction mutable_tx(*pTx);
+            mutable_tx.m_mwtx.SetNull();
+            pblock->vtx[i] = MakeTransactionRef(std::move(mutable_tx));
         }
     }
 
@@ -554,6 +566,9 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     hogExTransaction.vout[0].nValue = pegin_total - (pegout_total + mw_fee);
 
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
+    pblock->mwBlock = CMWBlock(mw_block);
     pblocktemplate->vTxFees.push_back(CAmount(mw_fee));
     pblocktemplate->vTxSigOpsCost.push_back(WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx.back()));
+
+    LogPrintf("Finished adding HogEx \n");
 }

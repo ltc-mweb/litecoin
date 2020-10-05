@@ -1539,10 +1539,15 @@ bool AppInitMain(InitInterfaces& interfaces)
                 pcoinsdbview.reset(new CCoinsViewDB(nCoinDBCache, false, fReset || fReindexChainState));
                 pcoinscatcher.reset(new CCoinsViewErrorCatcher(pcoinsdbview.get()));
 
-                const uint256 best_block = pcoinsdbview->GetBestBlock();
+                CBlock block;
+                CBlockIndex* pindex = LookupBlockIndex(pcoinsdbview->GetBestBlock());
+                if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
+                    return error("AppInitMain(): ReadBlockFromDisk() failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
+                }
+
                 g_dbview = libmw::node::Initialize(
                     libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
-                    { nullptr }, // MW: Load this first
+                    block.mwBlock.m_block.GetHeader(),
                     std::make_shared<MWDBWrapper>(pcoinsdbview->GetDB())
                 );
                 pcoinsdbview->SetMWView(g_dbview);

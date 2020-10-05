@@ -156,11 +156,18 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
     return nSigOps;
 }
 
-bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fCheckDuplicateInputs)
+bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFromBlock)
 {
     // Basic checks that don't depend on any context
 
-    if (!tx.m_mwtx.IsNull() && tx.vin.empty() && tx.vout.empty()) {
+    // HasMWData() is true only when mweb txs being shared outside of a block (for use by mempools).
+    // Blocks themselves do not store mweb txs like normal txs.
+    // They are instead stored and processed separately in the mweb block.
+    if (fFromBlock && tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
+        return state.DoS(10, false, REJECT_INVALID, "bad-txns-mwdata-in-block");
+    }
+
+    if (tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
         // Do nothing. A mimblewimble tx with 0 inputs & 0 outputs is valid.
     } else {
         if (tx.vin.empty())
@@ -168,6 +175,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
         if (tx.vout.empty())
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-vout-empty");
     }
+
     // Size limits (this doesn't take the witness into account, as that hasn't been checked for malleability)
     if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-oversize");
@@ -185,14 +193,12 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-txouttotal-toolarge");
     }
 
-    // Check for duplicate inputs - note that this check is slow so we skip it in CheckBlock
-    if (fCheckDuplicateInputs) {
-        std::set<COutPoint> vInOutPoints;
-        for (const auto& txin : tx.vin)
-        {
-            if (!vInOutPoints.insert(txin.prevout).second)
-                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
-        }
+    // Check for duplicate inputs
+    std::set<COutPoint> vInOutPoints;
+    for (const auto& txin : tx.vin)
+    {
+        if (!vInOutPoints.insert(txin.prevout).second)
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
     }
 
     if (tx.IsCoinBase())

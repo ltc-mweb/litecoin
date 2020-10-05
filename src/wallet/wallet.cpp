@@ -188,7 +188,7 @@ const CWalletTx* CWallet::GetWalletTx(const uint256& hash) const
     return &(it->second);
 }
 
-CPubKey CWallet::GenerateNewKey(WalletBatch &batch, bool internal)
+CKey CWallet::GenerateNewKey(WalletBatch &batch, bool internal)
 {
     assert(!IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS));
     assert(!IsWalletFlagSet(WALLET_FLAG_BLANK_WALLET));
@@ -222,7 +222,7 @@ CPubKey CWallet::GenerateNewKey(WalletBatch &batch, bool internal)
     if (!AddKeyPubKeyWithDB(batch, secret, pubkey)) {
         throw std::runtime_error(std::string(__func__) + ": AddKey failed");
     }
-    return pubkey;
+    return secret;
 }
 
 void CWallet::DeriveNewChildKey(WalletBatch &batch, CKeyMetadata& metadata, CKey& secret, bool internal)
@@ -2782,7 +2782,7 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
 }
 
 bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet,
-                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign)
+                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, CMWTx mwtx)
 {
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;
@@ -2806,7 +2806,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
     }
 
     CMutableTransaction txNew;
-
+    txNew.m_mwtx = mwtx;
     txNew.nLockTime = GetLocktimeForNewTransaction(locked_chain);
 
     FeeCalculation feeCalc;
@@ -3453,7 +3453,7 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
                 internal = true;
             }
 
-            CPubKey pubkey(GenerateNewKey(batch, internal));
+            CPubKey pubkey(GenerateNewKey(batch, internal).GetPubKey());
             AddKeypoolPubkeyWithDB(pubkey, internal, batch);
         }
         if (missingInternal + missingExternal > 0) {
@@ -3573,7 +3573,7 @@ bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
         if (!ReserveKeyFromKeyPool(nIndex, keypool, internal) && !IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
             if (IsLocked()) return false;
             WalletBatch batch(*database);
-            result = GenerateNewKey(batch, internal);
+            result = GenerateNewKey(batch, internal).GetPubKey();
             return true;
         }
         KeepKey(nIndex);
@@ -4588,4 +4588,61 @@ bool CWallet::AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info)
     mapKeyMetadata[pubkey.GetID()].has_key_origin = true;
     mapKeyMetadata[pubkey.GetID()].hdKeypath = WriteHDKeypath(info.path);
     return WriteKeyMetadata(mapKeyMetadata[pubkey.GetID()], pubkey, true);
+}
+
+
+class MWWallet : public libmw::IWallet
+{
+public:
+    MWWallet(CWallet* pWallet)
+        : m_pWallet(pWallet), m_pBatch(std::make_unique<WalletBatch>(pWallet->GetDBHandle())) {}
+
+    libmw::PrivateKey GenerateNewKey() final
+    {
+        CKey key = m_pWallet->GenerateNewKey(*m_pBatch);
+
+        libmw::PrivateKey privateKey;
+        std::copy(key.begin(), key.end(), privateKey.keyBytes.data());
+        return privateKey;
+    }
+
+    libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final
+    {
+        // MW: TODO - Implement
+        throw std::exception();
+    }
+
+    std::vector<libmw::Coin> ListCoins() const final
+    {
+        std::vector<libmw::Coin> coins;
+        DBErrors errors = m_pBatch->FindMWCoins(coins);
+        if (errors != DBErrors::LOAD_OK) {
+            throw std::exception(); // MW: TODO - Determine exception type
+        }
+
+        return coins;
+    }
+    
+    void AddCoins(const std::vector<libmw::Coin>& coins) final
+    {
+        for (const auto& coin : coins) {
+            m_pBatch->WriteMWCoin(coin);
+        }
+    }
+    
+    void DeleteCoins(const std::vector<libmw::Coin>& coins) final
+    {
+        for (const auto& coin : coins) {
+            m_pBatch->EraseMWCoin(coin.commitment);
+        }
+    }
+
+private:
+    CWallet* m_pWallet;
+    std::unique_ptr<WalletBatch> m_pBatch;
+};
+
+libmw::IWallet::Ptr CWallet::GetMWWallet()
+{
+    return std::shared_ptr<libmw::IWallet>(new MWWallet(this));
 }

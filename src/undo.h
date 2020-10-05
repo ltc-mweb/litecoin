@@ -112,9 +112,8 @@ public:
         READWRITE(vtxundo);
 
         if (mwundo.pUndo != nullptr) {
-            std::vector<uint8_t> bytes;
+            std::vector<uint8_t> bytes = libmw::SerializeBlockUndo(mwundo);
             READWRITE(bytes);
-            mwundo = libmw::DeserializeBlockUndo(bytes);
         }
     }
 };

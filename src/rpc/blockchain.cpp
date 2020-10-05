@@ -436,6 +436,8 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
             setDepends.insert(txin.prevout.hash.ToString());
     }
 
+    info.pushKV("ismweb", tx.HasMWData());
+
     UniValue depends(UniValue::VARR);
     for (const std::string& dep : setDepends)
     {

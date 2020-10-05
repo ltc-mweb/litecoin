@@ -25,8 +25,8 @@ public:
     }
 
 private:
-    std::shared_ptr<CDBBatch> m_pBatch;
     CDBWrapper* m_pDB;
+    std::shared_ptr<CDBBatch> m_pBatch;
 };
 
 class MWDBIterator : public libmw::IDBIterator

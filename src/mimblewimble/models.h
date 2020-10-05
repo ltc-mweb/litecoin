@@ -17,6 +17,8 @@ struct CMWBlock
     libmw::BlockRef m_block;
 
     CMWBlock() = default;
+    CMWBlock(const libmw::BlockRef& block)
+        : m_block(block) { }
 
     ADD_SERIALIZE_METHODS;
 
@@ -29,7 +31,7 @@ struct CMWBlock
             READWRITE(bytes);
 
             if (!bytes.empty()) {
-                m_block = libmw::DeserializeBlock(std::move(bytes));
+                m_block = libmw::DeserializeBlock(bytes);
             }
         } else {
             // Serialize
@@ -53,6 +55,8 @@ struct CMWTx
     libmw::TxRef m_transaction;
 
     CMWTx() = default;
+    CMWTx(const libmw::TxRef& tx)
+        : m_transaction(tx) { }
 
     ADD_SERIALIZE_METHODS;
 
@@ -65,7 +69,7 @@ struct CMWTx
             READWRITE(bytes);
 
             if (!bytes.empty()) {
-                m_transaction = libmw::DeserializeTx(std::move(bytes));
+                m_transaction = libmw::DeserializeTx(bytes);
             }
         } else {
             // Serialize
@@ -79,6 +83,7 @@ struct CMWTx
     }
 
     bool IsNull() const noexcept { return m_transaction.pTransaction == nullptr; }
+    void SetNull() noexcept { m_transaction.pTransaction = nullptr; }
 };
 
 #endif // LITECOIN_MIMBLEWIMBLE_MODELS_H

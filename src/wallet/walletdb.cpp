@@ -200,7 +200,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             CWalletTx wtx(nullptr /* pwallet */, MakeTransactionRef());
             ssValue >> wtx;
             CValidationState state;
-            if (!(CheckTransaction(*wtx.tx, state) && (wtx.GetHash() == hash) && state.IsValid()))
+            if (!(CheckTransaction(*wtx.tx, state, false) && (wtx.GetHash() == hash) && state.IsValid()))
                 return false;
 
             // Undo serialize changes in 31600
@@ -781,4 +781,85 @@ bool WalletBatch::ReadVersion(int& nVersion)
 bool WalletBatch::WriteVersion(int nVersion)
 {
     return m_batch.WriteVersion(nVersion);
+}
+
+//
+// MWEB
+//
+struct MWCoin {
+    libmw::Coin coin;
+
+    MWCoin() = default;
+    MWCoin(const libmw::Coin& in)
+        : coin(in) { }
+
+    ADD_SERIALIZE_METHODS
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(coin.commitment);
+        READWRITE(coin.amount);
+        READWRITE(coin.key.bip32Path);
+        READWRITE(coin.key.keyBytes);
+    }
+};
+
+bool WalletBatch::WriteMWCoin(const libmw::Coin& coin)
+{
+    return WriteIC(std::make_pair(std::string("mweb_tx"), coin.commitment), MWCoin{coin});
+}
+
+bool WalletBatch::EraseMWCoin(const libmw::Commitment& commitment)
+{
+    return EraseIC(std::make_pair(std::string("mweb_tx"), commitment));
+}
+
+DBErrors WalletBatch::FindMWCoins(std::vector<libmw::Coin>& coins)
+{
+    DBErrors result = DBErrors::LOAD_OK;
+
+    try {
+        int nMinVersion = 0;
+        if (m_batch.Read((std::string) "minversion", nMinVersion)) {
+            if (nMinVersion > FEATURE_LATEST)
+                return DBErrors::TOO_NEW;
+        }
+
+        // Get cursor
+        Dbc* pcursor = m_batch.GetCursor();
+        if (!pcursor) {
+            LogPrintf("Error getting wallet database cursor\n");
+            return DBErrors::CORRUPT;
+        }
+
+        while (true) {
+            // Read next record
+            CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+            CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+            int ret = m_batch.ReadAtCursor(pcursor, ssKey, ssValue);
+            if (ret == DB_NOTFOUND)
+                break;
+            else if (ret != 0) {
+                LogPrintf("Error reading next record from wallet database\n");
+                return DBErrors::CORRUPT;
+            }
+
+            std::string strType;
+            ssKey >> strType;
+            if (strType == "mweb_tx") {
+                MWCoin mw_coin;
+                ssValue >> mw_coin;
+
+                coins.push_back(std::move(mw_coin.coin));
+            }
+        }
+        pcursor->close();
+    } catch (const boost::thread_interrupted&) {
+        throw;
+    } catch (...) {
+        result = DBErrors::CORRUPT;
+    }
+
+    return result;
 }

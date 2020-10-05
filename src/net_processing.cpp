@@ -102,7 +102,7 @@ namespace {
     int nSyncStarted GUARDED_BY(cs_main) = 0;
 
     /** Number of nodes from which the mimblewimble txhashset has been requested. */
-    int nMWStateRequested GUARDED_BY(cs_main) = 0;
+    //int nMWStateRequested GUARDED_BY(cs_main) = 0;
 
     /**
      * Sources of received blocks, saved to be able to send them reject

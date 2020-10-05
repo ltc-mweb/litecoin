@@ -309,14 +309,14 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999;   // December 31, 2008
 
         //// Deployment of BIP68, BIP112, and BIP113.
-        //consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        //consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1483228800; // January 1, 2017
-        //consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1517356801;   // January 31st, 2018
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         //// Deployment of SegWit (BIP141, BIP143, and BIP147)
-        //consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
-        //consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1483228800; // January 1, 2017
-        //consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1517356801;   // January 31st, 2018
+        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // Deployment of Mimblewimble (LIP-0002 and LIP-0003)
         consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 2; // MW: Figure out bit, nStartTime, and nTimeout
@@ -329,10 +329,10 @@ public:
         // By default assume that the signatures in ancestors of this block are valid.
         //consensus.defaultAssumeValid = uint256S("0xf19dfbdc0e6c399ef45d315d89fc3e972dd8da74503252bacaf664f64d86e6f6"); //1174621
 
-        pchMessageStart[0] = 0xa1;
-        pchMessageStart[1] = 0xb2;
-        pchMessageStart[2] = 0x46;
-        pchMessageStart[3] = 0x80;
+        pchMessageStart[0] = 0xa2;
+        pchMessageStart[1] = 0xb3;
+        pchMessageStart[2] = 0x47;
+        pchMessageStart[3] = 0x81;
         nDefaultPort = 29335;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 2;
