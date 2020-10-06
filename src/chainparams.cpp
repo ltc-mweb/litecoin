@@ -329,7 +329,7 @@ public:
         // By default assume that the signatures in ancestors of this block are valid.
         //consensus.defaultAssumeValid = uint256S("0xf19dfbdc0e6c399ef45d315d89fc3e972dd8da74503252bacaf664f64d86e6f6"); //1174621
 
-        pchMessageStart[0] = 0xa3;
+        pchMessageStart[0] = 0xa2;
         pchMessageStart[1] = 0xb3;
         pchMessageStart[2] = 0x47;
         pchMessageStart[3] = 0x81;
