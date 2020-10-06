@@ -2055,9 +2055,12 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // MW: Check activation
     const bool mw_enabled = IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus());
-    if (mw_enabled == block.mwBlock.IsNull()) {
-        return state.DoS(100, error("ConnectBlock(): Mimblewimble activation not honored"),
-            REJECT_INVALID, "bad-mw-data");
+    if (mw_enabled && block.mwBlock.IsNull()) {
+        return state.DoS(100, error("ConnectBlock(): Mimblewimble activated, but no MWEB included"),
+            REJECT_INVALID, "missing-mweb");
+    } else if (!mw_enabled && !block.mwBlock.IsNull()) {
+        return state.DoS(100, error("ConnectBlock(): Mimblewimble not activated, but MWEB included"),
+            REJECT_INVALID, "unexpected-mweb");
     }
 
     // MW: Connect block to chain
@@ -3402,7 +3405,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     const bool hasHogEx = block.HasHogEx(mwBlockHash);
     if (!hasHogEx) {
         if (!block.mwBlock.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : unexpected mimblewimble data found", __func__));
+            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : No HogEx, but MWEB found", __func__));
         }
     }
 
@@ -3411,7 +3414,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     // So at this point, no txs should contain mw data.
     for (const auto& tx : block.vtx) {
         if (tx->HasMWData()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : unexpected mimblewimble data found", __func__));
+            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : Block contains transactions with mw data attached", __func__));
         }
     }
 
