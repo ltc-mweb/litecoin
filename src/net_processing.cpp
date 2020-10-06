@@ -925,6 +925,7 @@ static std::shared_ptr<const CBlock> most_recent_block GUARDED_BY(cs_most_recent
 static std::shared_ptr<const CBlockHeaderAndShortTxIDs> most_recent_compact_block GUARDED_BY(cs_most_recent_block);
 static uint256 most_recent_block_hash GUARDED_BY(cs_most_recent_block);
 static bool fWitnessesPresentInMostRecentCompactBlock GUARDED_BY(cs_most_recent_block);
+static bool fMWPresentInMostRecentCompactBlock GUARDED_BY(cs_most_recent_block);
 
 /**
  * Maintain state about the best-seen block and fast-announce a compact block
@@ -941,8 +942,8 @@ void PeerLogicValidation::NewPoWValidBlock(const CBlockIndex *pindex, const std:
         return;
     nHighestFastAnnounce = pindex->nHeight;
 
-    // MW: TODO - Handle this
     bool fWitnessEnabled = IsWitnessEnabled(pindex->pprev, Params().GetConsensus());
+    bool mweb_enabled = IsMimblewimbleEnabled(pindex->pprev, Params().GetConsensus());
     uint256 hashBlock(pblock->GetHash());
 
     {
@@ -951,9 +952,10 @@ void PeerLogicValidation::NewPoWValidBlock(const CBlockIndex *pindex, const std:
         most_recent_block = pblock;
         most_recent_compact_block = pcmpctblock;
         fWitnessesPresentInMostRecentCompactBlock = fWitnessEnabled;
+        fMWPresentInMostRecentCompactBlock = mweb_enabled;
     }
 
-    connman->ForEachNode([this, &pcmpctblock, pindex, &msgMaker, fWitnessEnabled, &hashBlock](CNode* pnode) {
+    connman->ForEachNode([this, &pcmpctblock, pindex, &msgMaker, fWitnessEnabled, mweb_enabled, &hashBlock](CNode* pnode) {
         AssertLockHeld(cs_main);
 
         // TODO: Avoid the repeated-serialization here
@@ -964,6 +966,7 @@ void PeerLogicValidation::NewPoWValidBlock(const CBlockIndex *pindex, const std:
         // If the peer has, or we announced to them the previous block already,
         // but we don't think they have this one, go ahead and announce it
         if (state.fPreferHeaderAndIDs && (!fWitnessEnabled || state.fWantsCmpctWitness) &&
+                (!mweb_enabled || state.fWantsCmpctMW) &&
                 !PeerHasHeader(&state, pindex) && PeerHasHeader(&state, pindex->pprev)) {
 
             LogPrint(BCLog::NET, "%s sending header-and-ids %s to peer=%d\n", "PeerLogicValidation::NewPoWValidBlock",
@@ -1142,12 +1145,14 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
     std::shared_ptr<const CBlock> a_recent_block;
     std::shared_ptr<const CBlockHeaderAndShortTxIDs> a_recent_compact_block;
     bool fWitnessesPresentInARecentCompactBlock;
+    bool fMWPresentInARecentCompactBlock;
     const Consensus::Params& consensusParams = chainparams.GetConsensus();
     {
         LOCK(cs_most_recent_block);
         a_recent_block = most_recent_block;
         a_recent_compact_block = most_recent_compact_block;
         fWitnessesPresentInARecentCompactBlock = fWitnessesPresentInMostRecentCompactBlock;
+        fMWPresentInARecentCompactBlock = fMWPresentInMostRecentCompactBlock;
     }
 
     bool need_activate_chain = false;
@@ -1269,16 +1274,16 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
                 int nSendFlags = fPeerWantsWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
                 nSendFlags |= fPeerWantsMW ? 0 : SERIALIZE_NO_MIMBLEWIMBLE;
 
-                //if (CanDirectFetch(consensusParams) && pindex->nHeight >= chainActive.Height() - MAX_CMPCTBLOCK_DEPTH) {
-                //    if ((fPeerWantsWitness || !fWitnessesPresentInARecentCompactBlock) && a_recent_compact_block && a_recent_compact_block->header.GetHash() == pindex->GetBlockHash()) {
-                //        connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, *a_recent_compact_block));
-                //    } else {
-                //        CBlockHeaderAndShortTxIDs cmpctblock(*pblock, fPeerWantsWitness);
-                //        connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, cmpctblock));
-                //    }
-                //} else {
+                if (CanDirectFetch(consensusParams) && pindex->nHeight >= chainActive.Height() - MAX_CMPCTBLOCK_DEPTH) {
+                    if ((fPeerWantsWitness || !fWitnessesPresentInARecentCompactBlock) && (fPeerWantsMW || !fMWPresentInARecentCompactBlock) && a_recent_compact_block && a_recent_compact_block->header.GetHash() == pindex->GetBlockHash()) {
+                        connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, *a_recent_compact_block));
+                    } else {
+                        CBlockHeaderAndShortTxIDs cmpctblock(*pblock, fPeerWantsWitness);
+                        connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, cmpctblock));
+                    }
+                } else {
                     connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::BLOCK, *pblock));
-                //}
+                }
             }
         }
 
@@ -1570,7 +1575,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
                 if (vGetData.size() > 0) {
                     if (nodestate->fSupportsDesiredCmpctVersion && vGetData.size() == 1 && mapBlocksInFlight.size() == 1 && pindexLast->pprev->IsValid(BLOCK_VALID_CHAIN)) {
                         // In any case, we want to download using a compact block, not a regular one
-                        vGetData[0] = CInv(MSG_BLOCK, vGetData[0].hash);
+                        vGetData[0] = CInv(MSG_CMPCT_BLOCK, vGetData[0].hash);
                     }
                     connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETDATA, vGetData));
                 }
@@ -2459,6 +2464,15 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
     if (strCommand == NetMsgType::CMPCTBLOCK && !fImporting && !fReindex) // Ignore blocks received while importing
     {
+        {
+            LOCK(cs_main);
+            CBlockIndex* pTip = chainActive.Tip();
+            assert(pTip);
+            if (IsMimblewimbleEnabled(pTip->pprev, chainparams.GetConsensus()) && !State(pfrom->GetId())->fWantsCmpctMW) {
+                vRecv.SetVersion(vRecv.GetVersion() | SERIALIZE_NO_MIMBLEWIMBLE); // MW: TODO - This may be already set
+            }
+        }
+
         CBlockHeaderAndShortTxIDs cmpctblock;
         vRecv >> cmpctblock;
 
@@ -2546,13 +2560,13 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (!fAlreadyInFlight && !CanDirectFetch(chainparams.GetConsensus()))
             return true;
 
-        if (IsWitnessEnabled(pindex->pprev, chainparams.GetConsensus()) && !nodestate->fSupportsDesiredCmpctVersion) {
+        if (IsWitnessEnabled(pindex->pprev, chainparams.GetConsensus()) && !nodestate->fWantsCmpctWitness) {
             // Don't bother trying to process compact blocks from v1 peers
             // after segwit activates.
             return true;
         }
 
-        if (IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus()) && !nodestate->fSupportsDesiredCmpctVersion) {
+        if (IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus()) && !nodestate->fWantsCmpctMW) {
             // Don't bother trying to process compact blocks from v1/v2 peers
             // after mimblewimble activates.
             return true;
