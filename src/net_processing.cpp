@@ -1279,9 +1279,11 @@ void static ProcessGetBlockData(CNode* pfrom, const CChainParams& chainparams, c
 
                 if (CanDirectFetch(consensusParams) && pindex->nHeight >= chainActive.Height() - MAX_CMPCTBLOCK_DEPTH) {
                     if ((fPeerWantsWitness || !fWitnessesPresentInARecentCompactBlock) && (fPeerWantsMW || !fMWPresentInARecentCompactBlock) && a_recent_compact_block && a_recent_compact_block->header.GetHash() == pindex->GetBlockHash()) {
+                        LogPrint(BCLog::NET, "Sending recent compact block with sendflags %d and mweb_data %s:%s \n", nSendFlags, pblock->mwBlock.IsNull() ? "false" : "true", a_recent_compact_block->mwBlock.IsNull() ? "false" : "true");
                         connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, *a_recent_compact_block));
                     } else {
                         CBlockHeaderAndShortTxIDs cmpctblock(*pblock, fPeerWantsWitness);
+                        LogPrint(BCLog::NET, "Sending compact block with sendflags %d and mweb_data %s:%s \n", nSendFlags, pblock->mwBlock.IsNull() ? "false" : "true", cmpctblock.mwBlock.IsNull() ? "false" : "true");
                         connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, cmpctblock));
                     }
                 } else {
@@ -2575,7 +2577,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
-        LogPrintf("Processing compact block. MWEB included: %s \n", cmpctblock.mwBlock.IsNull() ? "false" : "true");
+        LogPrint(BCLog::NET, "Processing compact block. MWEB included: %s \n", cmpctblock.mwBlock.IsNull() ? "false" : "true");
 
         // We want to be a bit conservative just to be extra careful about DoS
         // possibilities in compact block processing...
@@ -2761,8 +2763,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
         } // Don't hold cs_main when we call into ProcessNewBlock
         if (fBlockRead) {
-            LogPrintf("Processing blocktxn\n");
-
             bool fNewBlock = false;
             // Since we requested this block (it was in mapBlocksInFlight), force it to be processed,
             // even if it would not be a candidate for new tip (missing previous block, chain not long enough, etc)
