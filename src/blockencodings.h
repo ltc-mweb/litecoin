@@ -35,7 +35,8 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
         READWRITE(blockhash);
         uint64_t indexes_size = (uint64_t)indexes.size();
         READWRITE(COMPACTSIZE(indexes_size));
@@ -144,6 +145,7 @@ protected:
 
 public:
     CBlockHeader header;
+    CMWBlock mwBlock;
 
     // Dummy for deserialization
     CBlockHeaderAndShortTxIDs() {}
@@ -158,6 +160,8 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
+        const bool fAllowMW = !(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE);
+
         READWRITE(header);
         READWRITE(nonce);
 
@@ -192,7 +196,9 @@ public:
         if (ser_action.ForRead())
             FillShortTxIDSelector();
 
-        // MW: Add mimblewimble block
+        if (fAllowMW) {
+            READWRITE(mwBlock);
+        }
     }
 };
 
@@ -201,9 +207,11 @@ protected:
     std::vector<CTransactionRef> txn_available;
     size_t prefilled_count = 0, mempool_count = 0, extra_count = 0;
     CTxMemPool* pool;
+
 public:
     CBlockHeader header;
-    explicit PartiallyDownloadedBlock(CTxMemPool* poolIn) : pool(poolIn) {}
+    CMWBlock mweb_block;
+    explicit PartiallyDownloadedBlock(CTxMemPool* poolIn, const CMWBlock& mweb_blockIn) : pool(poolIn), mweb_block(mweb_blockIn) {}
 
     // extra_txn is a list of extra transactions to look at, in <witness hash, reference> form
     ReadStatus InitData(const CBlockHeaderAndShortTxIDs& cmpctblock, const std::vector<std::pair<uint256, CTransactionRef>>& extra_txn);
