@@ -3400,12 +3400,14 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
-    // No mw data is allowed in blocks that don't commit to mw data, as this would otherwise leave room for spam
-    uint256 mwBlockHash;
-    const bool hasHogEx = block.HasHogEx(mwBlockHash);
-    if (!hasHogEx) {
+    if (IsMimblewimbleEnabled(pindexPrev, consensusParams)) {
+        if (block.mwBlock.IsNull()) {
+            return state.DoS(100, false, REJECT_INVALID, "mweb-missing", true, strprintf("%s : Mimblewimble activated but MWEB not found", __func__));
+        }
+    } else {
+        // No mw data is allowed in blocks that don't commit to mw data, as this would otherwise leave room for spam
         if (!block.mwBlock.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : No HogEx, but MWEB found", __func__));
+            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : Mimblewimble not activated, but MWEB found", __func__));
         }
     }
 
