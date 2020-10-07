@@ -207,11 +207,11 @@ protected:
     std::vector<CTransactionRef> txn_available;
     size_t prefilled_count = 0, mempool_count = 0, extra_count = 0;
     CTxMemPool* pool;
-    CMWBlock mweb_block;
 
 public:
     CBlockHeader header;
-    explicit PartiallyDownloadedBlock(CTxMemPool* poolIn) : pool(poolIn) {}
+    CMWBlock mweb_block;
+    explicit PartiallyDownloadedBlock(CTxMemPool* poolIn, const CMWBlock& mweb_blockIn) : pool(poolIn), mweb_block(mweb_blockIn) {}
 
     // extra_txn is a list of extra transactions to look at, in <witness hash, reference> form
     ReadStatus InitData(const CBlockHeaderAndShortTxIDs& cmpctblock, const std::vector<std::pair<uint256, CTransactionRef>>& extra_txn);
