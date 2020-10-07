@@ -2572,6 +2572,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
+        LogPrintf("Processing compact block\n");
+
         // We want to be a bit conservative just to be extra careful about DoS
         // possibilities in compact block processing...
         if (pindex->nHeight <= chainActive.Height() + 2) {
@@ -2755,6 +2757,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
         } // Don't hold cs_main when we call into ProcessNewBlock
         if (fBlockRead) {
+            LogPrintf("Processing blocktxn\n");
+
             bool fNewBlock = false;
             // Since we requested this block (it was in mapBlocksInFlight), force it to be processed,
             // even if it would not be a candidate for new tip (missing previous block, chain not long enough, etc)
@@ -2804,6 +2808,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         vRecv >> *pblock;
 
         LogPrint(BCLog::NET, "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->GetId());
+        LogPrintf("Processing block\n");
 
         bool forceProcessing = false;
         const uint256 hash(pblock->GetHash());
