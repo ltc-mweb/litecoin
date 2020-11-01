@@ -773,7 +773,7 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
 class MockMWWallet : public libmw::IWallet
 {
 public:
-    libmw::PrivateKey GenerateNewKey() final
+    libmw::PrivateKey GenerateNewHDKey() final
     {
         libmw::PrivateKey privateKey;
         GetRandBytes(privateKey.keyBytes.data(), 32);
@@ -792,6 +792,7 @@ public:
 
     void AddCoins(const std::vector<libmw::Coin>& coins) final { }
     void DeleteCoins(const std::vector<libmw::Coin>& coins) final { }
+    uint64_t GetDepthInActiveChain(const libmw::BlockHash& canonical_block_hash) const final { return 0; }
 };
 
 BOOST_AUTO_TEST_CASE(test_mweb)

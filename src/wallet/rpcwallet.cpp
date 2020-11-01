@@ -488,7 +488,7 @@ static UniValue pegout(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a valid address");
     }
     std::string address = request.params[1].get_str();
-    auto pegout_tx = libmw::wallet::CreatePegOutTx(pwallet->GetMWWallet(), nAmount, address);
+    auto pegout_tx = libmw::wallet::CreatePegOutTx(pwallet->GetMWWallet(), nAmount, 1'000'000, address);
 
     // Create and send the transaction
     mapValue_t mapValue;

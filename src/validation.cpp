@@ -331,7 +331,7 @@ bool CheckFinalTx(const CTransaction &tx, int flags)
     // rules would be enforced for the next block and setting the
     // appropriate flags. At the present time no soft-forks are
     // scheduled, so no flags are set.
-    flags = std::max(flags, 0);
+    flags = std::max(flags, 0); // MW: TODO - Set & Check appropriate flags
 
     // CheckFinalTx() uses chainActive.Height()+1 to evaluate
     // nLockTime because when IsFinalTx() is called within
