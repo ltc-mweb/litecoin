@@ -142,6 +142,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     fIncludeMWEB = IsMimblewimbleEnabled(pindexPrev, chainparams.GetConsensus());
     if (fIncludeMWEB) {
         mweb_builder = libmw::miner::NewBuilder(nHeight, pcoinsTip->GetMWView());
+        mweb_fees = 0;
+        mweb_amount_change = 0;
+        hogex_inputs.clear();
+        hogex_outputs.clear();
     }
 
     int nPackagesSelected = 0;
@@ -481,6 +485,8 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
 bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
 {
+    LogPrintf("Adding MWEB Txn\n");
+
     CTransactionRef pTx = iter->GetSharedTx();
     libmw::TxRef mw_tx = pTx->m_mwtx.m_transaction;
 
@@ -502,7 +508,7 @@ bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
 
                 libmw::PegIn pegin;
                 pegin.amount = output.nValue;
-                std::move(program.begin(), program.begin() + WITNESS_MW_PEGIN_SIZE, pegin.commitment.begin());
+                std::copy_n(std::make_move_iterator(program.begin()), WITNESS_MW_PEGIN_SIZE, pegin.commitment.begin());
                 pegins.push_back(std::move(pegin));
             }
         }
@@ -536,13 +542,13 @@ bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     // Add transaction to MWEB
     //
-    if (!libmw::miner::AddTransaction(mweb_builder, pTx->m_mwtx.m_transaction, pegins)) {
+    if (libmw::miner::AddTransaction(mweb_builder, pTx->m_mwtx.m_transaction, pegins) != 0) {
         LogPrintf("Failed to add MWEB transaction\n");
         return false;
     }
 
-    std::move(vin.begin(), vin.end(), hogex_inputs.end());
-    std::move(vout.begin(), vout.end(), hogex_outputs.end());
+    hogex_inputs.insert(hogex_inputs.end(), vin.cbegin(), vin.cend());
+    hogex_outputs.insert(hogex_outputs.end(), vout.cbegin(), vout.cend());
     mweb_fees += mw_tx.GetTotalFee();
     mweb_amount_change += (CAmount(pegin_amount) - CAmount(pegout_amount));
 
@@ -578,7 +584,7 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     //
     // Add Peg-in inputs
     //
-    std::move(hogex_inputs.begin(), hogex_inputs.end(), hogExTransaction.vin.end());
+    hogExTransaction.vin.insert(hogExTransaction.vin.end(), hogex_inputs.cbegin(), hogex_inputs.cend());
 
     //
     // Add New HogAddr
@@ -594,10 +600,12 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     assert(MoneyRange(hogAddr.nValue));
     hogExTransaction.vout.push_back(std::move(hogAddr));
 
+    LogPrintf("Amount: %ld\n", hogAddr.nValue);
+
     //
     // Add Peg-out outputs
     //
-    std::move(hogex_outputs.begin(), hogex_outputs.end(), hogExTransaction.vout.end());
+    hogExTransaction.vout.insert(hogExTransaction.vout.end(), hogex_outputs.cbegin(), hogex_outputs.cend());
 
     //
     // Update block & template
