@@ -941,6 +941,51 @@ static UniValue getbalance(const JSONRPCRequest& request)
     return ValueFromAmount(pwallet->GetBalance(filter, min_depth));
 }
 
+static UniValue getmwebbalance(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || (request.params.size() > 3))
+        throw std::runtime_error(
+            RPCHelpMan{
+                "getmwebbalance",
+                "\nReturns the mweb balances.\n",
+                {
+                    {"dummy", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Remains for backward compatibility. Must be excluded or set to \"*\"."},
+                    {"minconf", RPCArg::Type::NUM, /* default */ "0", "Only include transactions confirmed at least this many times."},
+                    {"include_watchonly", RPCArg::Type::BOOL, /* default */ "false", "Also include balance in watch-only addresses (see 'importaddress')"},
+                },
+                RPCResult{
+                    "amount              (numeric) The total amount in " + CURRENCY_UNIT + " received for this wallet.\n"},
+                RPCExamples{
+                    "\nThe total amount in the wallet with 1 or more confirmations\n" + HelpExampleCli("getbalance", "") +
+                    "\nThe total amount in the wallet at least 6 blocks confirmed\n" + HelpExampleCli("getbalance", "\"*\" 6") +
+                    "\nAs a JSON-RPC call\n" + HelpExampleRpc("getbalance", "\"*\", 6")},
+            }
+                .ToString());
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+
+    UniValue json(UniValue::VOBJ);
+    libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
+    json.pushKV("confirmed", balances.confirmed_balance);
+    json.pushKV("unconfirmed", balances.unconfirmed_balance);
+    json.pushKV("locked", balances.locked_balance);
+    json.pushKV("immature", balances.immature_balance);
+
+    return json;
+}
+
 static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -4353,6 +4398,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getaddressesbylabel",              &getaddressesbylabel,           {"label"} },
     { "wallet",             "getaddressinfo",                   &getaddressinfo,                {"address"} },
     { "wallet",             "getbalance",                       &getbalance,                    {"dummy","minconf","include_watchonly"} },
+    { "wallet",             "getmwebbalance",                   &getmwebbalance,                {} },
     { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type"} },
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf"} },
