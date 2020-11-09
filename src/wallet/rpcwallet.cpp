@@ -978,10 +978,10 @@ static UniValue getmwebbalance(const JSONRPCRequest& request)
 
     UniValue json(UniValue::VOBJ);
     libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
-    json.pushKV("confirmed", balances.confirmed_balance);
-    json.pushKV("unconfirmed", balances.unconfirmed_balance);
-    json.pushKV("locked", balances.locked_balance);
-    json.pushKV("immature", balances.immature_balance);
+    json.pushKV("confirmed", ValueFromAmount(balances.confirmed_balance));
+    json.pushKV("unconfirmed", ValueFromAmount(balances.unconfirmed_balance));
+    json.pushKV("locked", ValueFromAmount(balances.locked_balance));
+    json.pushKV("immature", ValueFromAmount(balances.immature_balance));
 
     return json;
 }
