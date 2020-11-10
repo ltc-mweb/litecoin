@@ -575,6 +575,42 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
     blockSinceLastRollingFeeBump = true;
 }
 
+/**
+ * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
+ */
+void CTxMemPool::removeForMWBlock(const CMWBlock& mwBlock, unsigned int nBlockHeight)
+{
+    LOCK(cs);
+
+    std::vector<const CTxMemPoolEntry*> entries;
+    setEntries stage;
+
+    auto blockKernelHashes = mwBlock.GetKernelHashes();
+
+    for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
+        if (!it->GetTx().HasMWData()) continue;
+
+        auto txKernelHashes = it->GetTx().m_mwtx.GetKernelHashes();
+        std::vector<libmw::KernelHash> commonKernelHashes;
+        std::set_intersection(blockKernelHashes.begin(), blockKernelHashes.end(),
+                              txKernelHashes.begin(), txKernelHashes.end(),
+                              std::back_inserter(commonKernelHashes));
+
+        if (commonKernelHashes.size()) {
+            entries.push_back(&*it);
+            stage.insert(it);
+        }
+    }
+
+    // Before the txs in the new block have been removed from the mempool, update policy estimates
+    if (minerPolicyEstimator) minerPolicyEstimator->processBlock(nBlockHeight, entries);
+
+    RemoveStaged(stage, true, MemPoolRemovalReason::BLOCK);
+
+    lastRollingFeeUpdate = GetTime();
+    blockSinceLastRollingFeeBump = true;
+}
+
 void CTxMemPool::_clear()
 {
     mapLinks.clear();

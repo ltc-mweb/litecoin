@@ -2473,6 +2473,10 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     // Remove conflicting transactions from the mempool.;
     mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
     disconnectpool.removeForBlock(blockConnecting.vtx);
+    // MW: Remove conflicting transactions from the mempool.
+    if (!blockConnecting.mwBlock.IsNull()) {
+        mempool.removeForMWBlock(blockConnecting.mwBlock, pindexNew->nHeight);
+    }
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
     UpdateTip(pindexNew, chainparams);
