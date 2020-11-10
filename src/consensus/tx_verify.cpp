@@ -169,6 +169,11 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
 
     if (tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
         // Do nothing. A mimblewimble tx with 0 inputs & 0 outputs is valid.
+        try {
+            libmw::node::CheckTransaction(tx.m_mwtx.m_transaction);
+        } catch (std::exception&) {
+            return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
+        }
     } else {
         if (tx.vin.empty())
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
