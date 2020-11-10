@@ -2043,7 +2043,12 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // MW: Add MWEB fees
     if (!block.mwBlock.IsNull()) {
-        nFees += block.mwBlock.GetTotalFee();
+        const CAmount mw_fee(block.mwBlock.GetTotalFee());
+        nFees += mw_fee;
+        if (!MoneyRange(mw_fee) || !MoneyRange(nFees)) {
+            return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
+                REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
+        }
     }
 
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
