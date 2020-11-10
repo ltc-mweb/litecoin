@@ -488,7 +488,7 @@ static UniValue pegout(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a valid address");
     }
     std::string address = request.params[1].get_str();
-    auto pegout_tx = libmw::wallet::CreatePegOutTx(pwallet->GetMWWallet(), nAmount, address);
+    auto pegout_tx = libmw::wallet::CreatePegOutTx(pwallet->GetMWWallet(), nAmount, 100'000, address);
 
     // Create and send the transaction
     mapValue_t mapValue;
@@ -510,6 +510,125 @@ static UniValue pegout(const JSONRPCRequest& request)
     //    //    strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
     //    throw JSONRPCError(RPC_WALLET_ERROR, strError);
     //}
+    CValidationState state;
+    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
+        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    return tx->GetHash().GetHex();
+}
+
+static UniValue sendmweb(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 1)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "sendmweb",
+                "\nSend an amount within the MWEB." +
+                    HelpRequiringPassphrase(pwallet) + "\n",
+                {
+                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
+                },
+                RPCResult{
+                    "\"partial_tx\"            (string) Hex-encoded partial tx to be completed by the receiver.\n"},
+                RPCExamples{
+                    HelpExampleCli("sendmweb", "10.0")},
+            }
+                .ToString());
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+
+    // Amount
+    CAmount nAmount = AmountFromValue(request.params[0]);
+    if (nAmount <= 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+    }
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
+
+    // Check amount
+    if (nAmount > balances.confirmed_balance) {
+        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient confirmed balance");
+    }
+
+    if (pwallet->GetBroadcastTransactions() && !g_connman) {
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    }
+
+    return libmw::wallet::Send(pwallet->GetMWWallet(), nAmount, 100'000, "");
+}
+
+static UniValue recvmweb(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 1)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "recvmweb",
+                "\nReceive an amount within the MWEB." +
+                    HelpRequiringPassphrase(pwallet) + "\n",
+                {
+                    {"partial_tx", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Hex-encoded partial tx from the sender."},
+                },
+                RPCResult{
+                    "\"txid\"                  (string) The transaction id.\n"},
+                RPCExamples{
+                    HelpExampleCli("recvmweb", "<hex string>")},
+            }
+                .ToString());
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    if (pwallet->GetBroadcastTransactions() && !g_connman) {
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    }
+
+    if (!request.params[0].isStr()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a hex string");
+    }
+    std::string partial_tx = request.params[0].get_str();
+    if (!IsHex(partial_tx)) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a hex string");
+    }
+    auto mwtx = libmw::wallet::Receive(pwallet->GetMWWallet(), partial_tx);
+
+    // Create and send the transaction
+    mapValue_t mapValue;
+
+    CReserveKey reservekey(pwallet);
+    std::string strError;
+
+    CMutableTransaction txNew;
+    txNew.m_mwtx = CMWTx(mwtx);
+
+    CTransactionRef tx = MakeTransactionRef(txNew);
     CValidationState state;
     if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
         strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
@@ -939,6 +1058,51 @@ static UniValue getbalance(const JSONRPCRequest& request)
     }
 
     return ValueFromAmount(pwallet->GetBalance(filter, min_depth));
+}
+
+static UniValue getmwebbalance(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || (request.params.size() > 3))
+        throw std::runtime_error(
+            RPCHelpMan{
+                "getmwebbalance",
+                "\nReturns the mweb balances.\n",
+                {
+                    {"dummy", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Remains for backward compatibility. Must be excluded or set to \"*\"."},
+                    {"minconf", RPCArg::Type::NUM, /* default */ "0", "Only include transactions confirmed at least this many times."},
+                    {"include_watchonly", RPCArg::Type::BOOL, /* default */ "false", "Also include balance in watch-only addresses (see 'importaddress')"},
+                },
+                RPCResult{
+                    "amount              (numeric) The total amount in " + CURRENCY_UNIT + " received for this wallet.\n"},
+                RPCExamples{
+                    "\nThe total amount in the wallet with 1 or more confirmations\n" + HelpExampleCli("getbalance", "") +
+                    "\nThe total amount in the wallet at least 6 blocks confirmed\n" + HelpExampleCli("getbalance", "\"*\" 6") +
+                    "\nAs a JSON-RPC call\n" + HelpExampleRpc("getbalance", "\"*\", 6")},
+            }
+                .ToString());
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+
+    UniValue json(UniValue::VOBJ);
+    libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
+    json.pushKV("confirmed", ValueFromAmount(balances.confirmed_balance));
+    json.pushKV("unconfirmed", ValueFromAmount(balances.unconfirmed_balance));
+    json.pushKV("locked", ValueFromAmount(balances.locked_balance));
+    json.pushKV("immature", ValueFromAmount(balances.immature_balance));
+
+    return json;
 }
 
 static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
@@ -4353,6 +4517,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getaddressesbylabel",              &getaddressesbylabel,           {"label"} },
     { "wallet",             "getaddressinfo",                   &getaddressinfo,                {"address"} },
     { "wallet",             "getbalance",                       &getbalance,                    {"dummy","minconf","include_watchonly"} },
+    { "wallet",             "getmwebbalance",                   &getmwebbalance,                {} },
     { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type"} },
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf"} },
@@ -4381,9 +4546,11 @@ static const CRPCCommand commands[] =
     { "wallet",             "lockunspent",                      &lockunspent,                   {"unlock","transactions"} },
     { "wallet",             "pegin",                            &pegin,                         {"amount"} },
     { "wallet",             "pegout",                           &pegout,                        {"amount"} },
+    { "wallet",             "recvmweb",                         &recvmweb,                      {"partial_tx"} },
     { "wallet",             "removeprunedfunds",                &removeprunedfunds,             {"txid"} },
     { "wallet",             "rescanblockchain",                 &rescanblockchain,              {"start_height", "stop_height"} },
     { "wallet",             "sendmany",                         &sendmany,                      {"dummy","amounts","minconf","comment","subtractfeefrom","replaceable","conf_target","estimate_mode"} },
+    { "wallet",             "sendmweb",                         &sendmweb,                      {"amount"} },
     { "wallet",             "sendtoaddress",                    &sendtoaddress,                 {"address","amount","comment","comment_to","subtractfeefromamount","replaceable","conf_target","estimate_mode"} },
     { "wallet",             "sethdseed",                        &sethdseed,                     {"newkeypool","seed"} },
     { "wallet",             "setlabel",                         &setlabel,                      {"address","label"} },

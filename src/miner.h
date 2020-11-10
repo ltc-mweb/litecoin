@@ -131,8 +131,13 @@ private:
     std::unique_ptr<CBlockTemplate> pblocktemplate;
     // A convenience pointer that always refers to the CBlock in pblocktemplate
     CBlock* pblock;
-    // Mimblewimble transactions to include in the block.
-    std::vector<libmw::TxRef> m_mwTxs;
+
+    // MWEB Attributes
+    libmw::BlockBuilderRef mweb_builder;
+    CAmount mweb_amount_change;
+    CAmount mweb_fees;
+    std::vector<CTxIn> hogex_inputs;
+    std::vector<CTxOut> hogex_outputs;
 
     // Configuration parameters for the block size
     bool fIncludeWitness;
@@ -201,6 +206,7 @@ private:
       * of updated descendants. */
     int UpdatePackagesForAdded(const CTxMemPool::setEntries& alreadyAdded, indexed_modified_transaction_set &mapModifiedTx) EXCLUSIVE_LOCKS_REQUIRED(mempool.cs);
 
+    bool AddMWEBTransaction(CTxMemPool::txiter iter);
     void AddHogExTransaction(const CBlockIndex* pIndexPrev);
 };
 

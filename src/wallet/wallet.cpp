@@ -30,6 +30,8 @@
 #include <util/bip32.h>
 #include <util/moneystr.h>
 #include <wallet/fees.h>
+#include <wallet/mwebwallet.h>
+#include <mimblewimble/mwebchain.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -1262,6 +1264,12 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
         TransactionRemovedFromMempool(pblock->vtx[i]);
     }
 
+    if (!pblock->mwBlock.IsNull()) {
+        libmw::BlockHash block_hash_arr;
+        std::copy_n(pblock->GetHash().begin(), 32, block_hash_arr.data());
+        libmw::wallet::BlockConnected(GetMWWallet(), pblock->mwBlock.m_block, block_hash_arr);
+    }
+
     m_last_block_processed = pindex->GetBlockHash();
 }
 
@@ -1271,6 +1279,10 @@ void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock) {
 
     for (const CTransactionRef& ptx : pblock->vtx) {
         SyncTransaction(ptx, {} /* block hash */, 0 /* position in block */);
+    }
+
+    if (!pblock->mwBlock.IsNull()) {
+        libmw::wallet::BlockDisconnected(GetMWWallet(), pblock->mwBlock.m_block);
     }
 }
 
@@ -1814,6 +1826,7 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                 for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
                     SyncTransaction(block.vtx[posInBlock], block_hash, posInBlock, fUpdate);
                 }
+
                 // scan succeeded, record block as most recent successfully scanned
                 result.last_scanned_block = block_hash;
                 result.last_scanned_height = *block_height;
@@ -1847,6 +1860,9 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                 }
             }
         }
+
+        libmw::wallet::ScanForOutputs(GetMWWallet(), GetMWChain());
+
         ShowProgress(strprintf("%s " + _("Rescanning..."), GetDisplayName()), 100); // hide progress dialog in GUI
         if (block_height && fAbortRescan) {
             WalletLogPrintf("Rescan aborted at block %d. Progress=%f\n", *block_height, progress_current);
@@ -4486,13 +4502,14 @@ int CMerkleTx::GetDepthInMainChain(interfaces::Chain::Lock& locked_chain) const
 
 int CMerkleTx::GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const
 {
-    if (!IsCoinBase())
+    if (!IsCoinBase()) // MW: TODO - also check for peg-in/peg-out maturity
         return 0;
     int chain_depth = GetDepthInMainChain(locked_chain);
     assert(chain_depth >= 0); // coinbase tx should not be conflicted
     return std::max(0, (COINBASE_MATURITY+1) - chain_depth);
 }
 
+// MW: TODO - Change to just "IsImmature" and also check for peg-in/peg-out maturity
 bool CMerkleTx::IsImmatureCoinBase(interfaces::Chain::Lock& locked_chain) const
 {
     // note GetBlocksToMaturity is 0 for non-coinbase tx
@@ -4590,59 +4607,12 @@ bool CWallet::AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info)
     return WriteKeyMetadata(mapKeyMetadata[pubkey.GetID()], pubkey, true);
 }
 
-
-class MWWallet : public libmw::IWallet
-{
-public:
-    MWWallet(CWallet* pWallet)
-        : m_pWallet(pWallet), m_pBatch(std::make_unique<WalletBatch>(pWallet->GetDBHandle())) {}
-
-    libmw::PrivateKey GenerateNewKey() final
-    {
-        CKey key = m_pWallet->GenerateNewKey(*m_pBatch);
-
-        libmw::PrivateKey privateKey;
-        std::copy(key.begin(), key.end(), privateKey.keyBytes.data());
-        return privateKey;
-    }
-
-    libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final
-    {
-        // MW: TODO - Implement
-        throw std::exception();
-    }
-
-    std::vector<libmw::Coin> ListCoins() const final
-    {
-        std::vector<libmw::Coin> coins;
-        DBErrors errors = m_pBatch->FindMWCoins(coins);
-        if (errors != DBErrors::LOAD_OK) {
-            throw std::exception(); // MW: TODO - Determine exception type
-        }
-
-        return coins;
-    }
-    
-    void AddCoins(const std::vector<libmw::Coin>& coins) final
-    {
-        for (const auto& coin : coins) {
-            m_pBatch->WriteMWCoin(coin);
-        }
-    }
-    
-    void DeleteCoins(const std::vector<libmw::Coin>& coins) final
-    {
-        for (const auto& coin : coins) {
-            m_pBatch->EraseMWCoin(coin.commitment);
-        }
-    }
-
-private:
-    CWallet* m_pWallet;
-    std::unique_ptr<WalletBatch> m_pBatch;
-};
-
 libmw::IWallet::Ptr CWallet::GetMWWallet()
 {
     return std::shared_ptr<libmw::IWallet>(new MWWallet(this));
+}
+
+libmw::IChain::Ptr CWallet::GetMWChain()
+{
+    return std::shared_ptr<libmw::IChain>(new MWChain(chain()));
 }

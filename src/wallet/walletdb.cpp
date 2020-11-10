@@ -783,6 +783,8 @@ bool WalletBatch::WriteVersion(int nVersion)
     return m_batch.WriteVersion(nVersion);
 }
 
+static const std::string s_mweb_coin_key = "mwebcoin";
+
 //
 // MWEB
 //
@@ -798,21 +800,60 @@ struct MWCoin {
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
+        READWRITE(coin.features);
         READWRITE(coin.commitment);
         READWRITE(coin.amount);
-        READWRITE(coin.key.bip32Path);
-        READWRITE(coin.key.keyBytes);
+
+        bool fKey = coin.key != nullopt;
+        READWRITE(fKey);
+        if (fKey) {
+            if (ser_action.ForRead()) {
+                libmw::PrivateKey key;
+                READWRITE(key.bip32Path);
+                READWRITE(key.keyBytes);
+                coin.key = boost::make_optional(std::move(key));
+            } else {
+                READWRITE(coin.key->bip32Path);
+                READWRITE(coin.key->keyBytes);
+            }
+        }
+
+        bool fIncludedBlock = coin.included_block != nullopt;
+        READWRITE(fIncludedBlock);
+        if (fIncludedBlock) {
+            if (ser_action.ForRead()) {
+                libmw::BlockHash blockHash;
+                READWRITE(blockHash);
+                coin.included_block = boost::make_optional(std::move(blockHash));
+            } else {
+                READWRITE(*coin.included_block);
+            }
+        }
+
+        READWRITE(coin.spent);
+
+        bool fSpentBlock = coin.spent_block != nullopt;
+        READWRITE(fSpentBlock);
+        if (fSpentBlock) {
+            if (ser_action.ForRead()) {
+                libmw::BlockHash blockHash;
+                READWRITE(blockHash);
+                coin.spent_block = boost::make_optional(std::move(blockHash));
+            } else {
+                READWRITE(*coin.spent_block);
+            }
+        }
     }
 };
 
 bool WalletBatch::WriteMWCoin(const libmw::Coin& coin)
 {
-    return WriteIC(std::make_pair(std::string("mweb_tx"), coin.commitment), MWCoin{coin});
+    return WriteIC(std::make_pair(s_mweb_coin_key, coin.commitment), MWCoin{coin});
 }
 
 bool WalletBatch::EraseMWCoin(const libmw::Commitment& commitment)
 {
-    return EraseIC(std::make_pair(std::string("mweb_tx"), commitment));
+    return EraseIC(std::make_pair(s_mweb_coin_key, commitment));
 }
 
 DBErrors WalletBatch::FindMWCoins(std::vector<libmw::Coin>& coins)
@@ -847,7 +888,7 @@ DBErrors WalletBatch::FindMWCoins(std::vector<libmw::Coin>& coins)
 
             std::string strType;
             ssKey >> strType;
-            if (strType == "mweb_tx") {
+            if (strType == s_mweb_coin_key) {
                 MWCoin mw_coin;
                 ssValue >> mw_coin;
 

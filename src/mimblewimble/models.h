@@ -20,6 +20,16 @@ struct CMWBlock
     CMWBlock(const libmw::BlockRef& block)
         : m_block(block) { }
 
+    uint64_t GetTotalFee() const noexcept
+    {
+        return IsNull() ? 0 : m_block.GetTotalFee();
+    }
+
+    libmw::HeaderRef GetMWEBHeader() const noexcept
+    {
+        return IsNull() ? libmw::HeaderRef{} : m_block.GetHeader();
+    }
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

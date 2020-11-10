@@ -169,6 +169,11 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
 
     if (tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
         // Do nothing. A mimblewimble tx with 0 inputs & 0 outputs is valid.
+        try {
+            libmw::node::CheckTransaction(tx.m_mwtx.m_transaction);
+        } catch (std::exception&) {
+            return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
+        }
     } else {
         if (tx.vin.empty())
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
@@ -252,12 +257,13 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 
     // Tally transaction fees
     CAmount txfee_aux = nValueIn - value_out;
-    if (!MoneyRange(txfee_aux)) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
-    }
 
     if (tx.HasMWData()) {
         txfee_aux += tx.m_mwtx.m_transaction.GetTotalFee();
+    }
+
+    if (!MoneyRange(txfee_aux)) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
     }
 
     txfee = txfee_aux;
