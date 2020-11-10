@@ -1227,6 +1227,7 @@ public:
     bool AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info);
 
     libmw::IWallet::Ptr GetMWWallet();
+    libmw::IChain::Ptr GetMWChain();
 };
 
 /** A key allocated from the key pool. */

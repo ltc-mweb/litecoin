@@ -2041,6 +2041,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
+    // MW: Add MWEB fees
+    if (!block.mwBlock.IsNull()) {
+        nFees += block.mwBlock.GetTotalFee();
+    }
+
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
     if (block.vtx[0]->GetValueOut() > blockReward)
         return state.DoS(100,
@@ -2065,6 +2070,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // MW: Connect block to chain
     if (!block.mwBlock.IsNull()) {
+        // MW: TODO - Check HogEx transaction: `new value == (prev value + pegins) - (pegouts + fees)`
         try {
             blockundo.mwundo = libmw::node::ConnectBlock(block.mwBlock.m_block, view.GetMWView());
         } catch (const std::exception& e) {
@@ -3174,7 +3180,8 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
     // MW: Ensure full MW block provided (except during IBD)
     if (!block.mwBlock.IsNull()) {
-        // MW: TODO - Check fees & HogEx transaction
+        // MW: TODO - Check HogEx transaction (pegins must match)
+
         try {
             libmw::node::CheckBlock(block.mwBlock.m_block, block.GetPegInCoins(), block.GetPegOutCoins());
         } catch (const std::exception& e) {

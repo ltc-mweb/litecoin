@@ -549,8 +549,9 @@ bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
 
     hogex_inputs.insert(hogex_inputs.end(), vin.cbegin(), vin.cend());
     hogex_outputs.insert(hogex_outputs.end(), vout.cbegin(), vout.cend());
-    mweb_fees += mw_tx.GetTotalFee();
-    mweb_amount_change += (CAmount(pegin_amount) - CAmount(pegout_amount));
+    const uint64_t tx_fee = mw_tx.GetTotalFee();
+    mweb_fees += tx_fee;
+    mweb_amount_change += (CAmount(pegin_amount) - CAmount(pegout_amount + tx_fee));
 
     return true;
 }
