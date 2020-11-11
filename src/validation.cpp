@@ -586,6 +586,10 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     if (tx.IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "coinbase");
 
+    // HogEx is only valid in a block, not as a loose transaction
+    if (tx.IsHogEx())
+        return state.DoS(100, false, REJECT_INVALID, "hogex");
+
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     std::string reason;
     if (fRequireStandard && !IsStandardTx(tx, reason))
@@ -3191,8 +3195,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (!block.mwBlock.IsNull()) {
         // MW: TODO - Check HogEx transaction (pegins must match)
 
+        uint256 mweb256 = block.GetMWEBHash();
+        libmw::BlockHash mweb_hash;
+        std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MW_HEADERHASH_SIZE, mweb_hash.data());
+
         try {
-            libmw::node::CheckBlock(block.mwBlock.m_block, block.GetPegInCoins(), block.GetPegOutCoins());
+            libmw::node::CheckBlock(block.mwBlock.m_block, mweb_hash, block.GetPegInCoins(), block.GetPegOutCoins());
         } catch (const std::exception& e) {
             return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, 
                 strprintf("libmw::node::CheckBlock failed: %s", e.what()));

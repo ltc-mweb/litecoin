@@ -46,8 +46,7 @@ std::string CBlock::ToString() const
 
 std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
 {
-    uint256 hogex_hash;
-    if (!HasHogEx(hogex_hash)) {
+    if (!HasHogEx()) {
         return {};
     }
 
@@ -74,8 +73,7 @@ std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
 
 std::vector<libmw::PegOut> CBlock::GetPegOutCoins() const noexcept
 {
-    uint256 hogex_hash;
-    if (!HasHogEx(hogex_hash)) {
+    if (!HasHogEx()) {
         return {};
     }
 

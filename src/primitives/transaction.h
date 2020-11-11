@@ -392,20 +392,21 @@ public:
     }
 
     bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
+    bool IsHogEx() const noexcept { return m_hogEx; }
 
-    bool IsHogEx(uint256& hash) const noexcept
+    uint256 GetMWEBHash() const noexcept
     {
         if (m_hogEx && !vout.empty()) {
             int version;
             std::vector<unsigned char> program;
             if (vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
                 if (program.size() == 32 && version == Consensus::Mimblewimble::WITNESS_VERSION) {
-                    hash = uint256(program);
-                    return true;
+                    return uint256(program);
                 }
             }
         }
-        return false;
+
+        return uint256();
     }
 };
 

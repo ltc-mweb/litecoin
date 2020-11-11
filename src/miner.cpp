@@ -485,8 +485,6 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
 bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
 {
-    LogPrintf("Adding MWEB Txn\n");
-
     CTransactionRef pTx = iter->GetSharedTx();
     libmw::TxRef mw_tx = pTx->m_mwtx.m_transaction;
 
@@ -558,9 +556,7 @@ bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
 
 // MW: Generate and add HogEx transaction
 void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
-{    
-    LogPrintf("Adding HogEx \n");
-
+{
     CMutableTransaction hogExTransaction;
     hogExTransaction.m_hogEx = true;
 
@@ -573,8 +569,7 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     //
     // Add previous HogAddr as new HogEx input
     //
-    uint256 hogex_hash;
-    if (prevBlock.vtx.size() >= 2 && prevBlock.vtx.back()->IsHogEx(hogex_hash)) {
+    if (prevBlock.vtx.size() >= 2 && prevBlock.vtx.back()->IsHogEx()) {
         assert(!prevBlock.vtx.back()->vout.empty());
         previous_amount = prevBlock.vtx.back()->vout[0].nValue;
 
@@ -591,17 +586,15 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     // Add New HogAddr
     //
     libmw::BlockRef mw_block = libmw::miner::BuildBlock(mweb_builder);
-    std::vector<uint8_t> serialized_mw_block = libmw::SerializeBlock(mw_block);
-    std::vector<uint8_t> mw_block_hash(32);
-    CSHA256().Write(serialized_mw_block.data(), serialized_mw_block.size()).Finalize(mw_block_hash.data());
+    libmw::BlockHash mweb_hash = mw_block.GetHash();
 
     CTxOut hogAddr;
-    hogAddr.scriptPubKey = CScript() << OP_9 << mw_block_hash;
+    hogAddr.scriptPubKey = CScript() << OP_9 << std::vector<uint8_t>(mweb_hash.begin(), mweb_hash.end());
     hogAddr.nValue = previous_amount + mweb_amount_change;
     assert(MoneyRange(hogAddr.nValue));
     hogExTransaction.vout.push_back(std::move(hogAddr));
 
-    LogPrintf("Amount: %ld\n", hogAddr.nValue);
+    LogPrintf("MWEB Supply: %ld\n", hogAddr.nValue);
 
     //
     // Add Peg-out outputs
@@ -616,6 +609,4 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     pblock->mwBlock = CMWBlock(mw_block);
     pblocktemplate->vTxFees.push_back(mweb_fees);
     pblocktemplate->vTxSigOpsCost.push_back(WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx.back())); // MWEB: TODO - Account for these when choosing transactions
-
-    LogPrintf("Finished adding HogEx \n");
 }

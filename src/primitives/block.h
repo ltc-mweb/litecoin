@@ -101,8 +101,7 @@ public:
         READWRITEAS(CBlockHeader, *this);
         READWRITE(vtx);
         if (!(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE)) {
-            uint256 hash;
-            if (HasHogEx(hash)) {
+            if (HasHogEx()) {
                 READWRITE(mwBlock);
             }
         }
@@ -130,9 +129,18 @@ public:
 
     std::string ToString() const;
 
-    bool HasHogEx(uint256& hash) const noexcept
+    bool HasHogEx() const noexcept
     {
-        return !vtx.empty() && vtx.back()->IsHogEx(hash);
+        return vtx.size() >= 2 && vtx.back()->IsHogEx();
+    }
+
+    uint256 GetMWEBHash() const noexcept
+    {
+        if (!HasHogEx()) {
+            return uint256();
+        }
+
+        return vtx.back()->GetMWEBHash();
     }
 
     std::vector<libmw::PegIn> GetPegInCoins() const noexcept;
