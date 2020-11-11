@@ -30,6 +30,11 @@ struct CMWBlock
         return IsNull() ? libmw::HeaderRef{} : m_block.GetHeader();
     }
 
+    std::set<libmw::KernelHash> GetKernelHashes() const
+    {
+        return IsNull() ? std::set<libmw::KernelHash>{} : m_block.GetKernelHashes();
+    }
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -67,6 +72,11 @@ struct CMWTx
     CMWTx() = default;
     CMWTx(const libmw::TxRef& tx)
         : m_transaction(tx) { }
+
+    std::set<libmw::KernelHash> GetKernelHashes() const
+    {
+        return IsNull() ? std::set<libmw::KernelHash>{} : m_transaction.GetKernelHashes();
+    }
 
     ADD_SERIALIZE_METHODS;
 
