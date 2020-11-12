@@ -392,7 +392,7 @@ public:
     }
 
     bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
-    bool IsHogEx() const noexcept { return m_hogEx; }
+    bool IsHogEx() const noexcept { return m_hogEx && GetMWEBHash() != uint256(); } // MWEB: TODO - Remove GetMWEBHash comparison for next testnet
 
     uint256 GetMWEBHash() const noexcept
     {
@@ -420,7 +420,7 @@ struct CMutableTransaction
     CMWTx m_mwtx;
 
     /** Memory only. */
-    bool m_hogEx;
+    bool m_hogEx = false;
 
     CMutableTransaction();
     explicit CMutableTransaction(const CTransaction& tx);
@@ -455,6 +455,8 @@ struct CMutableTransaction
         }
         return false;
     }
+
+    bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
 };
 
 typedef std::shared_ptr<const CTransaction> CTransactionRef;
