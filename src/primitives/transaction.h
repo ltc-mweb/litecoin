@@ -392,7 +392,7 @@ public:
     }
 
     bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
-    bool IsHogEx() const noexcept { return m_hogEx && GetMWEBHash() != uint256(); } // MWEB: TODO - Remove GetMWEBHash comparison for next testnet
+    bool IsHogEx() const noexcept { return m_hogEx; }
 
     uint256 GetMWEBHash() const noexcept
     {
