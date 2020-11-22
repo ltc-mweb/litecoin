@@ -653,6 +653,16 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         }
     }
 
+    // MW: TODO - For now, we're just not allowing tx replacement for MWEB txs,
+    // but we'll want to eventually support some form of RBF
+    std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+    for (const libmw::Commitment& input_commit : input_commits) {
+        const CTransaction* pTxConflicting = pool.GetConflictTx(input_commit);
+        if (pTxConflicting) {
+            return state.Invalid(false, REJECT_DUPLICATE, "txn-mempool-conflict");
+        }
+    }
+
     {
         CCoinsView dummy;
         CCoinsViewCache view(&dummy);

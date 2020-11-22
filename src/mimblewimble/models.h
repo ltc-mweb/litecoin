@@ -78,6 +78,16 @@ struct CMWTx
         return IsNull() ? std::set<libmw::KernelHash>{} : m_transaction.GetKernelHashes();
     }
 
+    std::set<libmw::Commitment> GetInputCommits() const noexcept
+    {
+        return IsNull() ? std::set<libmw::Commitment>{} : m_transaction.GetInputCommits();
+    }
+
+    std::set<libmw::Commitment> GetOutputCommits() const noexcept
+    {
+        return IsNull() ? std::set<libmw::Commitment>{} : m_transaction.GetOutputCommits();
+    }
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

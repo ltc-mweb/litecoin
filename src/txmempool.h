@@ -21,6 +21,7 @@
 #include <primitives/transaction.h>
 #include <sync.h>
 #include <random.h>
+#include <libmw/libmw.h>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -555,6 +556,8 @@ private:
 
 public:
     indirectmap<COutPoint, const CTransaction*> mapNextTx GUARDED_BY(cs);
+    indirectmap<libmw::Commitment, const CTransaction*> mapNextTx_MWEB GUARDED_BY(cs); // MW: TODO - Maybe wrap mapNextTx and mapNextTx_MWEB in a custom container?
+    indirectmap<libmw::Commitment, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
     std::map<uint256, CAmount> mapDeltas;
 
     /** Create a new CTxMemPool.
@@ -606,6 +609,7 @@ public:
 
     /** Get the transaction in the pool that spends the same prevout */
     const CTransaction* GetConflictTx(const COutPoint& prevout) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+    const CTransaction* GetConflictTx(const libmw::Commitment& input_commit) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     /** Returns an iterator to the given hash, if found */
     boost::optional<txiter> GetIter(const uint256& txid) const EXCLUSIVE_LOCKS_REQUIRED(cs);

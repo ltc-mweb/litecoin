@@ -142,6 +142,22 @@ void CTxMemPool::UpdateTransactionsFromBlock(const std::vector<uint256> &vHashes
                 UpdateParent(childIter, it, true);
             }
         }
+
+        // MW: Check MWEB output commitments
+        std::set<libmw::Commitment> output_commits = it->GetTx().m_mwtx.GetOutputCommits();
+        for (const libmw::Commitment& output_commit : output_commits) {
+            auto childMWEBIter = mapNextTx_MWEB.find(output_commit);
+            if (childMWEBIter != mapNextTx_MWEB.end()) {
+                const uint256& childHash = childMWEBIter->second->GetHash();
+                txiter childIter = mapTx.find(childHash);
+                assert(childIter != mapTx.end());
+                if (setChildren.insert(childIter).second && !setAlreadyIncluded.count(childHash)) {
+                    UpdateChild(it, childIter, true);
+                    UpdateParent(childIter, it, true);
+                }
+            }
+        }
+
         UpdateForDescendants(it, mapMemPoolDescendantsToUpdate, setAlreadyIncluded);
     }
 }
@@ -381,6 +397,23 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
         mapNextTx.insert(std::make_pair(&tx.vin[i].prevout, &tx));
         setParentTransactions.insert(tx.vin[i].prevout.hash);
     }
+
+    // MW: Add transaction to mapNextTx_MWEB for each input
+    std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+    for (const libmw::Commitment& input_commit : input_commits) {
+        mapNextTx_MWEB.insert(std::make_pair(&input_commit, &tx));
+        auto parentIter = mapTxOutputs_MWEB.find(input_commit);
+        if (parentIter != mapTxOutputs_MWEB.end()) {
+            setParentTransactions.insert(parentIter->second->GetHash());
+        }
+    }
+
+    // MW: Add transaction to mapTxOutputs_MWEB for each output
+    std::set<libmw::Commitment> output_commits = tx.m_mwtx.GetOutputCommits();
+    for (const libmw::Commitment& output_commit : output_commits) {
+        mapTxOutputs_MWEB.insert(std::make_pair(&output_commit, &tx));
+    }
+
     // Don't bother worrying about child transactions of this one.
     // Normal case of a new transaction arriving is that there can't be any
     // children, because such children would be orphans.
@@ -409,6 +442,18 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
     const uint256 hash = it->GetTx().GetHash();
     for (const CTxIn& txin : it->GetTx().vin)
         mapNextTx.erase(txin.prevout);
+
+    // MW: Remove transaction from mapNextTx_MWEB for each input
+    std::set<libmw::Commitment> input_commits = it->GetTx().m_mwtx.GetInputCommits();
+    for (const libmw::Commitment& input_commit : input_commits) {
+        mapNextTx_MWEB.erase(input_commit);
+    }
+
+    // MW: Remove transaction from mapTxOutputs_MWEB for each output
+    std::set<libmw::Commitment> output_commits = it->GetTx().m_mwtx.GetOutputCommits();
+    for (const libmw::Commitment& output_commit : output_commits) {
+        mapTxOutputs_MWEB.erase(output_commit);
+    }
 
     if (vTxHashes.size() > 1) {
         vTxHashes[it->vTxHashesIdx] = std::move(vTxHashes.back());
@@ -479,6 +524,19 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx, MemPoolRemovalReaso
                 assert(nextit != mapTx.end());
                 txToRemove.insert(nextit);
             }
+
+            // MW: Also recursively remove MW txs that depend on this tx
+            std::set<libmw::Commitment> output_commits = origTx.m_mwtx.GetOutputCommits();
+            for (const libmw::Commitment& output_commit : output_commits) {
+                auto it = mapNextTx_MWEB.find(output_commit);
+                if (it == mapNextTx_MWEB.end()) {
+                    continue;
+                }
+
+                txiter nextit = mapTx.find(it->second->GetHash());
+                assert(nextit != mapTx.end());
+                txToRemove.insert(nextit);
+            }
         }
         setEntries setAllRemoves;
         for (txiter it : txToRemove) {
@@ -536,6 +594,19 @@ void CTxMemPool::removeConflicts(const CTransaction &tx)
             const CTransaction &txConflict = *it->second;
             if (txConflict != tx)
             {
+                ClearPrioritisation(txConflict.GetHash());
+                removeRecursive(txConflict, MemPoolRemovalReason::CONFLICT);
+            }
+        }
+    }
+
+    // MW: Remove transactions which depend on MWEB inputs of tx, recursively
+    std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+    for (const libmw::Commitment& input_commit : input_commits) {
+        auto it = mapNextTx_MWEB.find(input_commit);
+        if (it != mapNextTx_MWEB.end()) {
+            const CTransaction& txConflict = *it->second;
+            if (txConflict != tx) {
                 ClearPrioritisation(txConflict.GetHash());
                 removeRecursive(txConflict, MemPoolRemovalReason::CONFLICT);
             }
@@ -616,6 +687,8 @@ void CTxMemPool::_clear()
     mapLinks.clear();
     mapTx.clear();
     mapNextTx.clear();
+    mapNextTx_MWEB.clear();
+    mapTxOutputs_MWEB.clear();
     totalTxSize = 0;
     cachedInnerUsage = 0;
     lastRollingFeeUpdate = GetTime();
@@ -639,6 +712,7 @@ static void CheckInputsAndUpdateCoins(const CTransaction& tx, CCoinsViewCache& m
     UpdateCoins(tx, mempoolDuplicate, 1000000);
 }
 
+// MW: TODO - Update check to verify the consistency of mapNextTx_MWEB and mapTxOutputs_MWEB
 void CTxMemPool::check(const CCoinsViewCache *pcoins) const
 {
     LOCK(cs);
@@ -901,6 +975,12 @@ const CTransaction* CTxMemPool::GetConflictTx(const COutPoint& prevout) const
     return it == mapNextTx.end() ? nullptr : it->second;
 }
 
+const CTransaction* CTxMemPool::GetConflictTx(const libmw::Commitment& input_commit) const
+{
+    const auto it = mapNextTx_MWEB.find(input_commit);
+    return it == mapNextTx_MWEB.end() ? nullptr : it->second;
+}
+
 boost::optional<CTxMemPool::txiter> CTxMemPool::GetIter(const uint256& txid) const
 {
     auto it = mapTx.find(txid);
@@ -947,7 +1027,7 @@ bool CCoinsViewMemPool::GetCoin(const COutPoint &outpoint, Coin &coin) const {
 size_t CTxMemPool::DynamicMemoryUsage() const {
     LOCK(cs);
     // Estimate the overhead of mapTx to be 12 pointers + an allocation, as no exact formula for boost::multi_index_contained is implemented.
-    return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 12 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(mapLinks) + memusage::DynamicUsage(vTxHashes) + cachedInnerUsage;
+    return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 12 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapNextTx_MWEB) + memusage::DynamicUsage(mapTxOutputs_MWEB) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(mapLinks) + memusage::DynamicUsage(vTxHashes) + cachedInnerUsage;
 }
 
 void CTxMemPool::RemoveStaged(setEntries &stage, bool updateDescendants, MemPoolRemovalReason reason) {
