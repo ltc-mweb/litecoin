@@ -213,12 +213,16 @@ bool CCoinsViewCache::Flush() {
     return fOk;
 }
 
-void CCoinsViewCache::Uncache(const COutPoint& hash)
+void CCoinsViewCache::Uncache(const OutputIndex& coin)
 {
-    CCoinsMap::iterator it = cacheCoins.find(hash);
-    if (it != cacheCoins.end() && it->second.flags == 0) {
-        cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
-        cacheCoins.erase(it);
+    if (coin.which() == 0) {
+        CCoinsMap::iterator it = cacheCoins.find(boost::get<COutPoint>(coin));
+        if (it != cacheCoins.end() && it->second.flags == 0) {
+            cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
+            cacheCoins.erase(it);
+        }
+    } else {
+        // MW: TODO - libmw::node::Uncache(GetMWView(), boost::get<libmw::Commitment>(coin));
     }
 }
 
@@ -243,6 +247,14 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
     if (!tx.IsCoinBase()) {
         for (unsigned int i = 0; i < tx.vin.size(); i++) {
             if (!HaveCoin(tx.vin[i].prevout)) {
+                return false;
+            }
+        }
+
+        // MW: Check MWEB inputs
+        std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+        for (const libmw::Commitment& input_commit : input_commits) {
+            if (!libmw::node::HasCoin(mw_view, input_commit)) {
                 return false;
             }
         }

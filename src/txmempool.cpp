@@ -969,16 +969,15 @@ void CTxMemPool::ClearPrioritisation(const uint256 hash)
     mapDeltas.erase(hash);
 }
 
-const CTransaction* CTxMemPool::GetConflictTx(const COutPoint& prevout) const
+const CTransaction* CTxMemPool::GetConflictTx(const OutputIndex& prevout) const
 {
-    const auto it = mapNextTx.find(prevout);
-    return it == mapNextTx.end() ? nullptr : it->second;
-}
-
-const CTransaction* CTxMemPool::GetConflictTx(const libmw::Commitment& input_commit) const
-{
-    const auto it = mapNextTx_MWEB.find(input_commit);
-    return it == mapNextTx_MWEB.end() ? nullptr : it->second;
+    if (prevout.which() == 0) {
+        const auto it = mapNextTx.find(boost::get<COutPoint>(prevout));
+        return it == mapNextTx.end() ? nullptr : it->second;
+    } else {
+        const auto it = mapNextTx_MWEB.find(boost::get<libmw::Commitment>(prevout));
+        return it == mapNextTx_MWEB.end() ? nullptr : it->second;
+    }
 }
 
 boost::optional<CTxMemPool::txiter> CTxMemPool::GetIter(const uint256& txid) const

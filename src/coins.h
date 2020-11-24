@@ -15,10 +15,13 @@
 #include <uint256.h>
 #include <libmw/libmw.h>
 
+#include <boost/variant.hpp>
 #include <assert.h>
 #include <stdint.h>
 
 #include <unordered_map>
+
+typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
 
 /**
  * A UTXO entry.
@@ -279,7 +282,7 @@ public:
      * Removes the UTXO with the given outpoint from the cache, if it is
      * not modified.
      */
-    void Uncache(const COutPoint &outpoint);
+    void Uncache(const OutputIndex& outpoint);
 
     //! Calculate the size of the cache (in number of transaction outputs)
     unsigned int GetCacheSize() const;

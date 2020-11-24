@@ -259,6 +259,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     CAmount txfee_aux = nValueIn - value_out;
 
     if (tx.HasMWData()) {
+        // MW: TODO - Check peg-in maturity here?
         txfee_aux += tx.m_mwtx.m_transaction.GetTotalFee();
     }
 

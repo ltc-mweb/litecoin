@@ -569,7 +569,7 @@ static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, CValidationSt
 
 static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool& pool, CValidationState& state, const CTransactionRef& ptx,
                               bool* pfMissingInputs, int64_t nAcceptTime, std::list<CTransactionRef>* plTxnReplaced,
-                              bool bypass_limits, const CAmount& nAbsurdFee, std::vector<COutPoint>& coins_to_uncache, bool test_accept) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+                              bool bypass_limits, const CAmount& nAbsurdFee, std::vector<OutputIndex>& coins_to_uncache, bool test_accept) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     const CTransaction& tx = *ptx;
     const uint256 hash = tx.GetHash();
@@ -689,6 +689,30 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
                     *pfMissingInputs = true;
                 }
                 return false; // fMissingInputs and !state.IsInvalid() is used to detect this condition, don't set state.Invalid()
+            }
+        }
+
+        // MW: Check if inputs exist
+        std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+        std::set<libmw::Commitment> output_commits = tx.m_mwtx.GetOutputCommits();
+        for (const libmw::Commitment& input_commit : input_commits) {
+            if (!libmw::node::HasCoinInCache(pcoinsTip->GetMWView(), input_commit)) {
+                coins_to_uncache.push_back(input_commit);
+            }
+
+            if (!libmw::node::HasCoin(view.GetMWView(), input_commit)) {
+                // Are inputs missing because we already have the tx?
+                for (const libmw::Commitment& output_commit : output_commits) {
+                    // Optimistically just do efficient check of cache for outputs
+                    if (libmw::node::HasCoinInCache(pcoinsTip->GetMWView(), output_commit)) {
+                        return state.Invalid(false, REJECT_DUPLICATE, "txn-already-known");
+                    }
+                }
+                // Otherwise assume this might be an orphan tx for which we just haven't seen parents yet
+                if (pfMissingInputs) {
+                    *pfMissingInputs = true;
+                }
+                return false;
             }
         }
 
@@ -994,10 +1018,10 @@ static bool AcceptToMemoryPoolWithTime(const CChainParams& chainparams, CTxMemPo
                         bool* pfMissingInputs, int64_t nAcceptTime, std::list<CTransactionRef>* plTxnReplaced,
                         bool bypass_limits, const CAmount nAbsurdFee, bool test_accept) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    std::vector<COutPoint> coins_to_uncache;
+    std::vector<OutputIndex> coins_to_uncache;
     bool res = AcceptToMemoryPoolWorker(chainparams, pool, state, tx, pfMissingInputs, nAcceptTime, plTxnReplaced, bypass_limits, nAbsurdFee, coins_to_uncache, test_accept);
     if (!res) {
-        for (const COutPoint& hashTx : coins_to_uncache)
+        for (const OutputIndex& hashTx : coins_to_uncache)
             pcoinsTip->Uncache(hashTx);
     }
     // After we've (potentially) uncached entries, ensure our coins cache is still within its size limits
