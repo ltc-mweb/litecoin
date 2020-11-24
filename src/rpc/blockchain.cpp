@@ -436,7 +436,15 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
             setDepends.insert(txin.prevout.hash.ToString());
     }
 
-    info.pushKV("ismweb", tx.HasMWData());
+    std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+    uint256 created_tx_hash;
+    for (const libmw::Commitment& input_commit : input_commits) {
+        if (mempool.GetCreatedTx(input_commit, created_tx_hash)) {
+            setDepends.insert(created_tx_hash.ToString());
+        }
+    }
+
+    info.pushKV("mweb", tx.HasMWData());
 
     UniValue depends(UniValue::VARR);
     for (const std::string& dep : setDepends)
