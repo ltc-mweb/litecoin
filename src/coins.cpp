@@ -29,7 +29,7 @@ void CCoinsViewBacked::SetBackend(CCoinsView& viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) { return base->BatchWrite(mapCoins, hashBlock, derivedView); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
-libmw::CoinsViewRef CCoinsViewBacked::GetMWView() { return base->GetMWView(); }
+libmw::CoinsViewRef CCoinsViewBacked::GetMWView() const { return base->GetMWView(); }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
@@ -138,6 +138,12 @@ uint256 CCoinsViewCache::GetBestBlock() const {
     if (hashBlock.IsNull())
         hashBlock = base->GetBestBlock();
     return hashBlock;
+}
+
+
+void CCoinsViewCache::SetBackend(CCoinsView& viewIn) {
+    base = &viewIn;
+    mw_view = viewIn.GetMWView().CreateCache();
 }
 
 void CCoinsViewCache::SetBestBlock(const uint256 &hashBlockIn) {
@@ -254,7 +260,7 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
         // MW: Check MWEB inputs
         std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
         for (const libmw::Commitment& input_commit : input_commits) {
-            if (!libmw::node::HasCoin(mw_view, input_commit)) {
+            if (!libmw::node::HasCoin(GetMWView(), input_commit)) {
                 return false;
             }
         }

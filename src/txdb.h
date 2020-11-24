@@ -59,7 +59,7 @@ public:
     CCoinsViewCursor *Cursor() const override;
     CDBWrapper* GetDB() noexcept { return &db; }
     void SetMWView(const libmw::CoinsViewRef& view) { mw_view = view; }
-    libmw::CoinsViewRef GetMWView() final { return mw_view; }
+    libmw::CoinsViewRef GetMWView() const final { return mw_view; }
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();

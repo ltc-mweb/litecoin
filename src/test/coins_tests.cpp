@@ -80,7 +80,7 @@ public:
         return true;
     }
     
-    libmw::CoinsViewRef GetMWView() override
+    libmw::CoinsViewRef GetMWView() const override
     {
         return mw_view_;
     }

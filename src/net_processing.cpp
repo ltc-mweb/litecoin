@@ -1086,7 +1086,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
             return recentRejects->contains(inv.hash) ||
                    mempool.exists(inv.hash) ||
                    pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 0)) || // Best effort: only try output 0 and 1
-                   pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 1)); // MW: Also check Mimblewimble mempool
+                   pcoinsTip->HaveCoinInCache(COutPoint(inv.hash, 1)); // MW: TODO - Also check Mimblewimble mempool
         }
     case MSG_BLOCK:
     case MSG_WITNESS_BLOCK:

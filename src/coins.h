@@ -180,7 +180,7 @@ public:
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }
 
-    virtual libmw::CoinsViewRef GetMWView() { return libmw::CoinsViewRef{nullptr}; }
+    virtual libmw::CoinsViewRef GetMWView() const { return libmw::CoinsViewRef{nullptr}; }
 };
 
 
@@ -199,7 +199,7 @@ public:
     bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    libmw::CoinsViewRef GetMWView() override;
+    libmw::CoinsViewRef GetMWView() const override;
 };
 
 
@@ -231,13 +231,14 @@ public:
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
-    void SetBestBlock(const uint256 &hashBlock);
+    void SetBestBlock(const uint256& hashBlock);
+    void SetBackend(CCoinsView& viewIn);
     bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) override;
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
 
-    libmw::CoinsViewRef GetMWView() final { return mw_view; }
+    libmw::CoinsViewRef GetMWView() const final { return mw_view; }
 
     /**
      * Check if we have the given utxo already loaded in this cache.
