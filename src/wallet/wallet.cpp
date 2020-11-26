@@ -1861,7 +1861,9 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             }
         }
 
-        libmw::wallet::ScanForOutputs(GetMWWallet(), GetMWChain());
+        if (IsHDEnabled()) {
+            libmw::wallet::ScanForOutputs(GetMWWallet(), GetMWChain());
+        }
 
         ShowProgress(strprintf("%s " + _("Rescanning..."), GetDisplayName()), 100); // hide progress dialog in GUI
         if (block_height && fAbortRescan) {

@@ -773,10 +773,13 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
 class MockMWWallet : public libmw::IWallet
 {
 public:
+    MockMWWallet() : m_bip32_index(1) { }
+
     libmw::PrivateKey GenerateNewHDKey() final
     {
         libmw::PrivateKey privateKey;
         GetRandBytes(privateKey.keyBytes.data(), 32);
+        privateKey.bip32Path = "m/0/0/" + std::to_string(m_bip32_index++);
         return privateKey;
     }
 
@@ -793,6 +796,9 @@ public:
     void AddCoins(const std::vector<libmw::Coin>& coins) final { }
     void DeleteCoins(const std::vector<libmw::Coin>& coins) final { }
     uint64_t GetDepthInActiveChain(const libmw::BlockHash& canonical_block_hash) const final { return 0; }
+
+private:
+    int m_bip32_index;
 };
 
 BOOST_AUTO_TEST_CASE(test_mweb)

@@ -163,17 +163,20 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
     // HasMWData() is true only when mweb txs being shared outside of a block (for use by mempools).
     // Blocks themselves do not store mweb txs like normal txs.
     // They are instead stored and processed separately in the mweb block.
-    if (fFromBlock && tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
+    if (fFromBlock && tx.HasMWData()) {
         return state.DoS(10, false, REJECT_INVALID, "bad-txns-mwdata-in-block");
     }
 
-    if (tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
-        // Do nothing. A mimblewimble tx with 0 inputs & 0 outputs is valid.
+    if (tx.HasMWData()) {
         try {
             libmw::node::CheckTransaction(tx.m_mwtx.m_transaction);
         } catch (std::exception&) {
             return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
         }
+    }
+
+    if (tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
+        // Do nothing. A mimblewimble tx with 0 inputs & 0 outputs is valid.
     } else {
         if (tx.vin.empty())
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");

@@ -405,8 +405,8 @@ public:
 
         // Deployment of Mimblewimble (LIP-0002 and LIP-0003)
         consensus.vDeployments[Consensus::DEPLOYMENT_MW].bit = 2; // MW: Figure out bit, nStartTime, and nTimeout
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
-        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime = 1601450001; // September 30, 2020
+        consensus.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout = 1632960000;   // Spetember 30, 2021
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x00");
