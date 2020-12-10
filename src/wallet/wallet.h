@@ -578,9 +578,12 @@ public:
      */
     bool fSafe;
 
+    const libmw::Coin *mwCoin;
+
     COutput(const CWalletTx *txIn, int iIn, int nDepthIn, bool fSpendableIn, bool fSolvableIn, bool fSafeIn, bool use_max_sig_in = false)
     {
         tx = txIn; i = iIn; nDepth = nDepthIn; fSpendable = fSpendableIn; fSolvable = fSolvableIn; fSafe = fSafeIn; nInputBytes = -1; use_max_sig = use_max_sig_in;
+        mwCoin = nullptr;
         // If known and signable by the given wallet, compute nInputBytes
         // Failure will keep this value -1
         if (fSpendable && tx) {
@@ -588,10 +591,17 @@ public:
         }
     }
 
+    COutput(const libmw::Coin& coin)
+    {
+        mwCoin = &coin;
+        fSpendable = coin.key && !coin.spent;
+    }
+
     std::string ToString() const;
 
     inline CInputCoin GetInputCoin() const
     {
+        if (mwCoin) return CInputCoin(*mwCoin);
         return CInputCoin(tx->tx, i, nInputBytes);
     }
 };

@@ -2560,7 +2560,10 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
         {
             if (!out.fSpendable)
                  continue;
-            nValueRet += out.tx->tx->vout[out.i].nValue;
+            if (out.mwCoin)
+                nValueRet += out.mwCoin->amount;
+            else
+                nValueRet += out.tx->tx->vout[out.i].nValue;
             setCoinsRet.insert(out.GetInputCoin());
         }
         return (nValueRet >= nTargetValue);
@@ -4557,6 +4560,11 @@ std::vector<OutputGroup> CWallet::GroupOutputs(const std::vector<COutput>& outpu
     for (const auto& output : outputs) {
         if (output.fSpendable) {
             CInputCoin input_coin = output.GetInputCoin();
+
+            if (input_coin.mwCoin) {
+                groups.emplace_back(input_coin, 1, true, 0, 0);
+                continue;
+            }
 
             size_t ancestors, descendants;
             mempool.GetTransactionAncestry(output.tx->GetHash(), ancestors, descendants);

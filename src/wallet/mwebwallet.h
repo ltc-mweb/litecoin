@@ -92,6 +92,41 @@ public:
         }
     }
 
+    std::vector<libmw::Coin> SelectCoins(
+        const std::vector<libmw::Coin>& coins,
+        const uint64_t amount,
+        const uint64_t fee_base) const final
+    {
+        std::vector<COutput> vCoins;
+        std::transform(
+            coins.cbegin(), coins.cend(),
+            std::back_inserter(vCoins),
+            [](const libmw::Coin& coin) { return COutput(coin); }
+        );
+
+        std::set<CInputCoin> setCoins;
+        CAmount nValueIn;
+        CCoinControl coinControl;
+        CoinSelectionParams coin_selection_params;
+        bool bnb_used;
+
+        coinControl.m_feerate = CFeeRate(fee_base);
+        if (!m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used)) {
+            if (bnb_used) {
+                coin_selection_params.use_bnb = false;
+                m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
+            }
+        }
+
+        std::vector<libmw::Coin> result;
+        std::transform(
+            setCoins.cbegin(), setCoins.cend(),
+            std::back_inserter(result),
+            [](const CInputCoin& coin) { return *coin.mwCoin; }
+        );
+        return result;
+    }
+
     uint64_t GetDepthInActiveChain(const libmw::BlockHash& canonical_block_hash) const final
     {
         auto locked_chain = m_pWallet->chain().lock();
