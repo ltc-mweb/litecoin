@@ -97,11 +97,11 @@ public:
         const uint64_t amount,
         const uint64_t fee_base) const final
     {
-        std::vector<COutput> vCoins;
+        std::vector<COutputCoin> vCoins;
         std::transform(
             coins.cbegin(), coins.cend(),
             std::back_inserter(vCoins),
-            [](const libmw::Coin& coin) { return COutput(coin); }
+            [](const libmw::Coin& coin) { return COutputCoin(coin); }
         );
 
         std::set<CInputCoin> setCoins;
@@ -111,12 +111,12 @@ public:
         bool bnb_used;
 
         coinControl.m_feerate = CFeeRate(fee_base);
-        if (!m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used)) {
-            if (bnb_used) {
-                coin_selection_params.use_bnb = false;
-                m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
-            }
+        bool ok = m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
+        if (!ok && bnb_used) {
+            coin_selection_params.use_bnb = false;
+            ok = m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
         }
+        if (!ok) throw std::runtime_error(std::string(__func__) + ": insufficient funds");
 
         std::vector<libmw::Coin> result;
         std::transform(

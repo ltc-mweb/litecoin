@@ -578,12 +578,9 @@ public:
      */
     bool fSafe;
 
-    const libmw::Coin *mwCoin;
-
     COutput(const CWalletTx *txIn, int iIn, int nDepthIn, bool fSpendableIn, bool fSolvableIn, bool fSafeIn, bool use_max_sig_in = false)
     {
         tx = txIn; i = iIn; nDepth = nDepthIn; fSpendable = fSpendableIn; fSolvable = fSolvableIn; fSafe = fSafeIn; nInputBytes = -1; use_max_sig = use_max_sig_in;
-        mwCoin = nullptr;
         // If known and signable by the given wallet, compute nInputBytes
         // Failure will keep this value -1
         if (fSpendable && tx) {
@@ -591,18 +588,38 @@ public:
         }
     }
 
-    COutput(const libmw::Coin& coin)
-    {
-        mwCoin = &coin;
-        fSpendable = coin.key && !coin.spent;
-    }
-
     std::string ToString() const;
 
     inline CInputCoin GetInputCoin() const
     {
-        if (mwCoin) return CInputCoin(*mwCoin);
         return CInputCoin(tx->tx, i, nInputBytes);
+    }
+};
+
+struct COutputCoin
+{
+    const COutput *out;
+    const libmw::Coin *mwCoin;
+
+    COutputCoin(const COutput& out) : out(&out) {}
+    COutputCoin(const libmw::Coin& coin) : mwCoin(&coin) {}
+
+    inline bool IsSpendable() const
+    {
+        if (mwCoin) return mwCoin->key && !mwCoin->spent;
+        return out->fSpendable;
+    }
+
+    inline CAmount GetValue() const
+    {
+        if (mwCoin) return mwCoin->amount;
+        return out->tx->tx->vout[out->i].nValue;
+    }
+
+    inline CInputCoin GetInputCoin() const
+    {
+        if (mwCoin) return CInputCoin(*mwCoin);
+        return out->GetInputCoin();
     }
 };
 
@@ -772,7 +789,7 @@ public:
      * all coins from coinControl are selected; Never select unconfirmed coins
      * if they are not ours
      */
-    bool SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
+    bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     const WalletLocation& GetLocation() const { return m_location; }
@@ -854,7 +871,7 @@ public:
         std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const;
 
     bool IsSpent(interfaces::Chain::Lock& locked_chain, const uint256& hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    std::vector<OutputGroup> GroupOutputs(const std::vector<COutput>& outputs, bool single_coin) const;
+    std::vector<OutputGroup> GroupOutputs(const std::vector<COutputCoin>& outputs, bool single_coin) const;
 
     bool IsLockedCoin(uint256 hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void LockCoin(const COutPoint& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
