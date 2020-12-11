@@ -596,6 +596,33 @@ public:
     }
 };
 
+struct COutputCoin
+{
+    const COutput *out;
+    const libmw::Coin *mwCoin;
+
+    COutputCoin(const COutput& out) : out(&out) {}
+    COutputCoin(const libmw::Coin& coin) : mwCoin(&coin) {}
+
+    inline bool IsSpendable() const
+    {
+        if (mwCoin) return mwCoin->key && !mwCoin->spent;
+        return out->fSpendable;
+    }
+
+    inline CAmount GetValue() const
+    {
+        if (mwCoin) return mwCoin->amount;
+        return out->tx->tx->vout[out->i].nValue;
+    }
+
+    inline CInputCoin GetInputCoin() const
+    {
+        if (mwCoin) return CInputCoin(*mwCoin);
+        return out->GetInputCoin();
+    }
+};
+
 /** Private key that includes an expiration date in case it never gets used. */
 class CWalletKey
 {
@@ -762,7 +789,7 @@ public:
      * all coins from coinControl are selected; Never select unconfirmed coins
      * if they are not ours
      */
-    bool SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
+    bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     const WalletLocation& GetLocation() const { return m_location; }
@@ -844,7 +871,7 @@ public:
         std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const;
 
     bool IsSpent(interfaces::Chain::Lock& locked_chain, const uint256& hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    std::vector<OutputGroup> GroupOutputs(const std::vector<COutput>& outputs, bool single_coin) const;
+    std::vector<OutputGroup> GroupOutputs(const std::vector<COutputCoin>& outputs, bool single_coin) const;
 
     bool IsLockedCoin(uint256 hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void LockCoin(const COutPoint& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);

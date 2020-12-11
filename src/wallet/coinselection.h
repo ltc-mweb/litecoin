@@ -33,9 +33,18 @@ public:
         m_input_bytes = input_bytes;
     }
 
+    CInputCoin(const libmw::Coin& coin)
+    {
+        mwCoin = &coin;
+        txout.nValue = effective_value = coin.amount;
+        m_input_bytes = sizeof(libmw::Commitment);
+    }
+
     COutPoint outpoint;
     CTxOut txout;
     CAmount effective_value;
+
+    const libmw::Coin *mwCoin;
 
     /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
     int m_input_bytes{-1};

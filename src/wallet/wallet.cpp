@@ -2546,9 +2546,9 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
     }
 }
 
-bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
+bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
 {
-    std::vector<COutput> vCoins(vAvailableCoins);
+    std::vector<COutputCoin> vCoins(vAvailableCoins);
 
     // coin control -> return all selected outputs (we want all selected to go into the transaction for sure)
     if (coin_control.HasSelected() && !coin_control.fAllowOtherInputs)
@@ -2556,11 +2556,11 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
         // We didn't use BnB here, so set it to false.
         bnb_used = false;
 
-        for (const COutput& out : vCoins)
+        for (const COutputCoin& out : vCoins)
         {
-            if (!out.fSpendable)
+            if (!out.IsSpendable())
                  continue;
-            nValueRet += out.tx->tx->vout[out.i].nValue;
+            nValueRet += out.GetValue();
             setCoinsRet.insert(out.GetInputCoin());
         }
         return (nValueRet >= nTargetValue);
@@ -2593,7 +2593,7 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
     }
 
     // remove preset inputs from vCoins
-    for (std::vector<COutput>::iterator it = vCoins.begin(); it != vCoins.end() && coin_control.HasSelected();)
+    for (std::vector<COutputCoin>::iterator it = vCoins.begin(); it != vCoins.end() && coin_control.HasSelected();)
     {
         if (setPresetCoins.count(it->GetInputCoin()))
             it = vCoins.erase(it);
@@ -2835,8 +2835,14 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
         auto locked_chain = chain().lock();
         LOCK(cs_wallet);
         {
-            std::vector<COutput> vAvailableCoins;
-            AvailableCoins(*locked_chain, vAvailableCoins, true, &coin_control);
+            std::vector<COutput> coins;
+            AvailableCoins(*locked_chain, coins, true, &coin_control);
+            std::vector<COutputCoin> vAvailableCoins;
+            std::transform(
+                coins.cbegin(), coins.cend(),
+                std::back_inserter(vAvailableCoins),
+                [](const COutput& out) { return COutputCoin(out); }
+            );
             CoinSelectionParams coin_selection_params; // Parameters for coin selection, init with dummy
 
             // Create change script that will be used if we need change
@@ -4550,14 +4556,20 @@ void CWallet::LearnAllRelatedScripts(const CPubKey& key)
     LearnRelatedScripts(key, OutputType::P2SH_SEGWIT);
 }
 
-std::vector<OutputGroup> CWallet::GroupOutputs(const std::vector<COutput>& outputs, bool single_coin) const {
+std::vector<OutputGroup> CWallet::GroupOutputs(const std::vector<COutputCoin>& outputs, bool single_coin) const {
     std::vector<OutputGroup> groups;
     std::map<CTxDestination, OutputGroup> gmap;
     CTxDestination dst;
-    for (const auto& output : outputs) {
-        if (output.fSpendable) {
-            CInputCoin input_coin = output.GetInputCoin();
+    for (const auto& out : outputs) {
+        if (out.IsSpendable()) {
+            CInputCoin input_coin = out.GetInputCoin();
 
+            if (input_coin.mwCoin) {
+                groups.emplace_back(input_coin, 1, true, 0, 0);
+                continue;
+            }
+
+            const COutput& output = *out.out;
             size_t ancestors, descendants;
             mempool.GetTransactionAncestry(output.tx->GetHash(), ancestors, descendants);
             if (!single_coin && ExtractDestination(output.tx->tx->vout[output.i].scriptPubKey, dst)) {
