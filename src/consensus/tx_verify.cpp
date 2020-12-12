@@ -262,7 +262,12 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     CAmount txfee_aux = nValueIn - value_out;
 
     if (tx.HasMWData()) {
-        libmw::node::CheckTxInputs(tx.m_mwtx.m_transaction, inputs.GetMWView(), nSpendHeight);
+        try {
+            libmw::node::CheckTxInputs(tx.m_mwtx.m_transaction, inputs.GetMWView(), nSpendHeight);
+        } catch (std::exception&) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-mweb", false,
+                             strprintf("%s: MWEB inputs missing/immature", __func__));
+        }
         txfee_aux += tx.m_mwtx.m_transaction.GetTotalFee();
     }
 
