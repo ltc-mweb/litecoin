@@ -494,10 +494,10 @@ static UniValue pegout(const JSONRPCRequest& request)
     mapValue_t mapValue;
 
     CReserveKey reservekey(pwallet);
-    CAmount nFeeRequired;
+    //CAmount nFeeRequired;
     std::string strError;
     std::vector<CRecipient> vecSend;
-    int nChangePosRet = -1;
+    //int nChangePosRet = -1;
 
     CScript pegout_script;
 
@@ -561,7 +561,7 @@ static UniValue sendmweb(const JSONRPCRequest& request)
     libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
 
     // Check amount
-    if (nAmount > balances.confirmed_balance) {
+    if ((uint64_t)nAmount > balances.confirmed_balance) {
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient confirmed balance");
     }
 

@@ -263,7 +263,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 
     if (tx.HasMWData()) {
         try {
-            libmw::node::CheckTxInputs(tx.m_mwtx.m_transaction, inputs.GetMWView(), nSpendHeight);
+            libmw::node::CheckTxInputs(inputs.GetMWView(), tx.m_mwtx.m_transaction, nSpendHeight);
         } catch (std::exception&) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-mweb", false,
                              strprintf("%s: MWEB inputs missing/immature", __func__));

@@ -2835,14 +2835,8 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
         auto locked_chain = chain().lock();
         LOCK(cs_wallet);
         {
-            std::vector<COutput> coins;
-            AvailableCoins(*locked_chain, coins, true, &coin_control);
-            std::vector<COutputCoin> vAvailableCoins;
-            std::transform(
-                coins.cbegin(), coins.cend(),
-                std::back_inserter(vAvailableCoins),
-                [](const COutput& out) { return COutputCoin(out); }
-            );
+            std::vector<COutput> vAvailableCoins;
+            AvailableCoins(*locked_chain, vAvailableCoins, true, &coin_control);
             CoinSelectionParams coin_selection_params; // Parameters for coin selection, init with dummy
 
             // Create change script that will be used if we need change
