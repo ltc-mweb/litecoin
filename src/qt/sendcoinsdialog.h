@@ -92,6 +92,7 @@ private Q_SLOTS:
     void coinControlClipboardBytes();
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
+    void mwebFeatureChanged(bool);
     void updateFeeSectionControls();
     void updateSmartFeeLabel();
 

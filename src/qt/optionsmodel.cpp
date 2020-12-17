@@ -80,6 +80,10 @@ void OptionsModel::Init(bool resetSettings)
         settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
 
+    if (!settings.contains("fMWEBFeatures"))
+        settings.setValue("fMWEBFeatures", false);
+    fMWEBFeatures = settings.value("fMWEBFeatures", false).toBool();
+
     // These are shared with the core or have a command-line parameter
     // and we want command-line parameters to overwrite the GUI settings.
     //
@@ -292,6 +296,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("language");
         case CoinControlFeatures:
             return fCoinControlFeatures;
+        case MWEBFeatures:
+            return fMWEBFeatures;
         case Prune:
             return settings.value("bPrune");
         case PruneSize:
@@ -419,6 +425,11 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             fCoinControlFeatures = value.toBool();
             settings.setValue("fCoinControlFeatures", fCoinControlFeatures);
             Q_EMIT coinControlFeaturesChanged(fCoinControlFeatures);
+            break;
+        case MWEBFeatures:
+            fMWEBFeatures = value.toBool();
+            settings.setValue("fMWEBFeatures", fMWEBFeatures);
+            Q_EMIT mwebFeaturesChanged(fMWEBFeatures);
             break;
         case Prune:
             if (settings.value("bPrune") != value) {

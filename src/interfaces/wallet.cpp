@@ -374,6 +374,10 @@ public:
             result.unconfirmed_watch_only_balance = m_wallet->GetUnconfirmedWatchOnlyBalance();
             result.immature_watch_only_balance = m_wallet->GetImmatureWatchOnlyBalance();
         }
+        libmw::WalletBalance balances = libmw::wallet::GetBalance(m_wallet->GetMWWallet());
+        result.mweb_balance = balances.confirmed_balance;
+        result.unconfirmed_mweb_balance = balances.unconfirmed_balance;
+        result.immature_mweb_balance = balances.immature_balance;
         return result;
     }
     bool tryGetBalances(WalletBalances& balances, int& num_blocks) override
