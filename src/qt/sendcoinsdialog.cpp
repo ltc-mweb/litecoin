@@ -14,6 +14,7 @@
 #include <qt/clientmodel.h>
 #include <qt/coincontroldialog.h>
 #include <qt/guiutil.h>
+#include <qt/mwebpegindialog.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 #include <qt/sendcoinsentry.h>
@@ -107,6 +108,10 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     ui->labelCoinControlLowOutput->addAction(clipboardLowOutputAction);
     ui->labelCoinControlChange->addAction(clipboardChangeAction);
 
+    // MWEB Features
+    connect(ui->pushButtonMWEBPegIn, &QPushButton::clicked, this, &SendCoinsDialog::mwebPegInButtonClicked);
+    connect(ui->pushButtonMWEBPegOut, &QPushButton::clicked, this, &SendCoinsDialog::mwebPegOutButtonClicked);
+
     // init transaction fee section
     QSettings settings;
     if (!settings.contains("fFeeSectionMinimized"))
@@ -125,6 +130,10 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     ui->customFee->SetAllowEmpty(false);
     ui->customFee->setValue(settings.value("nTransactionFee").toLongLong());
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
+
+    mwebPegInDialog = new MWEBPegInDialog(platformStyle, this);
+    // Pass through messages from MWEBPegInDialog
+    connect(mwebPegInDialog, &MWEBPegInDialog::message, this, &SendCoinsDialog::message);
 }
 
 void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
@@ -900,6 +909,18 @@ void SendCoinsDialog::mwebFeatureChanged(bool checked)
     ui->frameMWEBFeatures->setVisible(checked);
     ui->publicBalance->setVisible(checked);
     ui->mwebBalance->setVisible(checked);
+}
+
+// MWEB features: button inputs -> pegin
+void SendCoinsDialog::mwebPegInButtonClicked()
+{
+    mwebPegInDialog->setModel(model);
+    mwebPegInDialog->exec();
+}
+
+// MWEB features: button inputs -> pegout
+void SendCoinsDialog::mwebPegOutButtonClicked()
+{
 }
 
 SendConfirmationDialog::SendConfirmationDialog(const QString &title, const QString &text, int _secDelay,

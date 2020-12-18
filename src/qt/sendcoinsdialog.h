@@ -5,6 +5,7 @@
 #ifndef BITCOIN_QT_SENDCOINSDIALOG_H
 #define BITCOIN_QT_SENDCOINSDIALOG_H
 
+#include <qt/mwebpegindialog.h>
 #include <qt/walletmodel.h>
 
 #include <QDialog>
@@ -63,6 +64,7 @@ private:
     bool fNewRecipientAllowed;
     bool fFeeMinimized;
     const PlatformStyle *platformStyle;
+    MWEBPegInDialog *mwebPegInDialog;
 
     // Process WalletModel::SendCoinsReturn and generate a pair consisting
     // of a message and message flags for use in Q_EMIT message().
@@ -93,6 +95,8 @@ private Q_SLOTS:
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
     void mwebFeatureChanged(bool);
+    void mwebPegInButtonClicked();
+    void mwebPegOutButtonClicked();
     void updateFeeSectionControls();
     void updateSmartFeeLabel();
 
