@@ -256,6 +256,21 @@ public:
         }
         return std::move(pending);
     }
+    bool commitTransaction(CTransactionRef tx,
+        WalletValueMap value_map,
+        WalletOrderForm order_form,
+        std::string& reject_reason) override
+    {
+        auto locked_chain = m_wallet->chain().lock();
+        LOCK(m_wallet->cs_wallet);
+        CReserveKey key(m_wallet.get());
+        CValidationState state;
+        if (!m_wallet->CommitTransaction(tx, std::move(value_map), std::move(order_form), key, g_connman.get(), state)) {
+            reject_reason = state.GetRejectReason();
+            return false;
+        }
+        return true;
+    }
     bool transactionCanBeAbandoned(const uint256& txid) override { return m_wallet->TransactionCanBeAbandoned(txid); }
     bool abandonTransaction(const uint256& txid) override
     {

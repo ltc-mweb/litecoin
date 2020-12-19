@@ -6,6 +6,7 @@
 #define BITCOIN_QT_SENDCOINSDIALOG_H
 
 #include <qt/mwebpegindialog.h>
+#include <qt/mwebpegoutdialog.h>
 #include <qt/walletmodel.h>
 
 #include <QDialog>
@@ -65,6 +66,7 @@ private:
     bool fFeeMinimized;
     const PlatformStyle *platformStyle;
     MWEBPegInDialog *mwebPegInDialog;
+    MWEBPegOutDialog *mwebPegOutDialog;
 
     // Process WalletModel::SendCoinsReturn and generate a pair consisting
     // of a message and message flags for use in Q_EMIT message().

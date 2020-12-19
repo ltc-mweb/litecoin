@@ -15,6 +15,7 @@
 #include <qt/coincontroldialog.h>
 #include <qt/guiutil.h>
 #include <qt/mwebpegindialog.h>
+#include <qt/mwebpegoutdialog.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 #include <qt/sendcoinsentry.h>
@@ -132,8 +133,10 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
 
     mwebPegInDialog = new MWEBPegInDialog(platformStyle, this);
-    // Pass through messages from MWEBPegInDialog
+    mwebPegOutDialog = new MWEBPegOutDialog(platformStyle, this);
+    // Pass through messages
     connect(mwebPegInDialog, &MWEBPegInDialog::message, this, &SendCoinsDialog::message);
+    connect(mwebPegOutDialog, &MWEBPegOutDialog::message, this, &SendCoinsDialog::message);
 }
 
 void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
@@ -921,6 +924,8 @@ void SendCoinsDialog::mwebPegInButtonClicked()
 // MWEB features: button inputs -> pegout
 void SendCoinsDialog::mwebPegOutButtonClicked()
 {
+    mwebPegOutDialog->setModel(model);
+    mwebPegOutDialog->exec();
 }
 
 SendConfirmationDialog::SendConfirmationDialog(const QString &title, const QString &text, int _secDelay,

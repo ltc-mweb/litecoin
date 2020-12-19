@@ -17,6 +17,7 @@ QT_FORMS_UI = \
   qt/forms/intro.ui \
   qt/forms/modaloverlay.ui \
   qt/forms/mwebpegindialog.ui \
+  qt/forms/mwebpegoutdialog.ui \
   qt/forms/openuridialog.ui \
   qt/forms/optionsdialog.ui \
   qt/forms/overviewpage.ui \
@@ -49,6 +50,7 @@ QT_MOC_CPP = \
   qt/moc_macnotificationhandler.cpp \
   qt/moc_modaloverlay.cpp \
   qt/moc_mwebpegindialog.cpp \
+  qt/moc_mwebpegoutdialog.cpp \
   qt/moc_notificator.cpp \
   qt/moc_openuridialog.cpp \
   qt/moc_optionsdialog.cpp \
@@ -127,6 +129,7 @@ BITCOIN_QT_H = \
   qt/macos_appnap.h \
   qt/modaloverlay.h \
   qt/mwebpegindialog.h \
+  qt/mwebpegoutdialog.h \
   qt/networkstyle.h \
   qt/notificator.h \
   qt/openuridialog.h \
@@ -256,6 +259,7 @@ BITCOIN_QT_WALLET_CPP = \
   qt/coincontroltreewidget.cpp \
   qt/editaddressdialog.cpp \
   qt/mwebpegindialog.cpp \
+  qt/mwebpegoutdialog.cpp \
   qt/openuridialog.cpp \
   qt/overviewpage.cpp \
   qt/paymentserver.cpp \
