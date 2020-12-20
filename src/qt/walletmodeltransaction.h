@@ -7,6 +7,8 @@
 
 #include <qt/walletmodel.h>
 
+#include <wallet/wallet.h>
+
 #include <memory>
 #include <amount.h>
 
@@ -37,10 +39,14 @@ public:
 
     void reassignAmounts(int nChangePosRet); // needed for the subtract-fee-from-amount feature
 
+    void setMapValue(const std::string& key, const std::string& value);
+    const mapValue_t& getValueMap() const;
+
 private:
     QList<SendCoinsRecipient> recipients;
     std::unique_ptr<interfaces::PendingWalletTx> wtx;
     CAmount fee;
+    mapValue_t valueMap;
 };
 
 #endif // BITCOIN_QT_WALLETMODELTRANSACTION_H

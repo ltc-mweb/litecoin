@@ -69,6 +69,9 @@ public:
     // If from a payment request, this is used for storing the memo
     QString message;
 
+    bool pegIn;
+    bool pegOut;
+
 #ifdef ENABLE_BIP70
     // If from a payment request, paymentRequest.IsInitialized() will be true
     PaymentRequestPlus paymentRequest;

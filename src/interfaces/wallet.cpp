@@ -245,7 +245,7 @@ public:
         int& change_pos,
         CAmount& fee,
         std::string& fail_reason,
-        CMWTx mwtx) override
+        const CMWTx& mwtx) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
@@ -256,20 +256,13 @@ public:
         }
         return std::move(pending);
     }
-    bool commitTransaction(CTransactionRef tx,
-        WalletValueMap value_map,
-        WalletOrderForm order_form,
-        std::string& reject_reason) override
+    std::unique_ptr<PendingWalletTx> createTransaction(const CMWTx& mwtx) override
     {
-        auto locked_chain = m_wallet->chain().lock();
-        LOCK(m_wallet->cs_wallet);
-        CReserveKey key(m_wallet.get());
-        CValidationState state;
-        if (!m_wallet->CommitTransaction(tx, std::move(value_map), std::move(order_form), key, g_connman.get(), state)) {
-            reject_reason = state.GetRejectReason();
-            return false;
-        }
-        return true;
+        auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
+        CMutableTransaction tx;
+        tx.m_mwtx = mwtx;
+        pending->m_tx = MakeTransactionRef(tx);
+        return std::move(pending);
     }
     bool transactionCanBeAbandoned(const uint256& txid) override { return m_wallet->TransactionCanBeAbandoned(txid); }
     bool abandonTransaction(const uint256& txid) override

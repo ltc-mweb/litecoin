@@ -59,13 +59,14 @@ SendCoinsEntry::~SendCoinsEntry()
 
 void SendCoinsEntry::on_pasteButton_clicked()
 {
+    if (ui->payTo->isReadOnly()) return;
     // Paste text from clipboard into recipient field
     ui->payTo->setText(QApplication::clipboard()->text());
 }
 
 void SendCoinsEntry::on_addressBookButton_clicked()
 {
-    if(!model)
+    if(!model || ui->payTo->isReadOnly())
         return;
     AddressBookPage dlg(platformStyle, AddressBookPage::ForSelection, AddressBookPage::SendingTab, this);
     dlg.setModel(model->getAddressTableModel());
@@ -143,7 +144,7 @@ bool SendCoinsEntry::validate(interfaces::Node& node)
         return retval;
 #endif
 
-    if (!model->validateAddress(ui->payTo->text()))
+    if (pegInAddress.empty() && pegOutAddress.empty() && !model->validateAddress(ui->payTo->text()))
     {
         ui->payTo->setValid(false);
         retval = false;
@@ -178,8 +179,18 @@ SendCoinsRecipient SendCoinsEntry::getValue()
         return recipient;
 #endif
 
-    // Normal payment
-    recipient.address = ui->payTo->text();
+    recipient.pegIn = false;
+    recipient.pegOut = false;
+    if (pegInAddress.size()) {
+        recipient.address = QString::fromStdString(pegInAddress);
+        recipient.pegIn = true;
+    } else if (pegOutAddress.size()) {
+        recipient.address = QString::fromStdString(pegOutAddress);
+        recipient.pegOut = true;
+    } else {
+        // Normal payment
+        recipient.address = ui->payTo->text();
+    }
     recipient.label = ui->addAsLabel->text();
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
@@ -249,6 +260,36 @@ void SendCoinsEntry::setAddress(const QString &address)
 void SendCoinsEntry::setAmount(const CAmount &amount)
 {
     ui->payAmount->setValue(amount);
+}
+
+void SendCoinsEntry::setPegInAddress(const std::string& address)
+{
+    pegInAddress = address;
+    pegOutAddress = "";
+
+    if (address.empty()) {
+        setAddress("");
+        ui->payTo->setReadOnly(false);
+    } else {
+        setAddress(QString::fromStdString("Peg-In: " + address));
+        ui->payTo->setReadOnly(true);
+        ui->payTo->setCursorPosition(0);
+    }
+}
+
+void SendCoinsEntry::setPegOutAddress(const std::string& address)
+{
+    pegInAddress = "";
+    pegOutAddress = address;
+
+    if (address.empty()) {
+        setAddress("");
+        ui->payTo->setReadOnly(false);
+    } else {
+        setAddress(QString::fromStdString("Peg-Out: " + address));
+        ui->payTo->setReadOnly(true);
+        ui->payTo->setCursorPosition(0);
+    }
 }
 
 bool SendCoinsEntry::isClear()

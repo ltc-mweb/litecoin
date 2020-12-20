@@ -14,8 +14,6 @@
 #include <qt/clientmodel.h>
 #include <qt/coincontroldialog.h>
 #include <qt/guiutil.h>
-#include <qt/mwebpegindialog.h>
-#include <qt/mwebpegoutdialog.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 #include <qt/sendcoinsentry.h>
@@ -131,12 +129,6 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     ui->customFee->SetAllowEmpty(false);
     ui->customFee->setValue(settings.value("nTransactionFee").toLongLong());
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
-
-    mwebPegInDialog = new MWEBPegInDialog(platformStyle, this);
-    mwebPegOutDialog = new MWEBPegOutDialog(platformStyle, this);
-    // Pass through messages
-    connect(mwebPegInDialog, &MWEBPegInDialog::message, this, &SendCoinsDialog::message);
-    connect(mwebPegOutDialog, &MWEBPegOutDialog::message, this, &SendCoinsDialog::message);
 }
 
 void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
@@ -420,6 +412,9 @@ void SendCoinsDialog::clear()
     ui->lineEditCoinControlChange->clear();
     coinControlUpdateLabels();
 
+    ui->pushButtonMWEBPegIn->setChecked(false);
+    ui->pushButtonMWEBPegOut->setChecked(false);
+
     // Remove entries until only one left
     while(ui->entries->count())
     {
@@ -442,6 +437,8 @@ void SendCoinsDialog::accept()
 
 SendCoinsEntry *SendCoinsDialog::addEntry()
 {
+    if (ui->pushButtonMWEBPegOut->isChecked()) return nullptr;
+
     SendCoinsEntry *entry = new SendCoinsEntry(platformStyle, this);
     entry->setModel(model);
     ui->entries->addWidget(entry);
@@ -472,6 +469,11 @@ void SendCoinsDialog::updateTabsAndLabels()
 void SendCoinsDialog::removeEntry(SendCoinsEntry* entry)
 {
     entry->hide();
+
+    if (entry == qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget())) {
+        ui->pushButtonMWEBPegIn->setChecked(false);
+        ui->pushButtonMWEBPegOut->setChecked(false);
+    }
 
     // If the last entry is about to be removed add an empty one
     if (ui->entries->count() == 1)
@@ -513,6 +515,7 @@ void SendCoinsDialog::setAddress(const QString &address)
     if(!entry)
     {
         entry = addEntry();
+        if (!entry) return;
     }
 
     entry->setAddress(address);
@@ -536,6 +539,7 @@ void SendCoinsDialog::pasteEntry(const SendCoinsRecipient &rv)
     if(!entry)
     {
         entry = addEntry();
+        if (!entry) return;
     }
 
     entry->setValue(rv);
@@ -915,17 +919,58 @@ void SendCoinsDialog::mwebFeatureChanged(bool checked)
 }
 
 // MWEB features: button inputs -> pegin
-void SendCoinsDialog::mwebPegInButtonClicked()
+void SendCoinsDialog::mwebPegInButtonClicked(bool checked)
 {
-    mwebPegInDialog->setModel(model);
-    mwebPegInDialog->exec();
+    ui->pushButtonMWEBPegOut->setChecked(false);
+
+    SendCoinsEntry *entry = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
+    if (checked) {
+        entry->setPegInAddress(libmw::wallet::GetAddress(model->wallet().GetMWWallet()));
+    } else {
+        entry->setPegInAddress("");
+    }
 }
 
 // MWEB features: button inputs -> pegout
-void SendCoinsDialog::mwebPegOutButtonClicked()
+void SendCoinsDialog::mwebPegOutButtonClicked(bool checked)
 {
-    mwebPegOutDialog->setModel(model);
-    mwebPegOutDialog->exec();
+    ui->pushButtonMWEBPegIn->setChecked(false);
+
+    SendCoinsEntry *entry = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
+    if (checked) {
+        if (!model || !model->getOptionsModel()) {
+            return;
+        }
+
+        WalletModel::UnlockContext ctx(model->requestUnlock());
+        if (!ctx.isValid()) {
+            // Unlock wallet was cancelled
+            return;
+        }
+
+        if (!model->wallet().canGetAddresses()) {
+            return;
+        }
+
+        CPubKey newKey;
+        if (!model->wallet().getKeyFromPool(false, newKey)) {
+            return;
+        }
+
+        auto output_type = OutputType::BECH32;
+        model->wallet().learnRelatedScripts(newKey, output_type);
+        CTxDestination dest = GetDestinationForKey(newKey, output_type);
+
+        model->wallet().setAddressBook(dest, "mweb", "receive");
+
+        entry->setPegOutAddress(EncodeDestination(dest));
+
+        while (ui->entries->count() > 1) {
+            ui->entries->takeAt(1)->widget()->deleteLater();
+        }
+    } else {
+        entry->setPegOutAddress("");
+    }
 }
 
 SendConfirmationDialog::SendConfirmationDialog(const QString &title, const QString &text, int _secDelay,

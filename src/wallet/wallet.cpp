@@ -2800,7 +2800,7 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
 }
 
 bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet,
-                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, CMWTx mwtx)
+                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, const CMWTx& mwtx)
 {
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;

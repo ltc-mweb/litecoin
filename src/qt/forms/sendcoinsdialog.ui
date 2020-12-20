@@ -669,6 +669,9 @@
             <property name="text">
              <string>Peg-In LTC</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
             <property name="autoDefault">
              <bool>false</bool>
             </property>
@@ -681,6 +684,9 @@
             </property>
             <property name="text">
              <string>Peg-Out LTC</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
             </property>
             <property name="autoDefault">
              <bool>false</bool>

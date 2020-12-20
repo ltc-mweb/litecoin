@@ -138,13 +138,9 @@ public:
         int& change_pos,
         CAmount& fee,
         std::string& fail_reason,
-        CMWTx mwtx = CMWTx()) = 0;
+        const CMWTx& mwtx = CMWTx()) = 0;
 
-    //! Commit transaction.
-    virtual bool commitTransaction(CTransactionRef tx,
-        WalletValueMap value_map,
-        WalletOrderForm order_form,
-        std::string& reject_reason) = 0;
+    virtual std::unique_ptr<PendingWalletTx> createTransaction(const CMWTx& mwtx) = 0;
 
     //! Return whether transaction can be abandoned.
     virtual bool transactionCanBeAbandoned(const uint256& txid) = 0;
