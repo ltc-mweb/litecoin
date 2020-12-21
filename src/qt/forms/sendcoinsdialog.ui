@@ -1360,6 +1360,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
            <property name="text">
             <string notr="true">123.456 LTC</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
            <property name="textInteractionFlags">
             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
            </property>
@@ -1411,6 +1414,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
             </property>
             <property name="text">
              <string notr="true">123.456 LTC</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
             <property name="textInteractionFlags">
              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -1464,6 +1470,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
             </property>
             <property name="text">
              <string notr="true">123.456 LTC</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
             <property name="textInteractionFlags">
              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
