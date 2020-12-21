@@ -102,6 +102,7 @@ void SendCoinsEntry::clear()
     ui->addAsLabel->clear();
     ui->payAmount->clear();
     ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
+    ui->checkboxSubtractFeeFromAmount->setEnabled(true);
     ui->messageTextLabel->clear();
     ui->messageTextLabel->hide();
     ui->messageLabel->hide();
@@ -120,6 +121,7 @@ void SendCoinsEntry::clear()
 
 void SendCoinsEntry::checkSubtractFeeFromAmount()
 {
+    if (pegInAddress.size() || pegOutAddress.size()) return;
     ui->checkboxSubtractFeeFromAmount->setChecked(true);
 }
 
@@ -182,7 +184,6 @@ SendCoinsRecipient SendCoinsEntry::getValue()
         return recipient;
 #endif
 
-    recipient.type = SendCoinsRecipient::REGULAR;
     if (pegInAddress.size()) {
         recipient.address = QString::fromStdString(pegInAddress);
         recipient.type = SendCoinsRecipient::MWEB_PEGIN;
@@ -192,6 +193,7 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     } else {
         // Normal payment
         recipient.address = ui->payTo->text();
+        recipient.type = SendCoinsRecipient::REGULAR;
     }
     recipient.label = ui->addAsLabel->text();
     recipient.amount = ui->payAmount->value();
@@ -272,10 +274,13 @@ void SendCoinsEntry::setPegInAddress(const std::string& address)
     if (address.empty()) {
         setAddress("");
         ui->payTo->setReadOnly(false);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(true);
     } else {
         setAddress(QString::fromStdString("Peg-In: " + address));
         ui->payTo->setReadOnly(true);
         ui->payTo->setCursorPosition(0);
+        ui->checkboxSubtractFeeFromAmount->setChecked(false);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
     }
 }
 
@@ -287,10 +292,13 @@ void SendCoinsEntry::setPegOutAddress(const std::string& address)
     if (address.empty()) {
         setAddress("");
         ui->payTo->setReadOnly(false);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(true);
     } else {
         setAddress(QString::fromStdString("Peg-Out: " + address));
         ui->payTo->setReadOnly(true);
         ui->payTo->setCursorPosition(0);
+        ui->checkboxSubtractFeeFromAmount->setChecked(false);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
     }
 }
 

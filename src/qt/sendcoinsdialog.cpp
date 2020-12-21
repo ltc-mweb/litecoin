@@ -965,8 +965,6 @@ void SendCoinsDialog::mwebPegOutButtonClicked(bool checked)
         model->wallet().learnRelatedScripts(newKey, output_type);
         CTxDestination dest = GetDestinationForKey(newKey, output_type);
 
-        model->wallet().setAddressBook(dest, "mweb", "receive");
-
         entry->setPegOutAddress(EncodeDestination(dest));
 
         while (ui->entries->count() > 1) {
