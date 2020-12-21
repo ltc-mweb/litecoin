@@ -96,6 +96,9 @@ void SendCoinsEntry::clear()
 {
     // clear UI elements for normal payment
     ui->payTo->clear();
+    ui->payTo->setReadOnly(false);
+    pegInAddress.clear();
+    pegOutAddress.clear();
     ui->addAsLabel->clear();
     ui->payAmount->clear();
     ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
@@ -179,14 +182,13 @@ SendCoinsRecipient SendCoinsEntry::getValue()
         return recipient;
 #endif
 
-    recipient.pegIn = false;
-    recipient.pegOut = false;
+    recipient.type = SendCoinsRecipient::REGULAR;
     if (pegInAddress.size()) {
         recipient.address = QString::fromStdString(pegInAddress);
-        recipient.pegIn = true;
+        recipient.type = SendCoinsRecipient::MWEB_PEGIN;
     } else if (pegOutAddress.size()) {
         recipient.address = QString::fromStdString(pegOutAddress);
-        recipient.pegOut = true;
+        recipient.type = SendCoinsRecipient::MWEB_PEGOUT;
     } else {
         // Normal payment
         recipient.address = ui->payTo->text();

@@ -171,7 +171,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         else
 #endif
         {   // User-entered bitcoin address / amount:
-            if(!validateAddress(rcp.address) && !rcp.pegIn)
+            if(!validateAddress(rcp.address) && rcp.type != SendCoinsRecipient::MWEB_PEGIN)
             {
                 return InvalidAddress;
             }
@@ -183,14 +183,14 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             ++nAddresses;
 
             CScript scriptPubKey;
-            if (rcp.pegIn) {
+            if (rcp.type == SendCoinsRecipient::MWEB_PEGIN) {
                 auto pegin_tx = libmw::wallet::CreatePegInTx(m_wallet->GetMWWallet(), rcp.amount);
                 auto commitment = std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
                 transaction.setMapValue("commitment", HexStr(commitment, false));
                 scriptPubKey << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
                 scriptPubKey << commitment;
                 mwTx = pegin_tx.first;
-            } else if (rcp.pegOut) {
+            } else if (rcp.type == SendCoinsRecipient::MWEB_PEGOUT) {
                 pegOut = &rcp;
             } else {
                 scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
@@ -300,7 +300,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
     // and emit coinsSent signal for each recipient
     for (const SendCoinsRecipient &rcp : transaction.getRecipients())
     {
-        if (rcp.pegIn) continue;
+        if (rcp.type == SendCoinsRecipient::MWEB_PEGIN) continue;
         // Don't touch the address book when we have a payment request
 #ifdef ENABLE_BIP70
         if (!rcp.paymentRequest.IsInitialized())

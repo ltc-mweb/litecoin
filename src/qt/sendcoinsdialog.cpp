@@ -659,6 +659,10 @@ void SendCoinsDialog::useAvailableBalance(SendCoinsEntry* entry)
         }
     }
 
+    if (ui->pushButtonMWEBPegOut->isChecked()) {
+        amount = model->wallet().getBalances().mweb_balance;
+    }
+
     if (amount > 0) {
       entry->checkSubtractFeeFromAmount();
       entry->setAmount(amount);
