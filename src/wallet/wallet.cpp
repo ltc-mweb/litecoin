@@ -4559,6 +4559,7 @@ std::vector<OutputGroup> CWallet::GroupOutputs(const std::vector<COutputCoin>& o
             CInputCoin input_coin = out.GetInputCoin();
 
             if (input_coin.mwCoin) {
+                // MW: TODO - use actual values
                 groups.emplace_back(input_coin, 1, true, 0, 0);
                 continue;
             }
