@@ -97,6 +97,7 @@ void SendCoinsEntry::clear()
     // clear UI elements for normal payment
     ui->payTo->clear();
     ui->payTo->setReadOnly(false);
+    ui->payTo->setValidating(true);
     pegInAddress.clear();
     pegOutAddress.clear();
     ui->addAsLabel->clear();
@@ -274,10 +275,12 @@ void SendCoinsEntry::setPegInAddress(const std::string& address)
     if (address.empty()) {
         setAddress("");
         ui->payTo->setReadOnly(false);
+        ui->payTo->setValidating(true);
         ui->checkboxSubtractFeeFromAmount->setEnabled(true);
     } else {
         setAddress(QString::fromStdString("Peg-In: " + address));
         ui->payTo->setReadOnly(true);
+        ui->payTo->setValidating(false);
         ui->payTo->setCursorPosition(0);
         ui->checkboxSubtractFeeFromAmount->setChecked(false);
         ui->checkboxSubtractFeeFromAmount->setEnabled(false);
@@ -292,10 +295,12 @@ void SendCoinsEntry::setPegOutAddress(const std::string& address)
     if (address.empty()) {
         setAddress("");
         ui->payTo->setReadOnly(false);
+        ui->payTo->setValidating(true);
         ui->checkboxSubtractFeeFromAmount->setEnabled(true);
     } else {
         setAddress(QString::fromStdString("Peg-Out: " + address));
         ui->payTo->setReadOnly(true);
+        ui->payTo->setValidating(false);
         ui->payTo->setCursorPosition(0);
         ui->checkboxSubtractFeeFromAmount->setChecked(false);
         ui->checkboxSubtractFeeFromAmount->setEnabled(false);
