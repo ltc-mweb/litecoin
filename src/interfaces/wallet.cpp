@@ -244,15 +244,24 @@ public:
         bool sign,
         int& change_pos,
         CAmount& fee,
-        std::string& fail_reason) override
+        std::string& fail_reason,
+        const CMWTx& mwtx) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
         auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
         if (!m_wallet->CreateTransaction(*locked_chain, recipients, pending->m_tx, pending->m_key, fee, change_pos,
-                fail_reason, coin_control, sign)) {
+                fail_reason, coin_control, sign, mwtx)) {
             return {};
         }
+        return std::move(pending);
+    }
+    std::unique_ptr<PendingWalletTx> createTransaction(const CMWTx& mwtx) override
+    {
+        auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
+        CMutableTransaction tx;
+        tx.m_mwtx = mwtx;
+        pending->m_tx = MakeTransactionRef(tx);
         return std::move(pending);
     }
     bool transactionCanBeAbandoned(const uint256& txid) override { return m_wallet->TransactionCanBeAbandoned(txid); }
@@ -374,6 +383,10 @@ public:
             result.unconfirmed_watch_only_balance = m_wallet->GetUnconfirmedWatchOnlyBalance();
             result.immature_watch_only_balance = m_wallet->GetImmatureWatchOnlyBalance();
         }
+        libmw::WalletBalance balances = libmw::wallet::GetBalance(m_wallet->GetMWWallet());
+        result.mweb_balance = balances.confirmed_balance;
+        result.unconfirmed_mweb_balance = balances.unconfirmed_balance;
+        result.immature_mweb_balance = balances.immature_balance;
         return result;
     }
     bool tryGetBalances(WalletBalances& balances, int& num_blocks) override
@@ -471,6 +484,10 @@ public:
     void remove() override
     {
         RemoveWallet(m_wallet);
+    }
+    libmw::IWallet::Ptr GetMWWallet() override
+    {
+        return m_wallet->GetMWWallet();
     }
     std::unique_ptr<Handler> handleUnload(UnloadFn fn) override
     {

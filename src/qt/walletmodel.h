@@ -69,6 +69,12 @@ public:
     // If from a payment request, this is used for storing the memo
     QString message;
 
+    enum Type {
+        REGULAR = 0,
+        MWEB_PEGIN = 1,
+        MWEB_PEGOUT = 2,
+    } type;
+
 #ifdef ENABLE_BIP70
     // If from a payment request, paymentRequest.IsInitialized() will be true
     PaymentRequestPlus paymentRequest;

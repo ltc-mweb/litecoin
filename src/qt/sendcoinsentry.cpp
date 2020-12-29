@@ -59,13 +59,14 @@ SendCoinsEntry::~SendCoinsEntry()
 
 void SendCoinsEntry::on_pasteButton_clicked()
 {
+    if (ui->payTo->isReadOnly()) return;
     // Paste text from clipboard into recipient field
     ui->payTo->setText(QApplication::clipboard()->text());
 }
 
 void SendCoinsEntry::on_addressBookButton_clicked()
 {
-    if(!model)
+    if(!model || ui->payTo->isReadOnly())
         return;
     AddressBookPage dlg(platformStyle, AddressBookPage::ForSelection, AddressBookPage::SendingTab, this);
     dlg.setModel(model->getAddressTableModel());
@@ -95,9 +96,14 @@ void SendCoinsEntry::clear()
 {
     // clear UI elements for normal payment
     ui->payTo->clear();
+    ui->payTo->setReadOnly(false);
+    ui->payTo->setValidating(true);
+    pegInAddress.clear();
+    pegOutAddress.clear();
     ui->addAsLabel->clear();
     ui->payAmount->clear();
     ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
+    ui->checkboxSubtractFeeFromAmount->setEnabled(true);
     ui->messageTextLabel->clear();
     ui->messageTextLabel->hide();
     ui->messageLabel->hide();
@@ -116,6 +122,7 @@ void SendCoinsEntry::clear()
 
 void SendCoinsEntry::checkSubtractFeeFromAmount()
 {
+    if (pegInAddress.size() || pegOutAddress.size()) return;
     ui->checkboxSubtractFeeFromAmount->setChecked(true);
 }
 
@@ -143,7 +150,7 @@ bool SendCoinsEntry::validate(interfaces::Node& node)
         return retval;
 #endif
 
-    if (!model->validateAddress(ui->payTo->text()))
+    if (pegInAddress.empty() && pegOutAddress.empty() && !model->validateAddress(ui->payTo->text()))
     {
         ui->payTo->setValid(false);
         retval = false;
@@ -178,8 +185,17 @@ SendCoinsRecipient SendCoinsEntry::getValue()
         return recipient;
 #endif
 
-    // Normal payment
-    recipient.address = ui->payTo->text();
+    if (pegInAddress.size()) {
+        recipient.address = QString::fromStdString(pegInAddress);
+        recipient.type = SendCoinsRecipient::MWEB_PEGIN;
+    } else if (pegOutAddress.size()) {
+        recipient.address = QString::fromStdString(pegOutAddress);
+        recipient.type = SendCoinsRecipient::MWEB_PEGOUT;
+    } else {
+        // Normal payment
+        recipient.address = ui->payTo->text();
+        recipient.type = SendCoinsRecipient::REGULAR;
+    }
     recipient.label = ui->addAsLabel->text();
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
@@ -249,6 +265,46 @@ void SendCoinsEntry::setAddress(const QString &address)
 void SendCoinsEntry::setAmount(const CAmount &amount)
 {
     ui->payAmount->setValue(amount);
+}
+
+void SendCoinsEntry::setPegInAddress(const std::string& address)
+{
+    pegInAddress = address;
+    pegOutAddress = "";
+
+    if (address.empty()) {
+        setAddress("");
+        ui->payTo->setReadOnly(false);
+        ui->payTo->setValidating(true);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(true);
+    } else {
+        setAddress(QString::fromStdString("Peg-In: " + address));
+        ui->payTo->setReadOnly(true);
+        ui->payTo->setValidating(false);
+        ui->payTo->setCursorPosition(0);
+        ui->checkboxSubtractFeeFromAmount->setChecked(false);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
+    }
+}
+
+void SendCoinsEntry::setPegOutAddress(const std::string& address)
+{
+    pegInAddress = "";
+    pegOutAddress = address;
+
+    if (address.empty()) {
+        setAddress("");
+        ui->payTo->setReadOnly(false);
+        ui->payTo->setValidating(true);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(true);
+    } else {
+        setAddress(QString::fromStdString("Peg-Out: " + address));
+        ui->payTo->setReadOnly(true);
+        ui->payTo->setValidating(false);
+        ui->payTo->setCursorPosition(0);
+        ui->checkboxSubtractFeeFromAmount->setChecked(false);
+        ui->checkboxSubtractFeeFromAmount->setEnabled(false);
+    }
 }
 
 bool SendCoinsEntry::isClear()

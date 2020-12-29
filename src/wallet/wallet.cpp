@@ -2800,7 +2800,7 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
 }
 
 bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet,
-                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, CMWTx mwtx)
+                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, const CMWTx& mwtx)
 {
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;
@@ -2835,14 +2835,8 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
         auto locked_chain = chain().lock();
         LOCK(cs_wallet);
         {
-            std::vector<COutput> coins;
-            AvailableCoins(*locked_chain, coins, true, &coin_control);
-            std::vector<COutputCoin> vAvailableCoins;
-            std::transform(
-                coins.cbegin(), coins.cend(),
-                std::back_inserter(vAvailableCoins),
-                [](const COutput& out) { return COutputCoin(out); }
-            );
+            std::vector<COutput> vAvailableCoins;
+            AvailableCoins(*locked_chain, vAvailableCoins, true, &coin_control);
             CoinSelectionParams coin_selection_params; // Parameters for coin selection, init with dummy
 
             // Create change script that will be used if we need change
@@ -4565,6 +4559,7 @@ std::vector<OutputGroup> CWallet::GroupOutputs(const std::vector<COutputCoin>& o
             CInputCoin input_coin = out.GetInputCoin();
 
             if (input_coin.mwCoin) {
+                // MW: TODO - use actual values
                 groups.emplace_back(input_coin, 1, true, 0, 0);
                 continue;
             }

@@ -64,6 +64,9 @@ ReceiveCoinsDialog::ReceiveCoinsDialog(const PlatformStyle *_platformStyle, QWid
     connect(copyAmountAction, &QAction::triggered, this, &ReceiveCoinsDialog::copyAmount);
 
     connect(ui->clearButton, &QPushButton::clicked, this, &ReceiveCoinsDialog::clear);
+
+    connect(ui->useBech32, &QCheckBox::clicked, this, &ReceiveCoinsDialog::useBech32Clicked);
+    connect(ui->useMWEB, &QCheckBox::clicked, this, &ReceiveCoinsDialog::useMWEBClicked);
 }
 
 void ReceiveCoinsDialog::setModel(WalletModel *_model)
@@ -150,15 +153,19 @@ void ReceiveCoinsDialog::on_receiveButton_clicked()
     QString label = ui->reqLabel->text();
     /* Generate new receiving address */
     OutputType address_type;
+    bool mweb = false;
     if (ui->useBech32->isChecked()) {
         address_type = OutputType::BECH32;
+    } else if (ui->useMWEB->isChecked()) {
+        address_type = OutputType::BECH32;
+        mweb = true;
     } else {
         address_type = model->wallet().getDefaultAddressType();
         if (address_type == OutputType::BECH32) {
             address_type = OutputType::P2SH_SEGWIT;
         }
     }
-    address = model->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", address_type);
+    address = model->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", address_type, mweb);
     SendCoinsRecipient info(address, label,
         ui->reqAmount->value(), ui->reqMessage->text());
     ReceiveRequestDialog *dialog = new ReceiveRequestDialog(this);
@@ -297,4 +304,14 @@ void ReceiveCoinsDialog::copyMessage()
 void ReceiveCoinsDialog::copyAmount()
 {
     copyColumnToClipboard(RecentRequestsTableModel::Amount);
+}
+
+void ReceiveCoinsDialog::useBech32Clicked()
+{
+    ui->useMWEB->setChecked(false);
+}
+
+void ReceiveCoinsDialog::useMWEBClicked()
+{
+    ui->useBech32->setChecked(false);
 }

@@ -129,6 +129,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     bool fSubtractFeeFromAmount = false;
     QList<SendCoinsRecipient> recipients = transaction.getRecipients();
     std::vector<CRecipient> vecSend;
+    CMWTx mwTx;
+    const SendCoinsRecipient* pegOut = nullptr;
 
     if(recipients.empty())
     {
@@ -169,7 +171,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         else
 #endif
         {   // User-entered bitcoin address / amount:
-            if(!validateAddress(rcp.address))
+            if(!validateAddress(rcp.address) && rcp.type != SendCoinsRecipient::MWEB_PEGIN)
             {
                 return InvalidAddress;
             }
@@ -180,7 +182,19 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             setAddress.insert(rcp.address);
             ++nAddresses;
 
-            CScript scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
+            CScript scriptPubKey;
+            if (rcp.type == SendCoinsRecipient::MWEB_PEGIN) {
+                auto pegin_tx = libmw::wallet::CreatePegInTx(m_wallet->GetMWWallet(), rcp.amount);
+                auto commitment = std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
+                transaction.setMapValue("commitment", HexStr(commitment, false));
+                scriptPubKey << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+                scriptPubKey << commitment;
+                mwTx = pegin_tx.first;
+            } else if (rcp.type == SendCoinsRecipient::MWEB_PEGOUT) {
+                pegOut = &rcp;
+            } else {
+                scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
+            }
             CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
             vecSend.push_back(recipient);
 
@@ -193,6 +207,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     }
 
     CAmount nBalance = m_wallet->getAvailableBalance(coinControl);
+    if (pegOut) nBalance = m_wallet->getBalances().mweb_balance;
 
     if(total > nBalance)
     {
@@ -205,10 +220,23 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         std::string strFailReason;
 
         auto& newTx = transaction.getWtx();
-        newTx = m_wallet->createTransaction(vecSend, coinControl, true /* sign */, nChangePosRet, nFeeRequired, strFailReason);
-        transaction.setTransactionFee(nFeeRequired);
-        if (fSubtractFeeFromAmount && newTx)
-            transaction.reassignAmounts(nChangePosRet);
+        if (pegOut) {
+            CAmount feeRate = 100'000;
+            if (coinControl.m_feerate) {
+                feeRate = coinControl.m_feerate->GetFeePerK();
+            }
+            try {
+                auto pegout_tx = libmw::wallet::CreatePegOutTx(m_wallet->GetMWWallet(), pegOut->amount, feeRate, pegOut->address.toStdString());
+                newTx = m_wallet->createTransaction(pegout_tx.first);
+            } catch (const std::exception& e) {
+                strFailReason = e.what();
+            }
+        } else {
+            newTx = m_wallet->createTransaction(vecSend, coinControl, true /* sign */, nChangePosRet, nFeeRequired, strFailReason, mwTx);
+            transaction.setTransactionFee(nFeeRequired);
+            if (fSubtractFeeFromAmount && newTx)
+                transaction.reassignAmounts(nChangePosRet);
+        }
 
         if(!newTx)
         {
@@ -260,7 +288,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
 
         auto& newTx = transaction.getWtx();
         std::string rejectReason;
-        if (!newTx->commit({} /* mapValue */, std::move(vOrderForm), rejectReason))
+        if (!newTx->commit(transaction.getValueMap(), std::move(vOrderForm), rejectReason))
             return SendCoinsReturn(TransactionCommitFailed, QString::fromStdString(rejectReason));
 
         CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
@@ -272,6 +300,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
     // and emit coinsSent signal for each recipient
     for (const SendCoinsRecipient &rcp : transaction.getRecipients())
     {
+        if (rcp.type == SendCoinsRecipient::MWEB_PEGIN) continue;
         // Don't touch the address book when we have a payment request
 #ifdef ENABLE_BIP70
         if (!rcp.paymentRequest.IsInitialized())

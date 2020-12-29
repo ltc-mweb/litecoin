@@ -110,7 +110,7 @@ public:
         CoinSelectionParams coin_selection_params;
         bool bnb_used;
 
-        coinControl.m_feerate = CFeeRate(fee_base);
+        coin_selection_params.effective_fee = CFeeRate(fee_base);
         bool ok = m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
         if (!ok && bnb_used) {
             coin_selection_params.use_bnb = false;

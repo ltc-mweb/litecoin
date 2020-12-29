@@ -137,7 +137,10 @@ public:
         bool sign,
         int& change_pos,
         CAmount& fee,
-        std::string& fail_reason) = 0;
+        std::string& fail_reason,
+        const CMWTx& mwtx = CMWTx()) = 0;
+
+    virtual std::unique_ptr<PendingWalletTx> createTransaction(const CMWTx& mwtx) = 0;
 
     //! Return whether transaction can be abandoned.
     virtual bool transactionCanBeAbandoned(const uint256& txid) = 0;
@@ -250,6 +253,9 @@ public:
     // Remove wallet.
     virtual void remove() = 0;
 
+    // Get MWEB wallet.
+    virtual libmw::IWallet::Ptr GetMWWallet() = 0;
+
     //! Register handler for unload message.
     using UnloadFn = std::function<void()>;
     virtual std::unique_ptr<Handler> handleUnload(UnloadFn fn) = 0;
@@ -325,13 +331,19 @@ struct WalletBalances
     CAmount watch_only_balance = 0;
     CAmount unconfirmed_watch_only_balance = 0;
     CAmount immature_watch_only_balance = 0;
+    CAmount mweb_balance = 0;
+    CAmount unconfirmed_mweb_balance = 0;
+    CAmount immature_mweb_balance = 0;
 
     bool balanceChanged(const WalletBalances& prev) const
     {
         return balance != prev.balance || unconfirmed_balance != prev.unconfirmed_balance ||
                immature_balance != prev.immature_balance || watch_only_balance != prev.watch_only_balance ||
                unconfirmed_watch_only_balance != prev.unconfirmed_watch_only_balance ||
-               immature_watch_only_balance != prev.immature_watch_only_balance;
+               immature_watch_only_balance != prev.immature_watch_only_balance ||
+               mweb_balance != prev.mweb_balance ||
+               unconfirmed_mweb_balance != prev.unconfirmed_mweb_balance ||
+               immature_mweb_balance != prev.immature_mweb_balance;
     }
 };
 

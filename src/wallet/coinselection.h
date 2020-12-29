@@ -26,6 +26,7 @@ public:
         outpoint = COutPoint(tx->GetHash(), i);
         txout = tx->vout[i];
         effective_value = txout.nValue;
+        mwCoin = nullptr;
     }
 
     CInputCoin(const CTransactionRef& tx, unsigned int i, int input_bytes) : CInputCoin(tx, i)
@@ -50,15 +51,16 @@ public:
     int m_input_bytes{-1};
 
     bool operator<(const CInputCoin& rhs) const {
+        if (outpoint == rhs.outpoint) return mwCoin < rhs.mwCoin;
         return outpoint < rhs.outpoint;
     }
 
     bool operator!=(const CInputCoin& rhs) const {
-        return outpoint != rhs.outpoint;
+        return outpoint != rhs.outpoint || mwCoin != rhs.mwCoin;
     }
 
     bool operator==(const CInputCoin& rhs) const {
-        return outpoint == rhs.outpoint;
+        return outpoint == rhs.outpoint && mwCoin == rhs.mwCoin;
     }
 };
 

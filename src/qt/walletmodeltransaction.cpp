@@ -86,3 +86,13 @@ CAmount WalletModelTransaction::getTotalTransactionAmount() const
     }
     return totalTransactionAmount;
 }
+
+void WalletModelTransaction::setMapValue(const std::string& key, const std::string& value)
+{
+    valueMap[key] = value;
+}
+
+const mapValue_t& WalletModelTransaction::getValueMap() const
+{
+    return valueMap;
+}

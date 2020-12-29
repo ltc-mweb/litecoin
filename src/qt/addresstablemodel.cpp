@@ -336,7 +336,7 @@ void AddressTableModel::updateEntry(const QString &address,
     priv->updateEntry(address, label, isMine, purpose, status);
 }
 
-QString AddressTableModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type)
+QString AddressTableModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type, bool mweb)
 {
     std::string strLabel = label.toStdString();
     std::string strAddress = address.toStdString();
@@ -359,6 +359,10 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
                 return QString();
             }
         }
+    }
+    else if(type == Receive && mweb)
+    {
+        strAddress = libmw::wallet::GetAddress(walletModel->wallet().GetMWWallet());
     }
     else if(type == Receive)
     {
