@@ -162,7 +162,7 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
                 "so payments received with the address will be associated with 'label'.\n",
                 {
                     {"label", RPCArg::Type::STR, /* default */ "\"\"", "The label name for the address to be linked to. It can also be set to the empty string \"\" to represent the default label. The label does not need to exist, it will be created if there is no label by the given name."},
-                    {"address_type", RPCArg::Type::STR, /* default */ "set by -addresstype", "The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\"."},
+                    {"address_type", RPCArg::Type::STR, /* default */ "set by -addresstype", "The address type to use. Options are \"legacy\", \"p2sh-segwit\", \"bech32\", and \"mweb\"."},
                 },
                 RPCResult{
             "\"address\"    (string) The new litecoin address\n"
@@ -183,6 +183,10 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
     std::string label;
     if (!request.params[0].isNull())
         label = LabelFromValue(request.params[0]);
+
+    if (!request.params[1].isNull() && request.params[1].get_str() == "mweb") {
+        return libmw::wallet::GetAddress(pwallet->GetMWWallet());
+    }
 
     OutputType output_type = pwallet->m_default_address_type;
     if (!request.params[1].isNull()) {
@@ -527,7 +531,7 @@ static UniValue sendmweb(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 1)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 2)
         throw std::runtime_error(
             RPCHelpMan{
                 "sendmweb",
@@ -535,11 +539,12 @@ static UniValue sendmweb(const JSONRPCRequest& request)
                     HelpRequiringPassphrase(pwallet) + "\n",
                 {
                     {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
+                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The MWEB address to send to."},
                 },
                 RPCResult{
-                    "\"partial_tx\"            (string) Hex-encoded partial tx to be completed by the receiver.\n"},
+                    "\"txid\"                  (string) The transaction id.\n"},
                 RPCExamples{
-                    HelpExampleCli("sendmweb", "10.0")},
+                    HelpExampleCli("sendmweb", "10.0 mweb1...")},
             }
                 .ToString());
 
@@ -556,6 +561,9 @@ static UniValue sendmweb(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
     }
 
+    // Address
+    std::string address = request.params[1].get_str();
+
     EnsureWalletIsUnlocked(pwallet);
 
     libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
@@ -569,55 +577,7 @@ static UniValue sendmweb(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
     }
 
-    return libmw::wallet::Send(pwallet->GetMWWallet(), nAmount, 100'000, "");
-}
-
-static UniValue recvmweb(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CWallet* const pwallet = wallet.get();
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 1)
-        throw std::runtime_error(
-            RPCHelpMan{
-                "recvmweb",
-                "\nReceive an amount within the MWEB." +
-                    HelpRequiringPassphrase(pwallet) + "\n",
-                {
-                    {"partial_tx", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Hex-encoded partial tx from the sender."},
-                },
-                RPCResult{
-                    "\"txid\"                  (string) The transaction id.\n"},
-                RPCExamples{
-                    HelpExampleCli("recvmweb", "<hex string>")},
-            }
-                .ToString());
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
-
-    EnsureWalletIsUnlocked(pwallet);
-
-    if (pwallet->GetBroadcastTransactions() && !g_connman) {
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-    }
-
-    if (!request.params[0].isStr()) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a hex string");
-    }
-    std::string partial_tx = request.params[0].get_str();
-    if (!IsHex(partial_tx)) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a hex string");
-    }
-    auto mwtx = libmw::wallet::Receive(pwallet->GetMWWallet(), partial_tx);
+    auto mwtx = libmw::wallet::Send(pwallet->GetMWWallet(), nAmount, 100'000, address);
 
     // Create and send the transaction
     mapValue_t mapValue;
@@ -4552,12 +4512,11 @@ static const CRPCCommand commands[] =
     { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },
     { "wallet",             "lockunspent",                      &lockunspent,                   {"unlock","transactions"} },
     { "wallet",             "pegin",                            &pegin,                         {"amount"} },
-    { "wallet",             "pegout",                           &pegout,                        {"amount"} },
-    { "wallet",             "recvmweb",                         &recvmweb,                      {"partial_tx"} },
+    { "wallet",             "pegout",                           &pegout,                        {"amount","address"} },
     { "wallet",             "removeprunedfunds",                &removeprunedfunds,             {"txid"} },
     { "wallet",             "rescanblockchain",                 &rescanblockchain,              {"start_height", "stop_height"} },
     { "wallet",             "sendmany",                         &sendmany,                      {"dummy","amounts","minconf","comment","subtractfeefrom","replaceable","conf_target","estimate_mode"} },
-    { "wallet",             "sendmweb",                         &sendmweb,                      {"amount"} },
+    { "wallet",             "sendmweb",                         &sendmweb,                      {"amount","address"} },
     { "wallet",             "sendtoaddress",                    &sendtoaddress,                 {"address","amount","comment","comment_to","subtractfeefromamount","replaceable","conf_target","estimate_mode"} },
     { "wallet",             "sethdseed",                        &sethdseed,                     {"newkeypool","seed"} },
     { "wallet",             "setlabel",                         &setlabel,                      {"address","label"} },

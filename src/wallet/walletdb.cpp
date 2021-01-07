@@ -808,13 +808,14 @@ struct MWCoin {
         READWRITE(fKey);
         if (fKey) {
             if (ser_action.ForRead()) {
-                libmw::PrivateKey key;
-                READWRITE(key.bip32Path);
-                READWRITE(key.keyBytes);
-                coin.key = boost::make_optional(std::move(key));
+                libmw::BlindingFactor bf;
+                READWRITE(bf);
+                coin.key = boost::make_optional(std::move(bf));
+                READWRITE(bf);
+                coin.blind = boost::make_optional(std::move(bf));
             } else {
-                READWRITE(coin.key->bip32Path);
-                READWRITE(coin.key->keyBytes);
+                READWRITE(*coin.key);
+                READWRITE(*coin.blind);
             }
         }
 
