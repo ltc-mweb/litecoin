@@ -120,6 +120,7 @@ void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
 
 bool WalletModel::validateAddress(const QString &address)
 {
+    if (address.startsWith("mweb1")) return true;
     return IsValidDestinationString(address.toStdString());
 }
 
@@ -131,6 +132,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     std::vector<CRecipient> vecSend;
     CMWTx mwTx;
     const SendCoinsRecipient* pegOut = nullptr;
+    const SendCoinsRecipient* mwebSend = nullptr;
 
     if(recipients.empty())
     {
@@ -171,7 +173,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         else
 #endif
         {   // User-entered bitcoin address / amount:
-            if(!validateAddress(rcp.address) && rcp.type != SendCoinsRecipient::MWEB_PEGIN)
+            if(!validateAddress(rcp.address))
             {
                 return InvalidAddress;
             }
@@ -183,16 +185,23 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             ++nAddresses;
 
             CScript scriptPubKey;
-            if (rcp.type == SendCoinsRecipient::MWEB_PEGIN) {
+            switch (rcp.type) {
+            case SendCoinsRecipient::MWEB_PEGIN: {
                 auto pegin_tx = libmw::wallet::CreatePegInTx(m_wallet->GetMWWallet(), rcp.amount);
                 auto commitment = std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
                 transaction.setMapValue("commitment", HexStr(commitment, false));
                 scriptPubKey << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
                 scriptPubKey << commitment;
                 mwTx = pegin_tx.first;
-            } else if (rcp.type == SendCoinsRecipient::MWEB_PEGOUT) {
+                break;
+            }
+            case SendCoinsRecipient::MWEB_PEGOUT:
                 pegOut = &rcp;
-            } else {
+                break;
+            case SendCoinsRecipient::MWEB_SEND:
+                mwebSend = &rcp;
+                break;
+            default:
                 scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
             }
             CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
@@ -207,7 +216,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     }
 
     CAmount nBalance = m_wallet->getAvailableBalance(coinControl);
-    if (pegOut) nBalance = m_wallet->getBalances().mweb_balance;
+    if (pegOut || mwebSend) nBalance = m_wallet->getBalances().mweb_balance;
 
     if(total > nBalance)
     {
@@ -220,14 +229,19 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         std::string strFailReason;
 
         auto& newTx = transaction.getWtx();
-        if (pegOut) {
+        if (pegOut || mwebSend) {
             CAmount feeRate = 100'000;
             if (coinControl.m_feerate) {
                 feeRate = coinControl.m_feerate->GetFeePerK();
             }
             try {
-                auto pegout_tx = libmw::wallet::CreatePegOutTx(m_wallet->GetMWWallet(), pegOut->amount, feeRate, pegOut->address.toStdString());
-                newTx = m_wallet->createTransaction(pegout_tx.first);
+                if (pegOut) {
+                    auto mwtx = libmw::wallet::CreatePegOutTx(m_wallet->GetMWWallet(), pegOut->amount, feeRate, pegOut->address.toStdString());
+                    newTx = m_wallet->createTransaction(mwtx.first);
+                } else {
+                    auto mwtx = libmw::wallet::Send(m_wallet->GetMWWallet(), mwebSend->amount, feeRate, mwebSend->address.toStdString());
+                    newTx = m_wallet->createTransaction(mwtx);
+                }
             } catch (const std::exception& e) {
                 strFailReason = e.what();
             }
@@ -300,12 +314,11 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
     // and emit coinsSent signal for each recipient
     for (const SendCoinsRecipient &rcp : transaction.getRecipients())
     {
-        if (rcp.type == SendCoinsRecipient::MWEB_PEGIN) continue;
         // Don't touch the address book when we have a payment request
 #ifdef ENABLE_BIP70
         if (!rcp.paymentRequest.IsInitialized())
 #endif
-        {
+        if (!rcp.address.startsWith("mweb1")) {
             std::string strAddress = rcp.address.toStdString();
             CTxDestination dest = DecodeDestination(strAddress);
             std::string strLabel = rcp.label.toStdString();

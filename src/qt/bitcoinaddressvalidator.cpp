@@ -66,7 +66,7 @@ QValidator::State BitcoinAddressEntryValidator::validate(QString &input, int &po
 
         if (((ch >= '0' && ch<='9') ||
             (ch >= 'a' && ch<='z') ||
-            (ch >= 'A' && ch<='Z')) &&
+            (ch >= 'A' && ch<='Z') || ch == ':') &&
             ch != 'I' && ch != 'O') // Characters invalid in both Base58 and Bech32
         {
             // Alphanumeric and not a 'forbidden' character
@@ -90,6 +90,8 @@ QValidator::State BitcoinAddressCheckValidator::validate(QString &input, int &po
     Q_UNUSED(pos);
     // Validate the passed Bitcoin address
     if (IsValidDestinationString(input.toStdString())) {
+        return QValidator::Acceptable;
+    } else if (input.startsWith("mweb1")) {
         return QValidator::Acceptable;
     }
 
