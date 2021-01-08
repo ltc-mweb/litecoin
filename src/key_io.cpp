@@ -234,3 +234,14 @@ bool IsValidDestinationString(const std::string& str)
 {
     return IsValidDestinationString(str, Params());
 }
+
+bool IsValidMWEBDestinationString(const std::string& str)
+{
+    std::size_t pos = str.find(':');
+    if (pos == std::string::npos) return false;
+    auto decoded = bech32::Decode(str.substr(0, pos));
+    if (decoded.first != "mweb" || decoded.second.size() != 53) return false;
+    decoded = bech32::Decode(str.substr(pos + 1, std::string::npos));
+    if (decoded.first != "ltc" || decoded.second.size() != 53) return false;
+    return true;
+}

@@ -191,6 +191,9 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     } else if (pegOutAddress.size()) {
         recipient.address = QString::fromStdString(pegOutAddress);
         recipient.type = SendCoinsRecipient::MWEB_PEGOUT;
+    } else if (ui->payTo->text().startsWith("mweb1")) {
+        recipient.address = ui->payTo->text();
+        recipient.type = SendCoinsRecipient::MWEB_SEND;
     } else {
         // Normal payment
         recipient.address = ui->payTo->text();

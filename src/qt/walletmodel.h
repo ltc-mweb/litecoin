@@ -73,6 +73,7 @@ public:
         REGULAR = 0,
         MWEB_PEGIN = 1,
         MWEB_PEGOUT = 2,
+        MWEB_SEND = 3,
     } type;
 
 #ifdef ENABLE_BIP70
