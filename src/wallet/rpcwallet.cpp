@@ -563,6 +563,9 @@ static UniValue sendmweb(const JSONRPCRequest& request)
 
     // Address
     std::string address = request.params[1].get_str();
+    if (!IsValidMWEBDestinationString(address)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid MWEB address");
+    }
 
     EnsureWalletIsUnlocked(pwallet);
 
