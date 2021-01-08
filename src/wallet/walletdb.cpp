@@ -808,13 +808,22 @@ struct MWCoin {
         READWRITE(fKey);
         if (fKey) {
             if (ser_action.ForRead()) {
-                libmw::BlindingFactor bf;
-                READWRITE(bf);
-                coin.key = boost::make_optional(std::move(bf));
-                READWRITE(bf);
-                coin.blind = boost::make_optional(std::move(bf));
+                libmw::BlindingFactor key;
+                READWRITE(key);
+                coin.key = boost::make_optional(std::move(key));
             } else {
                 READWRITE(*coin.key);
+            }
+        }
+
+        bool fBlind = coin.blind != nullopt;
+        READWRITE(fBlind);
+        if (fBlind) {
+            if (ser_action.ForRead()) {
+                libmw::BlindingFactor blind;
+                READWRITE(blind);
+                coin.blind = boost::make_optional(std::move(blind));
+            } else {
                 READWRITE(*coin.blind);
             }
         }

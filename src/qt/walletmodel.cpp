@@ -120,7 +120,7 @@ void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
 
 bool WalletModel::validateAddress(const QString &address)
 {
-    if (address.startsWith("mweb1")) return true;
+    if (IsValidMWEBDestinationString(address.toStdString())) return true;
     return IsValidDestinationString(address.toStdString());
 }
 
