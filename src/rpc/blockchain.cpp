@@ -929,8 +929,9 @@ struct CCoinsStats
     uint256 hashSerialized;
     uint64_t nDiskSize;
     CAmount nTotalAmount;
+    CAmount mwebTotal;
 
-    CCoinsStats() : nHeight(0), nTransactions(0), nTransactionOutputs(0), nBogoSize(0), nDiskSize(0), nTotalAmount(0) {}
+    CCoinsStats() : nHeight(0), nTransactions(0), nTransactionOutputs(0), nBogoSize(0), nDiskSize(0), nTotalAmount(0), mwebTotal(0) {}
 };
 
 static void ApplyStats(CCoinsStats &stats, CHashWriter& ss, const uint256& hash, const std::map<uint32_t, Coin>& outputs)
@@ -961,7 +962,15 @@ static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
     stats.hashBlock = pcursor->GetBestBlock();
     {
         LOCK(cs_main);
-        stats.nHeight = LookupBlockIndex(stats.hashBlock)->nHeight;
+        auto pBlockIndex = LookupBlockIndex(stats.hashBlock);
+        stats.nHeight = pBlockIndex->nHeight;
+
+        CBlock block;
+        assert(ReadBlockFromDisk(block, pBlockIndex, Params().GetConsensus()));
+
+        if (block.HasHogEx()) {
+            stats.mwebTotal = block.vtx.back()->vout[0].nValue;
+        }
     }
     ss << stats.hashBlock;
     uint256 prevkey;
@@ -1066,6 +1075,7 @@ static UniValue gettxoutsetinfo(const JSONRPCRequest& request)
             "  \"hash_serialized_2\": \"hash\", (string) The serialized hash\n"
             "  \"disk_size\": n,         (numeric) The estimated size of the chainstate on disk\n"
             "  \"total_amount\": x.xxx          (numeric) The total amount\n"
+            "  \"mweb_total\": x.xxx          (numeric) The total amount pegged-in to the mweb\n"
             "}\n"
                 },
                 RPCExamples{
@@ -1087,6 +1097,7 @@ static UniValue gettxoutsetinfo(const JSONRPCRequest& request)
         ret.pushKV("hash_serialized_2", stats.hashSerialized.GetHex());
         ret.pushKV("disk_size", stats.nDiskSize);
         ret.pushKV("total_amount", ValueFromAmount(stats.nTotalAmount));
+        ret.pushKV("mweb_total", ValueFromAmount(stats.mwebTotal));
     } else {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
     }
