@@ -81,7 +81,10 @@ public:
         SendToOther,
         RecvWithAddress,
         RecvFromOther,
-        SendToSelf
+        SendToSelf,
+        MWEBPegIn,
+        MWEBPegOut,
+        MWEBSend,
     };
 
     /** Number of confirmation recommended for accepting a transaction */

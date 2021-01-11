@@ -92,6 +92,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             if(fAllToMe > mine) fAllToMe = mine;
         }
 
+        // MW: Single-line if to minimize diff
+        if (!wtx.txout_address.empty())
         if (fAllFromMe && fAllToMe)
         {
             // Payment to self
@@ -122,7 +124,13 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                     continue;
                 }
 
-                if (!boost::get<CNoDestination>(&wtx.txout_address[nOut]))
+                if (mapValue.find("commitment") != mapValue.end())
+                {
+                    // MWEB Peg-In
+                    sub.type = TransactionRecord::MWEBPegIn;
+                    sub.address = mapValue["mweb_recipient"];
+                }
+                else if (!boost::get<CNoDestination>(&wtx.txout_address[nOut]))
                 {
                     // Sent to Bitcoin Address
                     sub.type = TransactionRecord::SendToAddress;
@@ -155,6 +163,21 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
             parts.last().involvesWatchAddress = involvesWatchAddress;
         }
+
+        CAmount mwebDebit = 0, mwebCredit = 0;
+        if (mapValue.find("mweb_debit") != mapValue.end())
+            mwebDebit = std::stoll(mapValue["mweb_debit"]);
+        if (mapValue.find("mweb_credit") != mapValue.end())
+            mwebCredit = std::stoll(mapValue["mweb_credit"]);
+
+        // MWEB Peg-Out
+        if (mapValue.find("mweb_pegout") != mapValue.end())
+            parts.append(TransactionRecord(hash, nTime, TransactionRecord::MWEBPegOut,
+                         mapValue["mweb_pegout"], -mwebDebit, mwebCredit));
+        // MWEB Send
+        if (mapValue.find("mweb_recipient") != mapValue.end())
+            parts.append(TransactionRecord(hash, nTime, TransactionRecord::MWEBSend,
+                         mapValue["mweb_recipient"], -mwebDebit, mwebCredit));
     }
 
     return parts;
