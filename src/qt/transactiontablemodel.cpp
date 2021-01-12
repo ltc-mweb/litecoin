@@ -361,6 +361,8 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         return tr("MWEB Peg-Out");
     case TransactionRecord::MWEBSend:
         return tr("MWEB Send");
+    case TransactionRecord::MWEBReceive:
+        return tr("MWEB Receive");
     default:
         return QString();
     }
@@ -403,6 +405,7 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     case TransactionRecord::MWEBPegIn:
     case TransactionRecord::MWEBPegOut:
     case TransactionRecord::MWEBSend:
+    case TransactionRecord::MWEBReceive:
         return QString::fromStdString(wtx->address) + watchAddress;
     case TransactionRecord::SendToSelf:
     default:

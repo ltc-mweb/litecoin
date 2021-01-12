@@ -92,9 +92,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             if(fAllToMe > mine) fAllToMe = mine;
         }
 
-        // MW: Single-line if to minimize diff
-        if (!wtx.txout_address.empty())
-        if (fAllFromMe && fAllToMe)
+        if (wtx.txout_address.empty())
+        {
+            // Do nothing
+        }
+        else if (fAllFromMe && fAllToMe)
         {
             // Payment to self
             CAmount nChange = wtx.change;
@@ -174,10 +176,16 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         if (mapValue.find("mweb_pegout") != mapValue.end())
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::MWEBPegOut,
                          mapValue["mweb_pegout"], -mwebDebit, mwebCredit));
-        // MWEB Send
+
+        // MWEB Send/Receive
         if (mapValue.find("mweb_recipient") != mapValue.end())
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::MWEBSend,
-                         mapValue["mweb_recipient"], -mwebDebit, mwebCredit));
+        {
+            TransactionRecord rec(hash, nTime, TransactionRecord::MWEBSend,
+                                  mapValue["mweb_recipient"], -mwebDebit, mwebCredit);
+            if (mwebCredit >= mwebDebit)
+                rec.type = TransactionRecord::MWEBReceive;
+            parts.append(rec);
+        }
     }
 
     return parts;

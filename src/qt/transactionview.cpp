@@ -93,7 +93,8 @@ TransactionView::TransactionView(const PlatformStyle *platformStyle, QWidget *pa
     typeWidget->addItem(tr("Mined"), TransactionFilterProxy::TYPE(TransactionRecord::Generated));
     typeWidget->addItem(tr("MWEB"), TransactionFilterProxy::TYPE(TransactionRecord::MWEBPegIn) |
                                     TransactionFilterProxy::TYPE(TransactionRecord::MWEBPegOut) |
-                                    TransactionFilterProxy::TYPE(TransactionRecord::MWEBSend));
+                                    TransactionFilterProxy::TYPE(TransactionRecord::MWEBSend) |
+                                    TransactionFilterProxy::TYPE(TransactionRecord::MWEBReceive));
     typeWidget->addItem(tr("Other"), TransactionFilterProxy::TYPE(TransactionRecord::Other));
 
     hlayout->addWidget(typeWidget);

@@ -85,6 +85,7 @@ public:
         MWEBPegIn,
         MWEBPegOut,
         MWEBSend,
+        MWEBReceive,
     };
 
     /** Number of confirmation recommended for accepting a transaction */
