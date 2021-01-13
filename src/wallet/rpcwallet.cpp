@@ -1664,7 +1664,7 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             {
                 if (wtx.GetDepthInMainChain(locked_chain) < 1)
                     entry.pushKV("category", "orphan");
-                else if (wtx.IsImmatureCoinBase(locked_chain))
+                else if (wtx.IsImmature(locked_chain))
                     entry.pushKV("category", "immature");
                 else
                     entry.pushKV("category", "generate");

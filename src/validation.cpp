@@ -749,13 +749,12 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         CAmount nModifiedFees = nFees;
         pool.ApplyDelta(hash, nModifiedFees);
 
-        // Keep track of transactions that spend a coinbase, which we re-scan
-        // during reorgs to ensure COINBASE_MATURITY is still met.
-        // MW: TODO - Also check if spends peg-in
+        // Keep track of transactions that spend a coinbase or pegout, which we re-scan
+        // during reorgs to ensure COINBASE_MATURITY / PEGOUT_MATURITY is still met.
         bool fSpendsCoinbase = false;
         for (const CTxIn &txin : tx.vin) {
             const Coin &coin = view.AccessCoin(txin.prevout);
-            if (coin.IsCoinBase()) {
+            if (coin.IsCoinBase() || coin.IsPegOut()) {
                 fSpendsCoinbase = true;
                 break;
             }

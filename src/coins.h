@@ -27,7 +27,7 @@ typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
  * A UTXO entry.
  *
  * Serialized format:
- * - VARINT((coinbase ? 1 : 0) | (height << 1))
+ * - VARINT((coinbase ? 1 : 0) | (pegout ? 2 : 0) | (height << 2))
  * - the non-spent CTxOut (via CTxOutCompressor)
  */
 class Coin
@@ -39,30 +39,38 @@ public:
     //! whether containing transaction was a coinbase
     unsigned int fCoinBase : 1;
 
+    //! whether output is a pegout from MWEB
+    unsigned int fPegOut : 1;
+
     //! at which height this containing transaction was included in the active block chain
-    uint32_t nHeight : 31;
+    uint32_t nHeight : 30;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
-    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn) : out(std::move(outIn)), fCoinBase(fCoinBaseIn), nHeight(nHeightIn) {}
-    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn) : out(outIn), fCoinBase(fCoinBaseIn),nHeight(nHeightIn) {}
+    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn, bool fPegOutIn = false) : out(std::move(outIn)), fCoinBase(fCoinBaseIn), fPegOut(fPegOutIn), nHeight(nHeightIn) {}
+    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn, bool fPegOutIn = false) : out(outIn), fCoinBase(fCoinBaseIn), fPegOut(fPegOutIn), nHeight(nHeightIn) {}
 
     void Clear() {
         out.SetNull();
         fCoinBase = false;
+        fPegOut = false;
         nHeight = 0;
     }
 
     //! empty constructor
-    Coin() : fCoinBase(false), nHeight(0) { }
+    Coin() : fCoinBase(false), fPegOut(false), nHeight(0) { }
 
     bool IsCoinBase() const {
         return fCoinBase;
     }
 
+    bool IsPegOut() const {
+        return fPegOut;
+    }
+
     template<typename Stream>
     void Serialize(Stream &s) const {
         assert(!IsSpent());
-        uint32_t code = nHeight * 2 + fCoinBase;
+        uint32_t code = nHeight * 4 + fPegOut * 2 + fCoinBase;
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
     }
@@ -71,7 +79,8 @@ public:
     void Unserialize(Stream &s) {
         uint32_t code = 0;
         ::Unserialize(s, VARINT(code));
-        nHeight = code >> 1;
+        nHeight = code >> 2;
+        fPegOut = code >> 1 & 1;
         fCoinBase = code & 1;
         ::Unserialize(s, CTxOutCompressor(out));
     }

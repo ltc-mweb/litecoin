@@ -1974,7 +1974,7 @@ CAmount CWalletTx::GetDebit(const isminefilter& filter) const
 CAmount CWalletTx::GetCredit(interfaces::Chain::Lock& locked_chain, const isminefilter& filter) const
 {
     // Must wait until coinbase is safely deep enough in the chain before valuing it
-    if (IsImmatureCoinBase(locked_chain))
+    if (IsImmature(locked_chain))
         return 0;
 
     CAmount credit = 0;
@@ -2006,7 +2006,7 @@ CAmount CWalletTx::GetCredit(interfaces::Chain::Lock& locked_chain, const ismine
 
 CAmount CWalletTx::GetImmatureCredit(interfaces::Chain::Lock& locked_chain, bool fUseCache) const
 {
-    if (IsImmatureCoinBase(locked_chain) && IsInMainChain(locked_chain)) {
+    if (IsImmature(locked_chain) && IsInMainChain(locked_chain)) {
         if (fUseCache && fImmatureCreditCached)
             return nImmatureCreditCached;
         nImmatureCreditCached = pwallet->GetCredit(*tx, ISMINE_SPENDABLE);
@@ -2023,7 +2023,7 @@ CAmount CWalletTx::GetAvailableCredit(interfaces::Chain::Lock& locked_chain, boo
         return 0;
 
     // Must wait until coinbase is safely deep enough in the chain before valuing it
-    if (IsImmatureCoinBase(locked_chain))
+    if (IsImmature(locked_chain))
         return 0;
 
     CAmount* cache = nullptr;
@@ -2064,7 +2064,7 @@ CAmount CWalletTx::GetAvailableCredit(interfaces::Chain::Lock& locked_chain, boo
 
 CAmount CWalletTx::GetImmatureWatchOnlyCredit(interfaces::Chain::Lock& locked_chain, const bool fUseCache) const
 {
-    if (IsImmatureCoinBase(locked_chain) && IsInMainChain(locked_chain)) {
+    if (IsImmature(locked_chain) && IsInMainChain(locked_chain)) {
         if (fUseCache && fImmatureWatchCreditCached)
             return nImmatureWatchCreditCached;
         nImmatureWatchCreditCached = pwallet->GetCredit(*tx, ISMINE_WATCH_ONLY);
@@ -2287,7 +2287,7 @@ CAmount CWallet::GetLegacyBalance(const isminefilter& filter, int minDepth) cons
     for (const auto& entry : mapWallet) {
         const CWalletTx& wtx = entry.second;
         const int depth = wtx.GetDepthInMainChain(*locked_chain);
-        if (depth < 0 || !CheckFinalTx(*wtx.tx) || wtx.IsImmatureCoinBase(*locked_chain)) {
+        if (depth < 0 || !CheckFinalTx(*wtx.tx) || wtx.IsImmature(*locked_chain)) {
             continue;
         }
 
@@ -2344,7 +2344,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
         if (!CheckFinalTx(*pcoin->tx))
             continue;
 
-        if (pcoin->IsImmatureCoinBase(locked_chain))
+        if (pcoin->IsImmature(locked_chain))
             continue;
 
         int nDepth = pcoin->GetDepthInMainChain(locked_chain);
@@ -3645,7 +3645,7 @@ std::map<CTxDestination, CAmount> CWallet::GetAddressBalances(interfaces::Chain:
             if (!pcoin->IsTrusted(locked_chain))
                 continue;
 
-            if (pcoin->IsImmatureCoinBase(locked_chain))
+            if (pcoin->IsImmature(locked_chain))
                 continue;
 
             int nDepth = pcoin->GetDepthInMainChain(locked_chain);
@@ -4504,15 +4504,18 @@ int CMerkleTx::GetDepthInMainChain(interfaces::Chain::Lock& locked_chain) const
 
 int CMerkleTx::GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const
 {
-    if (!IsCoinBase()) // MW: TODO - also check for peg-in/peg-out maturity
+    if (!IsCoinBase() && !IsHogEx())
         return 0;
     int chain_depth = GetDepthInMainChain(locked_chain);
     assert(chain_depth >= 0); // coinbase tx should not be conflicted
-    return std::max(0, (COINBASE_MATURITY+1) - chain_depth);
+    if (IsCoinBase()) {
+        return std::max(0, (COINBASE_MATURITY+1) - chain_depth);
+    } else {
+        return std::max(0, (PEGOUT_MATURITY+1) - chain_depth);
+    }
 }
 
-// MW: TODO - Change to just "IsImmature" and also check for peg-in/peg-out maturity
-bool CMerkleTx::IsImmatureCoinBase(interfaces::Chain::Lock& locked_chain) const
+bool CMerkleTx::IsImmature(interfaces::Chain::Lock& locked_chain) const
 {
     // note GetBlocksToMaturity is 0 for non-coinbase tx
     return GetBlocksToMaturity(locked_chain) > 0;
