@@ -190,17 +190,29 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 auto pegin_tx = libmw::wallet::CreatePegInTx(m_wallet->GetMWWallet(), rcp.amount);
                 auto commitment = std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
                 transaction.setMapValue("commitment", HexStr(commitment, false));
+                // MW: TODO - support pegging-in to someone else's address
+                transaction.setMapValue("mweb_recipient", libmw::wallet::GetAddress(m_wallet->GetMWWallet()));
+                transaction.setMapValue("mweb_credit", std::to_string(rcp.amount));
                 scriptPubKey << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
                 scriptPubKey << commitment;
                 mwTx = pegin_tx.first;
                 break;
             }
-            case SendCoinsRecipient::MWEB_PEGOUT:
+            case SendCoinsRecipient::MWEB_PEGOUT: {
+                transaction.setMapValue("mweb_pegout", rcp.address.toStdString());
+                transaction.setMapValue("mweb_debit", std::to_string(rcp.amount));
                 pegOut = &rcp;
                 break;
-            case SendCoinsRecipient::MWEB_SEND:
+            }
+            case SendCoinsRecipient::MWEB_SEND: {
+                auto address = rcp.address.toStdString();
+                transaction.setMapValue("mweb_recipient", address);
+                transaction.setMapValue("mweb_debit", std::to_string(rcp.amount));
+                if (libmw::wallet::IsOwnAddress(m_wallet->GetMWWallet(), address))
+                    transaction.setMapValue("mweb_credit", std::to_string(rcp.amount));
                 mwebSend = &rcp;
                 break;
+            }
             default:
                 scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
             }

@@ -355,6 +355,14 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         return tr("Payment to yourself");
     case TransactionRecord::Generated:
         return tr("Mined");
+    case TransactionRecord::MWEBPegIn:
+        return tr("MWEB Peg-In");
+    case TransactionRecord::MWEBPegOut:
+        return tr("MWEB Peg-Out");
+    case TransactionRecord::MWEBSend:
+        return tr("MWEB Send");
+    case TransactionRecord::MWEBReceive:
+        return tr("MWEB Receive");
     default:
         return QString();
     }
@@ -394,6 +402,10 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     case TransactionRecord::Generated:
         return lookupAddress(wtx->address, tooltip) + watchAddress;
     case TransactionRecord::SendToOther:
+    case TransactionRecord::MWEBPegIn:
+    case TransactionRecord::MWEBPegOut:
+    case TransactionRecord::MWEBSend:
+    case TransactionRecord::MWEBReceive:
         return QString::fromStdString(wtx->address) + watchAddress;
     case TransactionRecord::SendToSelf:
     default:
