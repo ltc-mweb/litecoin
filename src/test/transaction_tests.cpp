@@ -798,8 +798,7 @@ public:
 
     std::vector<libmw::Coin> SelectCoins(
         const std::vector<libmw::Coin>& coins,
-        const uint64_t amount,
-        const uint64_t fee_base) const final { return coins; }
+        const uint64_t amount) const final { return coins; }
 
     uint64_t GetDepthInActiveChain(const libmw::BlockHash& canonical_block_hash) const final { return 0; }
 
