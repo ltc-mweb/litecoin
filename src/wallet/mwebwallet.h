@@ -94,8 +94,7 @@ public:
 
     std::vector<libmw::Coin> SelectCoins(
         const std::vector<libmw::Coin>& coins,
-        const uint64_t amount,
-        const uint64_t fee_base) const final
+        const uint64_t amount) const final
     {
         std::vector<COutputCoin> vCoins;
         std::transform(
@@ -110,7 +109,6 @@ public:
         CoinSelectionParams coin_selection_params;
         bool bnb_used;
 
-        coin_selection_params.effective_fee = CFeeRate(fee_base);
         bool ok = m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
         if (!ok && bnb_used) {
             coin_selection_params.use_bnb = false;
