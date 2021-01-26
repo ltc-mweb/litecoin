@@ -1,0 +1,57 @@
+name: ci
+on: [push, pull_request]
+jobs:
+    ci:
+        name: ${{ matrix.name }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [ubuntu]
+                include:
+                    - name: ubuntu
+                        os: ubuntu-latest
+                        vcpkg_triplet: x64-linux
+        steps:
+            - name: Checkout litecoin
+                uses: actions/checkout@v2
+                repository: ltc-mweb/litecoin
+                with:
+                    path: litecoin
+            - name: Checkout libmw
+                uses: actions/checkout@v2
+                repository: ltc-mweb/libmw-ltc
+                with:
+                    path: libmw
+                    submodules: 'recursive'
+            - name: Install dependencies
+                run: |
+                    sudo apt-get install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb-dev
+            - name: Run vcpkg
+                uses: lukka/run-vcpkg@v6
+                with:
+                    # Response file stored in source control, it provides the list of ports and triplet(s).
+                    vcpkgArguments: '--debug --overlay-triplets=${{ github.workspace }}/libmw/vcpkg/triplets --triplet ${{ matrix.vcpkg_triplet }} @${{ github.workspace }}/libmw/vcpkg/packages.txt'
+                    # Location of the vcpkg as submodule of the repository.
+                    vcpkgDirectory: '${{ github.workspace }}/libmw/vcpkg/vcpkg'
+                    # Since the cache must be invalidated when content of the response file changes, let's
+                    # compute its hash and append this to the computed cache's key.
+                    appendedCacheKey: ${{ hashFiles('${{ github.workspace }}/libmw/vcpkg/packages.txt') }}
+            - name: 'Build libmw'
+                uses: lukka/run-cmake@v3.2
+                with:
+                    cmakeGenerator: ${{ matrix.cmake_generator }}
+                    cmakeBuildType: 'Release'
+                    cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+                    cmakeListsTxtPath: '${{ github.workspace }}/libmw/CMakeLists.txt'
+                    useVcpkgToolchainFile: true
+                    vcpkgTriplet: '${{ matrix.vcpkg_triplet }}'
+                    buildDirectory: '${{ github.workspace }}/build'
+                    cmakeAppendedArgs: ' ${{ matrix.cmake_platform_args }} -DCMAKE_BUILD_TYPE=Release'
+                    buildWithCMake: true
+                    buildWithCMakeArgs: '--target install --parallel --config Release'
+            - name: 'Build litecoint'
+                run: |
+                    ./autogen.sh
+                    ./configure --with-incompatible-bdb
+                    make -j8
