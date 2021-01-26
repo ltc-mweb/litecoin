@@ -47,7 +47,11 @@ jobs:
                     buildDirectory: '${{ github.workspace }}/build'
                     cmakeAppendedArgs: ' ${{ matrix.cmake_platform_args }} -DCMAKE_BUILD_TYPE=Release'
                     buildWithCMake: true
-                    buildWithCMakeArgs: '--target install --parallel --config Release'
+                    buildWithCMakeArgs: '--parallel --config Release'
+            - name: 'Copy libmw.so'
+              run: |
+                sudo cp ${{ github.workspace }}/libmw/bin/libmw.so /usr/local/lib/libmw.so
+                sudo cp -R ${{ github.workspace }}/libmw/include/libmw /usr/local/include/libmw
             - name: 'Build litecoin'
               run: |
                 ./autogen.sh
