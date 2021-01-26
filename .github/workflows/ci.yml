@@ -32,10 +32,8 @@ jobs:
               with:
                     # Response file stored in source control, it provides the list of ports and triplet(s).
                     vcpkgArguments: '--debug --overlay-triplets=${{ github.workspace }}/libmw/vcpkg/triplets --triplet ${{ matrix.vcpkg_triplet }} @${{ github.workspace }}/libmw/vcpkg/packages.txt'
-                    # Location of the vcpkg as submodule of the repository.
-                    vcpkgDirectory: '${{ github.workspace }}/libmw/vcpkg/vcpkg'
-                    # Since the cache must be invalidated when content of the response file changes, let's
-                    # compute its hash and append this to the computed cache's key.
+                    vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+                    vcpkgGitCommitId: '4a678aa329c0a6323d7334fdf3ad37d571600d27'
                     appendedCacheKey: ${{ hashFiles('${{ github.workspace }}/libmw/vcpkg/packages.txt') }}
             - name: 'Build libmw'
               uses: lukka/run-cmake@v3.2
@@ -55,3 +53,10 @@ jobs:
                 ./autogen.sh
                 ./configure --with-incompatible-bdb
                 make -j8
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
+              env:
+                    GITHUB_RUN_ID: ${{ github.run_id }}    
+              with:
+                    name: litecoin_${{ runner.os }}_${{ env.GITHUB_RUN_ID }}
+                    path: ${{ github.workspace }}/litecoin/src/qt/litecoin-qt
