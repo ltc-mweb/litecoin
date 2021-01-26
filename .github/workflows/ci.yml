@@ -53,6 +53,7 @@ jobs:
                 sudo cp ${{ github.workspace }}/libmw/bin/release/libmw.so /usr/local/lib/libmw.so
                 sudo cp -R ${{ github.workspace }}/libmw/include/libmw /usr/local/include/libmw
             - name: 'Build litecoin'
+              working-directory: litecoin
               run: |
                 ./autogen.sh
                 ./configure --with-incompatible-bdb
