@@ -50,7 +50,7 @@ jobs:
                     buildWithCMakeArgs: '--parallel --config Release'
             - name: 'Copy libmw.so'
               run: |
-                sudo cp ${{ github.workspace }}/libmw/bin/libmw.so /usr/local/lib/libmw.so
+                sudo cp ${{ github.workspace }}/libmw/bin/release/libmw.so /usr/local/lib/libmw.so
                 sudo cp -R ${{ github.workspace }}/libmw/include/libmw /usr/local/include/libmw
             - name: 'Build litecoin'
               run: |
