@@ -22,7 +22,7 @@ jobs:
               uses: actions/checkout@v2
               with:
                   path: libmw
-                  repository: ltc-mweb/libmw-ltc
+                  repository: ltc-mweb/libmw
                   submodules: 'recursive'
             - name: Install dependencies
               run: |
