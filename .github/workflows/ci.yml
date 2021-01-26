@@ -15,14 +15,14 @@ jobs:
         steps:
             - name: Checkout litecoin
               uses: actions/checkout@v2
-              repository: ltc-mweb/litecoin
               with:
                   path: litecoin
+                  repository: ltc-mweb/litecoin
             - name: Checkout libmw
               uses: actions/checkout@v2
-              repository: ltc-mweb/libmw-ltc
               with:
                   path: libmw
+                  repository: ltc-mweb/libmw-ltc
                   submodules: 'recursive'
             - name: Install dependencies
               run: |
