@@ -10,7 +10,7 @@ jobs:
                 name: [ubuntu]
                 include:
                     - name: ubuntu
-                      os: ubuntu-latest
+                      os: ubuntu-16.04
                       vcpkg_triplet: x64-linux
         steps:
             - name: Checkout litecoin
@@ -57,9 +57,14 @@ jobs:
               working-directory: litecoin
               run: |
                 ./autogen.sh
-                ./configure --with-incompatible-bdb
+                ./configure --with-incompatible-bdb LDFLAGS="-static-libstdc++ -static-libgcc"
                 make -j8
-                cd src/qt
+                mkdir -p dist
+                cp src/litecoind dist/litecoind
+                cp src/qt/litecoin-qt dist/litecoin-qt
+                cp /usr/local/lib/libmw.so dist/libmw.so
+                cd dist
+                patchelf --replace-needed /usr/local/lib/libmw.so '$ORIGIN/libmw.so' ./litecoind
                 patchelf --replace-needed /usr/local/lib/libmw.so '$ORIGIN/libmw.so' ./litecoin-qt
             - name: Upload artifact
               uses: actions/upload-artifact@v2
@@ -68,5 +73,6 @@ jobs:
               with:
                     name: litecoin_${{ runner.os }}_${{ env.GITHUB_RUN_ID }}
                     path: |
-                        ${{ github.workspace }}/libmw/bin/release/libmw.so
-                        ${{ github.workspace }}/litecoin/src/qt/litecoin-qt
+                        ${{ github.workspace }}/litecoin/dist/libmw.so
+                        ${{ github.workspace }}/listecoin/dist/litecoind
+                        ${{ github.workspace }}/litecoin/dist/litecoin-qt
