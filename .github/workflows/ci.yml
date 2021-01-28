@@ -28,6 +28,14 @@ jobs:
               run: |
                 sudo apt-get update --fix-missing
                 sudo apt-get install patchelf build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb-dev libdb++-dev libspdlog-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
+            - name: Install gcc 8
+              run: |
+                echo "Tag Name: ${{ steps.tagName.outputs.tag }}"
+                sudo apt install gcc-8 g++-8 libgflags-dev build-essential
+                echo "export CC=/usr/bin/gcc-8"
+                echo "export CXX=/usr/bin/g++-8"
+                sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 8
+                sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 8
             - name: Run vcpkg
               uses: lukka/run-vcpkg@v6
               with:
