@@ -35,7 +35,8 @@ static int column_alignments[] = {
         Qt::AlignLeft|Qt::AlignVCenter, /* date */
         Qt::AlignLeft|Qt::AlignVCenter, /* type */
         Qt::AlignLeft|Qt::AlignVCenter, /* address */
-        Qt::AlignRight|Qt::AlignVCenter /* amount */
+        Qt::AlignRight|Qt::AlignVCenter, /* amount */
+        Qt::AlignRight|Qt::AlignVCenter /* MWEB amount */
     };
 
 // Comparison operator for sort/binary search of model tx list
@@ -224,7 +225,8 @@ TransactionTableModel::TransactionTableModel(const PlatformStyle *_platformStyle
         fProcessingQueuedTransactions(false),
         platformStyle(_platformStyle)
 {
-    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Label") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
+    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Label") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit())
+        << BitcoinUnits::getMWEBAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
     priv->refreshWallet(walletModel->wallet());
 
     connect(walletModel->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &TransactionTableModel::updateDisplayUnit);
@@ -242,7 +244,9 @@ TransactionTableModel::~TransactionTableModel()
 void TransactionTableModel::updateAmountColumnTitle()
 {
     columns[Amount] = BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
-    Q_EMIT headerDataChanged(Qt::Horizontal,Amount,Amount);
+    Q_EMIT headerDataChanged(Qt::Horizontal, Amount, Amount);
+    columns[MWEBAmount] = BitcoinUnits::getMWEBAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
+    Q_EMIT headerDataChanged(Qt::Horizontal, MWEBAmount, MWEBAmount);
 }
 
 void TransactionTableModel::updateTransaction(const QString &hash, int status, bool showTransaction)
@@ -555,6 +559,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxToAddress(rec, true);
         case Amount:
             return qint64(rec->credit + rec->debit);
+        case MWEBAmount:
+            return qint64(rec->credit + rec->debit); // TODO: Use MWEB credit/debit
         }
         break;
     case Qt::ToolTipRole:
@@ -579,6 +585,10 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         if(index.column() == ToAddress)
         {
             return addressColor(rec);
+        }
+        if (index.column() == MWEBAmount && (rec->credit + rec->debit) < 0) // TODO: TransactionRecord needs mweb_credit and mweb_debit fields
+        {
+            return COLOR_NEGATIVE;
         }
         break;
     case TypeRole:
@@ -667,6 +677,8 @@ QVariant TransactionTableModel::headerData(int section, Qt::Orientation orientat
                 return tr("User-defined intent/purpose of the transaction.");
             case Amount:
                 return tr("Amount removed from or added to balance.");
+            case MWEBAmount:
+                return tr("Amount removed from or added to MWEB balance.");
             }
         }
     }

@@ -37,7 +37,8 @@ public:
         Date = 2,
         Type = 3,
         ToAddress = 4,
-        Amount = 5
+        Amount = 5,
+        MWEBAmount = 6
     };
 
     /** Roles to get specific information from a transaction row.
