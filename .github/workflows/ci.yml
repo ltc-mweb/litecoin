@@ -10,7 +10,7 @@ jobs:
                 name: [ubuntu]
                 include:
                     - name: ubuntu
-                      os: ubuntu-16.04
+                      os: ubuntu-18.04
                       vcpkg_triplet: x64-linux
         steps:
             - name: Checkout litecoin
