@@ -35,11 +35,11 @@ jobs:
                   submodules: 'recursive'
             - name: Install dependencies
               run: |
-                sudo apt-get update --fix-missing
-                sudo apt-get install patchelf build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb-dev libdb++-dev libspdlog-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
+                sudo apt-get -y update --fix-missing
+                sudo apt-get -y install patchelf build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb-dev libdb++-dev libspdlog-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
             - name: Windows build
               run: |
-                sudo apt install g++-mingw-w64-x86-64
+                sudo apt-get -y install g++-mingw-w64-x86-64
                 sudo update-alternatives --config x86_64-w64-mingw32-g++
                 cd litecoin
                 PATH=$(echo "$PATH" | sed -e 's/:\/mnt.*//g') # strip out problematic Windows %PATH% imported var
