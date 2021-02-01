@@ -36,54 +36,6 @@ jobs:
                 echo "export CXX=/usr/bin/g++-8"
                 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 8
                 sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 8
-            - name: Run vcpkg
-              uses: lukka/run-vcpkg@v6
-              with:
-                    # Response file stored in source control, it provides the list of ports and triplet(s).
-                    vcpkgArguments: '--debug --overlay-triplets=${{ github.workspace }}/libmw/vcpkg/triplets --triplet ${{ matrix.vcpkg_triplet }} @${{ github.workspace }}/libmw/vcpkg/packages.txt'
-                    vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-                    vcpkgGitCommitId: '4a678aa329c0a6323d7334fdf3ad37d571600d27'
-                    appendedCacheKey: ${{ hashFiles('${{ github.workspace }}/libmw/vcpkg/packages.txt') }}
-            - name: 'Build libmw'
-              uses: lukka/run-cmake@v3.2
-              with:
-                    cmakeGenerator: ${{ matrix.cmake_generator }}
-                    cmakeBuildType: 'Release'
-                    cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-                    cmakeListsTxtPath: '${{ github.workspace }}/libmw/CMakeLists.txt'
-                    useVcpkgToolchainFile: true
-                    vcpkgTriplet: '${{ matrix.vcpkg_triplet }}'
-                    buildDirectory: '${{ github.workspace }}/build'
-                    cmakeAppendedArgs: ' ${{ matrix.cmake_platform_args }} -DCMAKE_BUILD_TYPE=Release'
-                    buildWithCMake: true
-                    buildWithCMakeArgs: '--parallel --config Release'
-            - name: 'Copy libmw.so'
-              run: |
-                sudo cp ${{ github.workspace }}/libmw/bin/release/libmw.so /usr/local/lib/libmw.so
-                sudo cp -R ${{ github.workspace }}/libmw/include/libmw /usr/local/include/libmw
-            - name: 'Build litecoin'
-              working-directory: litecoin
-              run: |
-                ./autogen.sh
-                ./configure --with-incompatible-bdb LDFLAGS="-static-libstdc++ -static-libgcc"
-                make -j8
-                mkdir -p dist
-                cp src/litecoind dist/litecoind
-                cp src/qt/litecoin-qt dist/litecoin-qt
-                cp /usr/local/lib/libmw.so dist/libmw.so
-                cd dist
-                patchelf --replace-needed /usr/local/lib/libmw.so '$ORIGIN/libmw.so' ./litecoind
-                patchelf --replace-needed /usr/local/lib/libmw.so '$ORIGIN/libmw.so' ./litecoin-qt
-            - name: Upload artifact
-              uses: actions/upload-artifact@v2
-              env:
-                    GITHUB_RUN_ID: ${{ github.run_id }}    
-              with:
-                    name: litecoin_${{ runner.os }}_${{ env.GITHUB_RUN_ID }}
-                    path: |
-                        ${{ github.workspace }}/litecoin/dist/libmw.so
-                        ${{ github.workspace }}/litecoin/dist/litecoind
-                        ${{ github.workspace }}/litecoin/dist/litecoin-qt
             - name: Windows build
               run: |
                 sudo apt install g++-mingw-w64-x86-64
