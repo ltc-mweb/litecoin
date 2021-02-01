@@ -358,6 +358,8 @@ struct WalletTx
     CAmount credit;
     CAmount debit;
     CAmount change;
+    CAmount mweb_credit;
+    CAmount mweb_debit;
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;
@@ -368,6 +370,7 @@ struct WalletTxStatus
 {
     int block_height;
     int blocks_to_maturity;
+    int blocks_to_mweb_maturity;
     int depth_in_main_chain;
     unsigned int time_received;
     uint32_t lock_time;

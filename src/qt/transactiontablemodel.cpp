@@ -451,6 +451,17 @@ QString TransactionTableModel::formatTxAmount(const TransactionRecord *wtx, bool
     return QString(str);
 }
 
+QString TransactionTableModel::formatMWEBAmount(const TransactionRecord* wtx, bool showUnconfirmed, BitcoinUnits::SeparatorStyle separators) const
+{
+    QString str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->mweb_credit + wtx->mweb_debit, false, separators);
+    if (showUnconfirmed) {
+        if (!wtx->status.countsForMWEBBalance) {
+            str = QString("[") + str + QString("]");
+        }
+    }
+    return QString(str);
+}
+
 QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx) const
 {
     switch(wtx->status.status)
@@ -541,6 +552,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxToAddress(rec, false);
         case Amount:
             return formatTxAmount(rec, true, BitcoinUnits::separatorAlways);
+        case MWEBAmount:
+            return formatMWEBAmount(rec, true, BitcoinUnits::separatorAlways);
         }
         break;
     case Qt::EditRole:
@@ -560,7 +573,7 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         case Amount:
             return qint64(rec->credit + rec->debit);
         case MWEBAmount:
-            return qint64(rec->credit + rec->debit); // TODO: Use MWEB credit/debit
+            return qint64(rec->mweb_credit + rec->mweb_debit);
         }
         break;
     case Qt::ToolTipRole:
@@ -586,7 +599,7 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         {
             return addressColor(rec);
         }
-        if (index.column() == MWEBAmount && (rec->credit + rec->debit) < 0) // TODO: TransactionRecord needs mweb_credit and mweb_debit fields
+        if (index.column() == MWEBAmount && (rec->mweb_credit + rec->mweb_debit) < 0)
         {
             return COLOR_NEGATIVE;
         }
@@ -637,13 +650,14 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
                 details.append(" ");
             }
             details.append(formatTxAmount(rec, false, BitcoinUnits::separatorNever));
+            // MW: TODO - Include MWEB amount
             return details;
         }
     case ConfirmedRole:
         return rec->status.countsForBalance;
     case FormattedAmountRole:
         // Used for copy/export, so don't include separators
-        return formatTxAmount(rec, false, BitcoinUnits::separatorNever);
+        return formatTxAmount(rec, false, BitcoinUnits::separatorNever); // MW: TODO - Look into this
     case StatusRole:
         return rec->status.status;
     }

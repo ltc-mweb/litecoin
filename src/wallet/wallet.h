@@ -320,6 +320,14 @@ public:
      * >0 : is a coinbase transaction which matures in this many blocks
      */
     int GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const;
+
+    /**
+     * @return number of blocks to MWEB (peg-in) maturity for this transaction:
+     *  0 : is not a pegin transaction, or is a mature pegin transaction
+     * >0 : is a pegin transaction which matures in this many blocks
+     */
+    int GetBlocksToMWEBMaturity(interfaces::Chain::Lock& locked_chain) const;
+
     bool hashUnset() const { return (hashBlock.IsNull() || hashBlock == ABANDON_HASH); }
     bool isAbandoned() const { return (hashBlock == ABANDON_HASH); }
     void setAbandoned() { hashBlock = ABANDON_HASH; }

@@ -175,13 +175,13 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         // MWEB Peg-Out
         if (mapValue.find("mweb_pegout") != mapValue.end())
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::MWEBPegOut,
-                         mapValue["mweb_pegout"], -mwebDebit, mwebCredit));
+                         mapValue["mweb_pegout"], 0, mwebDebit, -mwebDebit, mwebCredit)); // MW: TODO - Factor in mweb fee
 
         // MWEB Send/Receive
         if (mapValue.find("mweb_recipient") != mapValue.end())
         {
             TransactionRecord rec(hash, nTime, TransactionRecord::MWEBSend,
-                                  mapValue["mweb_recipient"], -mwebDebit, mwebCredit);
+                                  mapValue["mweb_recipient"], 0, 0, -mwebDebit, mwebCredit);
             if (mwebCredit >= mwebDebit)
                 rec.type = TransactionRecord::MWEBReceive;
             parts.append(rec);
@@ -202,6 +202,7 @@ void TransactionRecord::updateStatus(const interfaces::WalletTxStatus& wtx, int 
         wtx.time_received,
         idx);
     status.countsForBalance = wtx.is_trusted && !(wtx.blocks_to_maturity > 0);
+    status.countsForMWEBBalance = wtx.is_trusted && !(wtx.blocks_to_mweb_maturity > 0);
     status.depth = wtx.depth_in_main_chain;
     status.cur_num_blocks = numBlocks;
 
