@@ -409,6 +409,9 @@ static UniValue pegin(const JSONRPCRequest& request)
     mapValue_t mapValue;
     mapValue["commitment"] = HexStr(std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend()), false);
 
+    //transaction.setMapValue("mweb_recipient", libmw::wallet::GetAddress(m_wallet->GetMWWallet())); // MW: TODO - Lookup tx's pegin address
+    mapValue["mweb_credit"] = std::to_string(nAmount);
+
     CReserveKey reservekey(pwallet);
     CAmount nFeeRequired;
     std::string strError;

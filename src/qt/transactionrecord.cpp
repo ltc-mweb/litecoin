@@ -126,6 +126,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                     continue;
                 }
 
+                if (mapValue.find("mweb_debit") != mapValue.end())
+                    sub.mweb_debit = std::stoll(mapValue["mweb_debit"]);
+                if (mapValue.find("mweb_credit") != mapValue.end())
+                    sub.mweb_credit = std::stoll(mapValue["mweb_credit"]);
+
                 if (mapValue.find("commitment") != mapValue.end())
                 {
                     // MWEB Peg-In
@@ -180,11 +185,17 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         // MWEB Send/Receive
         if (mapValue.find("mweb_recipient") != mapValue.end())
         {
-            TransactionRecord rec(hash, nTime, TransactionRecord::MWEBSend,
-                                  mapValue["mweb_recipient"], 0, 0, -mwebDebit, mwebCredit);
-            if (mwebCredit >= mwebDebit)
-                rec.type = TransactionRecord::MWEBReceive;
-            parts.append(rec);
+            if (mwebCredit < mwebDebit) {
+                parts.append(TransactionRecord(hash, nTime, TransactionRecord::MWEBSend,
+                    mapValue["mweb_recipient"], 0, 0, -mwebDebit, mwebCredit));
+            }
+
+            // MW: TODO - Show MWEBReceive
+            //TransactionRecord rec(hash, nTime, TransactionRecord::MWEBSend,
+            //                      mapValue["mweb_recipient"], 0, 0, -mwebDebit, mwebCredit);
+            //if (mwebCredit >= mwebDebit)
+            //    rec.type = TransactionRecord::MWEBReceive;
+            //parts.append(rec);
         }
     }
 

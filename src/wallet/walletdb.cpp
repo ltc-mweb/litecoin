@@ -801,6 +801,8 @@ struct MWCoin {
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(coin.features);
+        READWRITE(coin.change_output);
+        READWRITE(coin.pegin_output);
         READWRITE(coin.commitment);
         READWRITE(coin.amount);
 
