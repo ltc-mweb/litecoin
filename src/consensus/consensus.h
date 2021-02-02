@@ -30,6 +30,9 @@ static constexpr unsigned int LOCKTIME_VERIFY_SEQUENCE = (1 << 0);
 static constexpr unsigned int LOCKTIME_MEDIAN_TIME_PAST = (1 << 1);
 
 /** The maximum size (in bytes) of a mimblewimble extension block */
-static const unsigned int MAX_MW_EB_SIZE = 4000000; // MW: Determine this
+static const unsigned int MAX_MW_EB_SIZE = 4000000; // MW: TODO - Determine this
+
+/** Peg-In transaction outputs can only be spent after this number of new blocks */
+static const unsigned int PEGIN_MATURITY = 20;
 
 #endif // BITCOIN_CONSENSUS_CONSENSUS_H

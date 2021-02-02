@@ -202,6 +202,15 @@ QString BitcoinUnits::getAmountColumnTitle(int unit)
     return amountTitle;
 }
 
+QString BitcoinUnits::getMWEBAmountColumnTitle(int unit)
+{
+    QString amountTitle = QObject::tr("MWEB");
+    if (BitcoinUnits::valid(unit)) {
+        amountTitle += " (" + BitcoinUnits::shortName(unit) + ")";
+    }
+    return amountTitle;
+}
+
 int BitcoinUnits::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);

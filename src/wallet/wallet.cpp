@@ -4504,11 +4504,22 @@ int CMerkleTx::GetDepthInMainChain(interfaces::Chain::Lock& locked_chain) const
 
 int CMerkleTx::GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const
 {
-    if (!IsCoinBase()) // MW: TODO - also check for peg-in/peg-out maturity
+    if (!IsCoinBase()) // MW: TODO - also check for peg-out maturity
         return 0;
     int chain_depth = GetDepthInMainChain(locked_chain);
     assert(chain_depth >= 0); // coinbase tx should not be conflicted
     return std::max(0, (COINBASE_MATURITY+1) - chain_depth);
+}
+
+int CMerkleTx::GetBlocksToMWEBMaturity(interfaces::Chain::Lock& locked_chain) const
+{
+    if (tx->m_mwtx.GetPegIns().empty()) {
+        return 0;
+    }
+
+    int chain_depth = GetDepthInMainChain(locked_chain);
+    assert(chain_depth >= 0); // coinbase tx should not be conflicted
+    return std::max(0, (int)(PEGIN_MATURITY + 1) - chain_depth);
 }
 
 // MW: TODO - Change to just "IsImmature" and also check for peg-in/peg-out maturity
