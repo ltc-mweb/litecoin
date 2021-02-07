@@ -13,6 +13,7 @@
 #include <uint256.h>
 #include <consensus/params.h>
 #include <mimblewimble/models.h>
+#include <boost/variant.hpp>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 static const int SERIALIZE_NO_MIMBLEWIMBLE = 0x20000000;
@@ -462,5 +463,7 @@ struct CMutableTransaction
 typedef std::shared_ptr<const CTransaction> CTransactionRef;
 static inline CTransactionRef MakeTransactionRef() { return std::make_shared<const CTransaction>(); }
 template <typename Tx> static inline CTransactionRef MakeTransactionRef(Tx&& txIn) { return std::make_shared<const CTransaction>(std::forward<Tx>(txIn)); }
+
+typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
 
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

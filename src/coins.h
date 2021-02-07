@@ -21,8 +21,6 @@
 
 #include <unordered_map>
 
-typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
-
 /**
  * A UTXO entry.
  *

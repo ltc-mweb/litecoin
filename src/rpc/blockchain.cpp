@@ -444,7 +444,47 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
         }
     }
 
-    info.pushKV("mweb", tx.HasMWData());
+    if (tx.HasMWData()) {
+        UniValue mweb_info(UniValue::VOBJ);
+
+        // Pegins
+        UniValue pegins(UniValue::VARR);
+        for (const libmw::PegIn& pegin : tx.m_mwtx.GetPegIns()) {
+            UniValue pegin_uni(UniValue::VOBJ);
+            pegin_uni.pushKV("amount", pegin.amount);
+            pegin_uni.pushKV("commitment", HexStr(pegin.commitment.begin(), pegin.commitment.end()));
+        }
+
+        mweb_info.pushKV("pegins", pegins);
+
+        // Pegouts
+        UniValue pegouts(UniValue::VARR);
+        for (const libmw::PegOut& pegout : tx.m_mwtx.GetPegOuts()) {
+            UniValue pegout_uni(UniValue::VOBJ);
+            pegout_uni.pushKV("amount", pegout.amount);
+            pegout_uni.pushKV("address", pegout.address);
+        }
+
+        mweb_info.pushKV("pegouts", pegouts);
+
+        // Inputs
+        UniValue input_commits(UniValue::VARR);
+        for (const libmw::Commitment& input_commit : tx.m_mwtx.GetInputCommits()) {
+            input_commits.push_back(HexStr(input_commit.begin(), input_commit.end()));
+        }
+
+        mweb_info.pushKV("inputs", input_commits);
+
+        // Outputs
+        UniValue output_commits(UniValue::VARR);
+        for (const libmw::Commitment& output_commit : tx.m_mwtx.GetOutputCommits()) {
+            output_commits.push_back(HexStr(output_commit.begin(), output_commit.end()));
+        }
+
+        mweb_info.pushKV("outputs", output_commits);
+
+        info.pushKV("mweb", mweb_info);
+    }
 
     UniValue depends(UniValue::VARR);
     for (const std::string& dep : setDepends)

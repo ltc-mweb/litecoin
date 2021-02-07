@@ -55,6 +55,14 @@ class LockImpl : public Chain::Lock
         assert(block != nullptr);
         return block->GetBlockTime();
     }
+    Optional<int64_t> getBlockTime(const uint256& hash) override
+    {
+        CBlockIndex* block = LookupBlockIndex(hash);
+        if (block) {
+            return block->GetBlockTime();
+        }
+        return nullopt;
+    }
     int64_t getBlockMedianTimePast(int height) override
     {
         CBlockIndex* block = ::chainActive[height];

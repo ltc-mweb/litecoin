@@ -58,6 +58,9 @@ public:
         //! Get block time. Height must be valid or this function will abort.
         virtual int64_t getBlockTime(int height) = 0;
 
+        //! Get block time. Returns nullopt if block not found.
+        virtual Optional<int64_t> getBlockTime(const uint256& hash) = 0;
+
         //! Get block median time past. Height must be valid or this function
         //! will abort.
         virtual int64_t getBlockMedianTimePast(int height) = 0;

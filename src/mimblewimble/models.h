@@ -95,6 +95,11 @@ struct CMWTx
         return IsNull() ? std::vector<libmw::PegIn>{} : m_transaction.GetPegins();
     }
 
+    std::vector<libmw::PegOut> GetPegOuts() const noexcept
+    {
+        return IsNull() ? std::vector<libmw::PegOut>{} : m_transaction.GetPegouts();
+    }
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
