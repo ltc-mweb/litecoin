@@ -2566,7 +2566,7 @@ static UniValue lockunspent(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, expected unspent output");
         }
 
-        const bool is_locked = pwallet->IsLockedCoin(outpt.hash, outpt.n);
+        const bool is_locked = pwallet->IsLockedCoin(outpt);
 
         if (fUnlock && !is_locked) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, expected locked output");
@@ -2629,17 +2629,22 @@ static UniValue listlockunspent(const JSONRPCRequest& request)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
-    std::vector<COutPoint> vOutpts;
+    std::vector<OutputIndex> vOutpts;
     pwallet->ListLockedCoins(vOutpts);
 
     UniValue ret(UniValue::VARR);
 
-    for (const COutPoint& outpt : vOutpts) {
-        UniValue o(UniValue::VOBJ);
+    for (const OutputIndex& output : vOutpts) {
+        if (output.which() == 0) {
+            UniValue o(UniValue::VOBJ);
 
-        o.pushKV("txid", outpt.hash.GetHex());
-        o.pushKV("vout", (int)outpt.n);
-        ret.push_back(o);
+            const COutPoint& outpt = boost::get<COutPoint>(output);
+            o.pushKV("txid", outpt.hash.GetHex());
+            o.pushKV("vout", (int)outpt.n);
+            ret.push_back(o);
+        } else {
+            // MW: TODO - List libmw::Commitments
+        }
     }
 
     return ret;
@@ -3154,7 +3159,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
     pwallet->BlockUntilSyncedToCurrentChain();
 
     UniValue results(UniValue::VARR);
-    std::vector<COutput> vecOutputs;
+    std::vector<COutputCoin> vecOutputs;
     {
         auto locked_chain = pwallet->chain().lock();
         LOCK(pwallet->cs_wallet);
@@ -3163,7 +3168,13 @@ static UniValue listunspent(const JSONRPCRequest& request)
 
     LOCK(pwallet->cs_wallet);
 
-    for (const COutput& out : vecOutputs) {
+    for (const COutputCoin& output_coin : vecOutputs) {
+        if (output_coin.IsMWEB()) {
+            continue; // MW: TODO - Print MWEB coins
+        }
+
+        const COutput& out = *output_coin.out;
+
         CTxDestination address;
         const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
         bool fValidAddress = ExtractDestination(scriptPubKey, address);

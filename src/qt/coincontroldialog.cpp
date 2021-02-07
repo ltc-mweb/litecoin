@@ -192,6 +192,23 @@ void CoinControlDialog::buttonSelectAllClicked()
     CoinControlDialog::updateLabels(model, this);
 }
 
+OutputIndex CoinControlDialog::BuildOutputIndex(QTreeWidgetItem* item)
+{
+    if (IsCanonical(item)) {
+        return COutPoint(
+            uint256S(item->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString()),
+            item->data(COLUMN_ADDRESS, VOutRole).toUInt()
+        );
+    } else {
+        assert(IsMWEB(item));
+
+        std::vector<uint8_t> parsed = ParseHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
+        libmw::Commitment output_commit;
+        std::copy_n(parsed.begin(), parsed.size(), output_commit.begin());
+        return output_commit;
+    }
+}
+
 // context menu
 void CoinControlDialog::showMenu(const QPoint &point)
 {
@@ -201,10 +218,10 @@ void CoinControlDialog::showMenu(const QPoint &point)
         contextMenuItem = item;
 
         // disable some items (like Copy Transaction ID, lock, unlock) for tree roots in context menu
-        if (item->data(COLUMN_ADDRESS, TxHashRole).toString().length() == 64) // transaction hash is 64 characters (this means it is a child node, so it is not a parent node in tree mode)
+        if (IsCanonical(item) || IsMWEB(item)) // this means it is a child node, so it is not a parent node in tree mode
         {
             copyTransactionHashAction->setEnabled(true);
-            if (model->wallet().isLockedCoin(COutPoint(uint256S(item->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString()), item->data(COLUMN_ADDRESS, VOutRole).toUInt())))
+            if (model->wallet().isLockedCoin(BuildOutputIndex(item)))
             {
                 lockAction->setEnabled(false);
                 unlockAction->setEnabled(true);
@@ -254,7 +271,11 @@ void CoinControlDialog::copyAddress()
 // context menu action: copy transaction id
 void CoinControlDialog::copyTransactionHash()
 {
-    GUIUtil::setClipboard(contextMenuItem->data(COLUMN_ADDRESS, TxHashRole).toString());
+    if (IsCanonical(contextMenuItem)) {
+        GUIUtil::setClipboard(contextMenuItem->data(COLUMN_ADDRESS, TxHashRole).toString());
+    } else if (IsMWEB(contextMenuItem)) {
+        GUIUtil::setClipboard(contextMenuItem->data(COLUMN_ADDRESS, CommitmentRole).toString());
+    }
 }
 
 // context menu action: lock coin
@@ -263,8 +284,7 @@ void CoinControlDialog::lockCoin()
     if (contextMenuItem->checkState(COLUMN_CHECKBOX) == Qt::Checked)
         contextMenuItem->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
 
-    COutPoint outpt(uint256S(contextMenuItem->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString()), contextMenuItem->data(COLUMN_ADDRESS, VOutRole).toUInt());
-    model->wallet().lockCoin(outpt);
+    model->wallet().lockCoin(BuildOutputIndex(contextMenuItem));
     contextMenuItem->setDisabled(true);
     contextMenuItem->setIcon(COLUMN_CHECKBOX, platformStyle->SingleColorIcon(":/icons/lock_closed"));
     updateLabelLocked();
@@ -273,8 +293,7 @@ void CoinControlDialog::lockCoin()
 // context menu action: unlock coin
 void CoinControlDialog::unlockCoin()
 {
-    COutPoint outpt(uint256S(contextMenuItem->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString()), contextMenuItem->data(COLUMN_ADDRESS, VOutRole).toUInt());
-    model->wallet().unlockCoin(outpt);
+    model->wallet().unlockCoin(BuildOutputIndex(contextMenuItem));
     contextMenuItem->setDisabled(false);
     contextMenuItem->setIcon(COLUMN_CHECKBOX, QIcon());
     updateLabelLocked();
@@ -366,19 +385,37 @@ void CoinControlDialog::radioListMode(bool checked)
         updateView();
 }
 
+CInputCoin CoinControlDialog::BuildInputCoin(QTreeWidgetItem* item)
+{
+    if (IsMWEB(item)) {
+        std::vector<uint8_t> parsed = ParseHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
+        libmw::Commitment output_commit;
+        std::copy_n(parsed.begin(), parsed.size(), output_commit.begin());
+        return model->wallet().findCoin(output_commit);
+    } else {
+        uint256 hash = uint256S(item->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString());
+        uint32_t n = item->data(COLUMN_ADDRESS, VOutRole).toUInt();
+        CAmount amount = item->data(COLUMN_AMOUNT, Qt::UserRole).toUInt();
+
+        std::vector<uint8_t> script_data = ParseHex(item->data(COLUMN_ADDRESS, PubKeyRole).toString().toStdString());
+        CScript scriptPubKey(script_data.begin(), script_data.end());
+        return CInputCoin(hash, n, amount, scriptPubKey);
+    }
+}
+
 // checkbox clicked by user
 void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
 {
-    if (column == COLUMN_CHECKBOX && item->data(COLUMN_ADDRESS, TxHashRole).toString().length() == 64) // transaction hash is 64 characters (this means it is a child node, so it is not a parent node in tree mode)
+    if (column == COLUMN_CHECKBOX && (IsCanonical(item) || IsMWEB(item))) // this means it is a child node, so it is not a parent node in tree mode
     {
-        COutPoint outpt(uint256S(item->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString()), item->data(COLUMN_ADDRESS, VOutRole).toUInt());
+        CInputCoin input_coin = BuildInputCoin(item);
 
         if (item->checkState(COLUMN_CHECKBOX) == Qt::Unchecked)
-            coinControl()->UnSelect(outpt);
+            coinControl()->UnSelect(input_coin.outpoint);
         else if (item->isDisabled()) // locked (this happens if "check all" through parent node)
             item->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
         else
-            coinControl()->Select(outpt);
+            coinControl()->Select(input_coin.outpoint);
 
         // selection changed -> update labels
         if (ui->treeWidget->isEnabled()) // do not update on every click for (un)select all
@@ -397,7 +434,7 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
 // shows count of locked unspent outputs
 void CoinControlDialog::updateLabelLocked()
 {
-    std::vector<COutPoint> vOutpts;
+    std::vector<OutputIndex> vOutpts;
     model->wallet().listLockedCoins(vOutpts);
     if (vOutpts.size() > 0)
     {
@@ -437,7 +474,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     unsigned int nQuantity      = 0;
     bool fWitness               = false;
 
-    std::vector<COutPoint> vCoinControl;
+    std::vector<OutputIndex> vCoinControl;
     coinControl()->ListSelected(vCoinControl);
 
     size_t i = 0;
@@ -446,7 +483,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
 
         // unselect already spent, very unlikely scenario, this could happen
         // when selected are spent elsewhere, like rpc or another computer
-        const COutPoint& outpt = vCoinControl[i++];
+        const OutputIndex& outpt = vCoinControl[i++];
         if (out.is_spent)
         {
             coinControl()->UnSelect(outpt);
@@ -457,29 +494,31 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
         nQuantity++;
 
         // Amount
-        nAmount += out.txout.nValue;
+        nAmount += out.nValue;
 
         // Bytes
-        CTxDestination address;
-        int witnessversion = 0;
-        std::vector<unsigned char> witnessprogram;
-        if (out.txout.scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram))
-        {
-            nBytesInputs += (32 + 4 + 1 + (107 / WITNESS_SCALE_FACTOR) + 4);
-            fWitness = true;
-        }
-        else if(ExtractDestination(out.txout.scriptPubKey, address))
-        {
-            CPubKey pubkey;
-            CKeyID *keyid = boost::get<CKeyID>(&address);
-            if (keyid && model->wallet().getPubKey(*keyid, pubkey))
-            {
-                nBytesInputs += (pubkey.IsCompressed() ? 148 : 180);
+        if (out.address.which() == 0) {
+            const CScript& scriptPubKey = boost::get<CScript>(out.address);
+            CTxDestination address;
+            int witnessversion = 0;
+            std::vector<unsigned char> witnessprogram;
+            if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
+                nBytesInputs += (32 + 4 + 1 + (107 / WITNESS_SCALE_FACTOR) + 4);
+                fWitness = true;
+            } else if (ExtractDestination(scriptPubKey, address)) {
+                CPubKey pubkey;
+                CKeyID* keyid = boost::get<CKeyID>(&address);
+                if (keyid && model->wallet().getPubKey(*keyid, pubkey)) {
+                    nBytesInputs += (pubkey.IsCompressed() ? 148 : 180);
+                } else {
+                    nBytesInputs += 148; // in all error cases, simply assume 148 here
+                }
+            } else {
+                nBytesInputs += 148;
             }
-            else
-                nBytesInputs += 148; // in all error cases, simply assume 148 here
+        } else {
+            // MW: TODO - Determine byte calculation for MWEB
         }
-        else nBytesInputs += 148;
     }
 
     // calculation
@@ -617,8 +656,14 @@ void CoinControlDialog::updateView()
     for (const auto& coins : model->wallet().listCoins()) {
         CCoinControlWidgetItem *itemWalletAddress = new CCoinControlWidgetItem();
         itemWalletAddress->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
-        QString sWalletAddress = QString::fromStdString(EncodeDestination(coins.first));
-        QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress);
+        QString sWalletAddress;
+        if (coins.first.which() == 0) {
+            sWalletAddress = QString::fromStdString(EncodeDestination(boost::get<CTxDestination>(coins.first)));
+        } else {
+            sWalletAddress = QString::fromStdString(boost::get<libmw::MWEBAddress>(coins.first));
+        }
+
+        QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress); // MW: TODO - Check if peg-in, change, etc.
         if (sWalletLabel.isEmpty())
             sWalletLabel = tr("(no label)");
 
@@ -639,10 +684,8 @@ void CoinControlDialog::updateView()
 
         CAmount nSum = 0;
         int nChildren = 0;
-        for (const auto& outpair : coins.second) {
-            const COutPoint& output = std::get<0>(outpair);
-            const interfaces::WalletTxOut& out = std::get<1>(outpair);
-            nSum += out.txout.nValue;
+        for (const interfaces::WalletTxOut& out : coins.second) {
+            nSum += out.nValue;
             nChildren++;
 
             CCoinControlWidgetItem *itemOutput;
@@ -652,16 +695,27 @@ void CoinControlDialog::updateView()
             itemOutput->setCheckState(COLUMN_CHECKBOX,Qt::Unchecked);
 
             // address
-            CTxDestination outputAddress;
             QString sAddress = "";
-            if(ExtractDestination(out.txout.scriptPubKey, outputAddress))
-            {
-                sAddress = QString::fromStdString(EncodeDestination(outputAddress));
 
-                // if listMode or change => show bitcoin address. In tree mode, address is not shown again for direct wallet address outputs
-                if (!treeMode || (!(sAddress == sWalletAddress)))
-                    itemOutput->setText(COLUMN_ADDRESS, sAddress);
+            if (out.address.which() == 0) {
+                const CScript& scriptPubKey = boost::get<CScript>(out.address);
+
+                // scriptpubkey index
+                CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+                stream << scriptPubKey;
+                itemOutput->setData(COLUMN_ADDRESS, PubKeyRole, QString::fromStdString(HexStr(stream.begin(), stream.end())));
+
+                CTxDestination outputAddress;
+                if (ExtractDestination(scriptPubKey, outputAddress)) {
+                    sAddress = QString::fromStdString(EncodeDestination(outputAddress));
+                }
+            } else {
+                sAddress = QString::fromStdString(boost::get<libmw::MWEBAddress>(coins.first));
             }
+
+            // if listMode or change => show bitcoin address. In tree mode, address is not shown again for direct wallet address outputs
+            if (!treeMode || (!(sAddress == sWalletAddress)))
+                itemOutput->setText(COLUMN_ADDRESS, sAddress);
 
             // label
             if (!(sAddress == sWalletAddress)) // change
@@ -679,8 +733,8 @@ void CoinControlDialog::updateView()
             }
 
             // amount
-            itemOutput->setText(COLUMN_AMOUNT, BitcoinUnits::format(nDisplayUnit, out.txout.nValue));
-            itemOutput->setData(COLUMN_AMOUNT, Qt::UserRole, QVariant((qlonglong)out.txout.nValue)); // padding so that sorting works correctly
+            itemOutput->setText(COLUMN_AMOUNT, BitcoinUnits::format(nDisplayUnit, out.nValue));
+            itemOutput->setData(COLUMN_AMOUNT, Qt::UserRole, QVariant((qlonglong)out.nValue)); // padding so that sorting works correctly
 
             // date
             itemOutput->setText(COLUMN_DATE, GUIUtil::dateTimeStr(out.time));
@@ -690,22 +744,30 @@ void CoinControlDialog::updateView()
             itemOutput->setText(COLUMN_CONFIRMATIONS, QString::number(out.depth_in_main_chain));
             itemOutput->setData(COLUMN_CONFIRMATIONS, Qt::UserRole, QVariant((qlonglong)out.depth_in_main_chain));
 
-            // transaction hash
-            itemOutput->setData(COLUMN_ADDRESS, TxHashRole, QString::fromStdString(output.hash.GetHex()));
+            if (out.output_index.which() == 0) {
+                const COutPoint& outpoint = boost::get<COutPoint>(out.output_index);
 
-            // vout index
-            itemOutput->setData(COLUMN_ADDRESS, VOutRole, output.n);
+                // transaction hash
+                itemOutput->setData(COLUMN_ADDRESS, TxHashRole, QString::fromStdString(outpoint.hash.GetHex()));
+
+                // vout index
+                itemOutput->setData(COLUMN_ADDRESS, VOutRole, outpoint.n);
+            } else {
+                // MW: TODO - Set COLUMN_ADDRESS fields for libmw::Commitments
+                const libmw::Commitment& output_commit = boost::get<libmw::Commitment>(out.output_index);
+                itemOutput->setData(COLUMN_ADDRESS, CommitmentRole, QString::fromStdString(HexStr(output_commit)));
+            }
 
              // disable locked coins
-            if (model->wallet().isLockedCoin(output))
+            if (model->wallet().isLockedCoin(out.output_index))
             {
-                coinControl()->UnSelect(output); // just to be sure
+                coinControl()->UnSelect(out.output_index); // just to be sure
                 itemOutput->setDisabled(true);
                 itemOutput->setIcon(COLUMN_CHECKBOX, platformStyle->SingleColorIcon(":/icons/lock_closed"));
             }
 
             // set checkbox
-            if (coinControl()->IsSelected(output))
+            if (coinControl()->IsSelected(out.output_index))
                 itemOutput->setCheckState(COLUMN_CHECKBOX, Qt::Checked);
         }
 
@@ -729,4 +791,14 @@ void CoinControlDialog::updateView()
     // sort view
     sortView(sortColumn, sortOrder);
     ui->treeWidget->setEnabled(true);
+}
+
+bool CoinControlDialog::IsMWEB(QTreeWidgetItem* item)
+{
+    return item->data(COLUMN_ADDRESS, CommitmentRole).toString().length() == 66;
+}
+
+bool CoinControlDialog::IsCanonical(QTreeWidgetItem* item)
+{
+    return item->data(COLUMN_ADDRESS, TxHashRole).toString().length() == 64;
 }

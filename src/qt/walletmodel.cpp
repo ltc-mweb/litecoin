@@ -242,6 +242,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 
         auto& newTx = transaction.getWtx();
         if (pegOut || mwebSend) {
+            // MW: TODO - Support CoinControl
             CAmount feeRate = 100'000;
             if (coinControl.m_feerate) {
                 feeRate = coinControl.m_feerate->GetFeePerK();

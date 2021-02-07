@@ -133,6 +133,13 @@ void UnloadWallet(std::shared_ptr<CWallet>&& wallet)
     }
 }
 
+
+CWallet::CWallet(interfaces::Chain& chain, const WalletLocation& location, std::unique_ptr<WalletDatabase> database)
+    : m_chain(chain), m_location(location), database(std::move(database))
+{
+    mweb_wallet = std::make_shared<MWWallet>(this, &chain);
+}
+
 std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const WalletLocation& location, std::string& error, std::string& warning)
 {
     if (!CWallet::Verify(chain, location, false, error, warning)) {
@@ -631,7 +638,7 @@ bool CWallet::HasWalletSpend(const uint256& txid) const
 {
     AssertLockHeld(cs_wallet);
     auto iter = mapTxSpends.lower_bound(COutPoint(txid, 0));
-    return (iter != mapTxSpends.end() && iter->first.hash == txid);
+    return (iter != mapTxSpends.end() && iter->first.which() == 0 && boost::get<COutPoint>(iter->first).hash == txid); // MW: TODO - Check libmw::Commitments
 }
 
 void CWallet::Flush(bool shutdown)
@@ -701,7 +708,7 @@ bool CWallet::IsSpent(interfaces::Chain::Lock& locked_chain, const uint256& hash
     return false;
 }
 
-void CWallet::AddToSpends(const COutPoint& outpoint, const uint256& wtxid)
+void CWallet::AddToSpends(const OutputIndex& outpoint, const uint256& wtxid)
 {
     mapTxSpends.insert(std::make_pair(outpoint, wtxid));
 
@@ -1033,6 +1040,11 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
     }
 }
 
+void CWallet::LoadToWallet(const libmw::Coin& coin)
+{
+    mweb_wallet->LoadToWallet(coin);
+}
+
 bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const uint256& block_hash, int posInBlock, bool fUpdate)
 {
     const CTransaction& tx = *ptx;
@@ -1044,7 +1056,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const uint256
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
                 while (range.first != range.second) {
                     if (range.first->second != tx.GetHash()) {
-                        WalletLogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)\n", tx.GetHash().ToString(), block_hash.ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
+                        WalletLogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s\n", tx.GetHash().ToString(), block_hash.ToString(), range.first->second.ToString());
                         MarkConflicted(block_hash, range.first->second);
                     }
                     range.first++;
@@ -1108,6 +1120,7 @@ void CWallet::MarkInputsDirty(const CTransactionRef& tx)
     }
 }
 
+// MW: TODO - Support abandoning MWEB transactions
 bool CWallet::AbandonTransaction(interfaces::Chain::Lock& locked_chain, const uint256& hashTx)
 {
     auto locked_chain_recursive = chain().lock();  // Temporary. Removed in upcoming lock cleanup
@@ -1149,7 +1162,7 @@ bool CWallet::AbandonTransaction(interfaces::Chain::Lock& locked_chain, const ui
             NotifyTransactionChanged(this, wtx.GetHash(), CT_UPDATED);
             // Iterate over all its outputs, and mark transactions in the wallet that spend them abandoned too
             TxSpends::const_iterator iter = mapTxSpends.lower_bound(COutPoint(now, 0));
-            while (iter != mapTxSpends.end() && iter->first.hash == now) {
+            while (iter != mapTxSpends.end() && iter->first.which() == 0 && boost::get<COutPoint>(iter->first).hash == now) {
                 if (!done.count(iter->second)) {
                     todo.insert(iter->second);
                 }
@@ -1164,6 +1177,7 @@ bool CWallet::AbandonTransaction(interfaces::Chain::Lock& locked_chain, const ui
     return true;
 }
 
+// MW: TODO - Support marking MWEB transactions as conflicted
 void CWallet::MarkConflicted(const uint256& hashBlock, const uint256& hashTx)
 {
     auto locked_chain = chain().lock();
@@ -1202,7 +1216,7 @@ void CWallet::MarkConflicted(const uint256& hashBlock, const uint256& hashTx)
             batch.WriteTx(wtx);
             // Iterate over all its outputs, and mark transactions in the wallet that spend them conflicted too
             TxSpends::const_iterator iter = mapTxSpends.lower_bound(COutPoint(now, 0));
-            while (iter != mapTxSpends.end() && iter->first.hash == now) {
+            while (iter != mapTxSpends.end() && iter->first.which() == 0 && boost::get<COutPoint>(iter->first).hash == now) {
                  if (!done.count(iter->second)) {
                      todo.insert(iter->second);
                  }
@@ -1229,6 +1243,10 @@ void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx) {
     auto locked_chain = chain().lock();
     LOCK(cs_wallet);
     SyncTransaction(ptx, {} /* block hash */, 0 /* position in block */);
+
+    if (ptx->HasMWData()) {
+        libmw::wallet::TransactionAddedToMempool(GetMWWallet(), ptx->m_mwtx.m_transaction);
+    }
 
     auto it = mapWallet.find(ptx->GetHash());
     if (it != mapWallet.end()) {
@@ -2318,17 +2336,17 @@ CAmount CWallet::GetAvailableBalance(const CCoinControl* coinControl) const
     LOCK(cs_wallet);
 
     CAmount balance = 0;
-    std::vector<COutput> vCoins;
+    std::vector<COutputCoin> vCoins;
     AvailableCoins(*locked_chain, vCoins, true, coinControl);
-    for (const COutput& out : vCoins) {
-        if (out.fSpendable) {
-            balance += out.tx->tx->vout[out.i].nValue;
+    for (const COutputCoin& out : vCoins) {
+        if (out.IsSpendable()) {
+            balance += out.GetValue();
         }
     }
     return balance;
 }
 
-void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<COutput> &vCoins, bool fOnlySafe, const CCoinControl *coinControl, const CAmount &nMinimumAmount, const CAmount &nMaximumAmount, const CAmount &nMinimumSumAmount, const uint64_t nMaximumCount, const int nMinDepth, const int nMaxDepth) const
+void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<COutputCoin>& vCoins, bool fOnlySafe, const CCoinControl* coinControl, const CAmount& nMinimumAmount, const CAmount& nMaximumAmount, const CAmount& nMinimumSumAmount, const uint64_t nMaximumCount, const int nMinDepth, const int nMaxDepth) const
 {
     AssertLockHeld(cs_main);
     AssertLockHeld(cs_wallet);
@@ -2403,7 +2421,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
             if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(COutPoint(entry.first, i)))
                 continue;
 
-            if (IsLockedCoin(entry.first, i))
+            if (IsLockedCoin(COutPoint(entry.first, i)))
                 continue;
 
             if (IsSpent(locked_chain, wtxid, i))
@@ -2434,41 +2452,86 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
                 return;
             }
         }
+
+        // MW: TODO - for (const libmw::Commitment& output_commit : pcoin->tx->m_mwtx.GetOutputCommits()) { }
+    }
+
+    for (const libmw::Coin& coin : mweb_wallet->ListCoins()) {
+        if (coin.spent || coin.spent_block || !coin.included_block) {
+            continue;
+        }
+
+        if (coin.amount < nMinimumAmount || coin.amount > nMaximumAmount) {
+            continue;
+        }
+
+        if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(coin.commitment)) {
+            continue;
+        }
+
+        if (IsLockedCoin(coin.commitment)) {
+            continue;
+        }
+
+        // MW: TODO - Check maturity
+
+        vCoins.push_back(MakeOutputCoin(locked_chain, coin));
+
+        // Checks the sum amount of all UTXO's.
+        if (nMinimumSumAmount != MAX_MONEY) {
+            nTotal += coin.amount;
+
+            if (nTotal >= nMinimumSumAmount) {
+                return;
+            }
+        }
     }
 }
 
-std::map<CTxDestination, std::vector<COutput>> CWallet::ListCoins(interfaces::Chain::Lock& locked_chain) const
+std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<COutputCoin>> CWallet::ListCoins(interfaces::Chain::Lock& locked_chain) const
 {
     AssertLockHeld(cs_main);
     AssertLockHeld(cs_wallet);
 
-    std::map<CTxDestination, std::vector<COutput>> result;
-    std::vector<COutput> availableCoins;
+    std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<COutputCoin>> result;
+    std::vector<COutputCoin> availableCoins;
 
     AvailableCoins(locked_chain, availableCoins);
 
-    for (const COutput& coin : availableCoins) {
-        CTxDestination address;
-        if (coin.fSpendable &&
-            ExtractDestination(FindNonChangeParentOutput(*coin.tx->tx, coin.i).scriptPubKey, address)) {
-            result[address].emplace_back(std::move(coin));
+    for (const COutputCoin& coin : availableCoins) {
+        if (coin.IsMWEB()) {
+            result[coin.mwCoin->address].emplace_back(coin);
+        } else {
+            CTxDestination address;
+            if (coin.IsSpendable() &&
+                ExtractDestination(FindNonChangeParentOutput(*coin.out->tx->tx, coin.out->i).scriptPubKey, address)) {
+                result[address].emplace_back(std::move(coin));
+            }
         }
     }
 
-    std::vector<COutPoint> lockedCoins;
+    std::vector<OutputIndex> lockedCoins;
     ListLockedCoins(lockedCoins);
-    for (const COutPoint& output : lockedCoins) {
-        auto it = mapWallet.find(output.hash);
-        if (it != mapWallet.end()) {
-            int depth = it->second.GetDepthInMainChain(locked_chain);
-            if (depth >= 0 && output.n < it->second.tx->vout.size() &&
-                IsMine(it->second.tx->vout[output.n]) == ISMINE_SPENDABLE) {
-                CTxDestination address;
-                if (ExtractDestination(FindNonChangeParentOutput(*it->second.tx, output.n).scriptPubKey, address)) {
-                    result[address].emplace_back(
-                        &it->second, output.n, depth, true /* spendable */, true /* solvable */, false /* safe */);
+    for (const OutputIndex& output : lockedCoins) {
+        if (output.which() == 0) {
+            const COutPoint& outpoint = boost::get<COutPoint>(output);
+            auto it = mapWallet.find(outpoint.hash);
+            if (it != mapWallet.end()) {
+                int depth = it->second.GetDepthInMainChain(locked_chain);
+                if (depth >= 0 && outpoint.n < it->second.tx->vout.size() &&
+                    IsMine(it->second.tx->vout[outpoint.n]) == ISMINE_SPENDABLE) {
+                    CTxDestination address;
+                    if (ExtractDestination(FindNonChangeParentOutput(*it->second.tx, outpoint.n).scriptPubKey, address)) {
+                        result[address].emplace_back(
+                            COutput(&it->second, outpoint.n, depth, true /* spendable */, true /* solvable */, false /* safe */));
+                    }
                 }
             }
+        } else {
+            const libmw::Commitment& output_commit = boost::get<libmw::Commitment>(output);
+            libmw::Coin coin = mweb_wallet->GetCoin(output_commit);
+            COutputCoin output_coin = MakeOutputCoin(locked_chain, coin);
+            result[output_coin.mwCoin->address].emplace_back(output_coin);
         }
     }
 
@@ -2570,26 +2633,30 @@ bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const
     std::set<CInputCoin> setPresetCoins;
     CAmount nValueFromPresetInputs = 0;
 
-    std::vector<COutPoint> vPresetInputs;
+    std::vector<OutputIndex> vPresetInputs;
     coin_control.ListSelected(vPresetInputs);
-    for (const COutPoint& outpoint : vPresetInputs)
+    for (const OutputIndex& output : vPresetInputs)
     {
         // For now, don't use BnB if preset inputs are selected. TODO: Enable this later
         bnb_used = false;
         coin_selection_params.use_bnb = false;
 
-        std::map<uint256, CWalletTx>::const_iterator it = mapWallet.find(outpoint.hash);
-        if (it != mapWallet.end())
-        {
-            const CWalletTx* pcoin = &it->second;
-            // Clearly invalid input, fail
-            if (pcoin->tx->vout.size() <= outpoint.n)
-                return false;
-            // Just to calculate the marginal byte size
-            nValueFromPresetInputs += pcoin->tx->vout[outpoint.n].nValue;
-            setPresetCoins.insert(CInputCoin(pcoin->tx, outpoint.n));
-        } else
-            return false; // TODO: Allow non-wallet inputs
+        if (output.which() == 0) {
+            const COutPoint& outpoint = boost::get<COutPoint>(output);
+            std::map<uint256, CWalletTx>::const_iterator it = mapWallet.find(outpoint.hash);
+            if (it != mapWallet.end()) {
+                const CWalletTx* pcoin = &it->second;
+                // Clearly invalid input, fail
+                if (pcoin->tx->vout.size() <= outpoint.n)
+                    return false;
+                // Just to calculate the marginal byte size
+                nValueFromPresetInputs += pcoin->tx->vout[outpoint.n].nValue;
+                setPresetCoins.insert(CInputCoin(pcoin->tx, outpoint.n));
+            } else
+                return false; // TODO: Allow non-wallet inputs
+        } else {
+            // MW: TODO - Handle libmw::Commitment flow
+        }
     }
 
     // remove preset inputs from vCoins
@@ -2835,7 +2902,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
         auto locked_chain = chain().lock();
         LOCK(cs_wallet);
         {
-            std::vector<COutput> vAvailableCoins;
+            std::vector<COutputCoin> vAvailableCoins;
             AvailableCoins(*locked_chain, vAvailableCoins, true, &coin_control);
             CoinSelectionParams coin_selection_params; // Parameters for coin selection, init with dummy
 
@@ -3851,13 +3918,13 @@ void CWallet::GetScriptForMining(std::shared_ptr<CReserveScript> &script)
     script->reserveScript = CScript() << ToByteVector(pubkey) << OP_CHECKSIG;
 }
 
-void CWallet::LockCoin(const COutPoint& output)
+void CWallet::LockCoin(const OutputIndex& output)
 {
     AssertLockHeld(cs_wallet); // setLockedCoins
     setLockedCoins.insert(output);
 }
 
-void CWallet::UnlockCoin(const COutPoint& output)
+void CWallet::UnlockCoin(const OutputIndex& output)
 {
     AssertLockHeld(cs_wallet); // setLockedCoins
     setLockedCoins.erase(output);
@@ -3869,20 +3936,18 @@ void CWallet::UnlockAllCoins()
     setLockedCoins.clear();
 }
 
-bool CWallet::IsLockedCoin(uint256 hash, unsigned int n) const
+bool CWallet::IsLockedCoin(const OutputIndex& output) const
 {
     AssertLockHeld(cs_wallet); // setLockedCoins
-    COutPoint outpt(hash, n);
-
-    return (setLockedCoins.count(outpt) > 0);
+    return (setLockedCoins.count(output) > 0);
 }
 
-void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts) const
+void CWallet::ListLockedCoins(std::vector<OutputIndex>& vOutpts) const
 {
     AssertLockHeld(cs_wallet); // setLockedCoins
-    for (std::set<COutPoint>::iterator it = setLockedCoins.begin();
+    for (std::set<OutputIndex>::iterator it = setLockedCoins.begin();
          it != setLockedCoins.end(); it++) {
-        COutPoint outpt = (*it);
+        OutputIndex outpt = (*it);
         vOutpts.push_back(outpt);
     }
 }
@@ -4517,7 +4582,7 @@ int CMerkleTx::GetBlocksToMWEBMaturity(interfaces::Chain::Lock& locked_chain) co
         return 0;
     }
 
-    int chain_depth = GetDepthInMainChain(locked_chain);
+    int chain_depth = GetDepthInMainChain(locked_chain); // MW: TODO - Should check by kernel hash instead.
     assert(chain_depth >= 0); // coinbase tx should not be conflicted
     return std::max(0, (int)(PEGIN_MATURITY + 1) - chain_depth);
 }
@@ -4627,9 +4692,33 @@ bool CWallet::AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info)
     return WriteKeyMetadata(mapKeyMetadata[pubkey.GetID()], pubkey, true);
 }
 
-libmw::IWallet::Ptr CWallet::GetMWWallet()
+libmw::Coin CWallet::GetCoin(const libmw::Commitment& output_commit) const
 {
-    return std::shared_ptr<libmw::IWallet>(new MWWallet(this));
+    return mweb_wallet->GetCoin(output_commit);
+}
+
+COutputCoin CWallet::MakeOutputCoin(interfaces::Chain::Lock& locked_chain, const libmw::Coin& coin) const
+{
+    int nDepth = 0;
+    int64_t nTime = coin.time_received; 
+    if (coin.included_block) {
+        uint256 block_hash(std::vector<uint8_t>(coin.included_block->begin(), coin.included_block->end()));
+        nDepth = locked_chain.getBlockDepth(block_hash);
+
+        Optional<int64_t> block_time = locked_chain.getBlockTime(block_hash);
+        if (block_time) {
+            nTime = *block_time;
+        }
+    }
+
+    libmw::MWEBAddress address = libmw::wallet::GetAddress(GetMWWallet(), coin.address_index);
+
+    return COutputCoin(MWOutput{coin, nDepth, nTime, address});
+}
+
+libmw::IWallet::Ptr CWallet::GetMWWallet() const
+{
+    return std::static_pointer_cast<libmw::IWallet>(mweb_wallet);
 }
 
 libmw::IChain::Ptr CWallet::GetMWChain()

@@ -235,7 +235,7 @@ bool IsValidDestinationString(const std::string& str)
     return IsValidDestinationString(str, Params());
 }
 
-bool IsValidMWEBDestinationString(const std::string& str)
+bool IsValidMWEBDestinationString(const std::string& str) // MW: TODO - Belongs in libmw
 {
     std::size_t pos = str.find(':');
     if (pos == std::string::npos) return false;
