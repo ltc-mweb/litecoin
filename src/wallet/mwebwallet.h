@@ -3,33 +3,14 @@
 #include <libmw/libmw.h>
 #include <util/bip32.h>
 #include <wallet/wallet.h>
+#include <wallet/coincontrol.h>
+#include <map>
 
 class MWWallet : public libmw::IWallet
 {
 public:
-    MWWallet(CWallet* pWallet)
-        : m_pWallet(pWallet), m_pBatch(std::make_unique<WalletBatch>(pWallet->GetDBHandle())) {}
-
-    libmw::PrivateKey GenerateNewHDKey() final
-    {
-        // Currently, MWEB only supports HD wallets
-        if (!m_pWallet->IsHDEnabled()) {
-            throw std::runtime_error(std::string(__func__) + ": MWEB only supports HD wallets");
-        }
-
-        // Generate new HD key
-        CKey key = m_pWallet->GenerateNewKey(*m_pBatch);
-
-        // Create libmw::PrivateKey
-        libmw::PrivateKey privateKey;
-        std::copy(key.begin(), key.end(), privateKey.keyBytes.data());
-
-        auto iter = m_pWallet->mapKeyMetadata.find(key.GetPubKey().GetID());
-        assert(iter != m_pWallet->mapKeyMetadata.end());
-        privateKey.bip32Path = iter->second.hdKeypath;
-
-        return privateKey;
-    }
+    MWWallet(CWallet* pWallet, interfaces::Chain* pChain)
+        : m_pWallet(pWallet), m_pChain(pChain) {}
 
     libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final
     {
@@ -69,26 +50,47 @@ public:
 
     std::vector<libmw::Coin> ListCoins() const final
     {
+        // MW: TODO - Return the map instead.
         std::vector<libmw::Coin> coins;
-        DBErrors errors = m_pBatch->FindMWCoins(coins);
-        if (errors != DBErrors::LOAD_OK) {
-            throw std::runtime_error(std::string(__func__) + ": FindMWCoins returned a DB error");
-        }
+        std::transform(
+            m_coins.cbegin(), m_coins.cend(),
+            std::back_inserter(coins),
+            [](const auto& entry) { return entry.second; }
+        );
 
         return coins;
     }
 
+    void LoadToWallet(const libmw::Coin& coin)
+    {
+        m_coins[coin.commitment] = coin;
+    }
+
+    libmw::Coin GetCoin(const libmw::Commitment& output_commit) const
+    {
+        auto iter = m_coins.find(output_commit);
+        if (iter != m_coins.end()) {
+            return iter->second;
+        }
+
+        throw std::runtime_error(std::string(__func__) + ": Could not find coin with matching output commit");
+    }
+
     void AddCoins(const std::vector<libmw::Coin>& coins) final
     {
+        WalletBatch batch(m_pWallet->GetDBHandle());
         for (const auto& coin : coins) {
-            m_pBatch->WriteMWCoin(coin);
+            batch.WriteMWCoin(coin);
+            m_coins[coin.commitment] = coin;
         }
     }
 
     void DeleteCoins(const std::vector<libmw::Coin>& coins) final
     {
+        WalletBatch batch(m_pWallet->GetDBHandle());
         for (const auto& coin : coins) {
-            m_pBatch->EraseMWCoin(coin.commitment);
+            batch.EraseMWCoin(coin.commitment);
+            m_coins.erase(coin.commitment);
         }
     }
 
@@ -97,11 +99,11 @@ public:
         const uint64_t amount) const final
     {
         std::vector<COutputCoin> vCoins;
-        std::transform(
-            coins.cbegin(), coins.cend(),
-            std::back_inserter(vCoins),
-            [](const libmw::Coin& coin) { return COutputCoin(coin); }
-        );
+        for (const libmw::Coin& coin : coins) {
+            if (!m_pWallet->IsLockedCoin(coin.commitment)) {
+                vCoins.push_back(m_pWallet->MakeOutputCoin(*m_pChain->lock(), coin));
+            }
+        }
 
         std::set<CInputCoin> setCoins;
         CAmount nValueIn;
@@ -134,5 +136,6 @@ public:
 
 private:
     CWallet* m_pWallet;
-    std::unique_ptr<WalletBatch> m_pBatch;
+    interfaces::Chain* m_pChain;
+    std::map<libmw::Commitment, libmw::Coin> m_coins;
 };

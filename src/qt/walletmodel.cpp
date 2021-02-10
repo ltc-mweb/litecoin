@@ -191,7 +191,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 auto commitment = std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
                 transaction.setMapValue("commitment", HexStr(commitment, false));
                 // MW: TODO - support pegging-in to someone else's address
-                transaction.setMapValue("mweb_recipient", libmw::wallet::GetAddress(m_wallet->GetMWWallet()));
+                transaction.setMapValue("mweb_recipient", libmw::wallet::GetAddress(m_wallet->GetMWWallet(), libmw::PEGIN_INDEX));
                 transaction.setMapValue("mweb_credit", std::to_string(rcp.amount));
                 scriptPubKey << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
                 scriptPubKey << commitment;
@@ -242,6 +242,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 
         auto& newTx = transaction.getWtx();
         if (pegOut || mwebSend) {
+            // MW: TODO - Support CoinControl
             CAmount feeRate = 100'000;
             if (coinControl.m_feerate) {
                 feeRate = coinControl.m_feerate->GetFeePerK();

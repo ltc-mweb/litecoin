@@ -91,6 +91,9 @@ public:
     //! Return whether wallet has watch only keys.
     virtual bool haveWatchOnly() = 0;
 
+    //! Generates a new MWEB receive address.
+    virtual bool getMWEBAddress(libmw::MWEBAddress& address) = 0;
+
     //! Add or update address.
     virtual bool setAddressBook(const CTxDestination& dest, const std::string& name, const std::string& purpose) = 0;
 
@@ -119,17 +122,19 @@ public:
     //! Get dest values with prefix.
     virtual std::vector<std::string> getDestValues(const std::string& prefix) = 0;
 
+    virtual libmw::Coin findCoin(const libmw::Commitment& output_commit) = 0;
+
     //! Lock coin.
-    virtual void lockCoin(const COutPoint& output) = 0;
+    virtual void lockCoin(const OutputIndex& output) = 0;
 
     //! Unlock coin.
-    virtual void unlockCoin(const COutPoint& output) = 0;
+    virtual void unlockCoin(const OutputIndex& output) = 0;
 
     //! Return whether coin is locked.
-    virtual bool isLockedCoin(const COutPoint& output) = 0;
+    virtual bool isLockedCoin(const OutputIndex& output) = 0;
 
     //! List locked coins.
-    virtual void listLockedCoins(std::vector<COutPoint>& outputs) = 0;
+    virtual void listLockedCoins(std::vector<OutputIndex>& outputs) = 0;
 
     //! Create transaction.
     virtual std::unique_ptr<PendingWalletTx> createTransaction(const std::vector<CRecipient>& recipients,
@@ -217,11 +222,11 @@ public:
 
     //! Return AvailableCoins + LockedCoins grouped by wallet address.
     //! (put change in one group with wallet address)
-    using CoinsList = std::map<CTxDestination, std::vector<std::tuple<COutPoint, WalletTxOut>>>;
+    using CoinsList = std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<WalletTxOut>>;
     virtual CoinsList listCoins() = 0;
 
     //! Return wallet transaction output information.
-    virtual std::vector<WalletTxOut> getCoins(const std::vector<COutPoint>& outputs) = 0;
+    virtual std::vector<WalletTxOut> getCoins(const std::vector<OutputIndex>& outputs) = 0;
 
     //! Get required fee.
     virtual CAmount getRequiredFee(unsigned int tx_bytes) = 0;
@@ -384,7 +389,9 @@ struct WalletTxStatus
 //! Wallet transaction output.
 struct WalletTxOut
 {
-    CTxOut txout;
+    boost::variant<CScript, libmw::MWEBAddress> address;
+    OutputIndex output_index;
+    CAmount nValue;
     int64_t time;
     int depth_in_main_chain = -1;
     bool is_spent = false;

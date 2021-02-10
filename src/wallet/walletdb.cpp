@@ -15,11 +15,88 @@
 #include <util/system.h>
 #include <util/time.h>
 #include <wallet/wallet.h>
+#include <wallet/mwebwallet.h>
 
 #include <atomic>
 #include <string>
 
 #include <boost/thread.hpp>
+
+
+static const std::string s_mweb_coin_key = "mwebcoin";
+
+//
+// MWEB
+//
+struct MWCoin {
+    libmw::Coin coin;
+
+    MWCoin() = default;
+    MWCoin(const libmw::Coin& in)
+        : coin(in) {}
+
+    ADD_SERIALIZE_METHODS
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(coin.features);
+        READWRITE(coin.address_index);
+        READWRITE(coin.commitment);
+        READWRITE(coin.amount);
+        READWRITE(coin.time_received);
+
+        bool fKey = coin.key != nullopt;
+        READWRITE(fKey);
+        if (fKey) {
+            if (ser_action.ForRead()) {
+                libmw::BlindingFactor key;
+                READWRITE(key);
+                coin.key = boost::make_optional(std::move(key));
+            } else {
+                READWRITE(*coin.key);
+            }
+        }
+
+        bool fBlind = coin.blind != nullopt;
+        READWRITE(fBlind);
+        if (fBlind) {
+            if (ser_action.ForRead()) {
+                libmw::BlindingFactor blind;
+                READWRITE(blind);
+                coin.blind = boost::make_optional(std::move(blind));
+            } else {
+                READWRITE(*coin.blind);
+            }
+        }
+
+        bool fIncludedBlock = coin.included_block != nullopt;
+        READWRITE(fIncludedBlock);
+        if (fIncludedBlock) {
+            if (ser_action.ForRead()) {
+                libmw::BlockHash blockHash;
+                READWRITE(blockHash);
+                coin.included_block = boost::make_optional(std::move(blockHash));
+            } else {
+                READWRITE(*coin.included_block);
+            }
+        }
+
+        READWRITE(coin.spent);
+
+        bool fSpentBlock = coin.spent_block != nullopt;
+        READWRITE(fSpentBlock);
+        if (fSpentBlock) {
+            if (ser_action.ForRead()) {
+                libmw::BlockHash blockHash;
+                READWRITE(blockHash);
+                coin.spent_block = boost::make_optional(std::move(blockHash));
+            } else {
+                READWRITE(*coin.spent_block);
+            }
+        }
+    }
+};
 
 //
 // WalletBatch
@@ -228,6 +305,20 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                 wss.fAnyUnordered = true;
 
             pwallet->LoadToWallet(wtx);
+        }
+        else if (strType == s_mweb_coin_key)
+        {
+            libmw::Commitment output_commit;
+            ssKey >> output_commit;
+
+            MWCoin wrapped_coin;
+            ssValue >> wrapped_coin;
+
+            if (wrapped_coin.coin.commitment != output_commit) {
+                return false;
+            }
+
+            pwallet->LoadToWallet(wrapped_coin.coin);
         }
         else if (strType == "watchs")
         {
@@ -782,81 +873,6 @@ bool WalletBatch::WriteVersion(int nVersion)
 {
     return m_batch.WriteVersion(nVersion);
 }
-
-static const std::string s_mweb_coin_key = "mwebcoin";
-
-//
-// MWEB
-//
-struct MWCoin {
-    libmw::Coin coin;
-
-    MWCoin() = default;
-    MWCoin(const libmw::Coin& in)
-        : coin(in) { }
-
-    ADD_SERIALIZE_METHODS
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action)
-    {
-        READWRITE(coin.features);
-        READWRITE(coin.change_output);
-        READWRITE(coin.pegin_output);
-        READWRITE(coin.commitment);
-        READWRITE(coin.amount);
-
-        bool fKey = coin.key != nullopt;
-        READWRITE(fKey);
-        if (fKey) {
-            if (ser_action.ForRead()) {
-                libmw::BlindingFactor key;
-                READWRITE(key);
-                coin.key = boost::make_optional(std::move(key));
-            } else {
-                READWRITE(*coin.key);
-            }
-        }
-
-        bool fBlind = coin.blind != nullopt;
-        READWRITE(fBlind);
-        if (fBlind) {
-            if (ser_action.ForRead()) {
-                libmw::BlindingFactor blind;
-                READWRITE(blind);
-                coin.blind = boost::make_optional(std::move(blind));
-            } else {
-                READWRITE(*coin.blind);
-            }
-        }
-
-        bool fIncludedBlock = coin.included_block != nullopt;
-        READWRITE(fIncludedBlock);
-        if (fIncludedBlock) {
-            if (ser_action.ForRead()) {
-                libmw::BlockHash blockHash;
-                READWRITE(blockHash);
-                coin.included_block = boost::make_optional(std::move(blockHash));
-            } else {
-                READWRITE(*coin.included_block);
-            }
-        }
-
-        READWRITE(coin.spent);
-
-        bool fSpentBlock = coin.spent_block != nullopt;
-        READWRITE(fSpentBlock);
-        if (fSpentBlock) {
-            if (ser_action.ForRead()) {
-                libmw::BlockHash blockHash;
-                READWRITE(blockHash);
-                coin.spent_block = boost::make_optional(std::move(blockHash));
-            } else {
-                READWRITE(*coin.spent_block);
-            }
-        }
-    }
-};
 
 bool WalletBatch::WriteMWCoin(const libmw::Coin& coin)
 {

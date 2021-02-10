@@ -540,7 +540,7 @@ bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     // Add transaction to MWEB
     //
-    if (libmw::miner::AddTransaction(mweb_builder, pTx->m_mwtx.m_transaction, pegins) != 0) {
+    if (!libmw::miner::AddTransaction(mweb_builder, pTx->m_mwtx.m_transaction, pegins)) {
         LogPrintf("Failed to add MWEB transaction\n");
         return false;
     }

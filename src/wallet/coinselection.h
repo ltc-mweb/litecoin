@@ -34,6 +34,14 @@ public:
         m_input_bytes = input_bytes;
     }
 
+    CInputCoin(const uint256& tx_hash, uint32_t i, const CAmount& nValue, const CScript& scriptPubKey)
+    {
+        outpoint = COutPoint(tx_hash, i);
+        txout = CTxOut(nValue, scriptPubKey);
+        effective_value = nValue;
+        mwCoin = nullptr;
+    }
+
     CInputCoin(const libmw::Coin& coin)
     {
         mwCoin = &coin;

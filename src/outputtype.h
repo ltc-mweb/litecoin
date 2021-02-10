@@ -25,6 +25,7 @@ enum class OutputType {
      * CWallet::TransactionChangeType for details).
      */
     CHANGE_AUTO,
+    MWEB
 };
 
 NODISCARD bool ParseOutputType(const std::string& str, OutputType& output_type);

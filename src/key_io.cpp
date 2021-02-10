@@ -67,11 +67,21 @@ public:
         return bech32::Encode(m_params.Bech32HRP(), data);
     }
 
+    std::string operator()(const MWEBAddress& id) const
+    {
+        return id.address;
+    }
+
     std::string operator()(const CNoDestination& no) const { return {}; }
 };
 
 CTxDestination DecodeDestination(const std::string& str, const CChainParams& params)
 {
+    if (str.size() > 5 && str.substr(0, 5) == "mweb1") {
+        // MW: TODO - Validate the address
+        return MWEBAddress(str);
+    }
+
     std::vector<unsigned char> data;
     uint160 hash;
     if (DecodeBase58Check(str, data)) {
@@ -235,7 +245,7 @@ bool IsValidDestinationString(const std::string& str)
     return IsValidDestinationString(str, Params());
 }
 
-bool IsValidMWEBDestinationString(const std::string& str)
+bool IsValidMWEBDestinationString(const std::string& str) // MW: TODO - Belongs in libmw
 {
     std::size_t pos = str.find(':');
     if (pos == std::string::npos) return false;

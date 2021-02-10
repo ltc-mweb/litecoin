@@ -202,7 +202,8 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
         addressRet = unk;
         return true;
     } else if (whichType == TX_WITNESS_MW_PEGIN) {
-        // MW: Should we return the kernel address?
+        // MW: TODO - I have no idea how to handle this. Looking up the matching peg-in output would be too slow.
+        return false;
     }
     // Multisig txns have more than one address...
     return false;
@@ -293,6 +294,12 @@ public:
         script->clear();
         *script << CScript::EncodeOP_N(id.version) << std::vector<unsigned char>(id.program, id.program + id.length);
         return true;
+    }
+
+    bool operator()(const MWEBAddress& id) const
+    {
+        script->clear();
+        return false;
     }
 };
 } // namespace

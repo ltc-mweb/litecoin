@@ -24,7 +24,7 @@ class UniValue;
 CScript ParseScript(const std::string& s);
 std::string ScriptToAsmStr(const CScript& script, const bool fAttemptSighashDecode = false);
 NODISCARD bool DecodeHexTx(CMutableTransaction& tx, const std::string& hex_tx, bool try_no_witness = false, bool try_witness = true);
-NODISCARD bool DecodeHexBlk(CBlock&, const std::string& strHexBlk, const bool try_no_mw = false, const bool try_mw = true);
+NODISCARD bool DecodeHexBlk(CBlock&, const std::string& strHexBlk);
 bool DecodeHexBlockHeader(CBlockHeader&, const std::string& hex_header);
 
 /**
