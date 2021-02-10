@@ -184,10 +184,6 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
     if (!request.params[0].isNull())
         label = LabelFromValue(request.params[0]);
 
-    if (!request.params[1].isNull() && request.params[1].get_str() == "mweb") {
-        return libmw::wallet::GetAddress(pwallet->GetMWWallet());
-    }
-
     OutputType output_type = pwallet->m_default_address_type;
     if (!request.params[1].isNull()) {
         if (!ParseOutputType(request.params[1].get_str(), output_type)) {
@@ -195,23 +191,36 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
         }
     }
 
-    if (!pwallet->IsLocked()) {
-        pwallet->TopUpKeyPool();
-    }
+    CTxDestination dest;
 
-    // Generate a new key that is added to wallet
-    CPubKey newKey;
-    if (!pwallet->GetKeyFromPool(newKey)) {
-        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
+    if (output_type == OutputType::MWEB) {
+        libmw::MWEBAddress address;
+        if (!pwallet->GetMWEBAddress(address)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Error: Failed to generate an MWEB address");
+        }
+
+        dest = DecodeDestination(address);
+    } else {
+        if (!pwallet->IsLocked()) {
+            pwallet->TopUpKeyPool();
+        }
+
+        // Generate a new key that is added to wallet
+        CPubKey newKey;
+        if (!pwallet->GetKeyFromPool(newKey)) {
+            throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
+        }
+
+        pwallet->LearnRelatedScripts(newKey, output_type);
+        dest = GetDestinationForKey(newKey, output_type);
     }
-    pwallet->LearnRelatedScripts(newKey, output_type);
-    CTxDestination dest = GetDestinationForKey(newKey, output_type);
 
     pwallet->SetAddressBook(dest, label, "receive");
 
     return EncodeDestination(dest);
 }
 
+// MW: TODO - Support building raw transactions for mweb (createrawtransaction, decoderawtransaction, getrawtransaction, signrawtransaction, sendrawtransaction, getrawchangeaddress)
 static UniValue getrawchangeaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -407,9 +416,8 @@ static UniValue pegin(const JSONRPCRequest& request)
 
     // Create and send the transaction
     mapValue_t mapValue;
-    mapValue["commitment"] = HexStr(std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend()), false);
-
-    //transaction.setMapValue("mweb_recipient", libmw::wallet::GetAddress(m_wallet->GetMWWallet())); // MW: TODO - Lookup tx's pegin address
+    mapValue["commitment"] = HexStr(pegin_tx.second.commitment);
+    mapValue["mweb_recipient"] = libmw::wallet::GetAddress(pwallet->GetMWWallet(), libmw::PEGIN_INDEX);
     mapValue["mweb_credit"] = std::to_string(nAmount);
 
     CReserveKey reservekey(pwallet);
@@ -479,13 +487,10 @@ static UniValue pegout(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked(pwallet);
 
-    // MW: TODO - Lookup MWEB balance
-    //CAmount curBalance = pwallet->GetBalance();
-
-    //// Check amount
-    //if (nAmount > curBalance) {
-    //    throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-    //}
+    libmw::WalletBalance mweb_balance = libmw::wallet::GetBalance(pwallet->GetMWWallet());
+    if (nAmount > mweb_balance.confirmed_balance) {
+        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
+    }
 
     if (pwallet->GetBroadcastTransactions() && !g_connman) {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
@@ -2635,16 +2640,19 @@ static UniValue listlockunspent(const JSONRPCRequest& request)
     UniValue ret(UniValue::VARR);
 
     for (const OutputIndex& output : vOutpts) {
+        UniValue o(UniValue::VOBJ);
+
         if (output.which() == 0) {
-            UniValue o(UniValue::VOBJ);
 
             const COutPoint& outpt = boost::get<COutPoint>(output);
             o.pushKV("txid", outpt.hash.GetHex());
             o.pushKV("vout", (int)outpt.n);
-            ret.push_back(o);
         } else {
-            // MW: TODO - List libmw::Commitments
+            libmw::Commitment output_commit = boost::get<libmw::Commitment>(output);
+            o.pushKV("commit", HexStr(output_commit));
         }
+
+        ret.push_back(o);
     }
 
     return ret;
@@ -3169,23 +3177,16 @@ static UniValue listunspent(const JSONRPCRequest& request)
     LOCK(pwallet->cs_wallet);
 
     for (const COutputCoin& output_coin : vecOutputs) {
-        if (output_coin.IsMWEB()) {
-            continue; // MW: TODO - Print MWEB coins
-        }
-
-        const COutput& out = *output_coin.out;
-
         CTxDestination address;
-        const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
-        bool fValidAddress = ExtractDestination(scriptPubKey, address);
+        bool fValidAddress = output_coin.GetDestination(address);
 
         if (destinations.size() && (!fValidAddress || !destinations.count(address)))
             continue;
 
         UniValue entry(UniValue::VOBJ);
-        entry.pushKV("txid", out.tx->GetHash().GetHex());
-        entry.pushKV("vout", out.i);
-
+        entry.pushKV("amount", ValueFromAmount(output_coin.GetValue()));
+        entry.pushKV("confirmations", output_coin.GetDepth());
+        entry.pushKV("spendable", output_coin.IsSpendable());
         if (fValidAddress) {
             entry.pushKV("address", EncodeDestination(address));
 
@@ -3193,7 +3194,28 @@ static UniValue listunspent(const JSONRPCRequest& request)
             if (i != pwallet->mapAddressBook.end()) {
                 entry.pushKV("label", i->second.name);
             }
+        }
 
+        if (output_coin.IsMWEB()) {
+            results.push_back(entry);
+            continue;
+        }
+
+        const COutput& out = *output_coin.out;
+        const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
+
+        entry.pushKV("txid", out.tx->GetHash().GetHex());
+        entry.pushKV("vout", out.i);
+        entry.pushKV("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end()));
+        entry.pushKV("solvable", out.fSolvable);
+        if (out.fSolvable) {
+            auto descriptor = InferDescriptor(scriptPubKey, *pwallet);
+            entry.pushKV("desc", descriptor->ToString());
+        }
+
+        entry.pushKV("safe", out.fSafe);
+
+        if (fValidAddress) {
             if (scriptPubKey.IsPayToScriptHash()) {
                 const CScriptID& hash = boost::get<CScriptID>(address);
                 CScript redeemScript;
@@ -3225,16 +3247,6 @@ static UniValue listunspent(const JSONRPCRequest& request)
             }
         }
 
-        entry.pushKV("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end()));
-        entry.pushKV("amount", ValueFromAmount(out.tx->tx->vout[out.i].nValue));
-        entry.pushKV("confirmations", out.nDepth);
-        entry.pushKV("spendable", out.fSpendable);
-        entry.pushKV("solvable", out.fSolvable);
-        if (out.fSolvable) {
-            auto descriptor = InferDescriptor(scriptPubKey, *pwallet);
-            entry.pushKV("desc", descriptor->ToString());
-        }
-        entry.pushKV("safe", out.fSafe);
         results.push_back(entry);
     }
 
@@ -3925,6 +3937,13 @@ public:
         if (pwallet && pwallet->GetCScript(CScriptID(hash), subscript)) {
             ProcessSubScript(subscript, obj);
         }
+        return obj;
+    }
+
+    UniValue operator()(const MWEBAddress& id) const
+    {
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("mweb_address", id.address);
         return obj;
     }
 

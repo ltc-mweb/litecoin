@@ -177,6 +177,10 @@ public:
     bool getPrivKey(const CKeyID& address, CKey& key) override { return m_wallet->GetKey(address, key); }
     bool isSpendable(const CTxDestination& dest) override { return IsMine(*m_wallet, dest) & ISMINE_SPENDABLE; }
     bool haveWatchOnly() override { return m_wallet->HaveWatchOnly(); };
+    bool getMWEBAddress(libmw::MWEBAddress& address) override
+    {
+        return m_wallet->GetMWEBAddress(address);
+    }
     bool setAddressBook(const CTxDestination& dest, const std::string& name, const std::string& purpose) override
     {
         return m_wallet->SetAddressBook(dest, name, purpose);

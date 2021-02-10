@@ -69,8 +69,6 @@ struct CMWTx
 
     libmw::TxRef m_transaction;
 
-    // MW: TODO - Cache kernel hashes and input/output commits
-
     CMWTx() = default;
     CMWTx(const libmw::TxRef& tx)
         : m_transaction(tx) { }

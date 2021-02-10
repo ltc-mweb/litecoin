@@ -929,7 +929,7 @@ void SendCoinsDialog::mwebPegInButtonClicked(bool checked)
 
     SendCoinsEntry *entry = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
     if (checked) {
-        entry->setPegInAddress(libmw::wallet::GetAddress(model->wallet().GetMWWallet()));
+        entry->setPegInAddress(libmw::wallet::GetAddress(model->wallet().GetMWWallet(), libmw::PEGIN_INDEX));
     } else {
         entry->setPegInAddress("");
     }

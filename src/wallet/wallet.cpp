@@ -1522,7 +1522,7 @@ void CWallet::SetHDSeed(const CPubKey& seed)
     // the child index counter in the database
     // as a hdchain object
     CHDChain newHdChain;
-    newHdChain.nVersion = CanSupportFeature(FEATURE_HD_SPLIT) ? CHDChain::VERSION_HD_CHAIN_SPLIT : CHDChain::VERSION_HD_BASE;
+    newHdChain.nVersion = CHDChain::VERSION_HD_MWEB;
     newHdChain.seed_id = seed.GetID();
     SetHDChain(newHdChain, false);
     NotifyCanGetAddressesChanged();
@@ -2655,7 +2655,9 @@ bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const
             } else
                 return false; // TODO: Allow non-wallet inputs
         } else {
-            // MW: TODO - Handle libmw::Commitment flow
+            const libmw::Coin coin = GetCoin(boost::get<libmw::Commitment>(output));
+            nValueFromPresetInputs += coin.amount;
+            setPresetCoins.insert(CInputCoin(coin));
         }
     }
 
@@ -2840,6 +2842,8 @@ static uint32_t GetLocktimeForNewTransaction(interfaces::Chain::Lock& locked_cha
 
 OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vector<CRecipient>& vecSend)
 {
+    // MW: TODO - I doubt we'll have to change anything here, but adding todo to doublecheck.
+
     // If -changetype is specified, always use that change type.
     if (change_type != OutputType::CHANGE_AUTO) {
         return change_type;
@@ -3665,6 +3669,18 @@ bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
         result = keypool.vchPubKey;
     }
     return true;
+}
+
+bool CWallet::GetMWEBAddress(libmw::MWEBAddress& address)
+{
+    LOCK(cs_wallet);
+    if (!CanGenerateKeys()) {
+        return false;
+    }
+
+    address = libmw::wallet::GetAddress(GetMWWallet(), hdChain.nMWEBIndexCounter++);
+
+    return WalletBatch(*database).WriteHDChain(hdChain);
 }
 
 static int64_t GetOldestKeyTimeInPool(const std::set<int64_t>& setKeyPool, WalletBatch& batch) {
@@ -4635,8 +4651,8 @@ std::vector<OutputGroup> CWallet::GroupOutputs(const std::vector<COutputCoin>& o
             CInputCoin input_coin = out.GetInputCoin();
 
             if (input_coin.mwCoin) {
-                // MW: TODO - use actual values
-                groups.emplace_back(input_coin, 1, true, 0, 0);
+                // MW: TODO - use actual values for IsFromMe, ancestors, and descendants
+                groups.emplace_back(input_coin, out.GetDepth(), false, 0, 0);
                 continue;
             }
 

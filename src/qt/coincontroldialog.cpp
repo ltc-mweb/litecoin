@@ -753,7 +753,6 @@ void CoinControlDialog::updateView()
                 // vout index
                 itemOutput->setData(COLUMN_ADDRESS, VOutRole, outpoint.n);
             } else {
-                // MW: TODO - Set COLUMN_ADDRESS fields for libmw::Commitments
                 const libmw::Commitment& output_commit = boost::get<libmw::Commitment>(out.output_index);
                 itemOutput->setData(COLUMN_ADDRESS, CommitmentRole, QString::fromStdString(HexStr(output_commit)));
             }

@@ -91,6 +91,9 @@ public:
     //! Return whether wallet has watch only keys.
     virtual bool haveWatchOnly() = 0;
 
+    //! Generates a new MWEB receive address.
+    virtual bool getMWEBAddress(libmw::MWEBAddress& address) = 0;
+
     //! Add or update address.
     virtual bool setAddressBook(const CTxDestination& dest, const std::string& name, const std::string& purpose) = 0;
 
@@ -312,7 +315,7 @@ public:
 //! Information about one wallet address.
 struct WalletAddress
 {
-    CTxDestination dest; // MW: TODO - Support StealthAddresses too
+    CTxDestination dest;
     isminetype is_mine;
     std::string name;
     std::string purpose;

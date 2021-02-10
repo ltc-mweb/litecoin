@@ -12,28 +12,6 @@ public:
     MWWallet(CWallet* pWallet, interfaces::Chain* pChain)
         : m_pWallet(pWallet), m_pChain(pChain) {}
 
-    libmw::PrivateKey GenerateNewHDKey() final
-    {
-        // Currently, MWEB only supports HD wallets
-        if (!m_pWallet->IsHDEnabled()) {
-            throw std::runtime_error(std::string(__func__) + ": MWEB only supports HD wallets");
-        }
-
-        // Generate new HD key
-        WalletBatch batch(m_pWallet->GetDBHandle());
-        CKey key = m_pWallet->GenerateNewKey(batch);
-
-        // Create libmw::PrivateKey
-        libmw::PrivateKey privateKey;
-        std::copy(key.begin(), key.end(), privateKey.keyBytes.data());
-
-        auto iter = m_pWallet->mapKeyMetadata.find(key.GetPubKey().GetID());
-        assert(iter != m_pWallet->mapKeyMetadata.end());
-        privateKey.bip32Path = iter->second.hdKeypath;
-
-        return privateKey;
-    }
-
     libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final
     {
         // Currently, MWEB only supports HD wallets

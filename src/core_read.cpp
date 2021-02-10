@@ -160,32 +160,19 @@ bool DecodeHexBlockHeader(CBlockHeader& header, const std::string& hex_header)
     return true;
 }
 
-// MW: Check consumers to determine values of try_no_mw & try_mw
-bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk, const bool try_no_mw, const bool try_mw)
+bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk)
 {
     if (!IsHex(strHexBlk))
         return false;
 
     std::vector<unsigned char> blockData(ParseHex(strHexBlk));
 
-    if (try_no_mw) {
-        CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_NO_MIMBLEWIMBLE);
-        try {
-            ssBlock >> block;
-            return true;
-        } catch (const std::exception&) {
-            // Fall through.
-        }
-    }
-
-    if (try_mw) {
-        CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
-        try {
-            ssBlock >> block;
-            return true;
-        } catch (const std::exception&) {
-            // Fall through.
-        }
+    CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
+    try {
+        ssBlock >> block;
+        return true;
+    } catch (const std::exception&) {
+        // Fall through.
     }
 
     return false;

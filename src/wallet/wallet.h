@@ -629,6 +629,16 @@ struct COutputCoin
         return out->fSpendable;
     }
 
+    bool GetDestination(CTxDestination& dest) const
+    {
+        if (IsMWEB()) {
+            dest = MWEBAddress(mwCoin->address);
+            return true;
+        } else {
+            return ExtractDestination(out->tx->tx->vout[out->i].scriptPubKey, dest);
+        }
+    }
+
     boost::variant<CScript, libmw::MWEBAddress> GetAddress() const
     {
         if (IsMWEB()) return mwCoin->address;
@@ -1106,6 +1116,7 @@ public:
     void KeepKey(int64_t nIndex);
     void ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey);
     bool GetKeyFromPool(CPubKey &key, bool internal = false);
+    bool GetMWEBAddress(libmw::MWEBAddress& address);
     int64_t GetOldestKeyPoolTime();
     /**
      * Marks all keys in the keypool up to and including reserve_key as used.

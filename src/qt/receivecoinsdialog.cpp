@@ -153,19 +153,17 @@ void ReceiveCoinsDialog::on_receiveButton_clicked()
     QString label = ui->reqLabel->text();
     /* Generate new receiving address */
     OutputType address_type;
-    bool mweb = false;
     if (ui->useBech32->isChecked()) {
         address_type = OutputType::BECH32;
     } else if (ui->useMWEB->isChecked()) {
-        address_type = OutputType::BECH32;
-        mweb = true;
+        address_type = OutputType::MWEB;
     } else {
         address_type = model->wallet().getDefaultAddressType();
         if (address_type == OutputType::BECH32) {
             address_type = OutputType::P2SH_SEGWIT;
         }
     }
-    address = model->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", address_type, mweb);
+    address = model->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", address_type);
     SendCoinsRecipient info(address, label,
         ui->reqAmount->value(), ui->reqMessage->text());
     ReceiveRequestDialog *dialog = new ReceiveRequestDialog(this);

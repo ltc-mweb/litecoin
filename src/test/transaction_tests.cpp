@@ -775,14 +775,6 @@ class MockMWWallet : public libmw::IWallet
 public:
     MockMWWallet() : m_bip32_index(1) { }
 
-    libmw::PrivateKey GenerateNewHDKey() final
-    {
-        libmw::PrivateKey privateKey;
-        GetRandBytes(privateKey.keyBytes.data(), 32);
-        privateKey.bip32Path = "m/0/0/" + std::to_string(m_bip32_index++);
-        return privateKey;
-    }
-
     libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final
     {
         libmw::PrivateKey privateKey;

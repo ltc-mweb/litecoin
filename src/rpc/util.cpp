@@ -135,6 +135,16 @@ public:
         obj.pushKV("witness_program", HexStr(id.program, id.program + id.length));
         return obj;
     }
+
+    UniValue operator()(const MWEBAddress& id) const
+    {
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("isscript", false);
+        obj.pushKV("iswitness", false);
+        obj.pushKV("ismweb", true);
+        obj.pushKV("mweb_address", id.address);
+        return obj;
+    }
 };
 
 UniValue DescribeAddress(const CTxDestination& dest)

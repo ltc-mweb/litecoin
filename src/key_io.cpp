@@ -67,11 +67,21 @@ public:
         return bech32::Encode(m_params.Bech32HRP(), data);
     }
 
+    std::string operator()(const MWEBAddress& id) const
+    {
+        return id.address;
+    }
+
     std::string operator()(const CNoDestination& no) const { return {}; }
 };
 
 CTxDestination DecodeDestination(const std::string& str, const CChainParams& params)
 {
+    if (str.size() > 5 && str.substr(0, 5) == "mweb1") {
+        // MW: TODO - Validate the address
+        return MWEBAddress(str);
+    }
+
     std::vector<unsigned char> data;
     uint160 hash;
     if (DecodeBase58Check(str, data)) {
