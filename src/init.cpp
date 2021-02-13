@@ -25,7 +25,7 @@
 #include <key.h>
 #include <validation.h>
 #include <miner.h>
-#include <mimblewimble/db.h>
+#include <mweb/mweb_db.h>
 #include <libmw/libmw.h>
 #include <netbase.h>
 #include <net.h>
@@ -1550,7 +1550,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                 g_dbview = libmw::node::Initialize(
                     libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
                     block.mwBlock.m_block.GetHeader(),
-                    std::make_shared<MWDBWrapper>(pcoinsdbview->GetDB())
+                    std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
                 );
                 pcoinsdbview->SetMWView(g_dbview);
 

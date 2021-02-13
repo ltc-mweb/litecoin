@@ -801,7 +801,7 @@ private:
 BOOST_AUTO_TEST_CASE(test_mweb)
 {
     CMutableTransaction mut_tx_mweb;
-    mut_tx_mweb.m_mwtx = CMWTx(libmw::wallet::CreatePegInTx(std::shared_ptr<libmw::IWallet>(new MockMWWallet()), 20).first);
+    mut_tx_mweb.m_mwtx = MWEB::Tx(libmw::wallet::CreatePegInTx(std::shared_ptr<libmw::IWallet>(new MockMWWallet()), 20).first);
 
     CValidationState state;
     BOOST_CHECK_MESSAGE(CheckTransaction(CTransaction(mut_tx_mweb), state, false) && state.IsValid(), "Transaction with MWEB data should be valid outside of a block.");

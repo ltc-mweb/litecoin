@@ -3,10 +3,12 @@
 #include <libmw/libmw.h>
 #include <dbwrapper.h>
 
-class MWDBBatch : public libmw::IDBBatch
+namespace MWEB {
+
+class DBBatch : public libmw::IDBBatch
 {
 public:
-    MWDBBatch(CDBWrapper* pDB, const std::shared_ptr<CDBBatch>& pBatch)
+    DBBatch(CDBWrapper* pDB, const std::shared_ptr<CDBBatch>& pBatch)
         : m_pDB(pDB), m_pBatch(pBatch) {}
 
     void Write(const std::string& key, const std::vector<uint8_t>& value) final
@@ -29,11 +31,11 @@ private:
     std::shared_ptr<CDBBatch> m_pBatch;
 };
 
-class MWDBIterator : public libmw::IDBIterator
+class DBIterator : public libmw::IDBIterator
 {
 public:
-    MWDBIterator(CDBIterator* pIterator)
-        : m_pIterator(std::unique_ptr<CDBIterator>(pIterator)) { }
+    DBIterator(CDBIterator* pIterator)
+        : m_pIterator(std::unique_ptr<CDBIterator>(pIterator)) {}
 
     void Seek(const std::string& key) final
     {
@@ -59,10 +61,10 @@ private:
     std::unique_ptr<CDBIterator> m_pIterator;
 };
 
-class MWDBWrapper : public libmw::IDBWrapper
+class DBWrapper : public libmw::IDBWrapper
 {
 public:
-    MWDBWrapper(CDBWrapper* pDB) : m_pDB(pDB) { }
+    DBWrapper(CDBWrapper* pDB) : m_pDB(pDB) {}
 
     bool Read(const std::string& key, std::vector<uint8_t>& value) const final
     {
@@ -71,14 +73,16 @@ public:
 
     std::unique_ptr<libmw::IDBIterator> NewIterator() final
     {
-        return std::unique_ptr<libmw::IDBIterator>(new MWDBIterator(m_pDB->NewIterator()));
+        return std::unique_ptr<libmw::IDBIterator>(new MWEB::DBIterator(m_pDB->NewIterator()));
     }
 
     std::unique_ptr<libmw::IDBBatch> CreateBatch() final
     {
-        return std::unique_ptr<libmw::IDBBatch>(new MWDBBatch(m_pDB, std::make_shared<CDBBatch>(*m_pDB)));
+        return std::unique_ptr<libmw::IDBBatch>(new MWEB::DBBatch(m_pDB, std::make_shared<CDBBatch>(*m_pDB)));
     }
 
 private:
     CDBWrapper* m_pDB;
 };
+
+} // namespace MWEB

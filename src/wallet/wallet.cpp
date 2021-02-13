@@ -30,8 +30,8 @@
 #include <util/bip32.h>
 #include <util/moneystr.h>
 #include <wallet/fees.h>
-#include <wallet/mwebwallet.h>
-#include <mimblewimble/mwebchain.h>
+#include <mweb/mweb_wallet.h>
+#include <mweb/mweb_chain.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -137,7 +137,7 @@ void UnloadWallet(std::shared_ptr<CWallet>&& wallet)
 CWallet::CWallet(interfaces::Chain& chain, const WalletLocation& location, std::unique_ptr<WalletDatabase> database)
     : m_chain(chain), m_location(location), database(std::move(database))
 {
-    mweb_wallet = std::make_shared<MWWallet>(this, &chain);
+    mweb_wallet = std::make_shared<MWEB::Wallet>(this, &chain);
 }
 
 std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const WalletLocation& location, std::string& error, std::string& warning)
@@ -2871,7 +2871,7 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
 }
 
 bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet,
-                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, const CMWTx& mwtx)
+                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, const MWEB::Tx& mwtx)
 {
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;
@@ -4739,5 +4739,5 @@ libmw::IWallet::Ptr CWallet::GetMWWallet() const
 
 libmw::IChain::Ptr CWallet::GetMWChain()
 {
-    return std::shared_ptr<libmw::IChain>(new MWChain(chain()));
+    return std::shared_ptr<libmw::IChain>(new MWEB::Chain(chain()));
 }

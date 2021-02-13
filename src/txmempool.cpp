@@ -649,7 +649,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
 /**
  * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
  */
-void CTxMemPool::removeForMWBlock(const CMWBlock& mwBlock, unsigned int nBlockHeight)
+void CTxMemPool::removeForMWBlock(const MWEB::Block& mwBlock, unsigned int nBlockHeight)
 {
     LOCK(cs);
 

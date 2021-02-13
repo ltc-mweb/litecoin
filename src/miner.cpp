@@ -512,6 +512,8 @@ bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
         }
     }
 
+    // MW: TODO - Verify pegins match.
+
     //
     // Pegout
     //
@@ -560,7 +562,6 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     CMutableTransaction hogExTransaction;
     hogExTransaction.m_hogEx = true;
 
-
     CBlock prevBlock;
     assert(ReadBlockFromDisk(prevBlock, pIndexPrev, Params().GetConsensus()));
 
@@ -606,7 +607,7 @@ void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
     //
     nFees += mweb_fees;
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
-    pblock->mwBlock = CMWBlock(mw_block);
+    pblock->mwBlock = MWEB::Block(mw_block);
     pblocktemplate->vTxFees.push_back(mweb_fees);
     pblocktemplate->vTxSigOpsCost.push_back(WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx.back())); // MWEB: TODO - Account for these when choosing transactions
 }

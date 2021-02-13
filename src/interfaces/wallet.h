@@ -143,9 +143,9 @@ public:
         int& change_pos,
         CAmount& fee,
         std::string& fail_reason,
-        const CMWTx& mwtx = CMWTx()) = 0;
+        const MWEB::Tx& mwtx = {}) = 0;
 
-    virtual std::unique_ptr<PendingWalletTx> createTransaction(const CMWTx& mwtx) = 0;
+    virtual std::unique_ptr<PendingWalletTx> createTransaction(const MWEB::Tx& mwtx) = 0;
 
     //! Return whether transaction can be abandoned.
     virtual bool transactionCanBeAbandoned(const uint256& txid) = 0;

@@ -12,7 +12,7 @@
 #include <serialize.h>
 #include <uint256.h>
 #include <consensus/params.h>
-#include <mimblewimble/models.h>
+#include <mweb/mweb_models.h>
 #include <boost/variant.hpp>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
@@ -198,7 +198,7 @@ struct CMutableTransaction;
  * - if (flags & 1):
  *   - CTxWitness wit;
  * - if (flags & 8):
- *   - CMWTx m_mwtx
+ *   - MWEB::Tx m_mwtx
  * - uint32_t nLockTime
  */
 template<typename Stream, typename TxType>
@@ -315,7 +315,7 @@ public:
     const std::vector<CTxOut> vout;
     const int32_t nVersion;
     const uint32_t nLockTime;
-    const CMWTx m_mwtx;
+    const MWEB::Tx m_mwtx;
     
     /** Memory only. */
     const bool m_hogEx;
@@ -418,7 +418,7 @@ struct CMutableTransaction
     std::vector<CTxOut> vout;
     int32_t nVersion;
     uint32_t nLockTime;
-    CMWTx m_mwtx;
+    MWEB::Tx m_mwtx;
 
     /** Memory only. */
     bool m_hogEx = false;

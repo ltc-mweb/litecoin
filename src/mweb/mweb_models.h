@@ -11,15 +11,16 @@
 #include <vector>
 #include <memory>
 
-struct CMWBlock
-{
-    using CPtr = std::shared_ptr<CMWBlock>;
+namespace MWEB {
+
+struct Block {
+    using CPtr = std::shared_ptr<MWEB::Block>;
 
     libmw::BlockRef m_block;
 
-    CMWBlock() = default;
-    CMWBlock(const libmw::BlockRef& block)
-        : m_block(block) { }
+    Block() = default;
+    Block(const libmw::BlockRef& block)
+        : m_block(block) {}
 
     uint64_t GetTotalFee() const noexcept
     {
@@ -61,18 +62,17 @@ struct CMWBlock
     }
 
     bool IsNull() const noexcept { return m_block.pBlock == nullptr; }
-    void SetNull() noexcept { m_block = libmw::BlockRef{ nullptr }; }
+    void SetNull() noexcept { m_block = libmw::BlockRef{nullptr}; }
 };
 
-struct CMWTx
-{
-    using CPtr = std::shared_ptr<CMWTx>;
+struct Tx {
+    using CPtr = std::shared_ptr<MWEB::Tx>;
 
     libmw::TxRef m_transaction;
 
-    CMWTx() = default;
-    CMWTx(const libmw::TxRef& tx)
-        : m_transaction(tx) { }
+    Tx() = default;
+    Tx(const libmw::TxRef& tx)
+        : m_transaction(tx) {}
 
     std::set<libmw::KernelHash> GetKernelHashes() const
     {
@@ -128,8 +128,10 @@ struct CMWTx
 
     std::string ToString() const
     {
-        return strprintf("CMWTx(pegins=%d, pegouts=%d)", GetPegIns().size(), GetPegOuts().size());
+        return strprintf("MWEB::Tx(pegins=%d, pegouts=%d)", GetPegIns().size(), GetPegOuts().size());
     }
 };
+
+} // namespace MWEB
 
 #endif // LITECOIN_MIMBLEWIMBLE_MODELS_H

@@ -29,7 +29,7 @@
 #include <util/system.h>
 #include <util/moneystr.h>
 #include <util/strencodings.h>
-#include <mimblewimble/mwstate.h>
+#include <mweb/mweb_state.h>
 
 #include <memory>
 
@@ -102,7 +102,7 @@ namespace {
     int nSyncStarted GUARDED_BY(cs_main) = 0;
 
     /** Number of nodes from which the mimblewimble txhashset has been requested. */
-    //int nMWStateRequested GUARDED_BY(cs_main) = 0;
+    //int nMWEBStateRequested GUARDED_BY(cs_main) = 0; // MW: TODO - Implement
 
     /**
      * Sources of received blocks, saved to be able to send them reject
@@ -397,7 +397,7 @@ static bool MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const CBlock
 
     // Make sure it's not listed somewhere already.
     MarkBlockAsReceived(hash);
-    CMWBlock mweb_block;
+    MWEB::Block mweb_block;
     if (pit && (*pit)) {
         mweb_block = (*(*pit))->partialBlock->mweb_block;
     }
@@ -2311,9 +2311,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
-    if (strCommand == NetMsgType::GETMWSTATE)
+    if (strCommand == NetMsgType::GETMWEBSTATE)
     {
-        // MW: Implement
+        // MW: TODO - Implement
 
     }
 
@@ -2836,10 +2836,10 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
-    if (strCommand == NetMsgType::MWSTATE)
+    if (strCommand == NetMsgType::MWEBSTATE)
     {
         // MW: Implement
-        MWState mw_state;
+        MWEB::State mw_state;
         vRecv >> mw_state;
 
         LogPrint(BCLog::NET, "received mw_state from peer=%d\n", pfrom->GetId());

@@ -130,7 +130,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     bool fSubtractFeeFromAmount = false;
     QList<SendCoinsRecipient> recipients = transaction.getRecipients();
     std::vector<CRecipient> vecSend;
-    CMWTx mwTx;
+    MWEB::Tx mwTx;
     const SendCoinsRecipient* pegOut = nullptr;
     const SendCoinsRecipient* mwebSend = nullptr;
 

@@ -271,7 +271,7 @@ public:
         int& change_pos,
         CAmount& fee,
         std::string& fail_reason,
-        const CMWTx& mwtx) override
+        const MWEB::Tx& mwtx) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
@@ -282,7 +282,7 @@ public:
         }
         return std::move(pending);
     }
-    std::unique_ptr<PendingWalletTx> createTransaction(const CMWTx& mwtx) override
+    std::unique_ptr<PendingWalletTx> createTransaction(const MWEB::Tx& mwtx) override
     {
         auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
         CMutableTransaction tx;

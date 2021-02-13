@@ -104,9 +104,9 @@ class CScript;
 class CTxMemPool;
 class CBlockPolicyEstimator;
 class CWalletTx;
-class MWWallet;
 struct FeeCalculation;
 enum class FeeEstimateMode;
+namespace MWEB { class Wallet; }
 
 /** (client) version numbers for particular wallet features */
 enum WalletFeature
@@ -822,7 +822,7 @@ private:
      */
     uint256 m_last_block_processed;
 
-    std::shared_ptr<MWWallet> mweb_wallet;
+    std::shared_ptr<MWEB::Wallet> mweb_wallet;
 
 public:
     /*
@@ -1064,7 +1064,7 @@ public:
      * @note passing nChangePosInOut as -1 will result in setting a random position
      */
     bool CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosInOut,
-                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true, const CMWTx& mwtx = CMWTx());
+                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true, const MWEB::Tx& mwtx = {});
     bool CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, CReserveKey& reservekey, CConnman* connman, CValidationState& state);
 
     bool DummySignTx(CMutableTransaction &txNew, const std::set<CTxOut> &txouts, bool use_max_sig = false) const

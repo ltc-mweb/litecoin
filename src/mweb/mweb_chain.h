@@ -2,15 +2,18 @@
 
 #include <interfaces/chain.h>
 #include <primitives/block.h>
+#include <util/memory.h>
 
 #include <libmw/libmw.h>
 #include <stdexcept>
 
-class MWChainIterator : public libmw::IChainIterator
+namespace MWEB {
+
+class ChainIterator : public libmw::IChainIterator
 {
 public:
-    MWChainIterator(interfaces::Chain& chain)
-        : m_chain(chain), m_locked(chain.lock()), m_height(0) { }
+    ChainIterator(interfaces::Chain& chain)
+        : m_chain(chain), m_locked(chain.lock()), m_height(0) {}
 
     void SeekToFirstMWEB() noexcept
     {
@@ -74,19 +77,21 @@ private:
     int m_height;
 };
 
-class MWChain : public libmw::IChain
+class Chain : public libmw::IChain
 {
 public:
-    MWChain(interfaces::Chain& chain)
-        : m_chain(chain) { }
+    Chain(interfaces::Chain& chain)
+        : m_chain(chain) {}
 
     std::unique_ptr<libmw::IChainIterator> NewIterator() final
     {
-        auto pIter = new MWChainIterator(m_chain);
+        auto pIter = MakeUnique<MWEB::ChainIterator>(m_chain);
         pIter->SeekToFirstMWEB();
-        return std::unique_ptr<libmw::IChainIterator>(pIter);
+        return pIter;
     }
 
 private:
     interfaces::Chain& m_chain;
 };
+
+} // namespace MWEB

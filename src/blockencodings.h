@@ -145,7 +145,7 @@ protected:
 
 public:
     CBlockHeader header;
-    CMWBlock mwBlock;
+    MWEB::Block mwBlock;
 
     // Dummy for deserialization
     CBlockHeaderAndShortTxIDs() {}
@@ -210,8 +210,8 @@ protected:
 
 public:
     CBlockHeader header;
-    CMWBlock mweb_block;
-    explicit PartiallyDownloadedBlock(CTxMemPool* poolIn, const CMWBlock& mweb_blockIn) : pool(poolIn), mweb_block(mweb_blockIn) {}
+    MWEB::Block mweb_block;
+    explicit PartiallyDownloadedBlock(CTxMemPool* poolIn, const MWEB::Block& mweb_blockIn) : pool(poolIn), mweb_block(mweb_blockIn) {}
 
     // extra_txn is a list of extra transactions to look at, in <witness hash, reference> form
     ReadStatus InitData(const CBlockHeaderAndShortTxIDs& cmpctblock, const std::vector<std::pair<uint256, CTransactionRef>>& extra_txn);

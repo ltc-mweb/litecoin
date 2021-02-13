@@ -10,7 +10,7 @@
 #include <consensus/params.h>
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
-#include <mimblewimble/db.h>
+#include <mweb/mweb_db.h>
 #include <miner.h>
 #include <net_processing.h>
 #include <noui.h>
@@ -85,7 +85,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         libmw::CoinsViewRef mw_view = libmw::node::Initialize(
             libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
             {nullptr}, // MW: Load this first
-            std::make_shared<MWDBWrapper>(pcoinsdbview->GetDB()));
+            std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()));
         pcoinsdbview->SetMWView(mw_view);
 
         pcoinsTip.reset(new CCoinsViewCache(pcoinsdbview.get()));

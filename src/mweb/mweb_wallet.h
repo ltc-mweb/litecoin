@@ -6,10 +6,12 @@
 #include <wallet/coincontrol.h>
 #include <map>
 
-class MWWallet : public libmw::IWallet
+namespace MWEB {
+
+class Wallet : public libmw::IWallet
 {
 public:
-    MWWallet(CWallet* pWallet, interfaces::Chain* pChain)
+    Wallet(CWallet* pWallet, interfaces::Chain* pChain)
         : m_pWallet(pWallet), m_pChain(pChain) {}
 
     libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final
@@ -55,8 +57,7 @@ public:
         std::transform(
             m_coins.cbegin(), m_coins.cend(),
             std::back_inserter(coins),
-            [](const auto& entry) { return entry.second; }
-        );
+            [](const auto& entry) { return entry.second; });
 
         return coins;
     }
@@ -122,15 +123,14 @@ public:
         std::transform(
             setCoins.cbegin(), setCoins.cend(),
             std::back_inserter(result),
-            [](const CInputCoin& coin) { return *coin.mwCoin; }
-        );
+            [](const CInputCoin& coin) { return *coin.mwCoin; });
         return result;
     }
 
     uint64_t GetDepthInActiveChain(const libmw::BlockHash& canonical_block_hash) const final
     {
         auto locked_chain = m_pWallet->chain().lock();
-        
+
         return locked_chain->getBlockDepth(uint256(std::vector<uint8_t>{canonical_block_hash.begin(), canonical_block_hash.end()}));
     }
 
@@ -139,3 +139,5 @@ private:
     interfaces::Chain* m_pChain;
     std::map<libmw::Commitment, libmw::Coin> m_coins;
 };
+
+} // namespace MWEB

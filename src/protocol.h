@@ -239,16 +239,16 @@ extern const char *GETBLOCKTXN;
  */
 extern const char* BLOCKTXN;
 /**
- * Contains a MWStateRequest.
+ * Contains a MWEB::StateRequest.
  * @since protocol version ?? as described by LIP ?? // MW: Document version & LIP
  */
-extern const char* GETMWSTATE;
+extern const char* GETMWEBSTATE;
 /**
- * Contains a MWState.
- * Sent in response to a "getmwstate" message.
+ * Contains a MWEB::State.
+ * Sent in response to a "getmwebstate" message.
  * @since protocol version ?? as described by LIP ?? // MW: Document version & LIP
  */
-extern const char* MWSTATE;
+extern const char* MWEBSTATE;
 };
 
 /* Get a vector of all valid message types (see above) */

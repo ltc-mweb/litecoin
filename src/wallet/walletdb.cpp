@@ -15,7 +15,7 @@
 #include <util/system.h>
 #include <util/time.h>
 #include <wallet/wallet.h>
-#include <wallet/mwebwallet.h>
+#include <mweb/mweb_wallet.h>
 
 #include <atomic>
 #include <string>

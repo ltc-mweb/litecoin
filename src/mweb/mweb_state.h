@@ -2,17 +2,19 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef LITECOIN_MIMBLEWIMBLE_MWSTATE_H
-#define LITECOIN_MIMBLEWIMBLE_MWSTATE_H
+#ifndef LITECOIN_MIMBLEWIMBLE_MWEB_STATE_H
+#define LITECOIN_MIMBLEWIMBLE_MWEB_STATE_H
 
 #include <serialize.h>
 #include <libmw/libmw.h>
 #include <uint256.h>
 
-class MWStateRequest
+namespace MWEB {
+
+class StateRequest
 {
 public:
-    // A MWStateRequest message
+    // An MWEB::StateRequest message
     uint256 blockhash;
 
     ADD_SERIALIZE_METHODS;
@@ -24,10 +26,10 @@ public:
     }
 };
 
-class MWState
+class State
 {
 public:
-    // A MWState message
+    // An MWEB::State message
     uint256 blockhash;
     std::vector<uint8_t> serialized_state;
 
@@ -41,4 +43,6 @@ public:
     }
 };
 
-#endif // LITECOIN_MIMBLEWIMBLE_MWSTATE_H
+} // namespace MWEB
+
+#endif // LITECOIN_MIMBLEWIMBLE_MWEB_STATE_H

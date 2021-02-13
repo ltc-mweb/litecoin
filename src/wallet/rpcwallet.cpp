@@ -433,7 +433,7 @@ static UniValue pegin(const JSONRPCRequest& request)
     CRecipient recipient = {pegin_script, nAmount, false};
     vecSend.push_back(recipient);
     CTransactionRef tx;
-    if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, CMWTx(pegin_tx.first))) {
+    if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, MWEB::Tx(pegin_tx.first))) {
         if (nAmount + nFeeRequired > curBalance)
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -514,10 +514,10 @@ static UniValue pegout(const JSONRPCRequest& request)
     CScript pegout_script;
 
     CMutableTransaction txNew;
-    txNew.m_mwtx = CMWTx(pegout_tx.first);
+    txNew.m_mwtx = MWEB::Tx(pegout_tx.first);
 
     CTransactionRef tx = MakeTransactionRef(txNew);
-    //if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, CMWTx(pegout_tx.first))) {
+    //if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, MWEB::Tx(pegout_tx.first))) {
     //    //if (nAmount + nFeeRequired > curBalance)
     //    //    strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
     //    throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -597,7 +597,7 @@ static UniValue sendmweb(const JSONRPCRequest& request)
     std::string strError;
 
     CMutableTransaction txNew;
-    txNew.m_mwtx = CMWTx(mwtx);
+    txNew.m_mwtx = MWEB::Tx(mwtx);
 
     CTransactionRef tx = MakeTransactionRef(txNew);
     CValidationState state;
