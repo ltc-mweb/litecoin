@@ -72,6 +72,7 @@ public:
 //! Construct wallet tx struct.
 WalletTx MakeWalletTx(interfaces::Chain::Lock& locked_chain, CWallet& wallet, const CWalletTx& wtx)
 {
+    // MW: TODO - Include mweb_credit, mweb_debit, and output coins
     WalletTx result;
     result.tx = wtx.tx;
     result.txin_is_mine.reserve(wtx.tx->vin.size());
@@ -486,7 +487,8 @@ public:
                     }
                 }
             } else {
-                // MW: TODO - Handle libmw::Commitment's
+                const libmw::Coin& coin = m_wallet->GetCoin(boost::get<libmw::Commitment>(output));
+                result.back() = MakeWalletTxOut(m_wallet->MakeOutputCoin(*locked_chain, coin));
             }
         }
         return result;

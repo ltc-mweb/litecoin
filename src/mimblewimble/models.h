@@ -7,6 +7,7 @@
 
 #include <serialize.h>
 #include <libmw/libmw.h>
+#include <tinyformat.h>
 #include <vector>
 #include <memory>
 
@@ -124,6 +125,11 @@ struct CMWTx
 
     bool IsNull() const noexcept { return m_transaction.pTransaction == nullptr; }
     void SetNull() noexcept { m_transaction.pTransaction = nullptr; }
+
+    std::string ToString() const
+    {
+        return strprintf("CMWTx(pegins=%d, pegouts=%d)", GetPegIns().size(), GetPegOuts().size());
+    }
 };
 
 #endif // LITECOIN_MIMBLEWIMBLE_MODELS_H

@@ -213,7 +213,6 @@ void TransactionRecord::updateStatus(const interfaces::WalletTxStatus& wtx, int 
         wtx.time_received,
         idx);
     status.countsForBalance = wtx.is_trusted && !(wtx.blocks_to_maturity > 0);
-    status.countsForMWEBBalance = wtx.is_trusted && !(wtx.blocks_to_mweb_maturity > 0);
     status.depth = wtx.depth_in_main_chain;
     status.cur_num_blocks = numBlocks;
 

@@ -44,8 +44,6 @@ public:
 
     /// Transaction counts towards available balance
     bool countsForBalance;
-    /// Transaction counts toward available MWEB balance
-    bool countsForMWEBBalance;
     /// Sorting key based on status
     std::string sortKey;
 

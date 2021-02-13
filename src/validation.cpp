@@ -1811,7 +1811,7 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_VERIFY_NULLDUMMY;
     }
 
-    // MW: Handle activation
+    // MW: TODO - Handle activation
 
     return flags;
 }

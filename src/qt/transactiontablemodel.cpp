@@ -225,8 +225,7 @@ TransactionTableModel::TransactionTableModel(const PlatformStyle *_platformStyle
         fProcessingQueuedTransactions(false),
         platformStyle(_platformStyle)
 {
-    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Label") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit())
-        << BitcoinUnits::getMWEBAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
+    columns << QString() << QString() << tr("Date") << tr("Type") << tr("Label") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
     priv->refreshWallet(walletModel->wallet());
 
     connect(walletModel->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &TransactionTableModel::updateDisplayUnit);
@@ -245,8 +244,6 @@ void TransactionTableModel::updateAmountColumnTitle()
 {
     columns[Amount] = BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
     Q_EMIT headerDataChanged(Qt::Horizontal, Amount, Amount);
-    columns[MWEBAmount] = BitcoinUnits::getMWEBAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit());
-    Q_EMIT headerDataChanged(Qt::Horizontal, MWEBAmount, MWEBAmount);
 }
 
 void TransactionTableModel::updateTransaction(const QString &hash, int status, bool showTransaction)
@@ -440,22 +437,11 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
 
 QString TransactionTableModel::formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed, BitcoinUnits::SeparatorStyle separators) const
 {
-    QString str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->debit, false, separators);
+    QString str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->credit + wtx->mweb_credit + wtx->debit + wtx->mweb_debit, false, separators);
     if(showUnconfirmed)
     {
         if(!wtx->status.countsForBalance)
         {
-            str = QString("[") + str + QString("]");
-        }
-    }
-    return QString(str);
-}
-
-QString TransactionTableModel::formatMWEBAmount(const TransactionRecord* wtx, bool showUnconfirmed, BitcoinUnits::SeparatorStyle separators) const
-{
-    QString str = BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), wtx->mweb_credit + wtx->mweb_debit, false, separators);
-    if (showUnconfirmed) {
-        if (!wtx->status.countsForMWEBBalance) {
             str = QString("[") + str + QString("]");
         }
     }
@@ -552,8 +538,6 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
             return formatTxToAddress(rec, false);
         case Amount:
             return formatTxAmount(rec, true, BitcoinUnits::separatorAlways);
-        case MWEBAmount:
-            return formatMWEBAmount(rec, true, BitcoinUnits::separatorAlways);
         }
         break;
     case Qt::EditRole:
@@ -571,9 +555,7 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         case ToAddress:
             return formatTxToAddress(rec, true);
         case Amount:
-            return qint64(rec->credit + rec->debit);
-        case MWEBAmount:
-            return qint64(rec->mweb_credit + rec->mweb_debit);
+            return qint64(rec->credit + rec->mweb_credit + rec->debit + rec->mweb_debit);
         }
         break;
     case Qt::ToolTipRole:
@@ -591,17 +573,13 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         {
             return COLOR_UNCONFIRMED;
         }
-        if(index.column() == Amount && (rec->credit+rec->debit) < 0)
+        if(index.column() == Amount && (rec->credit + rec->mweb_credit + rec->debit + rec->mweb_debit) < 0)
         {
             return COLOR_NEGATIVE;
         }
         if(index.column() == ToAddress)
         {
             return addressColor(rec);
-        }
-        if (index.column() == MWEBAmount && (rec->mweb_credit + rec->mweb_debit) < 0)
-        {
-            return COLOR_NEGATIVE;
         }
         break;
     case TypeRole:
@@ -650,14 +628,13 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
                 details.append(" ");
             }
             details.append(formatTxAmount(rec, false, BitcoinUnits::separatorNever));
-            // MW: TODO - Include MWEB amount
             return details;
         }
     case ConfirmedRole:
         return rec->status.countsForBalance;
     case FormattedAmountRole:
         // Used for copy/export, so don't include separators
-        return formatTxAmount(rec, false, BitcoinUnits::separatorNever); // MW: TODO - Look into this
+        return formatTxAmount(rec, false, BitcoinUnits::separatorNever);
     case StatusRole:
         return rec->status.status;
     }
@@ -691,8 +668,6 @@ QVariant TransactionTableModel::headerData(int section, Qt::Orientation orientat
                 return tr("User-defined intent/purpose of the transaction.");
             case Amount:
                 return tr("Amount removed from or added to balance.");
-            case MWEBAmount:
-                return tr("Amount removed from or added to MWEB balance.");
             }
         }
     }
