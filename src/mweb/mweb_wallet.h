@@ -67,7 +67,7 @@ public:
         m_coins[coin.commitment] = coin;
     }
 
-    libmw::Coin GetCoin(const libmw::Commitment& output_commit) const
+    libmw::Coin GetCoin(const libmw::Commitment& output_commit) const final
     {
         auto iter = m_coins.find(output_commit);
         if (iter != m_coins.end()) {

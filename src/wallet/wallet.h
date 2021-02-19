@@ -219,9 +219,27 @@ public:
 
 struct CRecipient
 {
-    CScript scriptPubKey;
+    boost::variant<CScript, libmw::MWEBAddress> receiver;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
+
+    bool IsMWEB() const noexcept
+    {
+        return receiver.which() == 1;
+    }
+
+    bool IsWitnessProgram() const
+    {
+        if (receiver.which() == 0) {
+            int witnessversion = 0;
+            std::vector<unsigned char> witnessprogram;
+            if (boost::get<CScript>(receiver).IsWitnessProgram(witnessversion, witnessprogram)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 typedef std::map<std::string, std::string> mapValue_t;
@@ -711,6 +729,9 @@ struct CoinSelectionParams
     CFeeRate effective_fee = CFeeRate(0);
     size_t tx_noinputs_size = 0;
 
+    boost::optional<OutputType> change_type = boost::none;
+    InputPreference input_preference = InputPreference::PREFER_LTC;
+
     CoinSelectionParams(bool use_bnb, size_t change_output_size, size_t change_spend_size, CFeeRate effective_fee, size_t tx_noinputs_size) : use_bnb(use_bnb), change_output_size(change_output_size), change_spend_size(change_spend_size), effective_fee(effective_fee), tx_noinputs_size(tx_noinputs_size) {}
     CoinSelectionParams() {}
 };
@@ -856,6 +877,59 @@ public:
             std::back_inserter(vCoins),
             [](const COutput& out) { return COutputCoin(out); }
         );
+
+        // BnB only supported for non-MWEB.
+        if (coin_selection_params.input_preference == InputPreference::PREFER_LTC && coin_selection_params.use_bnb) {
+            CoinSelectionParams params2 = coin_selection_params;
+            params2.input_preference = InputPreference::LTC_ONLY;
+
+            // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
+            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+                return true;
+            }
+        }
+
+        bnb_used = false;
+        coin_selection_params.use_bnb = false;
+        if (coin_selection_params.input_preference == InputPreference::PREFER_LTC) {
+            CoinSelectionParams params2 = coin_selection_params;
+            params2.input_preference = InputPreference::LTC_ONLY;
+
+            // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
+            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+                return true;
+            }
+
+            params2.input_preference = InputPreference::MWEB_ONLY;
+            params2.change_type = OutputType::MWEB;
+
+            // Then try SelectCoins with MWEB_ONLY so we can avoid mixing input types.
+            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+                return true;
+            }
+
+            // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
+        } else if (coin_selection_params.input_preference == InputPreference::PREFER_MWEB) {
+            CoinSelectionParams params2 = coin_selection_params;
+            params2.input_preference = InputPreference::MWEB_ONLY;
+            params2.change_type = OutputType::MWEB;
+
+            // First try SelectCoins with MWEB_ONLY since those are the preferred inputs.
+            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+                return true;
+            }
+
+            params2.input_preference = InputPreference::LTC_ONLY;
+            params2.change_type = coin_selection_params.change_type;
+
+            // Then try SelectCoins with LTC_ONLY so we can avoid mixing input types.
+            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+                return true;
+            }
+
+            // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
+        }
+
         return SelectCoins(vCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
     }
 

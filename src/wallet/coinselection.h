@@ -14,6 +14,7 @@ static constexpr CAmount MIN_CHANGE{COIN / 100};
 //! final minimum change amount after paying for fees
 static const CAmount MIN_FINAL_CHANGE = MIN_CHANGE/2;
 
+// MW: TODO - Encapsulate this object to avoid consumers needing to make assumptions about the existence of its data fields.
 class CInputCoin {
 public:
     CInputCoin(const CTransactionRef& tx, unsigned int i)
@@ -55,6 +56,9 @@ public:
 
     const libmw::Coin *mwCoin;
 
+    bool IsMWEB() const noexcept { return mwCoin != nullptr; }
+    CAmount GetAmount() const noexcept { return effective_value; }
+
     /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
     int m_input_bytes{-1};
 
@@ -83,6 +87,17 @@ struct CoinEligibilityFilter
     CoinEligibilityFilter(int conf_mine, int conf_theirs, uint64_t max_ancestors, uint64_t max_descendants) : conf_mine(conf_mine), conf_theirs(conf_theirs), max_ancestors(max_ancestors), max_descendants(max_descendants) {}
 };
 
+enum class InputPreference {
+    // Use MWEB inputs first (used during typicaly send to MWEB address)
+    PREFER_MWEB,
+    // Use canonical inputs first (used during typical send to LTC address)
+    PREFER_LTC,
+    // Only use MWEB inputs (used when explicitly pegging-out)
+    MWEB_ONLY,
+    // Only use canonical inputs (used when explicitly pegging-in)
+    LTC_ONLY
+};
+
 struct OutputGroup
 {
     std::vector<CInputCoin> m_outputs;
@@ -109,7 +124,11 @@ struct OutputGroup
     }
     void Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants);
     std::vector<CInputCoin>::iterator Discard(const CInputCoin& output);
-    bool EligibleForSpending(const CoinEligibilityFilter& eligibility_filter) const;
+    bool EligibleForSpending(const CoinEligibilityFilter& eligibility_filter, const InputPreference& input_preference) const;
+    bool IsMWEB() const noexcept
+    {
+        return !m_outputs.empty() && m_outputs.front().IsMWEB();
+    }
 };
 
 bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_value, const CAmount& cost_of_change, std::set<CInputCoin>& out_set, CAmount& value_ret, CAmount not_input_fees);

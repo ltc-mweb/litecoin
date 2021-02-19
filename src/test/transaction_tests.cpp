@@ -785,6 +785,7 @@ public:
 
     std::vector<libmw::Coin> ListCoins() const final { return {}; }
 
+    libmw::Coin GetCoin(const libmw::Commitment& commitment) const final { return libmw::Coin{}; }
     void AddCoins(const std::vector<libmw::Coin>& coins) final { }
     void DeleteCoins(const std::vector<libmw::Coin>& coins) final { }
 

@@ -148,6 +148,13 @@ BITCOIN_CORE_H = \
   memusage.h \
   merkleblock.h \
   miner.h \
+  mweb/mweb_chain.h \
+  mweb/mweb_db.h \
+  mweb/mweb_miner.h \
+  mweb/mweb_models.h \
+  mweb/mweb_state.h \
+  mweb/mweb_transact.h \
+  mweb/mweb_wallet.h \
   net.h \
   net_processing.h \
   netaddress.h \
@@ -220,6 +227,7 @@ BITCOIN_CORE_H = \
   wallet/wallettool.h \
   wallet/walletutil.h \
   wallet/coinselection.h \
+  wallet/createtransaction.h \
   warnings.h \
   zmq/zmqabstractnotifier.h \
   zmq/zmqconfig.h\
@@ -307,6 +315,8 @@ endif
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_wallet_a_SOURCES = \
+  mweb/mweb_wallet.cpp \
+  mweb/mweb_transact.cpp \
   interfaces/wallet.cpp \
   wallet/coincontrol.cpp \
   wallet/crypter.cpp \
@@ -321,6 +331,7 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/walletdb.cpp \
   wallet/walletutil.cpp \
   wallet/coinselection.cpp \
+  wallet/createtransaction.cpp \
   $(BITCOIN_CORE_H)
 
 libbitcoin_wallet_tool_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
