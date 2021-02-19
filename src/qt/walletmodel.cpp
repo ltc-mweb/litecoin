@@ -184,7 +184,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             setAddress.insert(rcp.address);
             ++nAddresses;
 
-            CScript scriptPubKey;
+            boost::variant<CScript, libmw::MWEBAddress> receiver;
             switch (rcp.type) {
             case SendCoinsRecipient::MWEB_PEGIN: {
                 auto pegin_tx = libmw::wallet::CreatePegInTx(m_wallet->GetMWWallet(), rcp.amount);
@@ -192,8 +192,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 // MW: TODO - support pegging-in to someone else's address
                 transaction.setMapValue("mweb_recipient", libmw::wallet::GetAddress(m_wallet->GetMWWallet(), libmw::PEGIN_INDEX));
                 transaction.setMapValue("mweb_credit", std::to_string(rcp.amount));
-                scriptPubKey << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
-                scriptPubKey << std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
+                //scriptPubKey << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+                //scriptPubKey << std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
                 mwTx = pegin_tx.first;
                 break;
             }
@@ -204,18 +204,19 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 break;
             }
             case SendCoinsRecipient::MWEB_SEND: {
-                auto address = rcp.address.toStdString();
-                transaction.setMapValue("mweb_recipient", address);
-                transaction.setMapValue("mweb_debit", std::to_string(rcp.amount));
-                if (libmw::wallet::IsOwnAddress(m_wallet->GetMWWallet(), address))
-                    transaction.setMapValue("mweb_credit", std::to_string(rcp.amount));
-                mwebSend = &rcp;
+                receiver = rcp.address.toStdString();
+                //auto address = rcp.address.toStdString();
+                //transaction.setMapValue("mweb_recipient", address);
+                //transaction.setMapValue("mweb_debit", std::to_string(rcp.amount));
+                //if (libmw::wallet::IsOwnAddress(m_wallet->GetMWWallet(), address))
+                //    transaction.setMapValue("mweb_credit", std::to_string(rcp.amount));
+                //mwebSend = &rcp;
                 break;
             }
             default:
-                scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
+                receiver = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
             }
-            CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
+            CRecipient recipient = {receiver, rcp.amount, rcp.fSubtractFeeFromAmount};
             vecSend.push_back(recipient);
 
             total += rcp.amount;
@@ -227,7 +228,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     }
 
     CAmount nBalance = m_wallet->getAvailableBalance(coinControl);
-    if (pegOut || mwebSend) nBalance = m_wallet->getBalances().mweb_balance;
+    //if (pegOut || mwebSend) nBalance = m_wallet->getBalances().mweb_balance;
 
     if(total > nBalance)
     {
@@ -240,29 +241,29 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         std::string strFailReason;
 
         auto& newTx = transaction.getWtx();
-        if (pegOut || mwebSend) {
-            // MW: TODO - Support CoinControl
-            CAmount feeRate = 100'000;
-            if (coinControl.m_feerate) {
-                feeRate = coinControl.m_feerate->GetFeePerK();
-            }
-            try {
-                if (pegOut) {
-                    auto mwtx = libmw::wallet::CreatePegOutTx(m_wallet->GetMWWallet(), pegOut->amount, feeRate, pegOut->address.toStdString());
-                    newTx = m_wallet->createTransaction(mwtx.first);
-                } else {
-                    auto mwtx = libmw::wallet::Send(m_wallet->GetMWWallet(), mwebSend->amount, feeRate, mwebSend->address.toStdString());
-                    newTx = m_wallet->createTransaction(mwtx);
-                }
-            } catch (const std::exception& e) {
-                strFailReason = e.what();
-            }
-        } else {
+        //if (pegOut || mwebSend) {
+        //    // MW: TODO - Support CoinControl
+        //    CAmount feeRate = 100'000;
+        //    if (coinControl.m_feerate) {
+        //        feeRate = coinControl.m_feerate->GetFeePerK();
+        //    }
+        //    try {
+        //        if (pegOut) {
+        //            auto mwtx = libmw::wallet::CreatePegOutTx(m_wallet->GetMWWallet(), pegOut->amount, feeRate, pegOut->address.toStdString());
+        //            newTx = m_wallet->createTransaction(mwtx.first);
+        //        } else {
+        //            auto mwtx = libmw::wallet::Send(m_wallet->GetMWWallet(), mwebSend->amount, feeRate, mwebSend->address.toStdString());
+        //            newTx = m_wallet->createTransaction(mwtx);
+        //        }
+        //    } catch (const std::exception& e) {
+        //        strFailReason = e.what();
+        //    }
+        //} else {
             newTx = m_wallet->createTransaction(vecSend, coinControl, true /* sign */, nChangePosRet, nFeeRequired, strFailReason, mwTx);
             transaction.setTransactionFee(nFeeRequired);
             if (fSubtractFeeFromAmount && newTx)
                 transaction.reassignAmounts(nChangePosRet);
-        }
+        //}
 
         if(!newTx)
         {

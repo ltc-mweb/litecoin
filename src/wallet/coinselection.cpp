@@ -321,8 +321,12 @@ std::vector<CInputCoin>::iterator OutputGroup::Discard(const CInputCoin& output)
     return m_outputs.erase(it);
 }
 
-bool OutputGroup::EligibleForSpending(const CoinEligibilityFilter& eligibility_filter) const
+bool OutputGroup::EligibleForSpending(const CoinEligibilityFilter& eligibility_filter, const InputPreference& input_preference) const
 {
+    if ((input_preference == InputPreference::LTC_ONLY && IsMWEB()) || (input_preference == InputPreference::MWEB_ONLY && !IsMWEB())) {
+        return false;
+    }
+
     return m_depth >= (m_from_me ? eligibility_filter.conf_mine : eligibility_filter.conf_theirs)
         && m_ancestors <= eligibility_filter.max_ancestors
         && m_descendants <= eligibility_filter.max_descendants;
