@@ -30,7 +30,6 @@
 #include <util/bip32.h>
 #include <util/moneystr.h>
 #include <wallet/fees.h>
-#include <mweb/mweb_wallet.h>
 #include <mweb/mweb_chain.h>
 #include <mweb/mweb_transact.h>
 #include <wallet/createtransaction.h>
@@ -693,6 +692,7 @@ void CWallet::SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator> ran
  */
 bool CWallet::IsSpent(interfaces::Chain::Lock& locked_chain, const uint256& hash, unsigned int n) const
 {
+    // MW: TODO - Pass in OutputIndex rather than hash & n
     const COutPoint outpoint(hash, n);
     std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range;
     range = mapTxSpends.equal_range(outpoint);
@@ -730,8 +730,22 @@ void CWallet::AddToSpends(const uint256& wtxid)
     if (thisTx.IsCoinBase()) // Coinbases don't spend anything!
         return;
 
-    for (const CTxIn& txin : thisTx.tx->vin)
-        AddToSpends(txin.prevout, wtxid);
+    for (const OutputIndex& input : thisTx.GetInputIds()) {
+        AddToSpends(input, wtxid);
+    }
+}
+
+void CWallet::AddToOutputCommits(const CWalletTx& wtx)
+{
+    if (wtx.mweb_wtx) {
+        for (const MWEB::WalletTxOutput& output : wtx.mweb_wtx->outputs) {
+            mapOutputCommits.insert(std::make_pair(output.commitment, wtx.GetHash()));
+        }
+    } else {
+        for (const libmw::Commitment& output_commit : wtx.tx->m_mwtx.GetOutputCommits()) {
+            mapOutputCommits.insert(std::make_pair(output_commit, wtx.GetHash()));
+        }
+    }
 }
 
 bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
@@ -941,6 +955,8 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 {
     LOCK(cs_wallet);
 
+    // MW: TODO - Check MWEB outputs, spends, etc. Also, generate hash from kernel(?) or output(?) if MWEB-to-MWEB
+
     WalletBatch batch(*database, "r+", fFlushOnClose);
 
     uint256 hash = wtxIn.GetHash();
@@ -956,6 +972,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
         wtx.m_it_wtxOrdered = wtxOrdered.insert(std::make_pair(wtx.nOrderPos, &wtx));
         wtx.nTimeSmart = ComputeTimeSmart(wtx);
         AddToSpends(hash);
+        AddToOutputCommits(wtx);
     }
 
     bool fUpdated = false;
@@ -1031,6 +1048,7 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
         wtx.m_it_wtxOrdered = wtxOrdered.insert(std::make_pair(wtx.nOrderPos, &wtx));
     }
     AddToSpends(hash);
+    AddToOutputCommits(wtx);
     for (const CTxIn& txin : wtx.tx->vin) {
         auto it = mapWallet.find(txin.prevout.hash);
         if (it != mapWallet.end()) {
@@ -2533,9 +2551,11 @@ std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<COutput
             }
         } else {
             const libmw::Commitment& output_commit = boost::get<libmw::Commitment>(output);
-            libmw::Coin coin = mweb_wallet->GetCoin(output_commit);
-            COutputCoin output_coin = MakeOutputCoin(locked_chain, coin);
-            result[output_coin.mwCoin->address].emplace_back(output_coin);
+            libmw::Coin coin;
+            if (mweb_wallet->GetCoin(output_commit, coin)) {
+                COutputCoin output_coin = MakeOutputCoin(locked_chain, coin);
+                result[output_coin.mwCoin->address].emplace_back(output_coin);
+            }
         }
     }
 
@@ -2613,7 +2633,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
     }
 }
 
-bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
+bool CWallet::SelectCoinsEx(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
 {
     WalletLogPrintf("Selecting coins %d\n", (int)coin_selection_params.input_preference);
     std::vector<COutputCoin> vCoins(vAvailableCoins);
@@ -2660,9 +2680,11 @@ bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const
             } else
                 return false; // TODO: Allow non-wallet inputs
         } else {
-            const libmw::Coin coin = GetCoin(boost::get<libmw::Commitment>(output));
-            nValueFromPresetInputs += coin.amount;
-            setPresetCoins.insert(CInputCoin(coin));
+            libmw::Coin coin;
+            if (GetCoin(boost::get<libmw::Commitment>(output), coin)) {
+                nValueFromPresetInputs += coin.amount;
+                setPresetCoins.insert(CInputCoin(coin));
+            }
         }
     }
 
@@ -2847,6 +2869,14 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
                 CWalletTx &coin = mapWallet.at(txin.prevout.hash);
                 coin.BindWallet(this);
                 NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+            }
+
+            for (const libmw::Commitment& input_commit : wtxNew.tx->m_mwtx.GetInputCommits())
+            {
+                auto iter = mapOutputCommits.find(input_commit);
+                if (iter != mapOutputCommits.end()) {
+                    NotifyTransactionChanged(this, iter->second, CT_UPDATED);
+                }
             }
         }
 
@@ -4277,9 +4307,9 @@ bool CWallet::AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info)
     return WriteKeyMetadata(mapKeyMetadata[pubkey.GetID()], pubkey, true);
 }
 
-libmw::Coin CWallet::GetCoin(const libmw::Commitment& output_commit) const
+bool CWallet::GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const
 {
-    return mweb_wallet->GetCoin(output_commit);
+    return mweb_wallet->GetCoin(output_commit, coin);
 }
 
 COutputCoin CWallet::MakeOutputCoin(interfaces::Chain::Lock& locked_chain, const libmw::Coin& coin) const

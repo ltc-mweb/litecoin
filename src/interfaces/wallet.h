@@ -122,7 +122,7 @@ public:
     //! Get dest values with prefix.
     virtual std::vector<std::string> getDestValues(const std::string& prefix) = 0;
 
-    virtual libmw::Coin findCoin(const libmw::Commitment& output_commit) = 0;
+    virtual bool findCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) = 0;
 
     //! Lock coin.
     virtual void lockCoin(const OutputIndex& output) = 0;
@@ -144,8 +144,6 @@ public:
         CAmount& fee,
         std::string& fail_reason,
         const MWEB::Tx& mwtx = {}) = 0;
-
-    virtual std::unique_ptr<PendingWalletTx> createTransaction(const MWEB::Tx& mwtx) = 0;
 
     //! Return whether transaction can be abandoned.
     virtual bool transactionCanBeAbandoned(const uint256& txid) = 0;

@@ -9,8 +9,8 @@ bool MWEB::Transact::CreateTx(
     const CAmount& mweb_fee,
     const boost::optional<CAmount>& mweb_change)
 {
-    LogPrintf("MWEB::Transaction - BEGIN\n");
     TxType type = GetTxType(recipients, selected_coins);
+
     if (type == TxType::LTC_TO_LTC) {
         LogPrintf("MWEB::Transaction - LTC_TO_LTC\n");
         return true;
@@ -26,7 +26,7 @@ bool MWEB::Transact::CreateTx(
             if (recipient.IsMWEB()) {
                 libmw::MWEBRecipient mweb_recipient{
                     (uint64_t)recipient.nAmount,
-                    boost::get<libmw::MWEBAddress>(recipient.receiver)};
+                    recipient.GetMWEBAddress()};
 
                 mweb_recipients.push_back(std::move(mweb_recipient));
             }
@@ -49,6 +49,7 @@ bool MWEB::Transact::CreateTx(
 
     // Pegging-in. Change will be generated on the LTC side.
     if (type == TxType::PEGIN) {
+        LogPrintf("MWEB::Transaction - PEGIN\n");
         assert(!mweb_change);
 
         std::vector<libmw::Recipient> mweb_recipients;
@@ -56,7 +57,7 @@ bool MWEB::Transact::CreateTx(
             if (recipient.IsMWEB()) {
                 libmw::PegInRecipient pegin_recipient{
                     (uint64_t)recipient.nAmount,
-                    boost::get<libmw::MWEBAddress>(recipient.receiver)};
+                    recipient.GetMWEBAddress()};
 
                 mweb_recipients.push_back(std::move(pegin_recipient));
             }
@@ -84,6 +85,10 @@ bool MWEB::Transact::CreateTx(
         transaction.vout.back().scriptPubKey = pegin_script;
 
         return true;
+    }
+
+    if (type == TxType::PEGOUT) {
+        LogPrintf("MWEB::Transaction - PEGOUT\n");
     }
 
     // MW: TODO - Peg-outs

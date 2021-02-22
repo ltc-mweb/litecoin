@@ -23,6 +23,7 @@
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
 #include <libmw/libmw.h>
+#include <mweb/mweb_wallet.h>
 
 #include <algorithm>
 #include <atomic>
@@ -219,21 +220,31 @@ public:
 
 struct CRecipient
 {
-    boost::variant<CScript, libmw::MWEBAddress> receiver;
+    DestinationScript receiver;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
 
     bool IsMWEB() const noexcept
     {
-        return receiver.which() == 1;
+        return receiver.IsMWEB();
+    }
+
+    const libmw::MWEBAddress& GetMWEBAddress() const noexcept
+    {
+        return receiver.GetMWEBAddress();
+    }
+
+    const CScript& GetScript() const noexcept
+    {
+        return receiver.GetScript();
     }
 
     bool IsWitnessProgram() const
     {
-        if (receiver.which() == 0) {
+        if (!receiver.IsMWEB()) {
             int witnessversion = 0;
             std::vector<unsigned char> witnessprogram;
-            if (boost::get<CScript>(receiver).IsWitnessProgram(witnessversion, witnessprogram)) {
+            if (receiver.GetScript().IsWitnessProgram(witnessversion, witnessprogram)) {
                 return true;
             }
         }
@@ -417,6 +428,8 @@ public:
     int64_t nOrderPos; //!< position in ordered transaction list
     std::multimap<int64_t, CWalletTx*>::const_iterator m_it_wtxOrdered;
 
+    boost::optional<MWEB::WalletTx> mweb_wtx;
+
     // memory only
     mutable bool fDebitCached;
     mutable bool fCreditCached;
@@ -486,6 +499,10 @@ public:
             mapValueCopy["timesmart"] = strprintf("%u", nTimeSmart);
         }
 
+        if (mweb_wtx) {
+            mapValueCopy["mweb"] = mweb_wtx->ToHex();
+        }
+
         s << static_cast<const CMerkleTx&>(*this);
         std::vector<CMerkleTx> vUnused; //!< Used to be vtxPrev
         s << vUnused << mapValueCopy << vOrderForm << fTimeReceivedIsTxTime << nTimeReceived << fFromMe << fSpent;
@@ -503,6 +520,8 @@ public:
 
         ReadOrderPos(nOrderPos, mapValue);
         nTimeSmart = mapValue.count("timesmart") ? (unsigned int)atoi64(mapValue["timesmart"]) : 0;
+
+        mweb_wtx = mapValue.count("mweb") ? boost::make_optional(MWEB::WalletTx::FromHex(mapValue["mweb"])) : boost::none;
 
         mapValue.erase("fromaccount");
         mapValue.erase("spent");
@@ -577,6 +596,27 @@ public:
     // that we still have the runtime check "AssertLockHeld(pwallet->cs_wallet)"
     // in place.
     std::set<uint256> GetConflicts() const NO_THREAD_SAFETY_ANALYSIS;
+
+    std::vector<OutputIndex> GetInputIds() const
+    {
+        std::vector<OutputIndex> inputIds;
+        for (const CTxIn& input : tx->vin) {
+            inputIds.push_back(input.prevout);
+        }
+
+        // MW: TODO - Eventually will be able to use just mweb_tx, I believe.
+        if (mweb_wtx) {
+            for (const MWEB::WalletTxInput& input : mweb_wtx->inputs) {
+                inputIds.push_back(input.commitment);
+            }
+        } else {
+            for (const libmw::Commitment& input_commit : tx->m_mwtx.GetInputCommits()) {
+                inputIds.push_back(input_commit);
+            }
+        }
+
+        return inputIds;
+    }
 };
 
 class COutput
@@ -772,6 +812,12 @@ private:
     void AddToSpends(const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
+     * Used to keep track of which CWalletTx an MWEB output came from.
+     */
+    std::map<libmw::Commitment, uint256> mapOutputCommits GUARDED_BY(cs_wallet);
+    void AddToOutputCommits(const CWalletTx& wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+
+    /**
      * Add a transaction to the wallet, or update it.  pIndex and posInBlock should
      * be set when the transaction was known to be included in a block.  When
      * pIndex == nullptr, then wallet state is not updated in AddToWallet, but
@@ -865,26 +911,19 @@ public:
      * all coins from coinControl are selected; Never select unconfirmed coins
      * if they are not ours
      */
-    bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
+    bool SelectCoinsEx(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    inline bool SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
+    inline bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
     {
-        std::vector<COutputCoin> vCoins;
-        std::transform(
-            vAvailableCoins.cbegin(), vAvailableCoins.cend(),
-            std::back_inserter(vCoins),
-            [](const COutput& out) { return COutputCoin(out); }
-        );
-
         // BnB only supported for non-MWEB.
         if (coin_selection_params.input_preference == InputPreference::PREFER_LTC && coin_selection_params.use_bnb) {
             CoinSelectionParams params2 = coin_selection_params;
             params2.input_preference = InputPreference::LTC_ONLY;
 
             // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
                 return true;
             }
         }
@@ -896,7 +935,7 @@ public:
             params2.input_preference = InputPreference::LTC_ONLY;
 
             // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
                 return true;
             }
 
@@ -904,7 +943,7 @@ public:
             params2.change_type = OutputType::MWEB;
 
             // Then try SelectCoins with MWEB_ONLY so we can avoid mixing input types.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
                 return true;
             }
 
@@ -915,7 +954,7 @@ public:
             params2.change_type = OutputType::MWEB;
 
             // First try SelectCoins with MWEB_ONLY since those are the preferred inputs.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
                 return true;
             }
 
@@ -923,14 +962,14 @@ public:
             params2.change_type = coin_selection_params.change_type;
 
             // Then try SelectCoins with LTC_ONLY so we can avoid mixing input types.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
                 return true;
             }
 
             // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
         }
 
-        return SelectCoins(vCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
+        return SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
     }
 
     const WalletLocation& GetLocation() const { return m_location; }
@@ -1394,7 +1433,7 @@ public:
     /** Add a KeyOriginInfo to the wallet */
     bool AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info);
 
-    libmw::Coin GetCoin(const libmw::Commitment& output_commit) const;
+    bool GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const;
 
     COutputCoin MakeOutputCoin(interfaces::Chain::Lock& locked_chain, const libmw::Coin& coin) const;
 

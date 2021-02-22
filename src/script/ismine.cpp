@@ -191,6 +191,10 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey)
 
 isminetype IsMine(const CKeyStore& keystore, const CTxDestination& dest)
 {
-    CScript script = GetScriptForDestination(dest);
-    return IsMine(keystore, script);
+    if (dest.type() == typeid(MWEBAddress)) {
+        // MW: TODO - Check MWEB address
+    } else {
+        CScript script = GetScriptForDestination(dest);
+        return IsMine(keystore, script);
+    }
 }
