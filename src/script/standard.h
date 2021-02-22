@@ -190,7 +190,7 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
  * script for a CKeyID destination, a P2SH script for a CScriptID, and an empty
  * script for CNoDestination.
  */
-CScript GetScriptForDestination(const CTxDestination& dest);
+CScript GetScriptForDestination(const CTxDestination& dest); // MW: TODO - Check all consumers of this. Many should switch to DestinationScript
 
 /** Generate a P2PK script for the given pubkey. */
 CScript GetScriptForRawPubKey(const CPubKey& pubkey);
@@ -207,5 +207,35 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  * the various witness-specific CTxDestination subtypes.
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
+
+class DestinationScript
+{
+public:
+    DestinationScript() = default;
+    //DestinationScript(boost::variant<CScript, libmw::MWEBAddress> script)
+    //    : m_script(std::move(script)) { }
+    DestinationScript(CScript script)
+        : m_script(std::move(script)) { }
+    DestinationScript(libmw::MWEBAddress address)
+        : m_script(std::move(address)) { }
+    DestinationScript(const CTxDestination& dest);
+
+    bool IsMWEB() const noexcept { return m_script.which() == 1; }
+
+    const CScript& GetScript() const noexcept
+    {
+        assert(m_script.which() == 0);
+        return boost::get<CScript>(m_script);
+    }
+
+    const libmw::MWEBAddress& GetMWEBAddress() const noexcept
+    {
+        assert(m_script.which() == 1);
+        return boost::get<libmw::MWEBAddress>(m_script);
+    }
+
+private:
+    boost::variant<CScript, libmw::MWEBAddress> m_script;
+};
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

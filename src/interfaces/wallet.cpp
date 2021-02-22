@@ -137,7 +137,7 @@ WalletTxOut MakeWalletTxOut(interfaces::Chain::Lock& locked_chain,
     return result;
 }
 
-WalletTxOut MakeWalletTxOut(const COutputCoin& coin) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
+WalletTxOut MakeWalletTxOut(const COutputCoin& coin)
 {
     WalletTxOut result;
     result.address = coin.GetAddress();
@@ -236,10 +236,10 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetDestValues(prefix);
     }
-    libmw::Coin findCoin(const libmw::Commitment& output_commit) override
+    bool findCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) override
     {
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetCoin(output_commit);
+        return m_wallet->GetCoin(output_commit, coin);
     }
     void lockCoin(const OutputIndex& output) override
     {
@@ -280,14 +280,6 @@ public:
                 fail_reason, coin_control, sign, mwtx)) {
             return {};
         }
-        return std::move(pending);
-    }
-    std::unique_ptr<PendingWalletTx> createTransaction(const MWEB::Tx& mwtx) override
-    {
-        auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
-        CMutableTransaction tx;
-        tx.m_mwtx = mwtx;
-        pending->m_tx = MakeTransactionRef(tx);
         return std::move(pending);
     }
     bool transactionCanBeAbandoned(const uint256& txid) override { return m_wallet->TransactionCanBeAbandoned(txid); }
@@ -487,8 +479,10 @@ public:
                     }
                 }
             } else {
-                const libmw::Coin& coin = m_wallet->GetCoin(boost::get<libmw::Commitment>(output));
-                result.back() = MakeWalletTxOut(m_wallet->MakeOutputCoin(*locked_chain, coin));
+                libmw::Coin coin;
+                if (m_wallet->GetCoin(boost::get<libmw::Commitment>(output), coin)) {
+                    result.back() = MakeWalletTxOut(m_wallet->MakeOutputCoin(*locked_chain, coin));
+                }
             }
         }
         return result;

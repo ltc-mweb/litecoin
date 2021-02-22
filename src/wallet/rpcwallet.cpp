@@ -337,7 +337,7 @@ static CTransactionRef SendMoney(interfaces::Chain::Lock& locked_chain, CWallet 
     }
 
     // Parse Bitcoin address
-    CScript scriptPubKey = GetScriptForDestination(address);
+    DestinationScript scriptPubKey(address);
 
     // Create and send the transaction
     CReserveKey reservekey(pwallet);
@@ -831,7 +831,7 @@ static UniValue signmessage(const JSONRPCRequest& request)
     return EncodeBase64(vchSig.data(), vchSig.size());
 }
 
-static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
+static UniValue getreceivedbyaddress(const JSONRPCRequest& request) // MW: TODO - Support MWEB
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -2561,9 +2561,9 @@ static UniValue lockunspent(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, unknown transaction");
         }
 
-        const CWalletTx& trans = it->second;
+        const CWalletTx& wtx = it->second;
 
-        if (outpt.n >= trans.tx->vout.size()) {
+        if (outpt.n >= wtx.tx->vout.size()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, vout index out of bounds");
         }
 

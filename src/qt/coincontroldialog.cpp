@@ -391,7 +391,11 @@ CInputCoin CoinControlDialog::BuildInputCoin(QTreeWidgetItem* item)
         std::vector<uint8_t> parsed = ParseHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
         libmw::Commitment output_commit;
         std::copy_n(parsed.begin(), parsed.size(), output_commit.begin());
-        return model->wallet().findCoin(output_commit);
+        
+        libmw::Coin coin;
+        bool found = model->wallet().findCoin(output_commit, coin);
+        assert(found);
+        return coin;
     } else {
         uint256 hash = uint256S(item->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString());
         uint32_t n = item->data(COLUMN_ADDRESS, VOutRole).toUInt();

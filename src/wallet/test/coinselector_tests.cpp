@@ -27,7 +27,7 @@ std::vector<std::unique_ptr<CWalletTx>> wtxn;
 
 typedef std::set<CInputCoin> CoinSet;
 
-static std::vector<COutput> vCoins;
+static std::vector<COutputCoin> vCoins;
 static auto testChain = interfaces::MakeChain();
 static CWallet testWallet(*testChain, WalletLocation(), WalletDatabase::CreateDummy());
 static CAmount balance = 0;
@@ -111,11 +111,12 @@ inline std::vector<OutputGroup>& GroupCoins(const std::vector<CInputCoin>& coins
     return static_groups;
 }
 
-inline std::vector<OutputGroup>& GroupCoins(const std::vector<COutput>& coins)
+inline std::vector<OutputGroup>& GroupCoins(const std::vector<COutputCoin>& coins)
 {
     static std::vector<OutputGroup> static_groups;
     static_groups.clear();
-    for (auto& coin : coins) static_groups.emplace_back(coin.GetInputCoin(), coin.nDepth, coin.tx->fDebitCached && coin.tx->nDebitCached == 1 /* HACK: we can't figure out the is_me flag so we use the conditions defined above; perhaps set safe to false for !fIsFromMe in add_coin() */, 0, 0);
+    for (auto& coin : coins)
+        static_groups.emplace_back(coin.GetInputCoin(), coin.GetDepth(), coin.out->tx->fDebitCached && coin.out->tx->nDebitCached == 1 /* HACK: we can't figure out the is_me flag so we use the conditions defined above; perhaps set safe to false for !fIsFromMe in add_coin() */, 0, 0);
     return static_groups;
 }
 
@@ -249,7 +250,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     bool bnb_used;
     empty_wallet();
     add_coin(1);
-    vCoins.at(0).nInputBytes = 40; // Make sure that it has a negative effective value. The next check should assert if this somehow got through. Otherwise it will fail
+    vCoins.at(0).out->nInputBytes = 40; // Make sure that it has a negative effective value. The next check should assert if this somehow got through. Otherwise it will fail
     BOOST_CHECK(!testWallet.SelectCoinsMinConf( 1 * CENT, filter_standard, GroupCoins(vCoins), setCoinsRet, nValueRet, coin_selection_params_bnb, bnb_used));
 
     // Make sure that we aren't using BnB when there are preset inputs
@@ -259,7 +260,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     add_coin(2 * CENT);
     CCoinControl coin_control;
     coin_control.fAllowOtherInputs = true;
-    coin_control.Select(COutPoint(vCoins.at(0).tx->GetHash(), vCoins.at(0).i));
+    coin_control.Select(COutPoint(vCoins.at(0).out->tx->GetHash(), vCoins.at(0).out->i));
     BOOST_CHECK(testWallet.SelectCoins(vCoins, 10 * CENT, setCoinsRet, nValueRet, coin_control, coin_selection_params_bnb, bnb_used));
     BOOST_CHECK(!bnb_used);
     BOOST_CHECK(!coin_selection_params_bnb.use_bnb);

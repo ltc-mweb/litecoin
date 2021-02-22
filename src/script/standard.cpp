@@ -343,3 +343,12 @@ CScript GetScriptForWitness(const CScript& redeemscript)
 bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
+
+DestinationScript::DestinationScript(const CTxDestination& dest)
+{
+    if (dest.type() == typeid(MWEBAddress)) {
+        m_script = boost::get<MWEBAddress>(dest).address;
+    } else {
+        m_script = GetScriptForDestination(dest);
+    }
+}

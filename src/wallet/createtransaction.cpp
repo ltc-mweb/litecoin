@@ -122,7 +122,7 @@ bool AddRecipientOutputs(
             continue;
         }
 
-        CTxOut txout(recipient.nAmount, boost::get<CScript>(recipient.receiver));
+        CTxOut txout(recipient.nAmount, recipient.GetScript());
 
         if (recipient.fSubtractFeeFromAmount) {
             assert(nSubtractFeeFromAmount != 0);
@@ -201,11 +201,11 @@ bool CreateTransactionEx(
             // Create change script that will be used if we need change
             // TODO: pass in scriptChange instead of reservekey so
             // change transaction isn't always pay-to-bitcoin-address
-            CScript scriptChange;
+            DestinationScript scriptChange;
 
             // coin control: send change to custom address
-            if (!boost::get<CNoDestination>(&coin_control.destChange) && !boost::get<MWEBAddress>(&coin_control.destChange)) {
-                scriptChange = GetScriptForDestination(coin_control.destChange);
+            if (!boost::get<CNoDestination>(&coin_control.destChange)) {
+                scriptChange = DestinationScript(coin_control.destChange);
             } else { // no coin control: send change to newly generated address
                 // Note: We use a new key here to keep it from being obvious which side is the change.
                 //  The drawback is that by not reusing a previous key, the change may be lost if a
@@ -230,10 +230,10 @@ bool CreateTransactionEx(
                 const OutputType change_type = wallet.TransactionChangeType(coin_control.m_change_type ? *coin_control.m_change_type : wallet.m_default_change_type, vecSend);
 
                 wallet.LearnRelatedScripts(vchPubKey, change_type);
-                scriptChange = GetScriptForDestination(GetDestinationForKey(vchPubKey, change_type));
+                scriptChange = DestinationScript(GetDestinationForKey(vchPubKey, change_type));
             }
 
-            CTxOut change_prototype_txout(0, scriptChange);
+            CTxOut change_prototype_txout(0, scriptChange.IsMWEB() ? CScript() : scriptChange.GetScript());
 
             CFeeRate discard_rate = GetDiscardRate(wallet, ::feeEstimator);
 
@@ -313,7 +313,7 @@ bool CreateTransactionEx(
 
                 if (nChange > 0 && (mweb_type == MWEB::TxType::LTC_TO_LTC || mweb_type == MWEB::TxType::PEGIN)) {
                     // Fill a vout to ourself
-                    CTxOut newTxOut(nChange, boost::get<CScript>(scriptChange));
+                    CTxOut newTxOut(nChange, scriptChange.IsMWEB() ? CScript() : scriptChange.GetScript());
 
                     // Never create dust outputs; if we would, just
                     // add the dust to the fee.
@@ -409,6 +409,8 @@ bool CreateTransactionEx(
                             mweb_change = extraFeePaid;
                             nFeeRet -= extraFeePaid;
                         }
+                    } else if (mweb_type == MWEB::TxType::MWEB_TO_MWEB || mweb_type == MWEB::TxType::PEGOUT) {
+                        mweb_change = 0;
                     }
 
                     if (nFeeRet)
@@ -471,7 +473,7 @@ bool CreateTransactionEx(
 
         // MW: TODO - Need peg-in output added
         if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, mweb_fee, mweb_change)) {
-            strFailReason = _("Failed to create mweb transaction");
+            strFailReason = _("Failed to create MWEB transaction");
             return false;
         }
 
