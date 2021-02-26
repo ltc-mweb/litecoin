@@ -501,7 +501,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
         nAmount += out.nValue;
 
         // Bytes
-        if (out.address.which() == 0) {
+        if (out.address.type() == typeid(CScript)) {
             const CScript& scriptPubKey = boost::get<CScript>(out.address);
             CTxDestination address;
             int witnessversion = 0;
@@ -520,8 +520,6 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
             } else {
                 nBytesInputs += 148;
             }
-        } else {
-            // MW: TODO - Determine byte calculation for MWEB
         }
     }
 

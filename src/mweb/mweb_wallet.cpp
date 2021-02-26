@@ -39,18 +39,6 @@ libmw::PrivateKey MWEB::Wallet::GetHDKey(const std::string& bip32Path) const
     return privateKey;
 }
 
-std::vector<libmw::Coin> MWEB::Wallet::ListCoins() const
-{
-    // MW: TODO - Return the map instead.
-    std::vector<libmw::Coin> coins;
-    std::transform(
-        m_coins.cbegin(), m_coins.cend(),
-        std::back_inserter(coins),
-        [](const auto& entry) { return entry.second; });
-
-    return coins;
-}
-
 void MWEB::Wallet::LoadToWallet(const libmw::Coin& coin)
 {
     m_coins[coin.commitment] = coin;
@@ -83,43 +71,4 @@ void MWEB::Wallet::DeleteCoins(const std::vector<libmw::Coin>& coins)
         batch.EraseMWCoin(coin.commitment);
         m_coins.erase(coin.commitment);
     }
-}
-
-std::vector<libmw::Coin> MWEB::Wallet::SelectCoins(
-    const std::vector<libmw::Coin>& coins,
-    const uint64_t amount) const
-{
-    std::vector<COutputCoin> vCoins;
-    for (const libmw::Coin& coin : coins) {
-        if (!m_pWallet->IsLockedCoin(coin.commitment)) {
-            vCoins.push_back(m_pWallet->MakeOutputCoin(*m_pChain->lock(), coin));
-        }
-    }
-
-    std::set<CInputCoin> setCoins;
-    CAmount nValueIn;
-    CCoinControl coinControl;
-    CoinSelectionParams coin_selection_params;
-    bool bnb_used;
-
-    bool ok = m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
-    if (!ok && bnb_used) {
-        coin_selection_params.use_bnb = false;
-        ok = m_pWallet->SelectCoins(vCoins, amount, setCoins, nValueIn, coinControl, coin_selection_params, bnb_used);
-    }
-    if (!ok) throw std::runtime_error(std::string(__func__) + ": insufficient funds");
-
-    std::vector<libmw::Coin> result;
-    std::transform(
-        setCoins.cbegin(), setCoins.cend(),
-        std::back_inserter(result),
-        [](const CInputCoin& coin) { return *coin.mwCoin; });
-    return result;
-}
-
-uint64_t MWEB::Wallet::GetDepthInActiveChain(const libmw::BlockHash& canonical_block_hash) const
-{
-    auto locked_chain = m_pWallet->chain().lock();
-
-    return locked_chain->getBlockDepth(uint256(std::vector<uint8_t>{canonical_block_hash.begin(), canonical_block_hash.end()}));
 }

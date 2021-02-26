@@ -207,16 +207,16 @@ public:
     virtual CAmount getAvailableBalance(const CCoinControl& coin_control) = 0;
 
     //! Return whether transaction input belongs to wallet.
-    virtual isminetype txinIsMine(const CTxIn& txin) = 0;
+    virtual isminetype txinIsMine(const CTxInput& input) = 0;
 
     //! Return whether transaction output belongs to wallet.
-    virtual isminetype txoutIsMine(const CTxOut& txout) = 0;
+    virtual isminetype txoutIsMine(const CTxOutput& output) = 0;
 
     //! Return debit amount if transaction input belongs to wallet.
-    virtual CAmount getDebit(const CTxIn& txin, isminefilter filter) = 0;
+    virtual CAmount getDebit(const CTxInput& input, isminefilter filter) = 0;
 
     //! Return credit amount if transaction input belongs to wallet.
-    virtual CAmount getCredit(const CTxOut& txout, isminefilter filter) = 0;
+    virtual CAmount getCredit(const CTxOutput& output, isminefilter filter) = 0;
 
     //! Return AvailableCoins + LockedCoins grouped by wallet address.
     //! (put change in one group with wallet address)
@@ -258,6 +258,10 @@ public:
 
     // Get MWEB wallet.
     virtual libmw::IWallet::Ptr GetMWWallet() = 0;
+
+    virtual bool extractOutputDestination(const CTxOutput& output, CTxDestination& dest) = 0;
+
+    virtual CAmount getAmount(const CTxOutput& output) = 0;
 
     //! Register handler for unload message.
     using UnloadFn = std::function<void()>;
@@ -334,19 +338,13 @@ struct WalletBalances
     CAmount watch_only_balance = 0;
     CAmount unconfirmed_watch_only_balance = 0;
     CAmount immature_watch_only_balance = 0;
-    CAmount mweb_balance = 0;
-    CAmount unconfirmed_mweb_balance = 0;
-    CAmount immature_mweb_balance = 0;
 
     bool balanceChanged(const WalletBalances& prev) const
     {
         return balance != prev.balance || unconfirmed_balance != prev.unconfirmed_balance ||
                immature_balance != prev.immature_balance || watch_only_balance != prev.watch_only_balance ||
                unconfirmed_watch_only_balance != prev.unconfirmed_watch_only_balance ||
-               immature_watch_only_balance != prev.immature_watch_only_balance ||
-               mweb_balance != prev.mweb_balance ||
-               unconfirmed_mweb_balance != prev.unconfirmed_mweb_balance ||
-               immature_mweb_balance != prev.immature_mweb_balance;
+               immature_watch_only_balance != prev.immature_watch_only_balance;
     }
 };
 
@@ -358,11 +356,10 @@ struct WalletTx
     std::vector<isminetype> txout_is_mine;
     std::vector<CTxDestination> txout_address;
     std::vector<isminetype> txout_address_is_mine;
+    std::vector<CAmount> txout_amount;
     CAmount credit;
     CAmount debit;
     CAmount change;
-    CAmount mweb_credit;
-    CAmount mweb_debit;
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;
@@ -373,7 +370,6 @@ struct WalletTxStatus
 {
     int block_height;
     int blocks_to_maturity;
-    int blocks_to_mweb_maturity;
     int depth_in_main_chain;
     unsigned int time_received;
     uint32_t lock_time;
