@@ -558,9 +558,10 @@ void SendCoinsDialog::setBalance(const interfaces::WalletBalances& balances)
 {
     if(model && model->getOptionsModel())
     {
-        ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance + balances.mweb_balance));
-        ui->labelPublicBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance));
-        ui->labelMWEBBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.mweb_balance));
+        // MW: TODO - How do we want to handle mweb_balance vs public balance?
+        ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance));
+        //ui->labelPublicBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance));
+        //ui->labelMWEBBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.mweb_balance));
     }
 }
 
@@ -650,6 +651,10 @@ void SendCoinsDialog::useAvailableBalance(SendCoinsEntry* entry)
         coin_control = *CoinControlDialog::coinControl();
     }
 
+    if (ui->pushButtonMWEBPegOut->isChecked()) {
+        coin_control.fPegOut = true;
+    }
+
     // Calculate available amount to send.
     CAmount amount = model->wallet().getAvailableBalance(coin_control);
     for (int i = 0; i < ui->entries->count(); ++i) {
@@ -657,10 +662,6 @@ void SendCoinsDialog::useAvailableBalance(SendCoinsEntry* entry)
         if (e && !e->isHidden() && e != entry) {
             amount -= e->getValue().amount;
         }
-    }
-
-    if (ui->pushButtonMWEBPegOut->isChecked()) {
-        amount = model->wallet().getBalances().mweb_balance;
     }
 
     if (amount > 0) {

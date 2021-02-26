@@ -95,20 +95,27 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
 
     // figure out which output was change
     // if there was no change output or multiple change outputs, fail
-    int nOutput = -1;
-    for (size_t i = 0; i < wtx.tx->vout.size(); ++i) {
-        if (wallet->IsChange(wtx.tx->vout[i])) {
-            if (nOutput != -1) {
+    boost::optional<OutputIndex> change_output = boost::none;
+    for (const CTxOutput& output : wtx.tx->GetOutputs()) {
+        if (wallet->IsChange(output)) {
+            if (change_output) {
                 errors.push_back("Transaction has multiple change outputs");
                 return Result::WALLET_ERROR;
             }
-            nOutput = i;
+            change_output = output.GetIndex();
         }
     }
-    if (nOutput == -1) {
+    if (!change_output) {
         errors.push_back("Transaction does not have a change output");
         return Result::WALLET_ERROR;
     }
+
+    if (change_output->type() == typeid(libmw::Commitment)) {
+        errors.push_back("Bumping fee with MWEB change output is not yet supported.");
+        return Result::WALLET_ERROR;
+    }
+
+    int nOutput = boost::get<COutPoint>(*change_output).n;
 
     // Calculate the expected size of the new transaction.
     int64_t txSize = GetVirtualTransactionSize(*(wtx.tx));

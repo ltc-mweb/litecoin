@@ -32,6 +32,16 @@ struct Block {
         return IsNull() ? libmw::HeaderRef{} : m_block.GetHeader();
     }
 
+    std::vector<libmw::Commitment> GetInputCommits() const
+    {
+        return IsNull() ? std::vector<libmw::Commitment>{} : m_block.GetInputCommits();
+    }
+
+    std::vector<libmw::Commitment> GetOutputCommits() const
+    {
+        return IsNull() ? std::vector<libmw::Commitment>{} : m_block.GetOutputCommits();
+    }
+
     std::set<libmw::KernelHash> GetKernelHashes() const
     {
         return IsNull() ? std::set<libmw::KernelHash>{} : m_block.GetKernelHashes();

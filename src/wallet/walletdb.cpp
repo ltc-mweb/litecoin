@@ -44,7 +44,6 @@ struct MWCoin {
         READWRITE(coin.address_index);
         READWRITE(coin.commitment);
         READWRITE(coin.amount);
-        READWRITE(coin.time_received);
 
         bool fKey = coin.key != nullopt;
         READWRITE(fKey);
@@ -67,32 +66,6 @@ struct MWCoin {
                 coin.blind = boost::make_optional(std::move(blind));
             } else {
                 READWRITE(*coin.blind);
-            }
-        }
-
-        bool fIncludedBlock = coin.included_block != nullopt;
-        READWRITE(fIncludedBlock);
-        if (fIncludedBlock) {
-            if (ser_action.ForRead()) {
-                libmw::BlockHash blockHash;
-                READWRITE(blockHash);
-                coin.included_block = boost::make_optional(std::move(blockHash));
-            } else {
-                READWRITE(*coin.included_block);
-            }
-        }
-
-        READWRITE(coin.spent);
-
-        bool fSpentBlock = coin.spent_block != nullopt;
-        READWRITE(fSpentBlock);
-        if (fSpentBlock) {
-            if (ser_action.ForRead()) {
-                libmw::BlockHash blockHash;
-                READWRITE(blockHash);
-                coin.spent_block = boost::make_optional(std::move(blockHash));
-            } else {
-                READWRITE(*coin.spent_block);
             }
         }
     }

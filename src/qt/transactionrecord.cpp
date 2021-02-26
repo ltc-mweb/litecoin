@@ -42,16 +42,16 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         //
         // Credit
         //
-        for(unsigned int i = 0; i < wtx.tx->vout.size(); i++)
+        std::vector<CTxOutput> outputs = wtx.tx->GetOutputs();
+        for (unsigned int i = 0; i < outputs.size(); i++)
         {
-            const CTxOut& txout = wtx.tx->vout[i];
             isminetype mine = wtx.txout_is_mine[i];
             if(mine)
             {
                 TransactionRecord sub(hash, nTime);
                 CTxDestination address;
                 sub.idx = i; // vout index
-                sub.credit = txout.nValue;
+                sub.credit = wtx.txout_amount[i];
                 sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
                 if (wtx.txout_address_is_mine[i])
                 {
@@ -74,8 +74,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                 parts.append(sub);
             }
         }
-
-        // MW: TODO - Look at MWEB outputs
     }
     else
     {
@@ -114,9 +112,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             //
             CAmount nTxFee = nDebit - wtx.tx->GetValueOut();
 
-            for (unsigned int nOut = 0; nOut < wtx.tx->vout.size(); nOut++)
+            std::vector<CTxOutput> outputs = wtx.tx->GetOutputs();
+            for (unsigned int nOut = 0; nOut < outputs.size(); nOut++)
             {
-                const CTxOut& txout = wtx.tx->vout[nOut];
                 TransactionRecord sub(hash, nTime);
                 sub.idx = nOut;
                 sub.involvesWatchAddress = involvesWatchAddress;
@@ -141,7 +139,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                     sub.address = mapValue["to"];
                 }
 
-                CAmount nValue = txout.nValue;
+                CAmount nValue = wtx.txout_amount[nOut];
                 /* Add fee to first output */
                 if (nTxFee > 0)
                 {
@@ -152,8 +150,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
 
                 parts.append(sub);
             }
-
-            // MW: TODO - Look at MWEB outputs
         }
         else
         {

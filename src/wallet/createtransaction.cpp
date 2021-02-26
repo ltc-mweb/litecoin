@@ -413,6 +413,7 @@ bool CreateTransactionEx(
                         mweb_change = 0;
                     }
 
+                    LogPrintf("nFeeRet: %d, nFeeNeeded: %d, mweb_fee: %d, nChangePosInOut: %d", nFeeRet, nFeeNeeded, mweb_fee, nChangePosInOut);
                     if (nFeeRet)
                     break; // Done, enough fee included.
                 } else if (!pick_new_inputs) {

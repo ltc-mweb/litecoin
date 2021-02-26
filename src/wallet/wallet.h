@@ -278,7 +278,7 @@ struct COutputEntry
 {
     CTxDestination destination;
     CAmount amount;
-    int vout;
+    OutputIndex index;
 };
 
 /** A transaction with a merkle branch linking it to the block chain. */
@@ -351,20 +351,13 @@ public:
      */
     int GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const;
 
-    /**
-     * @return number of blocks to MWEB (peg-in) maturity for this transaction:
-     *  0 : is not a pegin transaction, or is a mature pegin transaction
-     * >0 : is a pegin transaction which matures in this many blocks
-     */
-    int GetBlocksToMWEBMaturity(interfaces::Chain::Lock& locked_chain) const;
-
     bool hashUnset() const { return (hashBlock.IsNull() || hashBlock == ABANDON_HASH); }
     bool isAbandoned() const { return (hashBlock == ABANDON_HASH); }
     void setAbandoned() { hashBlock = ABANDON_HASH; }
 
     const uint256& GetHash() const { return tx->GetHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
-    bool IsImmatureCoinBase(interfaces::Chain::Lock& locked_chain) const;
+    bool IsImmature(interfaces::Chain::Lock& locked_chain) const;
 };
 
 //Get the marginal bytes of spending the specified output
@@ -427,8 +420,6 @@ public:
     char fFromMe;
     int64_t nOrderPos; //!< position in ordered transaction list
     std::multimap<int64_t, CWalletTx*>::const_iterator m_it_wtxOrdered;
-
-    boost::optional<MWEB::WalletTx> mweb_wtx;
 
     // memory only
     mutable bool fDebitCached;
@@ -499,10 +490,6 @@ public:
             mapValueCopy["timesmart"] = strprintf("%u", nTimeSmart);
         }
 
-        if (mweb_wtx) {
-            mapValueCopy["mweb"] = mweb_wtx->ToHex();
-        }
-
         s << static_cast<const CMerkleTx&>(*this);
         std::vector<CMerkleTx> vUnused; //!< Used to be vtxPrev
         s << vUnused << mapValueCopy << vOrderForm << fTimeReceivedIsTxTime << nTimeReceived << fFromMe << fSpent;
@@ -520,8 +507,6 @@ public:
 
         ReadOrderPos(nOrderPos, mapValue);
         nTimeSmart = mapValue.count("timesmart") ? (unsigned int)atoi64(mapValue["timesmart"]) : 0;
-
-        mweb_wtx = mapValue.count("mweb") ? boost::make_optional(MWEB::WalletTx::FromHex(mapValue["mweb"])) : boost::none;
 
         mapValue.erase("fromaccount");
         mapValue.erase("spent");
@@ -596,27 +581,6 @@ public:
     // that we still have the runtime check "AssertLockHeld(pwallet->cs_wallet)"
     // in place.
     std::set<uint256> GetConflicts() const NO_THREAD_SAFETY_ANALYSIS;
-
-    std::vector<OutputIndex> GetInputIds() const
-    {
-        std::vector<OutputIndex> inputIds;
-        for (const CTxIn& input : tx->vin) {
-            inputIds.push_back(input.prevout);
-        }
-
-        // MW: TODO - Eventually will be able to use just mweb_tx, I believe.
-        if (mweb_wtx) {
-            for (const MWEB::WalletTxInput& input : mweb_wtx->inputs) {
-                inputIds.push_back(input.commitment);
-            }
-        } else {
-            for (const libmw::Commitment& input_commit : tx->m_mwtx.GetInputCommits()) {
-                inputIds.push_back(input_commit);
-            }
-        }
-
-        return inputIds;
-    }
 };
 
 class COutput
@@ -683,7 +647,7 @@ struct COutputCoin
 
     bool IsSpendable() const
     {
-        if (IsMWEB()) return mwCoin->coin.key && !mwCoin->coin.spent && mwCoin->coin.included_block;
+        if (IsMWEB()) return true;
         return out->fSpendable;
     }
 
@@ -1037,7 +1001,7 @@ public:
     /**
      * Find non-change parent output.
      */
-    const CTxOut& FindNonChangeParentOutput(const CTransaction& tx, int output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    CTxOutput FindNonChangeParentOutput(const CTransaction& tx, const OutputIndex& output_idx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Shuffle and select coins until nTargetValue is reached while avoiding
@@ -1048,7 +1012,7 @@ public:
     bool SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibilityFilter& eligibility_filter, std::vector<OutputGroup> groups,
         std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const;
 
-    bool IsSpent(interfaces::Chain::Lock& locked_chain, const uint256& hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool IsSpent(interfaces::Chain::Lock& locked_chain, const OutputIndex& idx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     std::vector<OutputGroup> GroupOutputs(const std::vector<COutputCoin>& outputs, bool single_coin) const;
 
     bool IsLockedCoin(const OutputIndex& output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
@@ -1242,17 +1206,17 @@ public:
 
     std::set<CTxDestination> GetLabelAddresses(const std::string& label) const;
 
-    isminetype IsMine(const CTxIn& txin) const;
+    isminetype IsMine(const CTxInput& input) const;
     /**
      * Returns amount of debit if the input matches the
      * filter, otherwise returns 0
      */
-    CAmount GetDebit(const CTxIn& txin, const isminefilter& filter) const;
-    isminetype IsMine(const CTxOut& txout) const;
-    CAmount GetCredit(const CTxOut& txout, const isminefilter& filter) const;
-    bool IsChange(const CTxOut& txout) const;
+    CAmount GetDebit(const CTxInput& txin, const isminefilter& filter) const;
+    isminetype IsMine(const CTxOutput& output) const;
+    CAmount GetCredit(const CTxOutput& output, const isminefilter& filter) const;
+    bool IsChange(const CTxOutput& output) const;
     bool IsChange(const CScript& script) const;
-    CAmount GetChange(const CTxOut& txout) const;
+    CAmount GetChange(const CTxOutput& output) const;
     bool IsMine(const CTransaction& tx) const;
     /** should probably be renamed to IsRelevantToMe */
     bool IsFromMe(const CTransaction& tx) const;
@@ -1435,7 +1399,12 @@ public:
 
     bool GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const;
 
-    COutputCoin MakeOutputCoin(interfaces::Chain::Lock& locked_chain, const libmw::Coin& coin) const;
+    CAmount GetAmount(const CTxOutput& output) const;
+    bool ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const;
+
+    const CWalletTx* FindWalletTx(const OutputIndex& output) const;
+    const CWalletTx* FindPrevTx(const CTxInput& input) const;
+    CWalletTx* FindPrevTx(const CTxInput& input);
 
     libmw::IWallet::Ptr GetMWWallet() const;
     libmw::IChain::Ptr GetMWChain();

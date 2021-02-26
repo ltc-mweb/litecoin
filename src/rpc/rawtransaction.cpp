@@ -1783,7 +1783,7 @@ UniValue utxoupdatepsbt(const JSONRPCRequest& request)
 
         std::vector<std::vector<unsigned char>> solutions_data;
         txnouttype which_type = Solver(coin.out.scriptPubKey, solutions_data);
-        if (which_type == TX_WITNESS_V0_SCRIPTHASH || which_type == TX_WITNESS_V0_KEYHASH || which_type == TX_WITNESS_UNKNOWN) { // MW: Determine what to do with TX_WITNESS_MW_HEADERHASH and TX_WITNESS_MW_PEGIN
+        if (which_type == TX_WITNESS_V0_SCRIPTHASH || which_type == TX_WITNESS_V0_KEYHASH || which_type == TX_WITNESS_UNKNOWN) { // MW: TODO - Determine what to do with TX_WITNESS_MW_HEADERHASH and TX_WITNESS_MW_PEGIN
             input.witness_utxo = coin.out;
         }
     }
