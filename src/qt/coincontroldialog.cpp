@@ -658,12 +658,7 @@ void CoinControlDialog::updateView()
     for (const auto& coins : model->wallet().listCoins()) {
         CCoinControlWidgetItem *itemWalletAddress = new CCoinControlWidgetItem();
         itemWalletAddress->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
-        QString sWalletAddress;
-        if (coins.first.which() == 0) {
-            sWalletAddress = QString::fromStdString(EncodeDestination(boost::get<CTxDestination>(coins.first)));
-        } else {
-            sWalletAddress = QString::fromStdString(boost::get<libmw::MWEBAddress>(coins.first));
-        }
+        QString sWalletAddress = QString::fromStdString(EncodeDestination(coins.first));
 
         QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress); // MW: TODO - Check if peg-in, change, etc.
         if (sWalletLabel.isEmpty())
@@ -712,7 +707,7 @@ void CoinControlDialog::updateView()
                     sAddress = QString::fromStdString(EncodeDestination(outputAddress));
                 }
             } else {
-                sAddress = QString::fromStdString(boost::get<libmw::MWEBAddress>(coins.first));
+                sAddress = QString::fromStdString(EncodeDestination(coins.first));
             }
 
             // if listMode or change => show bitcoin address. In tree mode, address is not shown again for direct wallet address outputs

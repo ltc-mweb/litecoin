@@ -266,6 +266,7 @@ libbitcoin_server_a_SOURCES = \
   dbwrapper.cpp \
   merkleblock.cpp \
   miner.cpp \
+  mweb/mweb_miner.cpp \
   net.cpp \
   net_processing.cpp \
   node/transaction.cpp \
@@ -315,8 +316,8 @@ endif
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_wallet_a_SOURCES = \
-  mweb/mweb_wallet.cpp \
   mweb/mweb_transact.cpp \
+  mweb/mweb_wallet.cpp \
   interfaces/wallet.cpp \
   wallet/coincontrol.cpp \
   wallet/crypter.cpp \

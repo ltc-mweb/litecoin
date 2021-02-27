@@ -220,7 +220,7 @@ public:
 
     //! Return AvailableCoins + LockedCoins grouped by wallet address.
     //! (put change in one group with wallet address)
-    using CoinsList = std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<WalletTxOut>>;
+    using CoinsList = std::map<CTxDestination, std::vector<WalletTxOut>>;
     virtual CoinsList listCoins() = 0;
 
     //! Return wallet transaction output information.

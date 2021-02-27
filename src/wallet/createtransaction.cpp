@@ -472,7 +472,6 @@ bool CreateTransactionEx(
             }
         }
 
-        // MW: TODO - Need peg-in output added
         if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, mweb_fee, mweb_change)) {
             strFailReason = _("Failed to create MWEB transaction");
             return false;
