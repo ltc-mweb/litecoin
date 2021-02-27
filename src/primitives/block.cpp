@@ -52,16 +52,16 @@ std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
 
     std::vector<libmw::PegIn> pegins;
 
-    // MW: Alternatively, we could just loop through the inputs on the HogEx transaction
+    // MW: TODO - Alternatively, we could just loop through the inputs on the HogEx transaction
     for (const CTransactionRef& pTx : vtx) {
         for (const CTxOut& output : pTx->vout) {
             int version;
             std::vector<uint8_t> program;
             if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-                if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MW_PEGIN_SIZE) {
+                if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                     libmw::PegIn pegin;
                     pegin.amount = output.nValue;
-                    std::move(program.begin(), program.begin() + WITNESS_MW_PEGIN_SIZE, pegin.commitment.begin());
+                    std::move(program.begin(), program.begin() + WITNESS_MWEB_PEGIN_SIZE, pegin.commitment.begin());
                     pegins.push_back(std::move(pegin));
                 }
             }

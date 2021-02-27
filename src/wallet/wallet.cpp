@@ -1319,6 +1319,7 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
             }
         }
 
+        std::vector<libmw::Coin> coins_added;
         for (const libmw::Commitment& output_commit : pblock->mwBlock.GetOutputCommits()) {
             if (libmw::wallet::RewindOutput(GetMWWallet(), pblock->mwBlock.m_block, output_commit, coin)) {
                 auto wtx = FindWalletTx(output_commit);
@@ -1453,21 +1454,10 @@ isminetype CWallet::IsMine(const CTxOutput& output) const
 
 CAmount CWallet::GetCredit(const CTxOutput& output, const isminefilter& filter) const
 {
-    if (output.IsMWEB()) {
-        libmw::Commitment commitment = output.GetCommitment();
-
-        libmw::Coin coin;
-        if ((filter & ISMINE_SPENDABLE) && GetCoin(commitment, coin)) {
-            return coin.amount;
-        }
-
-        return 0;
-    }
-
-    CTxOut txout = output.GetTxOut();
-    if (!MoneyRange(txout.nValue))
+    CAmount credit = GetAmount(output);
+    if (!MoneyRange(credit))
         throw std::runtime_error(std::string(__func__) + ": value out of range");
-    return ((IsMine(output) & filter) ? txout.nValue : 0);
+    return ((IsMine(output) & filter) ? credit : 0);
 }
 
 bool CWallet::IsChange(const CTxOutput& output) const
@@ -1814,17 +1804,11 @@ int CalculateMaximumSignedInputSize(const CTxOut& txout, const CWallet* wallet, 
 void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
                            std::list<COutputEntry>& listSent, CAmount& nFee, const isminefilter& filter) const
 {
-    nFee = 0;
+    nFee = GetFee(filter);
     listReceived.clear();
     listSent.clear();
 
-    // Compute fee:
     CAmount nDebit = GetDebit(filter);
-    if (nDebit > 0) // debit>0 means we signed/sent this transaction
-    {
-        CAmount nValueOut = tx->GetValueOut();
-        nFee = nDebit - nValueOut;
-    }
 
     // Sent/received.
     for (const CTxOutput& output : tx->GetOutputs())
@@ -2231,6 +2215,26 @@ CAmount CWalletTx::GetChange() const
     return nChangeCached;
 }
 
+CAmount CWalletTx::GetFee(const isminefilter& filter) const
+{
+    CAmount nFee = 0;
+
+    CAmount nDebit = GetDebit(filter);
+    if (nDebit > 0) // debit>0 means we signed/sent this transaction
+    {
+        CAmount nValueOut = 0;
+        for (const CTxOutput& output : tx->GetOutputs()) {
+            if (!IsPegInOutput(output)) {
+                nValueOut += pwallet->GetAmount(output);
+            }
+        }
+
+        nFee = nDebit - nValueOut;
+    }
+
+    return nFee;
+}
+
 bool CWalletTx::InMempool() const
 {
     return fInMempool;
@@ -2621,10 +2625,13 @@ std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins(interfaces
     LogPrintf("Available coins: %d\n", availableCoins.size());
 
     for (COutputCoin& coin : availableCoins) {
-        CTxDestination address;
-        if (coin.IsSpendable() &&
-            ExtractOutputDestination(FindNonChangeParentOutput(*coin.out->tx->tx, coin.GetIndex()), address)) {
-            result[address].emplace_back(std::move(coin));
+        auto wtx = FindWalletTx(coin.GetIndex());
+        if (wtx != nullptr) {
+            CTxDestination address;
+            if (coin.IsSpendable() &&
+                ExtractOutputDestination(FindNonChangeParentOutput(*wtx->tx, coin.GetIndex()), address)) {
+                result[address].emplace_back(std::move(coin));
+            }
         }
     }
 
@@ -2661,7 +2668,7 @@ CTxOutput CWallet::FindNonChangeParentOutput(const CTransaction& tx, const Outpu
     const CTransaction* ptx = &tx;
     OutputIndex idx = output_idx;
     while (IsChange(ptx->GetOutput(idx)) && ptx->GetInputs().size() > 0) {
-        const CTxInput& input = ptx->GetInputs().front();
+        CTxInput input = ptx->GetInputs().front();
         const CWalletTx* wtx = FindPrevTx(input);
         if (wtx == nullptr || !IsMine(wtx->tx->GetOutput(input.GetIndex()))) {
             break;
@@ -4418,7 +4425,7 @@ CAmount CWallet::GetAmount(const CTxOutput& output) const
 {
     if (output.IsMWEB()) {
         libmw::Coin coin;
-        if (GetCoin(output.GetCommitment(), coin)) {
+        if (GetCoin(output.GetCommitment(), coin)) { // MW: TODO - Need to find a place to store amounts for commitments sent to other wallets.
             return coin.amount;
         }
     } else {

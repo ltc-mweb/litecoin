@@ -42,8 +42,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         //
         // Credit
         //
-        std::vector<CTxOutput> outputs = wtx.tx->GetOutputs();
-        for (unsigned int i = 0; i < outputs.size(); i++)
+        for (unsigned int i = 0; i < wtx.txout_is_mine.size(); i++)
         {
             isminetype mine = wtx.txout_is_mine[i];
             if(mine)
@@ -110,10 +109,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             //
             // Debit
             //
-            CAmount nTxFee = nDebit - wtx.tx->GetValueOut();
+            CAmount nTxFee = wtx.fee;
 
-            std::vector<CTxOutput> outputs = wtx.tx->GetOutputs();
-            for (unsigned int nOut = 0; nOut < outputs.size(); nOut++)
+            for (unsigned int nOut = 0; nOut < wtx.txout_is_mine.size(); nOut++)
             {
                 TransactionRecord sub(hash, nTime);
                 sub.idx = nOut;

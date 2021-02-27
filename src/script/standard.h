@@ -64,8 +64,7 @@ enum txnouttype
     TX_NULL_DATA, //!< unspendable OP_RETURN script that carries data
     TX_WITNESS_V0_SCRIPTHASH,
     TX_WITNESS_V0_KEYHASH,
-    TX_WITNESS_MW_HEADERHASH, //!< Used by HogEx to represent the hash of the extension block header
-    TX_WITNESS_MW_PEGIN, //!< Commitment value of the peg-in kernel
+    TX_WITNESS_MWEB_PEGIN, //!< Commitment value of the peg-in kernel
     TX_WITNESS_UNKNOWN, //!< Only for Witness versions not already defined above
 };
 
@@ -197,6 +196,8 @@ CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 
 /** Generate a multisig script. */
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
+
+bool IsPegInOutput(const CTxOutput& output);
 
 /**
  * Generate a pay-to-witness script for the given redeem script. If the redeem
