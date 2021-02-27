@@ -10,7 +10,7 @@
 #include <primitives/block.h>
 #include <txmempool.h>
 #include <validation.h>
-#include <libmw/libmw.h>
+#include <mweb/mweb_miner.h>
 
 #include <memory>
 #include <stdint.h>
@@ -133,11 +133,7 @@ private:
     CBlock* pblock;
 
     // MWEB Attributes
-    libmw::BlockBuilderRef mweb_builder;
-    CAmount mweb_amount_change;
-    CAmount mweb_fees;
-    std::vector<CTxIn> hogex_inputs;
-    std::vector<CTxOut> hogex_outputs;
+    MWEB::Miner mweb_miner;
 
     // Configuration parameters for the block size
     bool fIncludeWitness;
@@ -205,9 +201,6 @@ private:
       * state updated assuming given transactions are inBlock. Returns number
       * of updated descendants. */
     int UpdatePackagesForAdded(const CTxMemPool::setEntries& alreadyAdded, indexed_modified_transaction_set &mapModifiedTx) EXCLUSIVE_LOCKS_REQUIRED(mempool.cs);
-
-    bool AddMWEBTransaction(CTxMemPool::txiter iter);
-    void AddHogExTransaction(const CBlockIndex* pIndexPrev);
 };
 
 /** Modify the extranonce in a block */

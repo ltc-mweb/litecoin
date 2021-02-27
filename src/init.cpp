@@ -1550,7 +1550,8 @@ bool AppInitMain(InitInterfaces& interfaces)
                 g_dbview = libmw::node::Initialize(
                     libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
                     block.mwBlock.m_block.GetHeader(),
-                    std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
+                    std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),
+                    [](const std::string& logstr) { LogPrintf(logstr.c_str()); }
                 );
                 pcoinsdbview->SetMWView(g_dbview);
 

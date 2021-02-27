@@ -177,16 +177,20 @@ std::string COutput::ToString() const
     return strprintf("COutput(%s, %d, %d) [%s]", tx->GetHash().ToString(), i, nDepth, FormatMoney(tx->tx->vout[i].nValue));
 }
 
-std::vector<CKeyID> GetAffectedKeys(const CTxOutput& output, const SigningProvider& provider)
+std::vector<CKeyID> GetAffectedKeys(const CTxOutput& output, const CWallet& wallet)
 {
     if (output.IsMWEB()) {
-        // MW: TODO - Should we move stealth address key logic here?
+        libmw::Coin coin;
+        if (wallet.GetCoin(output.GetCommitment(), coin)) {
+            // MW: TODO - Return output key index as a CKeyID
+        }
+
         return std::vector<CKeyID>{};
     }
 
     std::vector<CScript> dummy;
     FlatSigningProvider out;
-    InferDescriptor(output.GetTxOut().scriptPubKey, provider)->Expand(0, DUMMY_SIGNING_PROVIDER, dummy, out);
+    InferDescriptor(output.GetTxOut().scriptPubKey, wallet)->Expand(0, DUMMY_SIGNING_PROVIDER, dummy, out);
     std::vector<CKeyID> ret;
     for (const auto& entry : out.pubkeys) {
         ret.push_back(entry.first);
@@ -2605,12 +2609,12 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
     }
 }
 
-std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<COutputCoin>> CWallet::ListCoins(interfaces::Chain::Lock& locked_chain) const
+std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins(interfaces::Chain::Lock& locked_chain) const
 {
     AssertLockHeld(cs_main);
     AssertLockHeld(cs_wallet);
 
-    std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<COutputCoin>> result;
+    std::map<CTxDestination, std::vector<COutputCoin>> result;
     std::vector<COutputCoin> availableCoins;
 
     AvailableCoins(locked_chain, availableCoins);
@@ -3371,18 +3375,6 @@ bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
     return true;
 }
 
-bool CWallet::GetMWEBAddress(libmw::MWEBAddress& address)
-{
-    LOCK(cs_wallet);
-    if (!CanGenerateKeys()) {
-        return false;
-    }
-
-    address = libmw::wallet::GetAddress(GetMWWallet(), hdChain.nMWEBIndexCounter++);
-
-    return WalletBatch(*database).WriteHDChain(hdChain);
-}
-
 static int64_t GetOldestKeyTimeInPool(const std::set<int64_t>& setKeyPool, WalletBatch& batch) {
     if (setKeyPool.empty()) {
         return GetTime();
@@ -3413,6 +3405,18 @@ int64_t CWallet::GetOldestKeyPoolTime()
     }
 
     return oldestKey;
+}
+
+bool CWallet::GetMWEBAddress(libmw::MWEBAddress& address)
+{
+    LOCK(cs_wallet);
+    if (!CanGenerateKeys()) {
+        return false;
+    }
+
+    address = libmw::wallet::GetAddress(GetMWWallet(), hdChain.nMWEBIndexCounter++);
+
+    return WalletBatch(*database).WriteHDChain(hdChain);
 }
 
 std::map<CTxDestination, CAmount> CWallet::GetAddressBalances(interfaces::Chain::Lock& locked_chain)
