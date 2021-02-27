@@ -26,6 +26,7 @@ public:
         CMutableTransaction& transaction,
         const std::vector<CInputCoin>& selected_coins,
         const std::vector<CRecipient>& recipients,
+        const CAmount& ltc_fee,
         const CAmount& mweb_fee,
         const boost::optional<CAmount>& mweb_change
     );
@@ -33,6 +34,7 @@ public:
 private:
     static std::vector<libmw::Commitment> GetInputCommits(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBInputAmount(const std::vector<CInputCoin>& inputs);
+    static CAmount GetLTCInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBRecipientAmount(const std::vector<CRecipient>& recipients);
 };
 

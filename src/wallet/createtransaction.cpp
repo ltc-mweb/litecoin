@@ -308,7 +308,7 @@ bool CreateTransactionEx(
                     }
 
                     size_t mweb_weight = 3 + (18 * mweb_outputs);
-                    mweb_fee = 100'000 * mweb_fee; // Hardcoded for now
+                    mweb_fee = 100'000 * mweb_weight; // Hardcoded for now
                 }
 
                 if (nChange > 0 && (mweb_type == MWEB::TxType::LTC_TO_LTC || mweb_type == MWEB::TxType::PEGIN)) {
@@ -337,12 +337,28 @@ bool CreateTransactionEx(
                     nChangePosInOut = -1;
                 }
 
+                CScript dummy_pegin_script;
+                dummy_pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+                dummy_pegin_script << std::vector<uint8_t>(33);
+
                 if (mweb_type == MWEB::TxType::PEGIN) {
+                    // MW: TODO - Determine if change is on LTC or MWEB side.
+
                     // Insert dummy pegin script
-                    CScript pegin_script;
-                    pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
-                    pegin_script << std::vector<uint8_t>(33);
-                    txNew.vout.push_back(CTxOut(0, pegin_script));
+                    txNew.vout.push_back(CTxOut(0, dummy_pegin_script));
+                } else if (mweb_type == MWEB::TxType::PEGOUT) {
+                    // There are no LTC outputs for pegout transaction destinations (output created in HogEx)
+                    txNew.vout.clear();
+                    nChangePosInOut = -1;
+
+                    bool include_pegin = std::any_of(
+                        setCoins.cbegin(), setCoins.cend(),
+                        [](const CInputCoin& coin) { return !coin.IsMWEB(); }
+                    );
+                    if (include_pegin) {
+                        // Insert dummy pegin script
+                        txNew.vout.push_back(CTxOut(0, dummy_pegin_script));
+                    }
                 }
 
                 // Dummy fill vin for maximum size estimation
@@ -472,7 +488,7 @@ bool CreateTransactionEx(
             }
         }
 
-        if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, mweb_fee, mweb_change)) {
+        if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, nFeeRet, mweb_fee, mweb_change)) {
             strFailReason = _("Failed to create MWEB transaction");
             return false;
         }

@@ -3232,7 +3232,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
         uint256 mweb256 = block.GetMWEBHash();
         libmw::BlockHash mweb_hash;
-        std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MW_HEADERHASH_SIZE, mweb_hash.data());
+        std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MWEB_HEADERHASH_SIZE, mweb_hash.data());
 
         try {
             libmw::node::CheckBlock(block.mwBlock.m_block, mweb_hash, block.GetPegInCoins(), block.GetPegOutCoins());

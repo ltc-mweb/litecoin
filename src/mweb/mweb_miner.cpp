@@ -33,13 +33,13 @@ bool MWEB::Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
         int version;
         std::vector<uint8_t> program;
         if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-            if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MW_PEGIN_SIZE) {
+            if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                 vin.push_back(CTxIn{pTx->GetHash(), (uint32_t)nOut});
                 pegin_amount += output.nValue;
 
                 libmw::PegIn pegin;
                 pegin.amount = output.nValue;
-                std::copy_n(std::make_move_iterator(program.begin()), WITNESS_MW_PEGIN_SIZE, pegin.commitment.begin());
+                std::copy_n(std::make_move_iterator(program.begin()), WITNESS_MWEB_PEGIN_SIZE, pegin.commitment.begin());
                 pegins.push_back(std::move(pegin));
             }
         }

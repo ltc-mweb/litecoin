@@ -85,16 +85,8 @@ WalletTx MakeWalletTx(interfaces::Chain::Lock& locked_chain, CWallet& wallet, co
     result.txout_address.reserve(outputs.size());
     result.txout_address_is_mine.reserve(outputs.size());
     for (const auto& txout : outputs) {
-        if (!txout.IsMWEB()) {
-            std::vector<std::vector<unsigned char>> solutions_data;
-            txnouttype which_type = Solver(txout.GetTxOut().scriptPubKey, solutions_data);
-            if (which_type == TX_WITNESS_MW_PEGIN) {
-                result.txout_is_mine.emplace_back(ISMINE_NO);
-                result.txout_address.emplace_back();
-                result.txout_address_is_mine.emplace_back(ISMINE_NO);
-                result.txout_amount.emplace_back(0);
-                continue;
-            }
+        if (IsPegInOutput(txout)) {
+            continue;
         }
         result.txout_is_mine.emplace_back(wallet.IsMine(txout));
         result.txout_address.emplace_back();
@@ -107,6 +99,7 @@ WalletTx MakeWalletTx(interfaces::Chain::Lock& locked_chain, CWallet& wallet, co
     result.credit = wtx.GetCredit(locked_chain, ISMINE_ALL);
     result.debit = wtx.GetDebit(ISMINE_ALL);
     result.change = wtx.GetChange();
+    result.fee = wtx.GetFee(ISMINE_ALL);
     result.time = wtx.GetTxTime();
     result.value_map = wtx.mapValue;
     result.is_coinbase = wtx.IsCoinBase();
