@@ -38,149 +38,69 @@ bool MWEB::Transact::CreateTx(
     const bool include_mweb_change)
 {
     TxType type = GetTxType(recipients, selected_coins);
-
     if (type == TxType::LTC_TO_LTC) {
-        LogPrintf("MWEB::Transaction - LTC_TO_LTC\n");
         return true;
     }
 
-    // Standard MWEB-to-MWEB transaction.
-    if (type == TxType::MWEB_TO_MWEB) {
-        LogPrintf("MWEB::Transaction - MWEB_TO_MWEB\n");
-        assert(include_mweb_change);
+    // Add recipients
+    std::vector<libmw::Recipient> mweb_recipients;
+    for (const CRecipient& recipient : recipients) {
+        if (recipient.IsMWEB()) {
+            libmw::MWEBRecipient mweb_recipient{
+                (uint64_t)recipient.nAmount,
+                recipient.GetMWEBAddress()};
 
-        std::vector<libmw::Recipient> mweb_recipients;
-        for (const CRecipient& recipient : recipients) {
-            if (recipient.IsMWEB()) {
-                libmw::MWEBRecipient mweb_recipient{
-                    (uint64_t)recipient.nAmount,
-                    recipient.GetMWEBAddress()};
-
-                mweb_recipients.push_back(std::move(mweb_recipient));
+            mweb_recipients.push_back(std::move(mweb_recipient));
+        } else {
+            CTxDestination dest;
+            if (!ExtractDestination(recipient.receiver.GetScript(), dest)) {
+                return false;
             }
+
+            // MW: TODO - Verify bech32 address
+
+            libmw::PegOutRecipient pegout_recipient{
+                (uint64_t)recipient.nAmount,
+                EncodeDestination(dest)};
+            mweb_recipients.push_back(std::move(pegout_recipient));
         }
-
-        std::vector<libmw::Commitment> input_commits = GetInputCommits(selected_coins);
-
-        // Add Change
-        if (include_mweb_change) {
-            mweb_recipients.push_back(BuildChangeRecipient(
-                mweb_wallet,
-                transaction,
-                selected_coins,
-                recipients,
-                ltc_fee,
-                mweb_fee));        
-        }
-
-        transaction.m_mwtx = libmw::wallet::CreateTx(
-            mweb_wallet,
-            input_commits,
-            mweb_recipients,
-            boost::none,
-            (uint64_t)mweb_fee);
-        return true;
     }
 
-    // Pegging-in. Change will be generated on the LTC side.
-    if (type == TxType::PEGIN) {
-        LogPrintf("MWEB::Transaction - PEGIN\n");
-
-        std::vector<libmw::Recipient> mweb_recipients;
-        for (const CRecipient& recipient : recipients) {
-            if (recipient.IsMWEB()) {
-                libmw::PegInRecipient pegin_recipient{
-                    (uint64_t)recipient.nAmount,
-                    recipient.GetMWEBAddress()};
-
-                mweb_recipients.push_back(std::move(pegin_recipient));
-            }
-        }
-
-        // Add Change
-        if (include_mweb_change) {
-            mweb_recipients.push_back(BuildChangeRecipient(
-                mweb_wallet,
-                transaction,
-                selected_coins,
-                recipients,
-                ltc_fee,
-                mweb_fee));
-        }
-
-        std::vector<libmw::Commitment> input_commits = GetInputCommits(selected_coins);
-        CAmount pegin_amount = (GetMWEBRecipientAmount(recipients) + mweb_fee) - GetMWEBInputAmount(selected_coins);
-        LogPrintf("Pegin amount: %d\n", pegin_amount);
-
-        transaction.m_mwtx = libmw::wallet::CreateTx(
+    // Add Change
+    if (include_mweb_change) {
+        mweb_recipients.push_back(BuildChangeRecipient(
             mweb_wallet,
-            input_commits,
-            mweb_recipients,
-            (uint64_t)pegin_amount,
-            (uint64_t)mweb_fee);
+            transaction,
+            selected_coins,
+            recipients,
+            ltc_fee,
+            mweb_fee));
+    }
 
-        auto pegins = transaction.m_mwtx.GetPegIns();
-        assert(pegins.size() == 1);
+    // Calculate pegin_amount
+    boost::optional<uint64_t> pegin_amount = boost::none;
+    CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
+    if (ltc_input_amount > 0) {
+        assert(ltc_fee < ltc_input_amount);
+        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee); // MW: TODO - There could also be LTC change
+    }
 
+    // Create transaction
+    std::vector<libmw::Commitment> input_commits = GetInputCommits(selected_coins);
+    transaction.m_mwtx = libmw::wallet::CreateTx(
+        mweb_wallet,
+        input_commits,
+        mweb_recipients,
+        pegin_amount,
+        (uint64_t)mweb_fee);
+
+    // Update pegin output
+    auto pegins = transaction.m_mwtx.GetPegIns();
+    if (!pegins.empty()) {
         UpdatePegInOutput(transaction, pegins.front());
-
-        return true;
     }
 
-    if (type == TxType::PEGOUT) {
-        LogPrintf("MWEB::Transaction - PEGOUT\n");
-
-        std::vector<libmw::Recipient> mweb_recipients;
-        for (const CRecipient& recipient : recipients) {
-            if (!recipient.IsMWEB()) {
-                CTxDestination dest;
-                if (!ExtractDestination(recipient.receiver.GetScript(), dest)) {
-                    return false;
-                }
-
-                libmw::PegOutRecipient pegout_recipient{
-                    (uint64_t)recipient.nAmount,
-                    EncodeDestination(dest)
-                };
-                mweb_recipients.push_back(std::move(pegout_recipient));
-            }
-        }
-
-        // Add Change
-        if (include_mweb_change) {
-            mweb_recipients.push_back(BuildChangeRecipient(
-                mweb_wallet,
-                transaction,
-                selected_coins,
-                recipients,
-                ltc_fee,
-                mweb_fee));
-        }
-
-        boost::optional<uint64_t> pegin_amount = boost::none;
-        CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
-        if (ltc_input_amount > 0) {
-            assert(ltc_fee < ltc_input_amount);
-            pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee);
-        }
-
-        std::vector<libmw::Commitment> input_commits = GetInputCommits(selected_coins);
-        transaction.m_mwtx = libmw::wallet::CreateTx(
-            mweb_wallet,
-            input_commits,
-            mweb_recipients,
-            pegin_amount,
-            (uint64_t)mweb_fee);
-
-        auto pegins = transaction.m_mwtx.GetPegIns();
-        if (!pegins.empty()) {
-            UpdatePegInOutput(transaction, pegins.front());
-        }
-
-        return true;
-    }
-
-    return false;
+    return true;
 }
 
 std::vector<libmw::Commitment> MWEB::Transact::GetInputCommits(const std::vector<CInputCoin>& inputs)
