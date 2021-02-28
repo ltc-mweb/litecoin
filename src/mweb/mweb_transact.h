@@ -28,7 +28,7 @@ public:
         const std::vector<CRecipient>& recipients,
         const CAmount& ltc_fee,
         const CAmount& mweb_fee,
-        const boost::optional<CAmount>& mweb_change
+        const bool include_mweb_change
     );
 
 private:
@@ -36,6 +36,15 @@ private:
     static CAmount GetMWEBInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetLTCInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBRecipientAmount(const std::vector<CRecipient>& recipients);
+    static bool UpdatePegInOutput(CMutableTransaction& transaction, const libmw::PegIn& pegin);
+    static libmw::Recipient BuildChangeRecipient(
+        const libmw::IWallet::Ptr& mweb_wallet,
+        CMutableTransaction& transaction,
+        const std::vector<CInputCoin>& selected_coins,
+        const std::vector<CRecipient>& recipients,
+        const CAmount& ltc_fee,
+        const CAmount& mweb_fee
+    );
 };
 
 }

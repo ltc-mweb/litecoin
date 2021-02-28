@@ -876,66 +876,8 @@ public:
      * all coins from coinControl are selected; Never select unconfirmed coins
      * if they are not ours
      */
-    bool SelectCoinsEx(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
+    bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-
-    inline bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
-                    const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
-    {
-        // BnB only supported for non-MWEB.
-        if (coin_selection_params.input_preference == InputPreference::PREFER_LTC && coin_selection_params.use_bnb) {
-            CoinSelectionParams params2 = coin_selection_params;
-            params2.input_preference = InputPreference::LTC_ONLY;
-
-            // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
-            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-        }
-
-        bnb_used = false;
-        coin_selection_params.use_bnb = false;
-        if (coin_selection_params.input_preference == InputPreference::PREFER_LTC) {
-            CoinSelectionParams params2 = coin_selection_params;
-            params2.input_preference = InputPreference::LTC_ONLY;
-
-            // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
-            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            params2.input_preference = InputPreference::MWEB_ONLY;
-            params2.change_type = OutputType::MWEB;
-
-            // Then try SelectCoins with MWEB_ONLY so we can avoid mixing input types.
-            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
-        } else if (coin_selection_params.input_preference == InputPreference::PREFER_MWEB) {
-            CoinSelectionParams params2 = coin_selection_params;
-            params2.input_preference = InputPreference::MWEB_ONLY;
-            params2.change_type = OutputType::MWEB;
-
-            // First try SelectCoins with MWEB_ONLY since those are the preferred inputs.
-            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            params2.input_preference = InputPreference::LTC_ONLY;
-            params2.change_type = coin_selection_params.change_type;
-
-            // Then try SelectCoins with LTC_ONLY so we can avoid mixing input types.
-            if (SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
-        }
-
-        return SelectCoinsEx(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
-    }
 
     const WalletLocation& GetLocation() const { return m_location; }
 

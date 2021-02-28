@@ -147,10 +147,105 @@ bool AddRecipientOutputs(
                 strFailReason = _("Transaction amount too small");
             return false;
         }
-        txNew.vout.push_back(txout); // MW: TODO - for pegouts, there won't be an actual CTXOut
+        txNew.vout.push_back(txout);
     }
 
     return true;
+}
+
+
+bool SelectCoins(
+    CWallet& wallet,
+    const std::vector<COutputCoin>& vAvailableCoins,
+    const CAmount& nTargetValue,
+    std::set<CInputCoin>& setCoinsRet,
+    CAmount& nValueRet,
+    const CCoinControl& coin_control,
+    CoinSelectionParams& coin_selection_params,
+    bool& bnb_used)
+{
+    // BnB only supported for non-MWEB.
+    if (coin_selection_params.input_preference == InputPreference::PREFER_LTC && coin_selection_params.use_bnb) {
+        CoinSelectionParams params2 = coin_selection_params;
+        params2.input_preference = InputPreference::LTC_ONLY;
+
+        // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
+        if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            return true;
+        }
+    }
+
+    bnb_used = false;
+    coin_selection_params.use_bnb = false;
+    if (coin_selection_params.input_preference == InputPreference::PREFER_LTC) {
+        CoinSelectionParams params2 = coin_selection_params;
+        params2.input_preference = InputPreference::LTC_ONLY;
+
+        // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
+        if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            return true;
+        }
+
+        params2.input_preference = InputPreference::MWEB_ONLY;
+        params2.change_type = OutputType::MWEB;
+
+        // Then try SelectCoins with MWEB_ONLY so we can avoid mixing input types.
+        if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            return true;
+        }
+
+        // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
+    } else if (coin_selection_params.input_preference == InputPreference::PREFER_MWEB) {
+        CoinSelectionParams params2 = coin_selection_params;
+        params2.input_preference = InputPreference::MWEB_ONLY;
+        params2.change_type = OutputType::MWEB;
+
+        // First try SelectCoins with MWEB_ONLY since those are the preferred inputs.
+        if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            return true;
+        }
+
+        params2.input_preference = InputPreference::LTC_ONLY;
+        params2.change_type = coin_selection_params.change_type;
+
+        // Then try SelectCoins with LTC_ONLY so we can avoid mixing input types.
+        if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
+            return true;
+        }
+
+        // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
+    }
+
+    return wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
+}
+
+static bool IsChangeOnMWEB(const MWEB::TxType& mweb_type, const CCoinControl& coin_control)
+{
+    if (mweb_type == MWEB::TxType::MWEB_TO_MWEB || mweb_type == MWEB::TxType::PEGOUT) {
+        return true;
+    }
+
+    if (mweb_type == MWEB::TxType::PEGIN) {
+        return coin_control.destChange.type() == typeid(CNoDestination)
+            || coin_control.destChange.type() == typeid(MWEBAddress);
+    }
+
+    return false;
+}
+
+static bool ContainsPegIn(const MWEB::TxType& mweb_type, const std::set<CInputCoin>& setCoins)
+{
+    if (mweb_type == MWEB::TxType::PEGIN) {
+        return true;
+    }
+    
+    if (mweb_type == MWEB::TxType::PEGOUT) {
+        return std::any_of(
+            setCoins.cbegin(), setCoins.cend(),
+            [](const CInputCoin& coin) { return !coin.IsMWEB(); });
+    }
+
+    return false;
 }
 
 bool CreateTransactionEx(
@@ -186,8 +281,8 @@ bool CreateTransactionEx(
     FeeCalculation feeCalc;
     CAmount nFeeNeeded;
 
-    boost::optional<CAmount> mweb_change;
     CAmount mweb_fee = 0;
+    bool change_on_mweb = false;
 
     int nBytes;
     {
@@ -257,7 +352,6 @@ bool CreateTransactionEx(
                 nChangePosInOut = nChangePosRequest;
                 txNew.vin.clear();
                 txNew.vout.clear();
-                mweb_change.reset();
                 mweb_fee = 0;
 
                 CAmount nValueToSelect = nValue;
@@ -282,19 +376,11 @@ bool CreateTransactionEx(
                         coin_selection_params.change_spend_size = (size_t)change_spend_size;
                     }
                     coin_selection_params.effective_fee = nFeeRateNeeded;
-                    if (!wallet.SelectCoins(vAvailableCoins, nValueToSelect, setCoins, nValueIn, coin_control, coin_selection_params, bnb_used)) {
-                        // If BnB was used, it was the first pass. No longer the first pass and continue loop with knapsack.
-                        if (bnb_used) {
-                            coin_selection_params.use_bnb = false;
-                            continue;
-                        } else {
-                            strFailReason = _("Insufficient funds");
-                            return false;
-                        }
+                    if (!SelectCoins(wallet, vAvailableCoins, nValueToSelect, setCoins, nValueIn, coin_control, coin_selection_params, bnb_used)) {
+                        strFailReason = _("Insufficient funds");
+                        return false;
                     }
                 }
-
-                const CAmount nChange = nValueIn - nValueToSelect;
 
                 MWEB::TxType mweb_type = MWEB::GetTxType(vecSend, std::vector<CInputCoin>(setCoins.begin(), setCoins.end()));
                 if (mweb_type != MWEB::TxType::LTC_TO_LTC) {
@@ -309,9 +395,20 @@ bool CreateTransactionEx(
 
                     size_t mweb_weight = 3 + (18 * mweb_outputs);
                     mweb_fee = 100'000 * mweb_weight; // Hardcoded for now
+
+                    // We don't support multiple recipients for MWEB txs yet,
+                    // so the only possible LTC outputs are pegins & change.
+                    // Both of those are added after this, so clear outputs for now. 
+                    txNew.vout.clear();
+                    nChangePosInOut = -1;
+                } else {
+                    mweb_fee = 0;
                 }
 
-                if (nChange > 0 && (mweb_type == MWEB::TxType::LTC_TO_LTC || mweb_type == MWEB::TxType::PEGIN)) {
+                change_on_mweb = IsChangeOnMWEB(mweb_type, coin_control);
+
+                const CAmount nChange = nValueIn - nValueToSelect;
+                if (nChange > 0 && !change_on_mweb) {
                     // Fill a vout to ourself
                     CTxOut newTxOut(nChange, scriptChange.IsMWEB() ? CScript() : scriptChange.GetScript());
 
@@ -337,28 +434,11 @@ bool CreateTransactionEx(
                     nChangePosInOut = -1;
                 }
 
-                CScript dummy_pegin_script;
-                dummy_pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
-                dummy_pegin_script << std::vector<uint8_t>(33);
-
-                if (mweb_type == MWEB::TxType::PEGIN) {
-                    // MW: TODO - Determine if change is on LTC or MWEB side.
-
-                    // Insert dummy pegin script
+                if (ContainsPegIn(mweb_type, setCoins)) {
+                    CScript dummy_pegin_script;
+                    dummy_pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+                    dummy_pegin_script << std::vector<uint8_t>(33);
                     txNew.vout.push_back(CTxOut(0, dummy_pegin_script));
-                } else if (mweb_type == MWEB::TxType::PEGOUT) {
-                    // There are no LTC outputs for pegout transaction destinations (output created in HogEx)
-                    txNew.vout.clear();
-                    nChangePosInOut = -1;
-
-                    bool include_pegin = std::any_of(
-                        setCoins.cbegin(), setCoins.cend(),
-                        [](const CInputCoin& coin) { return !coin.IsMWEB(); }
-                    );
-                    if (include_pegin) {
-                        // Insert dummy pegin script
-                        txNew.vout.push_back(CTxOut(0, dummy_pegin_script));
-                    }
                 }
 
                 // Dummy fill vin for maximum size estimation
@@ -376,7 +456,7 @@ bool CreateTransactionEx(
                     return false;
                 }
 
-                nFeeNeeded = GetMinimumFee(wallet, nBytes, coin_control, ::mempool, ::feeEstimator, &feeCalc);
+                nFeeNeeded = GetMinimumFee(wallet, nBytes, coin_control, ::mempool, ::feeEstimator, &feeCalc) + mweb_fee;
                 if (feeCalc.reason == FeeReason::FALLBACK && !wallet.m_allow_fallback_fee) {
                     // eventually allow a fallback fee
                     strFailReason = _("Fee estimation failed. Fallbackfee is disabled. Wait a few blocks or enable -fallbackfee.");
@@ -385,12 +465,12 @@ bool CreateTransactionEx(
 
                 // If we made it here and we aren't even able to meet the relay fee on the next pass, give up
                 // because we must be at the maximum allowed fee.
-                if (nFeeNeeded < ::minRelayTxFee.GetFee(nBytes)) {
+                if (nFeeNeeded < ::minRelayTxFee.GetFee(nBytes)) { // MW: TODO - Also include MWEB weight in minRelayTxFee calculation
                     strFailReason = _("Transaction too large for fee policy");
                     return false;
                 }
 
-                if (nFeeRet >= (nFeeNeeded + mweb_fee)) {
+                if (nFeeRet >= nFeeNeeded) {
                     // Reduce fee to only the needed amount if possible. This
                     // prevents potential overpayment in fees if the coins
                     // selected to meet nFeeNeeded result in a transaction that
@@ -414,22 +494,19 @@ bool CreateTransactionEx(
                     }
 
                     // If we have change output already, just increase it
-                    if (nFeeRet > (nFeeNeeded + mweb_fee) && nSubtractFeeFromAmount == 0) {
-                        CAmount extraFeePaid = nFeeRet - (nFeeNeeded + mweb_fee);
+                    if (nFeeRet > nFeeNeeded && nSubtractFeeFromAmount == 0) {
+                        CAmount extraFeePaid = nFeeRet - nFeeNeeded;
 
                         if (nChangePosInOut != -1) {
                             std::vector<CTxOut>::iterator change_position = txNew.vout.begin() + nChangePosInOut;
                             change_position->nValue += extraFeePaid;
                             nFeeRet -= extraFeePaid;
-                        } else if (mweb_type == MWEB::TxType::MWEB_TO_MWEB || mweb_type == MWEB::TxType::PEGOUT) {
-                            mweb_change = extraFeePaid;
+                        } else if (change_on_mweb) {
                             nFeeRet -= extraFeePaid;
                         }
-                    } else if (mweb_type == MWEB::TxType::MWEB_TO_MWEB || mweb_type == MWEB::TxType::PEGOUT) {
-                        mweb_change = 0;
                     }
 
-                    LogPrintf("nFeeRet: %d, nFeeNeeded: %d, mweb_fee: %d, nChangePosInOut: %d", nFeeRet, nFeeNeeded, mweb_fee, nChangePosInOut);
+                    LogPrintf("nFeeRet: %d, nFeeNeeded: %d (MWEB: %d), nChangePosInOut: %d\n", nFeeRet, nFeeNeeded, mweb_fee, nChangePosInOut);
                     if (nFeeRet)
                     break; // Done, enough fee included.
                 } else if (!pick_new_inputs) {
@@ -443,7 +520,7 @@ bool CreateTransactionEx(
 
                 // Try to reduce change to include necessary fee
                 if (nChangePosInOut != -1 && nSubtractFeeFromAmount == 0) {
-                    CAmount additionalFeeNeeded = (mweb_fee + nFeeNeeded) - nFeeRet;
+                    CAmount additionalFeeNeeded = nFeeNeeded - nFeeRet;
                     std::vector<CTxOut>::iterator change_position = txNew.vout.begin() + nChangePosInOut;
                     // Only reduce change if remaining amount is still a large enough output.
                     if (change_position->nValue >= MIN_FINAL_CHANGE + additionalFeeNeeded) {
@@ -488,7 +565,7 @@ bool CreateTransactionEx(
             }
         }
 
-        if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, nFeeRet, mweb_fee, mweb_change)) {
+        if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, nFeeRet, mweb_fee, change_on_mweb)) {
             strFailReason = _("Failed to create MWEB transaction");
             return false;
         }
