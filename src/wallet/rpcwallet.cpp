@@ -2917,7 +2917,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             continue;
         }
 
-        const COutput& out = *output_coin.out;
+        const COutput& out = boost::get<COutput>(output_coin.m_output);
         const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
 
         entry.pushKV("txid", out.tx->GetHash().GetHex());

@@ -638,65 +638,78 @@ struct MWOutput
 
 struct COutputCoin
 {
-    boost::optional<COutput> out;
-    boost::optional<MWOutput> mwCoin;
+    COutputCoin(const COutput& out) : m_output(out) {}
+    COutputCoin(const MWOutput& out) : m_output(out) {}
 
-    COutputCoin(const COutput& out) : out(out) {}
-    COutputCoin(const MWOutput& coin) : mwCoin(coin) {}
-
-    bool IsMWEB() const noexcept { return !!mwCoin; }
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(MWOutput); }
 
     bool IsSpendable() const
     {
         if (IsMWEB()) return true;
-        return out->fSpendable;
+        return boost::get<COutput>(m_output).fSpendable;
     }
 
     bool GetDestination(CTxDestination& dest) const
     {
         if (IsMWEB()) {
-            dest = MWEBAddress(mwCoin->address);
+            dest = MWEBAddress(boost::get<MWOutput>(m_output).address);
             return true;
         } else {
-            return ExtractDestination(out->tx->tx->vout[out->i].scriptPubKey, dest);
+            const COutput& out = boost::get<COutput>(m_output);
+            return ExtractDestination(out.tx->tx->vout[out.i].scriptPubKey, dest);
         }
     }
 
     boost::variant<CScript, libmw::MWEBAddress> GetAddress() const
     {
-        if (IsMWEB()) return mwCoin->address;
-        return out->tx->tx->vout[out->i].scriptPubKey;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return out.tx->tx->vout[out.i].scriptPubKey;
     }
 
     CAmount GetValue() const
     {
-        if (IsMWEB()) return mwCoin->coin.amount;
-        return out->tx->tx->vout[out->i].nValue;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.amount;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return out.tx->tx->vout[out.i].nValue;
     }
 
     int64_t GetTime() const
     {
-        if (IsMWEB()) return mwCoin->nTime;
-        return out->tx->GetTxTime();
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).nTime;
+        return boost::get<COutput>(m_output).tx->GetTxTime();
     }
 
     int GetDepth() const
     {
-        if (IsMWEB()) return mwCoin->nDepth;
-        return out->nDepth;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).nDepth;
+        return boost::get<COutput>(m_output).nDepth;
     }
 
     CInputCoin GetInputCoin() const
     {
-        if (IsMWEB()) return CInputCoin(mwCoin->coin);
-        return out->GetInputCoin();
+        if (IsMWEB()) return CInputCoin(boost::get<MWOutput>(m_output).coin);
+        return boost::get<COutput>(m_output).GetInputCoin();
     }
 
     OutputIndex GetIndex() const
     {
-        if (IsMWEB()) return mwCoin->coin.commitment;
-        return COutPoint(out->tx->GetHash(), out->i);
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.commitment;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return COutPoint(out.tx->GetHash(), out.i);
     }
+
+    // Returns nullptr for MWEB outputs
+    const CWalletTx* GetWalletTx() const
+    {
+        if (IsMWEB()) return nullptr;
+        return boost::get<COutput>(m_output).tx;
+    }
+
+    boost::variant<COutput, MWOutput> m_output;
 };
 
 /** Private key that includes an expiration date in case it never gets used. */

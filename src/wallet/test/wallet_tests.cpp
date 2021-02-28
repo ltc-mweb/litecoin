@@ -428,7 +428,7 @@ BOOST_FIXTURE_TEST_CASE(ListCoins, ListCoinsTestingSetup)
     for (const auto& group : list) {
         for (const auto& coin : group.second) {
             LOCK(wallet->cs_wallet);
-            wallet->LockCoin(COutPoint(coin.out->tx->GetHash(), coin.out->i));
+            wallet->LockCoin(coin.GetIndex());
         }
     }
     {

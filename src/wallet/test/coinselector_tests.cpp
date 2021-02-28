@@ -116,7 +116,7 @@ inline std::vector<OutputGroup>& GroupCoins(const std::vector<COutputCoin>& coin
     static std::vector<OutputGroup> static_groups;
     static_groups.clear();
     for (auto& coin : coins)
-        static_groups.emplace_back(coin.GetInputCoin(), coin.GetDepth(), coin.out->tx->fDebitCached && coin.out->tx->nDebitCached == 1 /* HACK: we can't figure out the is_me flag so we use the conditions defined above; perhaps set safe to false for !fIsFromMe in add_coin() */, 0, 0);
+        static_groups.emplace_back(coin.GetInputCoin(), coin.GetDepth(), coin.GetWalletTx()->fDebitCached && coin.GetWalletTx()->nDebitCached == 1 /* HACK: we can't figure out the is_me flag so we use the conditions defined above; perhaps set safe to false for !fIsFromMe in add_coin() */, 0, 0);
     return static_groups;
 }
 
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     bool bnb_used;
     empty_wallet();
     add_coin(1);
-    vCoins.at(0).out->nInputBytes = 40; // Make sure that it has a negative effective value. The next check should assert if this somehow got through. Otherwise it will fail
+    boost::get<COutput>(vCoins.at(0).m_output).nInputBytes = 40; // Make sure that it has a negative effective value. The next check should assert if this somehow got through. Otherwise it will fail
     BOOST_CHECK(!testWallet.SelectCoinsMinConf( 1 * CENT, filter_standard, GroupCoins(vCoins), setCoinsRet, nValueRet, coin_selection_params_bnb, bnb_used));
 
     // Make sure that we aren't using BnB when there are preset inputs
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     add_coin(2 * CENT);
     CCoinControl coin_control;
     coin_control.fAllowOtherInputs = true;
-    coin_control.Select(COutPoint(vCoins.at(0).out->tx->GetHash(), vCoins.at(0).out->i));
+    coin_control.Select(vCoins.at(0).GetIndex());
     BOOST_CHECK(testWallet.SelectCoins(vCoins, 10 * CENT, setCoinsRet, nValueRet, coin_control, coin_selection_params_bnb, bnb_used));
     BOOST_CHECK(!bnb_used);
     BOOST_CHECK(!coin_selection_params_bnb.use_bnb);
