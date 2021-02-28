@@ -2706,11 +2706,11 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
             group.effective_value = 0;
             for (auto it = group.m_outputs.begin(); it != group.m_outputs.end(); ) {
                 const CInputCoin& coin = *it;
-                CAmount effective_value = coin.txout.nValue - (coin.m_input_bytes < 0 ? 0 : coin_selection_params.effective_fee.GetFee(coin.m_input_bytes));
+                CAmount effective_value = coin.GetAmount() - coin.CalculateFee(coin_selection_params.effective_fee);
                 // Only include outputs that are positive effective value (i.e. not dust)
                 if (effective_value > 0) {
-                    group.fee += coin.m_input_bytes < 0 ? 0 : coin_selection_params.effective_fee.GetFee(coin.m_input_bytes);
-                    group.long_term_fee += coin.m_input_bytes < 0 ? 0 : long_term_feerate.GetFee(coin.m_input_bytes);
+                    group.fee += coin.CalculateFee(coin_selection_params.effective_fee);
+                    group.long_term_fee += coin.CalculateFee(long_term_feerate);
                     group.effective_value += effective_value;
                     ++it;
                 } else {

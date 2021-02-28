@@ -445,7 +445,7 @@ bool CreateTransactionEx(
                 //
                 for (const auto& coin : setCoins) {
                     if (!coin.IsMWEB()) {
-                        txNew.vin.push_back(CTxIn(coin.outpoint, CScript()));
+                        txNew.vin.push_back(CTxIn(boost::get<COutPoint>(coin.GetIndex()), CScript()));
                     }
                 }
 
@@ -561,7 +561,7 @@ bool CreateTransactionEx(
         const uint32_t nSequence = coin_control.m_signal_bip125_rbf.get_value_or(wallet.m_signal_rbf) ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1);
         for (const auto& coin : selected_coins) {
             if (!coin.IsMWEB()) {
-                txNew.vin.push_back(CTxIn(coin.outpoint, CScript(), nSequence));
+                txNew.vin.push_back(CTxIn(boost::get<COutPoint>(coin.GetIndex()), CScript(), nSequence));
             }
         }
 
@@ -577,10 +577,10 @@ bool CreateTransactionEx(
                     continue;
                 }
 
-                const CScript& scriptPubKey = coin.txout.scriptPubKey;
+                CScript scriptPubKey = coin.GetScriptPubKey();
                 SignatureData sigdata;
 
-                if (!ProduceSignature(wallet, MutableTransactionSignatureCreator(&txNew, nIn, coin.txout.nValue, SIGHASH_ALL), scriptPubKey, sigdata)) {
+                if (!ProduceSignature(wallet, MutableTransactionSignatureCreator(&txNew, nIn, coin.GetAmount(), SIGHASH_ALL), scriptPubKey, sigdata)) {
                     LogPrintf("Transaction failed to sign: %s", CTransaction(txNew).ToString().c_str());
                     strFailReason = _("Signing transaction failed");
                     return false;

@@ -415,11 +415,11 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
         CInputCoin input_coin = BuildInputCoin(item);
 
         if (item->checkState(COLUMN_CHECKBOX) == Qt::Unchecked)
-            coinControl()->UnSelect(input_coin.outpoint);
+            coinControl()->UnSelect(input_coin.GetIndex());
         else if (item->isDisabled()) // locked (this happens if "check all" through parent node)
             item->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
         else
-            coinControl()->Select(input_coin.outpoint);
+            coinControl()->Select(input_coin.GetIndex());
 
         // selection changed -> update labels
         if (ui->treeWidget->isEnabled()) // do not update on every click for (un)select all
@@ -526,6 +526,8 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     // calculation
     if (nQuantity > 0)
     {
+        // MW: TODO - Implement byte & fee estimation for MWEB
+
         // Bytes
         nBytes = nBytesInputs + ((CoinControlDialog::payAmounts.size() > 0 ? CoinControlDialog::payAmounts.size() + 1 : 2) * 34) + 10; // always assume +1 output for change here
         if (fWitness)

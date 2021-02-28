@@ -108,7 +108,7 @@ std::vector<libmw::Commitment> MWEB::Transact::GetInputCommits(const std::vector
     std::vector<libmw::Commitment> input_commits;
     for (const auto& coin : inputs) {
         if (coin.IsMWEB()) {
-            input_commits.push_back(coin.mwCoin->commitment);
+            input_commits.push_back(boost::get<libmw::Commitment>(coin.GetIndex()));
         }
     }
 
