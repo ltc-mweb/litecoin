@@ -24,6 +24,7 @@
 class CCoinControl;
 class CFeeRate;
 class CKey;
+class CReserveKey;
 class CWallet;
 enum class FeeReason;
 enum class OutputType;
@@ -78,6 +79,8 @@ public:
 
     // Get key from pool.
     virtual bool getKeyFromPool(bool internal, CPubKey& pub_key) = 0;
+
+    virtual std::unique_ptr<CReserveKey> getReservedKey(bool internal, CPubKey& pub_key) = 0;
 
     //! Get public key.
     virtual bool getPubKey(const CKeyID& address, CPubKey& pub_key) = 0;
@@ -142,8 +145,7 @@ public:
         bool sign,
         int& change_pos,
         CAmount& fee,
-        std::string& fail_reason,
-        const MWEB::Tx& mwtx = {}) = 0;
+        std::string& fail_reason) = 0;
 
     //! Return whether transaction can be abandoned.
     virtual bool transactionCanBeAbandoned(const uint256& txid) = 0;
@@ -311,7 +313,8 @@ public:
     //! Send pending transaction and commit to wallet.
     virtual bool commit(WalletValueMap value_map,
         WalletOrderForm order_form,
-        std::string& reject_reason) = 0;
+        std::string& reject_reason,
+        const std::vector<CReserveKey*>& additional_keys) = 0;
 };
 
 //! Information about one wallet address.

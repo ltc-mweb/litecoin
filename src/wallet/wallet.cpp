@@ -2940,7 +2940,7 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
 }
 
 bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet,
-                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, const MWEB::Tx& mwtx)
+                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign)
 {
     return CreateTransactionEx(*this, locked_chain, vecSend, tx, reservekey, nFeeRet, nChangePosInOut, strFailReason, coin_control, sign);
 }
@@ -2948,7 +2948,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
 /**
  * Call after CreateTransaction unless you want to abort
  */
-bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, CReserveKey& reservekey, CConnman* connman, CValidationState& state)
+bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, const std::vector<CReserveKey*>& reservekeys, CConnman* connman, CValidationState& state)
 {
     {
         auto locked_chain = chain().lock();
@@ -2962,8 +2962,11 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
 
         WalletLogPrintf("CommitTransaction:\n%s", wtxNew.tx->ToString()); /* Continued */
         {
-            // Take key pair from key pool so it won't be used again
-            reservekey.KeepKey();
+            // Take key pairs from key pool so it won't be used again
+            for (CReserveKey* reservekey : reservekeys) {
+                assert(reservekey);
+                reservekey->KeepKey();
+            }
 
             std::vector<libmw::Coin> coins_found;
             for (const CTxOutput& txout : wtxNew.tx->GetOutputs()) {

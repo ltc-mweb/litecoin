@@ -232,6 +232,7 @@ void SendCoinsDialog::on_sendButton_clicked()
 
     QList<SendCoinsRecipient> recipients;
     bool valid = true;
+    std::list<std::unique_ptr<CReserveKey>> reserved_keys;
 
     for(int i = 0; i < ui->entries->count(); ++i)
     {
@@ -261,6 +262,26 @@ void SendCoinsDialog::on_sendButton_clicked()
         // Unlock wallet was cancelled
         fNewRecipientAllowed = true;
         return;
+    }
+
+    // Reserve pegout keys and set pegout addresses
+    for (SendCoinsRecipient& rcp : recipients) {
+        if (rcp.type == SendCoinsRecipient::MWEB_PEGOUT) {
+            CPubKey newKey;
+            std::unique_ptr<CReserveKey> reservedkey = model->wallet().getReservedKey(true, newKey);
+            if (reservedkey == nullptr) {
+                fNewRecipientAllowed = true;
+                return;
+            }
+
+            auto output_type = OutputType::BECH32;
+            model->wallet().learnRelatedScripts(newKey, output_type);
+            CTxDestination dest = GetDestinationForKey(newKey, output_type);
+            rcp.address = QString::fromStdString(EncodeDestination(dest));
+            rcp.reserved_key = reservedkey.get();
+
+            reserved_keys.push_back(std::move(reservedkey));
+        }
     }
 
     // prepare transaction for getting txFee earlier
@@ -947,32 +968,13 @@ void SendCoinsDialog::mwebPegOutButtonClicked(bool checked)
             return;
         }
 
-        WalletModel::UnlockContext ctx(model->requestUnlock());
-        if (!ctx.isValid()) {
-            // Unlock wallet was cancelled
-            return;
-        }
-
-        if (!model->wallet().canGetAddresses()) {
-            return;
-        }
-
-        CPubKey newKey;
-        if (!model->wallet().getKeyFromPool(false, newKey)) {
-            return;
-        }
-
-        auto output_type = OutputType::BECH32;
-        model->wallet().learnRelatedScripts(newKey, output_type);
-        CTxDestination dest = GetDestinationForKey(newKey, output_type);
-
-        entry->setPegOutAddress(EncodeDestination(dest));
+        entry->setPegOut(true);
 
         while (ui->entries->count() > 1) {
             ui->entries->takeAt(1)->widget()->deleteLater();
         }
     } else {
-        entry->setPegOutAddress("");
+        entry->setPegOut(false);
     }
 }
 

@@ -99,7 +99,7 @@ void SendCoinsEntry::clear()
     ui->payTo->setReadOnly(false);
     ui->payTo->setValidating(true);
     pegInAddress.clear();
-    pegOutAddress.clear();
+    pegout = false;
     ui->addAsLabel->clear();
     ui->payAmount->clear();
     ui->checkboxSubtractFeeFromAmount->setCheckState(Qt::Unchecked);
@@ -122,7 +122,7 @@ void SendCoinsEntry::clear()
 
 void SendCoinsEntry::checkSubtractFeeFromAmount()
 {
-    if (pegInAddress.size() || pegOutAddress.size()) return;
+    if (pegInAddress.size() || pegout) return;
     ui->checkboxSubtractFeeFromAmount->setChecked(true);
 }
 
@@ -150,7 +150,7 @@ bool SendCoinsEntry::validate(interfaces::Node& node)
         return retval;
 #endif
 
-    if (pegInAddress.empty() && pegOutAddress.empty() && !model->validateAddress(ui->payTo->text()))
+    if (pegInAddress.empty() && !pegout && !model->validateAddress(ui->payTo->text()))
     {
         ui->payTo->setValid(false);
         retval = false;
@@ -188,8 +188,8 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     if (pegInAddress.size()) {
         recipient.address = QString::fromStdString(pegInAddress);
         recipient.type = SendCoinsRecipient::MWEB_PEGIN;
-    } else if (pegOutAddress.size()) {
-        recipient.address = QString::fromStdString(pegOutAddress);
+    } else if (pegout) {
+        recipient.address = QString::fromStdString(""); // This will be populated later
         recipient.type = SendCoinsRecipient::MWEB_PEGOUT;
     } else if (ui->payTo->text().startsWith("mweb1")) {
         recipient.address = ui->payTo->text();
@@ -203,6 +203,7 @@ SendCoinsRecipient SendCoinsEntry::getValue()
     recipient.amount = ui->payAmount->value();
     recipient.message = ui->messageTextLabel->text();
     recipient.fSubtractFeeFromAmount = (ui->checkboxSubtractFeeFromAmount->checkState() == Qt::Checked);
+    recipient.reserved_key = nullptr;
 
     return recipient;
 }
@@ -273,7 +274,7 @@ void SendCoinsEntry::setAmount(const CAmount &amount)
 void SendCoinsEntry::setPegInAddress(const std::string& address)
 {
     pegInAddress = address;
-    pegOutAddress = "";
+    pegout = false;
 
     if (address.empty()) {
         setAddress("");
@@ -290,18 +291,18 @@ void SendCoinsEntry::setPegInAddress(const std::string& address)
     }
 }
 
-void SendCoinsEntry::setPegOutAddress(const std::string& address)
+void SendCoinsEntry::setPegOut(const bool pegout_set)
 {
     pegInAddress = "";
-    pegOutAddress = address;
+    pegout = pegout_set;
 
-    if (address.empty()) {
+    if (!pegout_set) {
         setAddress("");
         ui->payTo->setReadOnly(false);
         ui->payTo->setValidating(true);
         ui->checkboxSubtractFeeFromAmount->setEnabled(true);
     } else {
-        setAddress(QString::fromStdString("Peg-Out: " + address));
+        setAddress(QString::fromStdString("Peg-Out Address"));
         ui->payTo->setReadOnly(true);
         ui->payTo->setValidating(false);
         ui->payTo->setCursorPosition(0);

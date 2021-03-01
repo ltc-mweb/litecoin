@@ -130,7 +130,6 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     bool fSubtractFeeFromAmount = false;
     QList<SendCoinsRecipient> recipients = transaction.getRecipients();
     std::vector<CRecipient> vecSend;
-    MWEB::Tx mwTx;
     CCoinControl coin_control_copy = coinControl;
 
     if(recipients.empty())
@@ -192,7 +191,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             }
             case SendCoinsRecipient::MWEB_PEGOUT: {
                 coin_control_copy.fPegOut = true;
-                // MW: TODO - Retrieve a pegout address
+                receiver = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
                 break;
             }
             case SendCoinsRecipient::MWEB_SEND: {
@@ -226,7 +225,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         std::string strFailReason;
 
         auto& newTx = transaction.getWtx();
-        newTx = m_wallet->createTransaction(vecSend, coin_control_copy, true /* sign */, nChangePosRet, nFeeRequired, strFailReason, mwTx);
+        newTx = m_wallet->createTransaction(vecSend, coin_control_copy, true /* sign */, nChangePosRet, nFeeRequired, strFailReason);
         transaction.setTransactionFee(nFeeRequired);
         if (fSubtractFeeFromAmount && newTx)
             transaction.reassignAmounts(nChangePosRet);
@@ -252,12 +251,13 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     return SendCoinsReturn(OK);
 }
 
-WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &transaction)
+WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction& transaction)
 {
     QByteArray transaction_array; /* store serialized transaction */
 
     {
         std::vector<std::pair<std::string, std::string>> vOrderForm;
+        std::vector<CReserveKey*> additional_keys;
         for (const SendCoinsRecipient &rcp : transaction.getRecipients())
         {
 #ifdef ENABLE_BIP70
@@ -277,11 +277,15 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
 #endif
             if (!rcp.message.isEmpty()) // Message from normal bitcoin:URI (bitcoin:123...?message=example)
                 vOrderForm.emplace_back("Message", rcp.message.toStdString());
+
+            if (rcp.reserved_key != nullptr) {
+                additional_keys.push_back(rcp.reserved_key);
+            }
         }
 
         auto& newTx = transaction.getWtx();
         std::string rejectReason;
-        if (!newTx->commit(transaction.getValueMap(), std::move(vOrderForm), rejectReason))
+        if (!newTx->commit(transaction.getValueMap(), std::move(vOrderForm), rejectReason, additional_keys))
             return SendCoinsReturn(TransactionCommitFailed, QString::fromStdString(rejectReason));
 
         CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);

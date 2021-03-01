@@ -52,12 +52,16 @@ public:
 
     bool commit(WalletValueMap value_map,
         WalletOrderForm order_form,
-        std::string& reject_reason) override
+        std::string& reject_reason,
+        const std::vector<CReserveKey*>& additional_keys) override
     {
         auto locked_chain = m_wallet.chain().lock();
         LOCK(m_wallet.cs_wallet);
+
+        std::vector<CReserveKey*> reserved_keys = additional_keys;
+        reserved_keys.push_back(&m_key);
         CValidationState state;
-        if (!m_wallet.CommitTransaction(m_tx, std::move(value_map), std::move(order_form), m_key, g_connman.get(), state)) {
+        if (!m_wallet.CommitTransaction(m_tx, std::move(value_map), std::move(order_form), reserved_keys, g_connman.get(), state)) {
             reject_reason = state.GetRejectReason();
             return false;
         }
@@ -181,6 +185,15 @@ public:
     {
         return m_wallet->GetKeyFromPool(pub_key, internal);
     }
+    std::unique_ptr<CReserveKey> getReservedKey(bool internal, CPubKey& pub_key) override
+    {
+        std::unique_ptr<CReserveKey> reservedkey = std::make_unique<CReserveKey>(m_wallet.get());
+        if (reservedkey->GetReservedKey(pub_key, internal)) {
+            return reservedkey;
+        }
+
+        return nullptr;
+    }
     bool getPubKey(const CKeyID& address, CPubKey& pub_key) override { return m_wallet->GetPubKey(address, pub_key); }
     bool getPrivKey(const CKeyID& address, CKey& key) override { return m_wallet->GetKey(address, key); }
     bool isSpendable(const CTxDestination& dest) override { return IsMine(*m_wallet, dest) & ISMINE_SPENDABLE; }
@@ -277,14 +290,13 @@ public:
         bool sign,
         int& change_pos,
         CAmount& fee,
-        std::string& fail_reason,
-        const MWEB::Tx& mwtx) override
+        std::string& fail_reason) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
         auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
         if (!m_wallet->CreateTransaction(*locked_chain, recipients, pending->m_tx, pending->m_key, fee, change_pos,
-                fail_reason, coin_control, sign, mwtx)) {
+                fail_reason, coin_control, sign)) {
             return {};
         }
         return std::move(pending);
