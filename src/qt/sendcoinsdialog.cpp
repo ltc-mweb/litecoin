@@ -170,8 +170,6 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         // MWEB Features
         connect(_model->getOptionsModel(), &OptionsModel::mwebFeaturesChanged, this, &SendCoinsDialog::mwebFeatureChanged);
         ui->frameMWEBFeatures->setVisible(_model->getOptionsModel()->getMWEBFeatures());
-        ui->publicBalance->setVisible(_model->getOptionsModel()->getMWEBFeatures());
-        ui->mwebBalance->setVisible(_model->getOptionsModel()->getMWEBFeatures());
 
         // fee section
         for (const int n : confTargets) {
@@ -579,10 +577,7 @@ void SendCoinsDialog::setBalance(const interfaces::WalletBalances& balances)
 {
     if(model && model->getOptionsModel())
     {
-        // MW: TODO - How do we want to handle mweb_balance vs public balance?
         ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance));
-        //ui->labelPublicBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance));
-        //ui->labelMWEBBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.mweb_balance));
     }
 }
 
@@ -940,8 +935,6 @@ void SendCoinsDialog::coinControlUpdateLabels()
 void SendCoinsDialog::mwebFeatureChanged(bool checked)
 {
     ui->frameMWEBFeatures->setVisible(checked);
-    ui->publicBalance->setVisible(checked);
-    ui->mwebBalance->setVisible(checked);
 }
 
 // MWEB features: button inputs -> pegin
