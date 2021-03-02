@@ -2,6 +2,7 @@
 #include <script/standard.h>
 #include <consensus/consensus.h>
 #include <consensus/tx_verify.h>
+#include <policy/policy.h>
 #include <validation.h>
 #include <logging.h>
 #include <key_io.h>
@@ -141,5 +142,8 @@ void MWEB::Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pbl
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
     pblock->mwBlock = MWEB::Block(mw_block);
     pblocktemplate->vTxFees.push_back(mweb_fees);
-    pblocktemplate->vTxSigOpsCost.push_back(WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx.back())); // MWEB: TODO - Account for these when choosing transactions
+    
+     // MWEB: TODO - Confirm that pcoinsTip is correct, and that we have the right locks for it. Also, account for sigop counts when adding the pegin/out instead (preferably in mempool using MempoolTxEntry).
+    int64_t nSigOpCount = GetTransactionSigOpCost(*pblock->vtx.back(), *pcoinsTip, STANDARD_SCRIPT_VERIFY_FLAGS);
+    pblocktemplate->vTxSigOpsCost.push_back(nSigOpCount);
 }

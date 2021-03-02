@@ -229,10 +229,11 @@ public:
     virtual std::vector<WalletTxOut> getCoins(const std::vector<OutputIndex>& outputs) = 0;
 
     //! Get required fee.
-    virtual CAmount getRequiredFee(unsigned int tx_bytes) = 0;
+    virtual CAmount getRequiredFee(unsigned int tx_bytes, uint64_t mweb_weight) = 0;
 
     //! Get minimum fee.
     virtual CAmount getMinimumFee(unsigned int tx_bytes,
+        uint64_t mweb_weight,
         const CCoinControl& coin_control,
         int* returned_target,
         FeeReason* reason) = 0;

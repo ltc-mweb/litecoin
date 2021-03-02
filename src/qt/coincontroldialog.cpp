@@ -527,6 +527,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     if (nQuantity > 0)
     {
         // MW: TODO - Implement byte & fee estimation for MWEB
+        uint64_t mweb_weight = 0;
 
         // Bytes
         nBytes = nBytesInputs + ((CoinControlDialog::payAmounts.size() > 0 ? CoinControlDialog::payAmounts.size() + 1 : 2) * 34) + 10; // always assume +1 output for change here
@@ -545,7 +546,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
                 nBytes -= 34;
 
         // Fee
-        nPayFee = model->wallet().getMinimumFee(nBytes, *coinControl(), nullptr /* returned_target */, nullptr /* reason */);
+        nPayFee = model->wallet().getMinimumFee(nBytes, mweb_weight, * coinControl(), nullptr /* returned_target */, nullptr /* reason */);
 
         if (nPayAmount > 0)
         {

@@ -281,7 +281,7 @@ bool CreateTransactionEx(
     FeeCalculation feeCalc;
     CAmount nFeeNeeded;
 
-    CAmount mweb_fee = 0;
+    uint64_t mweb_weight = 0;
     bool change_on_mweb = false;
 
     int nBytes;
@@ -352,7 +352,7 @@ bool CreateTransactionEx(
                 nChangePosInOut = nChangePosRequest;
                 txNew.vin.clear();
                 txNew.vout.clear();
-                mweb_fee = 0;
+                mweb_weight = 0;
 
                 CAmount nValueToSelect = nValue;
                 if (nSubtractFeeFromAmount == 0)
@@ -393,16 +393,13 @@ bool CreateTransactionEx(
                         mweb_outputs = 1;
                     }
 
-                    size_t mweb_weight = 3 + (18 * mweb_outputs);
-                    mweb_fee = 100'000 * mweb_weight; // Hardcoded for now
+                    mweb_weight = GetMWEBWeight(mweb_outputs, 2, 1);
 
                     // We don't support multiple recipients for MWEB txs yet,
                     // so the only possible LTC outputs are pegins & change.
                     // Both of those are added after this, so clear outputs for now. 
                     txNew.vout.clear();
                     nChangePosInOut = -1;
-                } else {
-                    mweb_fee = 0;
                 }
 
                 change_on_mweb = IsChangeOnMWEB(mweb_type, coin_control);
@@ -456,7 +453,7 @@ bool CreateTransactionEx(
                     return false;
                 }
 
-                nFeeNeeded = GetMinimumFee(wallet, nBytes, coin_control, ::mempool, ::feeEstimator, &feeCalc) + mweb_fee;
+                nFeeNeeded = GetMinimumFee(wallet, nBytes, mweb_weight, coin_control, ::mempool, ::feeEstimator, &feeCalc);
                 if (feeCalc.reason == FeeReason::FALLBACK && !wallet.m_allow_fallback_fee) {
                     // eventually allow a fallback fee
                     strFailReason = _("Fee estimation failed. Fallbackfee is disabled. Wait a few blocks or enable -fallbackfee.");
@@ -465,7 +462,7 @@ bool CreateTransactionEx(
 
                 // If we made it here and we aren't even able to meet the relay fee on the next pass, give up
                 // because we must be at the maximum allowed fee.
-                if (nFeeNeeded < ::minRelayTxFee.GetFee(nBytes)) { // MW: TODO - Also include MWEB weight in minRelayTxFee calculation
+                if (nFeeNeeded < ::minRelayTxFee.GetTotalFee(nBytes, mweb_weight)) {
                     strFailReason = _("Transaction too large for fee policy");
                     return false;
                 }
@@ -483,8 +480,7 @@ bool CreateTransactionEx(
                     // change output. Only try this once.
                     if (nChangePosInOut == -1 && nSubtractFeeFromAmount == 0 && pick_new_inputs && (mweb_type == MWEB::TxType::LTC_TO_LTC || mweb_type == MWEB::TxType::PEGIN)) {
                         unsigned int tx_size_with_change = nBytes + coin_selection_params.change_output_size + 2; // Add 2 as a buffer in case increasing # of outputs changes compact size
-                        CAmount fee_needed_with_change = GetMinimumFee(wallet, tx_size_with_change, coin_control, ::mempool, ::feeEstimator, nullptr);
-                        fee_needed_with_change += mweb_fee;
+                        CAmount fee_needed_with_change = GetMinimumFee(wallet, tx_size_with_change, mweb_weight, coin_control, ::mempool, ::feeEstimator, nullptr);
                         CAmount minimum_value_for_change = GetDustThreshold(change_prototype_txout, discard_rate);
                         if (nFeeRet >= fee_needed_with_change + minimum_value_for_change) {
                             pick_new_inputs = false;
@@ -506,7 +502,6 @@ bool CreateTransactionEx(
                         }
                     }
 
-                    LogPrintf("nFeeRet: %d, nFeeNeeded: %d (MWEB: %d), nChangePosInOut: %d\n", nFeeRet, nFeeNeeded, mweb_fee, nChangePosInOut);
                     if (nFeeRet)
                     break; // Done, enough fee included.
                 } else if (!pick_new_inputs) {
@@ -565,6 +560,7 @@ bool CreateTransactionEx(
             }
         }
 
+        CAmount mweb_fee = ::minRelayTxFee.GetMWEBFee(mweb_weight);
         if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, nFeeRet, mweb_fee, change_on_mweb)) {
             strFailReason = _("Failed to create MWEB transaction");
             return false;

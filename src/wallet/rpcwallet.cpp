@@ -2408,7 +2408,7 @@ static UniValue settxfee(const JSONRPCRequest& request)
     LOCK(pwallet->cs_wallet);
 
     CAmount nAmount = AmountFromValue(request.params[0]);
-    CFeeRate tx_fee_rate(nAmount, 1000);
+    CFeeRate tx_fee_rate(nAmount, 1000, 0);
     if (tx_fee_rate == 0) {
         // automatic selection
     } else if (tx_fee_rate < ::minRelayTxFee) {

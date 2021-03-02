@@ -109,6 +109,11 @@ struct Tx {
         return IsNull() ? std::vector<libmw::PegOut>{} : m_transaction.GetPegouts();
     }
 
+    uint64_t GetMWEBWeight() const noexcept
+    {
+        return IsNull() ? 0 : m_transaction.GetWeight();
+    }
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

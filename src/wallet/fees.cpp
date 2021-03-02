@@ -13,15 +13,15 @@
 #include <wallet/wallet.h>
 
 
-CAmount GetRequiredFee(const CWallet& wallet, unsigned int nTxBytes)
+CAmount GetRequiredFee(const CWallet& wallet, unsigned int nTxBytes, uint64_t mweb_weight)
 {
-    return GetRequiredFeeRate(wallet).GetFee(nTxBytes);
+    return GetRequiredFeeRate(wallet).GetTotalFee(nTxBytes, mweb_weight);
 }
 
 
-CAmount GetMinimumFee(const CWallet& wallet, unsigned int nTxBytes, const CCoinControl& coin_control, const CTxMemPool& pool, const CBlockPolicyEstimator& estimator, FeeCalculation* feeCalc)
+CAmount GetMinimumFee(const CWallet& wallet, unsigned int nTxBytes, uint64_t mweb_weight, const CCoinControl& coin_control, const CTxMemPool& pool, const CBlockPolicyEstimator& estimator, FeeCalculation* feeCalc)
 {
-    return GetMinimumFeeRate(wallet, coin_control, pool, estimator, feeCalc).GetFee(nTxBytes);
+    return GetMinimumFeeRate(wallet, coin_control, pool, estimator, feeCalc).GetTotalFee(nTxBytes, mweb_weight);
 }
 
 CFeeRate GetRequiredFeeRate(const CWallet& wallet)

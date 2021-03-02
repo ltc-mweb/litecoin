@@ -2693,9 +2693,10 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
         CCoinControl temp;
         temp.m_confirm_target = 1008;
         CFeeRate long_term_feerate = GetMinimumFeeRate(*this, temp, ::mempool, ::feeEstimator, &feeCalc);
+        uint64_t mweb_weight = 0; // MW: TODO - Currently, BnB is not used for MWEB transactions, so just set mweb_weight to 0 for now.
 
         // Calculate cost of change
-        CAmount cost_of_change = GetDiscardRate(*this, ::feeEstimator).GetFee(coin_selection_params.change_spend_size) + coin_selection_params.effective_fee.GetFee(coin_selection_params.change_output_size);
+        CAmount cost_of_change = GetDiscardRate(*this, ::feeEstimator).GetTotalFee(coin_selection_params.change_spend_size, mweb_weight) + coin_selection_params.effective_fee.GetTotalFee(coin_selection_params.change_output_size, mweb_weight);
 
         // Filter by the min conf specs and add to utxo_pool and calculate effective value
         for (OutputGroup& group : groups) {
@@ -2720,7 +2721,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
             if (group.effective_value > 0) utxo_pool.push_back(group);
         }
         // Calculate the fees for things that aren't inputs
-        CAmount not_input_fees = coin_selection_params.effective_fee.GetFee(coin_selection_params.tx_noinputs_size);
+        CAmount not_input_fees = coin_selection_params.effective_fee.GetTotalFee(coin_selection_params.tx_noinputs_size, mweb_weight);
         bnb_used = true;
         return SelectCoinsBnB(utxo_pool, nTargetValue, cost_of_change, setCoinsRet, nValueRet, not_input_fees);
     } else {
@@ -2971,10 +2972,9 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
             std::vector<libmw::Coin> coins_found;
             for (const CTxOutput& txout : wtxNew.tx->GetOutputs()) {
                 if (txout.IsMWEB()) {
-                    WalletLogPrintf("Checking MWEB output: %s\n", HexStr(txout.GetCommitment()).c_str());
                     libmw::Coin coin;
                     if (libmw::wallet::RewindOutput(GetMWWallet(), wtxNew.tx->m_mwtx.m_transaction, txout.GetCommitment(), coin)) {
-                        WalletLogPrintf("Output rewound\n");
+                        WalletLogPrintf("Output rewound: %s\n", HexStr(txout.GetCommitment()).c_str());
                         coins_found.push_back(std::move(coin));
                     }
                 }
@@ -4122,7 +4122,7 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
             InitWarning(AmountHighWarn("-paytxfee") + " " +
                         _("This is the transaction fee you will pay if you send a transaction."));
         }
-        walletInstance->m_pay_tx_fee = CFeeRate(nFeePerK, 1000);
+        walletInstance->m_pay_tx_fee = CFeeRate(nFeePerK, 1000, 0);
         if (walletInstance->m_pay_tx_fee < ::minRelayTxFee) {
             InitError(strprintf(_("Invalid amount for -paytxfee=<amount>: '%s' (must be at least %s)"),
                 gArgs.GetArg("-paytxfee", ""), ::minRelayTxFee.ToString()));

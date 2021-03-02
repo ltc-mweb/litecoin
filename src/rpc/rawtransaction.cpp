@@ -2062,8 +2062,15 @@ UniValue analyzepsbt(const JSONRPCRequest& request)
             CTransaction ctx = CTransaction(mtx);
             size_t size = GetVirtualTransactionSize(ctx, GetTransactionSigOpCost(ctx, view, STANDARD_SCRIPT_VERIFY_FLAGS));
             result.pushKV("estimated_vsize", (int)size);
+
+            uint64_t mweb_weight = 0;
+            if (!ctx.m_mwtx.IsNull()) {
+                mweb_weight = ctx.m_mwtx.GetMWEBWeight();
+                result.pushKV("mweb_weight", (int)mweb_weight);
+            }
+
             // Estimate fee rate
-            CFeeRate feerate(fee, size);
+            CFeeRate feerate(fee, size, mweb_weight);
             result.pushKV("estimated_feerate", ValueFromAmount(feerate.GetFeePerK()));
         }
         result.pushKV("fee", ValueFromAmount(fee));
