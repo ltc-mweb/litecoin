@@ -23,6 +23,7 @@
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
 #include <libmw/libmw.h>
+#include <mweb/mweb_wallet.h>
 
 #include <algorithm>
 #include <atomic>
@@ -219,21 +220,31 @@ public:
 
 struct CRecipient
 {
-    boost::variant<CScript, libmw::MWEBAddress> receiver;
+    DestinationScript receiver;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
 
     bool IsMWEB() const noexcept
     {
-        return receiver.which() == 1;
+        return receiver.IsMWEB();
+    }
+
+    const libmw::MWEBAddress& GetMWEBAddress() const noexcept
+    {
+        return receiver.GetMWEBAddress();
+    }
+
+    const CScript& GetScript() const noexcept
+    {
+        return receiver.GetScript();
     }
 
     bool IsWitnessProgram() const
     {
-        if (receiver.which() == 0) {
+        if (!receiver.IsMWEB()) {
             int witnessversion = 0;
             std::vector<unsigned char> witnessprogram;
-            if (boost::get<CScript>(receiver).IsWitnessProgram(witnessversion, witnessprogram)) {
+            if (receiver.GetScript().IsWitnessProgram(witnessversion, witnessprogram)) {
                 return true;
             }
         }
@@ -267,7 +278,7 @@ struct COutputEntry
 {
     CTxDestination destination;
     CAmount amount;
-    int vout;
+    OutputIndex index;
 };
 
 /** A transaction with a merkle branch linking it to the block chain. */
@@ -340,20 +351,13 @@ public:
      */
     int GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const;
 
-    /**
-     * @return number of blocks to MWEB (peg-in) maturity for this transaction:
-     *  0 : is not a pegin transaction, or is a mature pegin transaction
-     * >0 : is a pegin transaction which matures in this many blocks
-     */
-    int GetBlocksToMWEBMaturity(interfaces::Chain::Lock& locked_chain) const;
-
     bool hashUnset() const { return (hashBlock.IsNull() || hashBlock == ABANDON_HASH); }
     bool isAbandoned() const { return (hashBlock == ABANDON_HASH); }
     void setAbandoned() { hashBlock = ABANDON_HASH; }
 
     const uint256& GetHash() const { return tx->GetHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
-    bool IsImmatureCoinBase(interfaces::Chain::Lock& locked_chain) const;
+    bool IsImmature(interfaces::Chain::Lock& locked_chain) const;
 };
 
 //Get the marginal bytes of spending the specified output
@@ -541,6 +545,7 @@ public:
     CAmount GetAvailableCredit(interfaces::Chain::Lock& locked_chain, bool fUseCache=true, const isminefilter& filter=ISMINE_SPENDABLE) const NO_THREAD_SAFETY_ANALYSIS;
     CAmount GetImmatureWatchOnlyCredit(interfaces::Chain::Lock& locked_chain, const bool fUseCache=true) const;
     CAmount GetChange() const;
+    CAmount GetFee(const isminefilter& filter) const;
 
     // Get the marginal bytes if spending the specified output from this transaction
     int GetSpendSize(unsigned int out, bool use_max_sig = false) const
@@ -633,65 +638,78 @@ struct MWOutput
 
 struct COutputCoin
 {
-    boost::optional<COutput> out;
-    boost::optional<MWOutput> mwCoin;
+    COutputCoin(const COutput& out) : m_output(out) {}
+    COutputCoin(const MWOutput& out) : m_output(out) {}
 
-    COutputCoin(const COutput& out) : out(out) {}
-    COutputCoin(const MWOutput& coin) : mwCoin(coin) {}
-
-    bool IsMWEB() const noexcept { return !!mwCoin; }
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(MWOutput); }
 
     bool IsSpendable() const
     {
-        if (IsMWEB()) return mwCoin->coin.key && !mwCoin->coin.spent && mwCoin->coin.included_block;
-        return out->fSpendable;
+        if (IsMWEB()) return true;
+        return boost::get<COutput>(m_output).fSpendable;
     }
 
     bool GetDestination(CTxDestination& dest) const
     {
         if (IsMWEB()) {
-            dest = MWEBAddress(mwCoin->address);
+            dest = MWEBAddress(boost::get<MWOutput>(m_output).address);
             return true;
         } else {
-            return ExtractDestination(out->tx->tx->vout[out->i].scriptPubKey, dest);
+            const COutput& out = boost::get<COutput>(m_output);
+            return ExtractDestination(out.tx->tx->vout[out.i].scriptPubKey, dest);
         }
     }
 
     boost::variant<CScript, libmw::MWEBAddress> GetAddress() const
     {
-        if (IsMWEB()) return mwCoin->address;
-        return out->tx->tx->vout[out->i].scriptPubKey;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return out.tx->tx->vout[out.i].scriptPubKey;
     }
 
     CAmount GetValue() const
     {
-        if (IsMWEB()) return mwCoin->coin.amount;
-        return out->tx->tx->vout[out->i].nValue;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.amount;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return out.tx->tx->vout[out.i].nValue;
     }
 
     int64_t GetTime() const
     {
-        if (IsMWEB()) return mwCoin->nTime;
-        return out->tx->GetTxTime();
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).nTime;
+        return boost::get<COutput>(m_output).tx->GetTxTime();
     }
 
     int GetDepth() const
     {
-        if (IsMWEB()) return mwCoin->nDepth;
-        return out->nDepth;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).nDepth;
+        return boost::get<COutput>(m_output).nDepth;
     }
 
     CInputCoin GetInputCoin() const
     {
-        if (IsMWEB()) return CInputCoin(mwCoin->coin);
-        return out->GetInputCoin();
+        if (IsMWEB()) return CInputCoin(boost::get<MWOutput>(m_output).coin);
+        return boost::get<COutput>(m_output).GetInputCoin();
     }
 
     OutputIndex GetIndex() const
     {
-        if (IsMWEB()) return mwCoin->coin.commitment;
-        return COutPoint(out->tx->GetHash(), out->i);
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.commitment;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return COutPoint(out.tx->GetHash(), out.i);
     }
+
+    // Returns nullptr for MWEB outputs
+    const CWalletTx* GetWalletTx() const
+    {
+        if (IsMWEB()) return nullptr;
+        return boost::get<COutput>(m_output).tx;
+    }
+
+    boost::variant<COutput, MWOutput> m_output;
 };
 
 /** Private key that includes an expiration date in case it never gets used. */
@@ -770,6 +788,12 @@ private:
     TxSpends mapTxSpends GUARDED_BY(cs_wallet);
     void AddToSpends(const OutputIndex& outpoint, const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void AddToSpends(const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+
+    /**
+     * Used to keep track of which CWalletTx an MWEB output came from.
+     */
+    std::map<libmw::Commitment, uint256> mapOutputCommits GUARDED_BY(cs_wallet);
+    void AddToOutputCommits(const CWalletTx& wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Add a transaction to the wallet, or update it.  pIndex and posInBlock should
@@ -868,71 +892,6 @@ public:
     bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    inline bool SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
-                    const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
-    {
-        std::vector<COutputCoin> vCoins;
-        std::transform(
-            vAvailableCoins.cbegin(), vAvailableCoins.cend(),
-            std::back_inserter(vCoins),
-            [](const COutput& out) { return COutputCoin(out); }
-        );
-
-        // BnB only supported for non-MWEB.
-        if (coin_selection_params.input_preference == InputPreference::PREFER_LTC && coin_selection_params.use_bnb) {
-            CoinSelectionParams params2 = coin_selection_params;
-            params2.input_preference = InputPreference::LTC_ONLY;
-
-            // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-        }
-
-        bnb_used = false;
-        coin_selection_params.use_bnb = false;
-        if (coin_selection_params.input_preference == InputPreference::PREFER_LTC) {
-            CoinSelectionParams params2 = coin_selection_params;
-            params2.input_preference = InputPreference::LTC_ONLY;
-
-            // First try SelectCoins with LTC_ONLY since those are the preferred inputs.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            params2.input_preference = InputPreference::MWEB_ONLY;
-            params2.change_type = OutputType::MWEB;
-
-            // Then try SelectCoins with MWEB_ONLY so we can avoid mixing input types.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
-        } else if (coin_selection_params.input_preference == InputPreference::PREFER_MWEB) {
-            CoinSelectionParams params2 = coin_selection_params;
-            params2.input_preference = InputPreference::MWEB_ONLY;
-            params2.change_type = OutputType::MWEB;
-
-            // First try SelectCoins with MWEB_ONLY since those are the preferred inputs.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            params2.input_preference = InputPreference::LTC_ONLY;
-            params2.change_type = coin_selection_params.change_type;
-
-            // Then try SelectCoins with LTC_ONLY so we can avoid mixing input types.
-            if (SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-                return true;
-            }
-
-            // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
-        }
-
-        return SelectCoins(vCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
-    }
-
     const WalletLocation& GetLocation() const { return m_location; }
 
     /** Get a name for this wallet for logging/debugging purposes.
@@ -993,12 +952,12 @@ public:
     /**
      * Return list of available coins and locked coins grouped by non-change output address.
      */
-    std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<COutputCoin>> ListCoins(interfaces::Chain::Lock& locked_chain) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    std::map<CTxDestination, std::vector<COutputCoin>> ListCoins(interfaces::Chain::Lock& locked_chain) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Find non-change parent output.
      */
-    const CTxOut& FindNonChangeParentOutput(const CTransaction& tx, int output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    CTxOutput FindNonChangeParentOutput(const CTransaction& tx, const OutputIndex& output_idx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Shuffle and select coins until nTargetValue is reached while avoiding
@@ -1009,7 +968,7 @@ public:
     bool SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibilityFilter& eligibility_filter, std::vector<OutputGroup> groups,
         std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const;
 
-    bool IsSpent(interfaces::Chain::Lock& locked_chain, const uint256& hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool IsSpent(interfaces::Chain::Lock& locked_chain, const OutputIndex& idx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     std::vector<OutputGroup> GroupOutputs(const std::vector<COutputCoin>& outputs, bool single_coin) const;
 
     bool IsLockedCoin(const OutputIndex& output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
@@ -1138,8 +1097,8 @@ public:
      * @note passing nChangePosInOut as -1 will result in setting a random position
      */
     bool CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosInOut,
-                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true, const MWEB::Tx& mwtx = {});
-    bool CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, CReserveKey& reservekey, CConnman* connman, CValidationState& state);
+                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true);
+    bool CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, const std::vector<CReserveKey*>& reservekeys, CConnman* connman, CValidationState& state);
 
     bool DummySignTx(CMutableTransaction &txNew, const std::set<CTxOut> &txouts, bool use_max_sig = false) const
     {
@@ -1203,17 +1162,17 @@ public:
 
     std::set<CTxDestination> GetLabelAddresses(const std::string& label) const;
 
-    isminetype IsMine(const CTxIn& txin) const;
+    isminetype IsMine(const CTxInput& input) const;
     /**
      * Returns amount of debit if the input matches the
      * filter, otherwise returns 0
      */
-    CAmount GetDebit(const CTxIn& txin, const isminefilter& filter) const;
-    isminetype IsMine(const CTxOut& txout) const;
-    CAmount GetCredit(const CTxOut& txout, const isminefilter& filter) const;
-    bool IsChange(const CTxOut& txout) const;
+    CAmount GetDebit(const CTxInput& txin, const isminefilter& filter) const;
+    isminetype IsMine(const CTxOutput& output) const;
+    CAmount GetCredit(const CTxOutput& output, const isminefilter& filter) const;
+    bool IsChange(const CTxOutput& output) const;
     bool IsChange(const CScript& script) const;
-    CAmount GetChange(const CTxOut& txout) const;
+    CAmount GetChange(const CTxOutput& output) const;
     bool IsMine(const CTransaction& tx) const;
     /** should probably be renamed to IsRelevantToMe */
     bool IsFromMe(const CTransaction& tx) const;
@@ -1394,9 +1353,14 @@ public:
     /** Add a KeyOriginInfo to the wallet */
     bool AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info);
 
-    libmw::Coin GetCoin(const libmw::Commitment& output_commit) const;
+    bool GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const;
 
-    COutputCoin MakeOutputCoin(interfaces::Chain::Lock& locked_chain, const libmw::Coin& coin) const;
+    CAmount GetAmount(const CTxOutput& output) const;
+    bool ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const;
+
+    const CWalletTx* FindWalletTx(const OutputIndex& output) const;
+    const CWalletTx* FindPrevTx(const CTxInput& input) const;
+    CWalletTx* FindPrevTx(const CTxInput& input);
 
     libmw::IWallet::Ptr GetMWWallet() const;
     libmw::IChain::Ptr GetMWChain();

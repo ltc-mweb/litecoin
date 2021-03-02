@@ -37,6 +37,9 @@ public:
     //! Fee estimation mode to control arguments to estimateSmartFee
     FeeEstimateMode m_fee_mode;
 
+    bool fPegIn;
+    bool fPegOut;
+
     CCoinControl()
     {
         SetNull();

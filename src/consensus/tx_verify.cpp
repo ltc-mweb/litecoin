@@ -8,6 +8,7 @@
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <consensus/validation.h>
+#include <logging.h>
 
 // TODO remove the following dependencies
 #include <chain.h>
@@ -170,7 +171,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
     if (tx.HasMWData()) {
         try {
             libmw::node::CheckTransaction(tx.m_mwtx.m_transaction);
-        } catch (std::exception&) {
+        } catch (std::exception& e) {
             return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
         }
     }

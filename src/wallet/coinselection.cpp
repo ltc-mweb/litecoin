@@ -300,7 +300,7 @@ bool KnapsackSolver(const CAmount& nTargetValue, std::vector<OutputGroup>& group
 void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants) {
     m_outputs.push_back(output);
     m_from_me &= from_me;
-    m_value += output.effective_value;
+    m_value += output.GetAmount();
     m_depth = std::min(m_depth, depth);
     // ancestors here express the number of ancestors the new coin will end up having, which is
     // the sum, rather than the max; this will overestimate in the cases where multiple inputs
@@ -314,10 +314,10 @@ void OutputGroup::Insert(const CInputCoin& output, int depth, bool from_me, size
 
 std::vector<CInputCoin>::iterator OutputGroup::Discard(const CInputCoin& output) {
     auto it = m_outputs.begin();
-    while (it != m_outputs.end() && it->outpoint != output.outpoint) ++it;
+    while (it != m_outputs.end() && it->GetIndex() != output.GetIndex()) ++it;
     if (it == m_outputs.end()) return it;
-    m_value -= output.effective_value;
-    effective_value -= output.effective_value;
+    m_value -= output.GetAmount();
+    effective_value -= output.GetAmount();
     return m_outputs.erase(it);
 }
 

@@ -24,6 +24,7 @@
 class CCoinControl;
 class CFeeRate;
 class CKey;
+class CReserveKey;
 class CWallet;
 enum class FeeReason;
 enum class OutputType;
@@ -79,6 +80,8 @@ public:
     // Get key from pool.
     virtual bool getKeyFromPool(bool internal, CPubKey& pub_key) = 0;
 
+    virtual std::unique_ptr<CReserveKey> getReservedKey(bool internal, CPubKey& pub_key) = 0;
+
     //! Get public key.
     virtual bool getPubKey(const CKeyID& address, CPubKey& pub_key) = 0;
 
@@ -122,7 +125,7 @@ public:
     //! Get dest values with prefix.
     virtual std::vector<std::string> getDestValues(const std::string& prefix) = 0;
 
-    virtual libmw::Coin findCoin(const libmw::Commitment& output_commit) = 0;
+    virtual bool findCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) = 0;
 
     //! Lock coin.
     virtual void lockCoin(const OutputIndex& output) = 0;
@@ -142,10 +145,7 @@ public:
         bool sign,
         int& change_pos,
         CAmount& fee,
-        std::string& fail_reason,
-        const MWEB::Tx& mwtx = {}) = 0;
-
-    virtual std::unique_ptr<PendingWalletTx> createTransaction(const MWEB::Tx& mwtx) = 0;
+        std::string& fail_reason) = 0;
 
     //! Return whether transaction can be abandoned.
     virtual bool transactionCanBeAbandoned(const uint256& txid) = 0;
@@ -209,30 +209,31 @@ public:
     virtual CAmount getAvailableBalance(const CCoinControl& coin_control) = 0;
 
     //! Return whether transaction input belongs to wallet.
-    virtual isminetype txinIsMine(const CTxIn& txin) = 0;
+    virtual isminetype txinIsMine(const CTxInput& input) = 0;
 
     //! Return whether transaction output belongs to wallet.
-    virtual isminetype txoutIsMine(const CTxOut& txout) = 0;
+    virtual isminetype txoutIsMine(const CTxOutput& output) = 0;
 
     //! Return debit amount if transaction input belongs to wallet.
-    virtual CAmount getDebit(const CTxIn& txin, isminefilter filter) = 0;
+    virtual CAmount getDebit(const CTxInput& input, isminefilter filter) = 0;
 
     //! Return credit amount if transaction input belongs to wallet.
-    virtual CAmount getCredit(const CTxOut& txout, isminefilter filter) = 0;
+    virtual CAmount getCredit(const CTxOutput& output, isminefilter filter) = 0;
 
     //! Return AvailableCoins + LockedCoins grouped by wallet address.
     //! (put change in one group with wallet address)
-    using CoinsList = std::map<boost::variant<CTxDestination, libmw::MWEBAddress>, std::vector<WalletTxOut>>;
+    using CoinsList = std::map<CTxDestination, std::vector<WalletTxOut>>;
     virtual CoinsList listCoins() = 0;
 
     //! Return wallet transaction output information.
     virtual std::vector<WalletTxOut> getCoins(const std::vector<OutputIndex>& outputs) = 0;
 
     //! Get required fee.
-    virtual CAmount getRequiredFee(unsigned int tx_bytes) = 0;
+    virtual CAmount getRequiredFee(unsigned int tx_bytes, uint64_t mweb_weight) = 0;
 
     //! Get minimum fee.
     virtual CAmount getMinimumFee(unsigned int tx_bytes,
+        uint64_t mweb_weight,
         const CCoinControl& coin_control,
         int* returned_target,
         FeeReason* reason) = 0;
@@ -260,6 +261,10 @@ public:
 
     // Get MWEB wallet.
     virtual libmw::IWallet::Ptr GetMWWallet() = 0;
+
+    virtual bool extractOutputDestination(const CTxOutput& output, CTxDestination& dest) = 0;
+
+    virtual CAmount getAmount(const CTxOutput& output) = 0;
 
     //! Register handler for unload message.
     using UnloadFn = std::function<void()>;
@@ -309,7 +314,8 @@ public:
     //! Send pending transaction and commit to wallet.
     virtual bool commit(WalletValueMap value_map,
         WalletOrderForm order_form,
-        std::string& reject_reason) = 0;
+        std::string& reject_reason,
+        const std::vector<CReserveKey*>& additional_keys) = 0;
 };
 
 //! Information about one wallet address.
@@ -336,19 +342,13 @@ struct WalletBalances
     CAmount watch_only_balance = 0;
     CAmount unconfirmed_watch_only_balance = 0;
     CAmount immature_watch_only_balance = 0;
-    CAmount mweb_balance = 0;
-    CAmount unconfirmed_mweb_balance = 0;
-    CAmount immature_mweb_balance = 0;
 
     bool balanceChanged(const WalletBalances& prev) const
     {
         return balance != prev.balance || unconfirmed_balance != prev.unconfirmed_balance ||
                immature_balance != prev.immature_balance || watch_only_balance != prev.watch_only_balance ||
                unconfirmed_watch_only_balance != prev.unconfirmed_watch_only_balance ||
-               immature_watch_only_balance != prev.immature_watch_only_balance ||
-               mweb_balance != prev.mweb_balance ||
-               unconfirmed_mweb_balance != prev.unconfirmed_mweb_balance ||
-               immature_mweb_balance != prev.immature_mweb_balance;
+               immature_watch_only_balance != prev.immature_watch_only_balance;
     }
 };
 
@@ -360,11 +360,11 @@ struct WalletTx
     std::vector<isminetype> txout_is_mine;
     std::vector<CTxDestination> txout_address;
     std::vector<isminetype> txout_address_is_mine;
+    std::vector<CAmount> txout_amount;
     CAmount credit;
     CAmount debit;
     CAmount change;
-    CAmount mweb_credit;
-    CAmount mweb_debit;
+    CAmount fee;
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;
@@ -375,7 +375,6 @@ struct WalletTxStatus
 {
     int block_height;
     int blocks_to_maturity;
-    int blocks_to_mweb_maturity;
     int depth_in_main_chain;
     unsigned int time_received;
     uint32_t lock_time;

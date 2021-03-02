@@ -36,8 +36,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_NULL_DATA: return "nulldata";
     case TX_WITNESS_V0_KEYHASH: return "witness_v0_keyhash";
     case TX_WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
-    case TX_WITNESS_MW_HEADERHASH: return "witness_mw_headerhash";
-    case TX_WITNESS_MW_PEGIN: return "witness_mw_pegin";
+    case TX_WITNESS_MWEB_PEGIN: return "witness_mweb_pegin";
     case TX_WITNESS_UNKNOWN: return "witness_unknown";
     }
     return nullptr;
@@ -113,13 +112,9 @@ txnouttype Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned 
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_V0_SCRIPTHASH;
         }
-        if (witnessversion == Consensus::Mimblewimble::WITNESS_VERSION && witnessprogram.size() == WITNESS_MW_HEADERHASH_SIZE) {
+        if (witnessversion == Consensus::Mimblewimble::WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_PEGIN_SIZE) {
             vSolutionsRet.push_back(witnessprogram);
-            return TX_WITNESS_MW_HEADERHASH;
-        }
-        if (witnessversion == Consensus::Mimblewimble::WITNESS_VERSION && witnessprogram.size() == WITNESS_MW_PEGIN_SIZE) {
-            vSolutionsRet.push_back(witnessprogram);
-            return TX_WITNESS_MW_PEGIN;
+            return TX_WITNESS_MWEB_PEGIN;
         }
         if (witnessversion != 0) {
             vSolutionsRet.push_back(std::vector<unsigned char>{(unsigned char)witnessversion});
@@ -201,7 +196,7 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
         unk.length = vSolutions[1].size();
         addressRet = unk;
         return true;
-    } else if (whichType == TX_WITNESS_MW_PEGIN) {
+    } else if (whichType == TX_WITNESS_MWEB_PEGIN) {
         // MW: TODO - I have no idea how to handle this. Looking up the matching peg-in output would be too slow.
         return false;
     }
@@ -342,4 +337,24 @@ CScript GetScriptForWitness(const CScript& redeemscript)
 
 bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
+}
+
+bool IsPegInOutput(const CTxOutput& output)
+{
+    if (!output.IsMWEB()) {
+        std::vector<std::vector<uint8_t>> solutions_data;
+        txnouttype which_type = Solver(output.GetTxOut().scriptPubKey, solutions_data);
+        return which_type == TX_WITNESS_MWEB_PEGIN;
+    }
+
+    return false;
+}
+
+DestinationScript::DestinationScript(const CTxDestination& dest)
+{
+    if (dest.type() == typeid(MWEBAddress)) {
+        m_script = boost::get<MWEBAddress>(dest).address;
+    } else {
+        m_script = GetScriptForDestination(dest);
+    }
 }

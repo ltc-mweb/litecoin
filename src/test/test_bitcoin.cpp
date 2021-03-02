@@ -84,8 +84,10 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
 
         libmw::CoinsViewRef mw_view = libmw::node::Initialize(
             libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
-            {nullptr}, // MW: Load this first
-            std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()));
+            {nullptr}, // MW: TODO - Load this first
+            std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),
+            {}
+        );
         pcoinsdbview->SetMWView(mw_view);
 
         pcoinsTip.reset(new CCoinsViewCache(pcoinsdbview.get()));

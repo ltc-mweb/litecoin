@@ -6,6 +6,7 @@
 #define BITCOIN_WALLET_COINSELECTION_H
 
 #include <amount.h>
+#include <policy/feerate.h>
 #include <primitives/transaction.h>
 #include <random.h>
 
@@ -14,7 +15,6 @@ static constexpr CAmount MIN_CHANGE{COIN / 100};
 //! final minimum change amount after paying for fees
 static const CAmount MIN_FINAL_CHANGE = MIN_CHANGE/2;
 
-// MW: TODO - Encapsulate this object to avoid consumers needing to make assumptions about the existence of its data fields.
 class CInputCoin {
 public:
     CInputCoin(const CTransactionRef& tx, unsigned int i)
@@ -24,10 +24,8 @@ public:
         if (i >= tx->vout.size())
             throw std::out_of_range("The output index is out of range");
 
-        outpoint = COutPoint(tx->GetHash(), i);
-        txout = tx->vout[i];
-        effective_value = txout.nValue;
-        mwCoin = nullptr;
+        m_index = COutPoint(tx->GetHash(), i);
+        m_output = tx->vout[i];
     }
 
     CInputCoin(const CTransactionRef& tx, unsigned int i, int input_bytes) : CInputCoin(tx, i)
@@ -36,44 +34,44 @@ public:
     }
 
     CInputCoin(const uint256& tx_hash, uint32_t i, const CAmount& nValue, const CScript& scriptPubKey)
-    {
-        outpoint = COutPoint(tx_hash, i);
-        txout = CTxOut(nValue, scriptPubKey);
-        effective_value = nValue;
-        mwCoin = nullptr;
-    }
+        : m_output(CTxOut(nValue, scriptPubKey)), m_index(COutPoint(tx_hash, i)) {}
 
     CInputCoin(const libmw::Coin& coin)
+        : m_output(coin), m_index(coin.commitment), m_input_bytes(0) { }
+
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(libmw::Coin); }
+    CScript GetScriptPubKey() const noexcept { return IsMWEB() ? CScript() : boost::get<CTxOut>(m_output).scriptPubKey; }
+    CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<libmw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
+    const OutputIndex& GetIndex() const noexcept { return m_index; }
+
+    CAmount CalculateFee(const CFeeRate& feerate) const noexcept
     {
-        mwCoin = &coin;
-        txout.nValue = effective_value = coin.amount;
-        m_input_bytes = sizeof(libmw::Commitment);
+        if (IsMWEB()) {
+            return 0;
+        }
+
+        return m_input_bytes < 0 ? 0 : feerate.GetFee(m_input_bytes);
     }
 
-    COutPoint outpoint;
-    CTxOut txout;
-    CAmount effective_value;
-
-    const libmw::Coin *mwCoin;
-
-    bool IsMWEB() const noexcept { return mwCoin != nullptr; }
-    CAmount GetAmount() const noexcept { return effective_value; }
-
-    /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
-    int m_input_bytes{-1};
-
     bool operator<(const CInputCoin& rhs) const {
-        if (outpoint == rhs.outpoint) return mwCoin < rhs.mwCoin;
-        return outpoint < rhs.outpoint;
+        return m_index < rhs.m_index;
     }
 
     bool operator!=(const CInputCoin& rhs) const {
-        return outpoint != rhs.outpoint || mwCoin != rhs.mwCoin;
+        return m_index != rhs.m_index;
     }
 
     bool operator==(const CInputCoin& rhs) const {
-        return outpoint == rhs.outpoint && mwCoin == rhs.mwCoin;
+        return m_index == rhs.m_index;
     }
+
+private:
+    boost::variant<CTxOut, libmw::Coin> m_output;
+
+    OutputIndex m_index;
+
+    /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
+    int m_input_bytes{-1};
 };
 
 struct CoinEligibilityFilter

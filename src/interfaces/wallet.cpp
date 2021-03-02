@@ -52,12 +52,16 @@ public:
 
     bool commit(WalletValueMap value_map,
         WalletOrderForm order_form,
-        std::string& reject_reason) override
+        std::string& reject_reason,
+        const std::vector<CReserveKey*>& additional_keys) override
     {
         auto locked_chain = m_wallet.chain().lock();
         LOCK(m_wallet.cs_wallet);
+
+        std::vector<CReserveKey*> reserved_keys = additional_keys;
+        reserved_keys.push_back(&m_key);
         CValidationState state;
-        if (!m_wallet.CommitTransaction(m_tx, std::move(value_map), std::move(order_form), m_key, g_connman.get(), state)) {
+        if (!m_wallet.CommitTransaction(m_tx, std::move(value_map), std::move(order_form), reserved_keys, g_connman.get(), state)) {
             reject_reason = state.GetRejectReason();
             return false;
         }
@@ -72,26 +76,34 @@ public:
 //! Construct wallet tx struct.
 WalletTx MakeWalletTx(interfaces::Chain::Lock& locked_chain, CWallet& wallet, const CWalletTx& wtx)
 {
-    // MW: TODO - Include mweb_credit, mweb_debit, and output coins
+    std::vector<CTxInput> inputs = wtx.tx->GetInputs();
+    std::vector<CTxOutput> outputs = wtx.tx->GetOutputs();
+
     WalletTx result;
     result.tx = wtx.tx;
-    result.txin_is_mine.reserve(wtx.tx->vin.size());
-    for (const auto& txin : wtx.tx->vin) {
+    result.txin_is_mine.reserve(inputs.size());
+    for (const auto& txin : inputs) {
         result.txin_is_mine.emplace_back(wallet.IsMine(txin));
     }
-    result.txout_is_mine.reserve(wtx.tx->vout.size());
-    result.txout_address.reserve(wtx.tx->vout.size());
-    result.txout_address_is_mine.reserve(wtx.tx->vout.size());
-    for (const auto& txout : wtx.tx->vout) {
+    result.txout_is_mine.reserve(outputs.size());
+    result.txout_address.reserve(outputs.size());
+    result.txout_address_is_mine.reserve(outputs.size());
+    for (const auto& txout : outputs) {
+        if (IsPegInOutput(txout)) {
+            continue;
+        }
         result.txout_is_mine.emplace_back(wallet.IsMine(txout));
         result.txout_address.emplace_back();
-        result.txout_address_is_mine.emplace_back(ExtractDestination(txout.scriptPubKey, result.txout_address.back()) ?
+        result.txout_address_is_mine.emplace_back(wallet.ExtractOutputDestination(txout, result.txout_address.back()) ?
                                                       IsMine(wallet, result.txout_address.back()) :
                                                       ISMINE_NO);
+        result.txout_amount.emplace_back(wallet.GetAmount(txout));
+
     }
     result.credit = wtx.GetCredit(locked_chain, ISMINE_ALL);
     result.debit = wtx.GetDebit(ISMINE_ALL);
     result.change = wtx.GetChange();
+    result.fee = wtx.GetFee(ISMINE_ALL);
     result.time = wtx.GetTxTime();
     result.value_map = wtx.mapValue;
     result.is_coinbase = wtx.IsCoinBase();
@@ -108,7 +120,6 @@ WalletTxStatus MakeWalletTxStatus(interfaces::Chain::Lock& locked_chain, const C
     CBlockIndex* block = mi != ::mapBlockIndex.end() ? mi->second : nullptr;
     result.block_height = (block ? block->nHeight : std::numeric_limits<int>::max());
     result.blocks_to_maturity = wtx.GetBlocksToMaturity(locked_chain);
-    result.blocks_to_mweb_maturity = wtx.GetBlocksToMWEBMaturity(locked_chain);
     result.depth_in_main_chain = wtx.GetDepthInMainChain(locked_chain);
     result.time_received = wtx.nTimeReceived;
     result.lock_time = wtx.tx->nLockTime;
@@ -133,11 +144,11 @@ WalletTxOut MakeWalletTxOut(interfaces::Chain::Lock& locked_chain,
     result.nValue = wtx.tx->vout[n].nValue;
     result.time = wtx.GetTxTime();
     result.depth_in_main_chain = depth;
-    result.is_spent = wallet.IsSpent(locked_chain, wtx.GetHash(), n);
+    result.is_spent = wallet.IsSpent(locked_chain, COutPoint(wtx.GetHash(), n));
     return result;
 }
 
-WalletTxOut MakeWalletTxOut(const COutputCoin& coin) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
+WalletTxOut MakeWalletTxOut(const COutputCoin& coin)
 {
     WalletTxOut result;
     result.address = coin.GetAddress();
@@ -173,6 +184,15 @@ public:
     bool getKeyFromPool(bool internal, CPubKey& pub_key) override
     {
         return m_wallet->GetKeyFromPool(pub_key, internal);
+    }
+    std::unique_ptr<CReserveKey> getReservedKey(bool internal, CPubKey& pub_key) override
+    {
+        std::unique_ptr<CReserveKey> reservedkey = std::make_unique<CReserveKey>(m_wallet.get());
+        if (reservedkey->GetReservedKey(pub_key, internal)) {
+            return reservedkey;
+        }
+
+        return nullptr;
     }
     bool getPubKey(const CKeyID& address, CPubKey& pub_key) override { return m_wallet->GetPubKey(address, pub_key); }
     bool getPrivKey(const CKeyID& address, CKey& key) override { return m_wallet->GetKey(address, key); }
@@ -236,10 +256,10 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetDestValues(prefix);
     }
-    libmw::Coin findCoin(const libmw::Commitment& output_commit) override
+    bool findCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) override
     {
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetCoin(output_commit);
+        return m_wallet->GetCoin(output_commit, coin);
     }
     void lockCoin(const OutputIndex& output) override
     {
@@ -270,24 +290,15 @@ public:
         bool sign,
         int& change_pos,
         CAmount& fee,
-        std::string& fail_reason,
-        const MWEB::Tx& mwtx) override
+        std::string& fail_reason) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
         auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
         if (!m_wallet->CreateTransaction(*locked_chain, recipients, pending->m_tx, pending->m_key, fee, change_pos,
-                fail_reason, coin_control, sign, mwtx)) {
+                fail_reason, coin_control, sign)) {
             return {};
         }
-        return std::move(pending);
-    }
-    std::unique_ptr<PendingWalletTx> createTransaction(const MWEB::Tx& mwtx) override
-    {
-        auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
-        CMutableTransaction tx;
-        tx.m_mwtx = mwtx;
-        pending->m_tx = MakeTransactionRef(tx);
         return std::move(pending);
     }
     bool transactionCanBeAbandoned(const uint256& txid) override { return m_wallet->TransactionCanBeAbandoned(txid); }
@@ -409,10 +420,6 @@ public:
             result.unconfirmed_watch_only_balance = m_wallet->GetUnconfirmedWatchOnlyBalance();
             result.immature_watch_only_balance = m_wallet->GetImmatureWatchOnlyBalance();
         }
-        libmw::WalletBalance balances = libmw::wallet::GetBalance(m_wallet->GetMWWallet());
-        result.mweb_balance = balances.confirmed_balance;
-        result.unconfirmed_mweb_balance = balances.unconfirmed_balance;
-        result.immature_mweb_balance = balances.immature_balance;
         return result;
     }
     bool tryGetBalances(WalletBalances& balances, int& num_blocks) override
@@ -432,29 +439,29 @@ public:
     {
         return m_wallet->GetAvailableBalance(&coin_control);
     }
-    isminetype txinIsMine(const CTxIn& txin) override
+    isminetype txinIsMine(const CTxInput& input) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->IsMine(txin);
+        return m_wallet->IsMine(input);
     }
-    isminetype txoutIsMine(const CTxOut& txout) override
+    isminetype txoutIsMine(const CTxOutput& output) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->IsMine(txout);
+        return m_wallet->IsMine(output);
     }
-    CAmount getDebit(const CTxIn& txin, isminefilter filter) override
+    CAmount getDebit(const CTxInput& input, isminefilter filter) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetDebit(txin, filter);
+        return m_wallet->GetDebit(input, filter);
     }
-    CAmount getCredit(const CTxOut& txout, isminefilter filter) override
+    CAmount getCredit(const CTxOutput& output, isminefilter filter) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetCredit(txout, filter);
+        return m_wallet->GetCredit(output, filter);
     }
     CoinsList listCoins() override
     {
@@ -477,31 +484,37 @@ public:
         result.reserve(outputs.size());
         for (const auto& output : outputs) {
             result.emplace_back();
-            if (output.which() == 0) {
-                const COutPoint& outpoint = boost::get<COutPoint>(output);
-                auto it = m_wallet->mapWallet.find(outpoint.hash);
-                if (it != m_wallet->mapWallet.end()) {
-                    int depth = it->second.GetDepthInMainChain(*locked_chain);
-                    if (depth >= 0) {
-                        result.back() = MakeWalletTxOut(*locked_chain, *m_wallet, it->second, outpoint.n, depth);
+            const CWalletTx* wtx = m_wallet->FindWalletTx(output);
+            if (wtx != nullptr) {
+                int depth = wtx->GetDepthInMainChain(*locked_chain);
+                if (depth >= 0) {
+                    if (output.type() == typeid(libmw::Commitment)) {
+                        libmw::Coin coin;
+                        if (m_wallet->GetCoin(boost::get<libmw::Commitment>(output), coin)) {
+                            libmw::MWEBAddress address = libmw::wallet::GetAddress(GetMWWallet(), coin.address_index);
+                            result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), address});
+                        }
+                    } else {
+                        result.back() = MakeWalletTxOut(*locked_chain, *m_wallet, *wtx, boost::get<COutPoint>(output).n, depth);
                     }
                 }
-            } else {
-                const libmw::Coin& coin = m_wallet->GetCoin(boost::get<libmw::Commitment>(output));
-                result.back() = MakeWalletTxOut(m_wallet->MakeOutputCoin(*locked_chain, coin));
             }
         }
         return result;
     }
-    CAmount getRequiredFee(unsigned int tx_bytes) override { return GetRequiredFee(*m_wallet, tx_bytes); }
+    CAmount getRequiredFee(unsigned int tx_bytes, uint64_t mweb_weight) override
+    {
+        return GetRequiredFee(*m_wallet, tx_bytes, mweb_weight);
+    }
     CAmount getMinimumFee(unsigned int tx_bytes,
+        uint64_t mweb_weight,
         const CCoinControl& coin_control,
         int* returned_target,
         FeeReason* reason) override
     {
         FeeCalculation fee_calc;
         CAmount result;
-        result = GetMinimumFee(*m_wallet, tx_bytes, coin_control, ::mempool, ::feeEstimator, &fee_calc);
+        result = GetMinimumFee(*m_wallet, tx_bytes, mweb_weight, coin_control, ::mempool, ::feeEstimator, &fee_calc);
         if (returned_target) *returned_target = fee_calc.returnedTarget;
         if (reason) *reason = fee_calc.reason;
         return result;
@@ -519,6 +532,14 @@ public:
     libmw::IWallet::Ptr GetMWWallet() override
     {
         return m_wallet->GetMWWallet();
+    }
+    bool extractOutputDestination(const CTxOutput& output, CTxDestination& dest) override
+    {
+        return m_wallet->ExtractOutputDestination(output, dest);
+    }
+    CAmount getAmount(const CTxOutput& output) override
+    {
+        return m_wallet->GetAmount(output);
     }
     std::unique_ptr<Handler> handleUnload(UnloadFn fn) override
     {

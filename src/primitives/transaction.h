@@ -131,6 +131,38 @@ public:
     std::string ToString() const;
 };
 
+typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
+
+class CTxInput
+{
+public:
+    CTxInput(libmw::Commitment commitment)
+        : m_input(std::move(commitment)) {}
+    CTxInput(CTxIn txin)
+        : m_input(std::move(txin)) {}
+
+    bool IsMWEB() const noexcept { return m_input.type() == typeid(libmw::Commitment); }
+    OutputIndex GetIndex() const noexcept
+    {
+        return IsMWEB() ? OutputIndex{GetCommitment()} : OutputIndex{GetTxIn().prevout};
+    }
+
+    const libmw::Commitment& GetCommitment() const noexcept
+    {
+        assert(IsMWEB());
+        return boost::get<libmw::Commitment>(m_input);
+    }
+
+    const CTxIn& GetTxIn() const noexcept
+    {
+        assert(!IsMWEB());
+        return boost::get<CTxIn>(m_input);
+    }
+
+private:
+    boost::variant<CTxIn, libmw::Commitment> m_input;
+};
+
 /** An output of a transaction.  It contains the public key that the next input
  * must be able to sign with to claim it.
  */
@@ -178,6 +210,40 @@ public:
     }
 
     std::string ToString() const;
+};
+
+class CTransaction;
+
+class CTxOutput
+{
+public:
+    CTxOutput() = default;
+    CTxOutput(const CTransaction* pTx, libmw::Commitment commitment)
+        : m_tx(pTx), m_idx(commitment), m_output(commitment) {}
+    CTxOutput(const CTransaction* pTx, OutputIndex idx, CTxOut txout)
+        : m_tx(pTx), m_idx(std::move(idx)), m_output(std::move(txout)) {}
+
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(libmw::Commitment); }
+    const CTransaction* GetTx() const noexcept { return m_tx; }
+
+    const OutputIndex& GetIndex() const noexcept { return m_idx; }
+    
+    const libmw::Commitment& GetCommitment() const noexcept
+    {
+        assert(IsMWEB());
+        return boost::get<libmw::Commitment>(m_output);
+    }
+
+    const CTxOut& GetTxOut() const noexcept
+    {
+        assert(!IsMWEB());
+        return boost::get<CTxOut>(m_output);
+    }
+
+private:
+    const CTransaction* m_tx;
+    OutputIndex m_idx;
+    boost::variant<CTxOut, libmw::Commitment> m_output;
 };
 
 struct CMutableTransaction;
@@ -395,7 +461,7 @@ public:
     bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
     bool IsHogEx() const noexcept { return m_hogEx; }
 
-    uint256 GetMWEBHash() const noexcept
+    uint256 GetMWEBHash() const noexcept // MW: TODO - Doesn't belong here
     {
         if (m_hogEx && !vout.empty()) {
             int version;
@@ -408,6 +474,54 @@ public:
         }
 
         return uint256();
+    }
+
+    std::vector<CTxInput> GetInputs() const noexcept
+    {
+        std::vector<CTxInput> inputs;
+
+        for (const CTxIn& txin : vin) {
+            inputs.push_back(txin);
+        }
+
+        for (libmw::Commitment commit : m_mwtx.GetInputCommits()) {
+            inputs.push_back(std::move(commit));
+        }
+
+        return inputs;
+    }
+
+    CTxOutput GetOutput(const size_t index) const noexcept
+    {
+        assert(vout.size() > index);
+        return CTxOutput{this, COutPoint(GetHash(), index), vout[index]};
+    }
+
+    CTxOutput GetOutput(const OutputIndex& idx) const noexcept
+    {
+        if (idx.type() == typeid(libmw::Commitment)) {
+            // MW: TODO - Assert output with commit exists
+            return CTxOutput{this, boost::get<libmw::Commitment>(idx)};
+        } else {
+            const COutPoint& outpoint = boost::get<COutPoint>(idx);
+            assert(vout.size() > outpoint.n);
+            return CTxOutput{this, outpoint, vout[outpoint.n]};
+        }
+    }
+
+    std::vector<CTxOutput> GetOutputs() const noexcept
+    {
+        std::vector<CTxOutput> outputs;
+
+        for (size_t n = 0; n < vout.size(); n++) {
+            outputs.push_back(CTxOutput{this, COutPoint(GetHash(), n), vout[n]});
+        }
+
+        for (libmw::Commitment commit : m_mwtx.GetOutputCommits()) {
+            outputs.push_back(CTxOutput{this, std::move(commit)});
+        }
+
+        return outputs;
     }
 };
 
@@ -463,7 +577,5 @@ struct CMutableTransaction
 typedef std::shared_ptr<const CTransaction> CTransactionRef;
 static inline CTransactionRef MakeTransactionRef() { return std::make_shared<const CTransaction>(); }
 template <typename Tx> static inline CTransactionRef MakeTransactionRef(Tx&& txIn) { return std::make_shared<const CTransaction>(std::forward<Tx>(txIn)); }
-
-typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
 
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

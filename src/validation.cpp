@@ -764,6 +764,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         CTxMemPoolEntry entry(ptx, nFees, nAcceptTime, chainActive.Height(),
                               fSpendsCoinbase, nSigOpsCost, lp);
         unsigned int nSize = entry.GetTxSize();
+        uint64_t mweb_weight = entry.GetMWEBWeight();
 
         // Check that the transaction doesn't have an excessive number of
         // sigops, making it impossible to mine. Since the coinbase transaction
@@ -774,14 +775,14 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return state.DoS(0, false, REJECT_NONSTANDARD, "bad-txns-too-many-sigops", false,
                 strprintf("%d", nSigOpsCost));
 
-        CAmount mempoolRejectFee = pool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFee(nSize);
+        CAmount mempoolRejectFee = pool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetTotalFee(nSize, mweb_weight);
         if (!bypass_limits && mempoolRejectFee > 0 && nModifiedFees < mempoolRejectFee) {
             return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "mempool min fee not met", false, strprintf("%d < %d", nModifiedFees, mempoolRejectFee));
         }
 
         // No transactions are allowed below minRelayTxFee except from disconnected blocks
-        if (!bypass_limits && nModifiedFees < ::minRelayTxFee.GetFee(nSize)) {
-            return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "min relay fee not met", false, strprintf("%d < %d", nModifiedFees, ::minRelayTxFee.GetFee(nSize)));
+        if (!bypass_limits && nModifiedFees < ::minRelayTxFee.GetTotalFee(nSize, mweb_weight)) {
+            return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "min relay fee not met", false, strprintf("%d < %d", nModifiedFees, ::minRelayTxFee.GetTotalFee(nSize, mweb_weight)));
         }
 
         if (nAbsurdFee && nFees > nAbsurdFee)
@@ -830,7 +831,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         const bool fReplacementTransaction = setConflicts.size();
         if (fReplacementTransaction)
         {
-            CFeeRate newFeeRate(nModifiedFees, nSize);
+            CFeeRate newFeeRate(nModifiedFees, nSize, mweb_weight);
             std::set<uint256> setConflictsParents;
             const int maxDescendantsToVisit = 100;
             const CTxMemPool::setEntries setIterConflicting = pool.GetIterSet(setConflicts);
@@ -849,7 +850,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
                 // mean high feerate children are ignored when deciding whether
                 // or not to replace, we do require the replacement to pay more
                 // overall fees too, mitigating most cases.
-                CFeeRate oldFeeRate(mi->GetModifiedFee(), mi->GetTxSize());
+                CFeeRate oldFeeRate(mi->GetModifiedFee(), mi->GetTxSize(), mi->GetMWEBWeight());
                 if (newFeeRate <= oldFeeRate)
                 {
                     return state.DoS(0, false,
@@ -923,14 +924,14 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             // Finally in addition to paying more fees than the conflicts the
             // new transaction must pay for its own bandwidth.
             CAmount nDeltaFees = nModifiedFees - nConflictingFees;
-            if (nDeltaFees < ::incrementalRelayFee.GetFee(nSize))
+            if (nDeltaFees < ::incrementalRelayFee.GetTotalFee(nSize, mweb_weight))
             {
                 return state.DoS(0, false,
                         REJECT_INSUFFICIENTFEE, "insufficient fee", false,
                         strprintf("rejecting replacement %s, not enough additional fees to relay; %s < %s",
                               hash.ToString(),
                               FormatMoney(nDeltaFees),
-                              FormatMoney(::incrementalRelayFee.GetFee(nSize))));
+                              FormatMoney(::incrementalRelayFee.GetTotalFee(nSize, mweb_weight))));
             }
         }
 
@@ -3232,7 +3233,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
         uint256 mweb256 = block.GetMWEBHash();
         libmw::BlockHash mweb_hash;
-        std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MW_HEADERHASH_SIZE, mweb_hash.data());
+        std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MWEB_HEADERHASH_SIZE, mweb_hash.data());
 
         try {
             libmw::node::CheckBlock(block.mwBlock.m_block, mweb_hash, block.GetPegInCoins(), block.GetPegOutCoins());

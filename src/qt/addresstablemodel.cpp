@@ -53,6 +53,7 @@ struct AddressTableEntryLessThan
 /* Determine address type from address purpose */
 static AddressTableEntry::Type translateTransactionType(const QString &strPurpose, bool isMine)
 {
+    // MW: TODO - Support "pegin" and "pegout"
     AddressTableEntry::Type addressType = AddressTableEntry::Hidden;
     // "refund" addresses aren't shown, and change addresses aren't in mapAddressBook at all.
     if (strPurpose == "send")

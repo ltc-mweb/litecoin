@@ -9,15 +9,25 @@
 
 const std::string CURRENCY_UNIT = "LTC";
 
-CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_)
+static const CAmount BASE_MWEB_FEE = 100'000;
+
+CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_, uint64_t mweb_weight)
 {
     assert(nBytes_ <= uint64_t(std::numeric_limits<int64_t>::max()));
-    int64_t nSize = int64_t(nBytes_);
+    assert(mweb_weight <= uint64_t(std::numeric_limits<int64_t>::max()));
 
-    if (nSize > 0)
-        nSatoshisPerK = nFeePaid * 1000 / nSize;
-    else
+    CAmount mweb_fee = CAmount(mweb_weight) * BASE_MWEB_FEE;
+    if (mweb_fee > 0 && nFeePaid < mweb_fee) {
         nSatoshisPerK = 0;
+    } else {
+        CAmount ltc_fee = (nFeePaid - mweb_fee);
+
+        int64_t nSize = int64_t(nBytes_);
+        if (nSize > 0)
+            nSatoshisPerK = ltc_fee * 1000 / nSize;
+        else
+            nSatoshisPerK = 0;
+    }
 }
 
 CAmount CFeeRate::GetFee(size_t nBytes_) const
@@ -37,7 +47,16 @@ CAmount CFeeRate::GetFee(size_t nBytes_) const
     return nFee;
 }
 
-// MW: TODO - GetMWEBFee?
+CAmount CFeeRate::GetMWEBFee(uint64_t mweb_weight) const
+{
+    assert(mweb_weight <= uint64_t(std::numeric_limits<int64_t>::max()));
+    return CAmount(mweb_weight) * BASE_MWEB_FEE;
+}
+
+CAmount CFeeRate::GetTotalFee(size_t nBytes, uint64_t mweb_weight) const
+{
+    return GetFee(nBytes) + GetMWEBFee(mweb_weight);
+}
 
 std::string CFeeRate::ToString() const
 {

@@ -1136,7 +1136,7 @@ bool AppInitParameterInteraction()
         if (nMaxFee > HIGH_MAX_TX_FEE)
             InitWarning(_("-maxtxfee is set very high! Fees this large could be paid on a single transaction."));
         maxTxFee = nMaxFee;
-        if (CFeeRate(maxTxFee, 1000) < ::minRelayTxFee)
+        if (CFeeRate(maxTxFee, 1000, 0) < ::minRelayTxFee)
         {
             return InitError(strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)"),
                                        gArgs.GetArg("-maxtxfee", ""), ::minRelayTxFee.ToString()));
@@ -1550,7 +1550,8 @@ bool AppInitMain(InitInterfaces& interfaces)
                 g_dbview = libmw::node::Initialize(
                     libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
                     block.mwBlock.m_block.GetHeader(),
-                    std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
+                    std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),
+                    [](const std::string& logstr) { LogPrintf(logstr.c_str()); }
                 );
                 pcoinsdbview->SetMWView(g_dbview);
 

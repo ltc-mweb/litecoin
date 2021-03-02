@@ -391,7 +391,11 @@ CInputCoin CoinControlDialog::BuildInputCoin(QTreeWidgetItem* item)
         std::vector<uint8_t> parsed = ParseHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
         libmw::Commitment output_commit;
         std::copy_n(parsed.begin(), parsed.size(), output_commit.begin());
-        return model->wallet().findCoin(output_commit);
+        
+        libmw::Coin coin;
+        bool found = model->wallet().findCoin(output_commit, coin);
+        assert(found);
+        return coin;
     } else {
         uint256 hash = uint256S(item->data(COLUMN_ADDRESS, TxHashRole).toString().toStdString());
         uint32_t n = item->data(COLUMN_ADDRESS, VOutRole).toUInt();
@@ -411,11 +415,11 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
         CInputCoin input_coin = BuildInputCoin(item);
 
         if (item->checkState(COLUMN_CHECKBOX) == Qt::Unchecked)
-            coinControl()->UnSelect(input_coin.outpoint);
+            coinControl()->UnSelect(input_coin.GetIndex());
         else if (item->isDisabled()) // locked (this happens if "check all" through parent node)
             item->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
         else
-            coinControl()->Select(input_coin.outpoint);
+            coinControl()->Select(input_coin.GetIndex());
 
         // selection changed -> update labels
         if (ui->treeWidget->isEnabled()) // do not update on every click for (un)select all
@@ -497,7 +501,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
         nAmount += out.nValue;
 
         // Bytes
-        if (out.address.which() == 0) {
+        if (out.address.type() == typeid(CScript)) {
             const CScript& scriptPubKey = boost::get<CScript>(out.address);
             CTxDestination address;
             int witnessversion = 0;
@@ -516,14 +520,15 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
             } else {
                 nBytesInputs += 148;
             }
-        } else {
-            // MW: TODO - Determine byte calculation for MWEB
         }
     }
 
     // calculation
     if (nQuantity > 0)
     {
+        // MW: TODO - Implement byte & fee estimation for MWEB
+        uint64_t mweb_weight = 0;
+
         // Bytes
         nBytes = nBytesInputs + ((CoinControlDialog::payAmounts.size() > 0 ? CoinControlDialog::payAmounts.size() + 1 : 2) * 34) + 10; // always assume +1 output for change here
         if (fWitness)
@@ -541,7 +546,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
                 nBytes -= 34;
 
         // Fee
-        nPayFee = model->wallet().getMinimumFee(nBytes, *coinControl(), nullptr /* returned_target */, nullptr /* reason */);
+        nPayFee = model->wallet().getMinimumFee(nBytes, mweb_weight, * coinControl(), nullptr /* returned_target */, nullptr /* reason */);
 
         if (nPayAmount > 0)
         {
@@ -656,12 +661,7 @@ void CoinControlDialog::updateView()
     for (const auto& coins : model->wallet().listCoins()) {
         CCoinControlWidgetItem *itemWalletAddress = new CCoinControlWidgetItem();
         itemWalletAddress->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
-        QString sWalletAddress;
-        if (coins.first.which() == 0) {
-            sWalletAddress = QString::fromStdString(EncodeDestination(boost::get<CTxDestination>(coins.first)));
-        } else {
-            sWalletAddress = QString::fromStdString(boost::get<libmw::MWEBAddress>(coins.first));
-        }
+        QString sWalletAddress = QString::fromStdString(EncodeDestination(coins.first));
 
         QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress); // MW: TODO - Check if peg-in, change, etc.
         if (sWalletLabel.isEmpty())
@@ -710,7 +710,7 @@ void CoinControlDialog::updateView()
                     sAddress = QString::fromStdString(EncodeDestination(outputAddress));
                 }
             } else {
-                sAddress = QString::fromStdString(boost::get<libmw::MWEBAddress>(coins.first));
+                sAddress = QString::fromStdString(EncodeDestination(coins.first));
             }
 
             // if listMode or change => show bitcoin address. In tree mode, address is not shown again for direct wallet address outputs

@@ -337,7 +337,7 @@ static CTransactionRef SendMoney(interfaces::Chain::Lock& locked_chain, CWallet 
     }
 
     // Parse Bitcoin address
-    CScript scriptPubKey = GetScriptForDestination(address);
+    DestinationScript scriptPubKey(address);
 
     // Create and send the transaction
     CReserveKey reservekey(pwallet);
@@ -354,258 +354,11 @@ static CTransactionRef SendMoney(interfaces::Chain::Lock& locked_chain, CWallet 
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     CValidationState state;
-    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
+    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, {&reservekey}, g_connman.get(), state)) {
         strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     return tx;
-}
-
-static UniValue pegin(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CWallet* const pwallet = wallet.get();
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
-        throw std::runtime_error(
-            RPCHelpMan{
-                "pegin",
-                "\nSend an amount to the MWEB (Peg-In)." +
-                    HelpRequiringPassphrase(pwallet) + "\n",
-                {
-                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
-                },
-                RPCResult{
-                    "\"txid\"                  (string) The transaction id.\n"},
-                RPCExamples{
-                    HelpExampleCli("pegin", "10.0")},
-            }
-                .ToString());
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
-
-    // Amount
-    CAmount nAmount = AmountFromValue(request.params[0]);
-    if (nAmount <= 0) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
-    }
-
-    EnsureWalletIsUnlocked(pwallet);
-
-    CAmount curBalance = pwallet->GetBalance();
-
-    // Check amount
-    if (nAmount > curBalance) {
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-    }
-
-    if (pwallet->GetBroadcastTransactions() && !g_connman) {
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-    }
-
-    auto pegin_tx = libmw::wallet::CreatePegInTx(pwallet->GetMWWallet(), nAmount);
-
-    // Create and send the transaction
-    mapValue_t mapValue;
-    mapValue["commitment"] = HexStr(pegin_tx.second.commitment);
-    mapValue["mweb_recipient"] = libmw::wallet::GetAddress(pwallet->GetMWWallet(), libmw::PEGIN_INDEX);
-    mapValue["mweb_credit"] = std::to_string(nAmount);
-
-    CReserveKey reservekey(pwallet);
-    CAmount nFeeRequired;
-    std::string strError;
-    std::vector<CRecipient> vecSend;
-    int nChangePosRet = -1;
-
-    CScript pegin_script;
-    pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
-    pegin_script << std::vector<uint8_t>(pegin_tx.second.commitment.cbegin(), pegin_tx.second.commitment.cend());
-
-    CRecipient recipient = {pegin_script, nAmount, false};
-    vecSend.push_back(recipient);
-    CTransactionRef tx;
-    if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, MWEB::Tx(pegin_tx.first))) {
-        if (nAmount + nFeeRequired > curBalance)
-            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-    CValidationState state;
-    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
-        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-    return tx->GetHash().GetHex();
-}
-
-static UniValue pegout(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CWallet* const pwallet = wallet.get();
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 2)
-        throw std::runtime_error(
-            RPCHelpMan{
-                "pegout",
-                "\nSend an amount back to the canonical LTC chain (Peg-Out)." +
-                    HelpRequiringPassphrase(pwallet) + "\n",
-                {
-                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
-                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The litecoin address to send to."},
-                },
-                RPCResult{
-                    "\"txid\"                  (string) The transaction id.\n"},
-                RPCExamples{
-                    HelpExampleCli("pegout", "10.0 tltc1qd9hf4rh9zlrdxqwvqwa88nq67pzz0agstxmql6")},
-            }
-                .ToString());
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
-
-    // Amount
-    CAmount nAmount = AmountFromValue(request.params[0]);
-    if (nAmount <= 0) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
-    }
-
-    EnsureWalletIsUnlocked(pwallet);
-
-    libmw::WalletBalance mweb_balance = libmw::wallet::GetBalance(pwallet->GetMWWallet());
-    if (nAmount > mweb_balance.confirmed_balance) {
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-    }
-
-    if (pwallet->GetBroadcastTransactions() && !g_connman) {
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-    }
-
-    if (!request.params[1].isStr()) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Not a valid address");
-    }
-    std::string address = request.params[1].get_str();
-    auto pegout_tx = libmw::wallet::CreatePegOutTx(pwallet->GetMWWallet(), nAmount, 100'000, address);
-
-    // Create and send the transaction
-    mapValue_t mapValue;
-
-    CReserveKey reservekey(pwallet);
-    //CAmount nFeeRequired;
-    std::string strError;
-    std::vector<CRecipient> vecSend;
-    //int nChangePosRet = -1;
-
-    CScript pegout_script;
-
-    CMutableTransaction txNew;
-    txNew.m_mwtx = MWEB::Tx(pegout_tx.first);
-
-    CTransactionRef tx = MakeTransactionRef(txNew);
-    //if (!pwallet->CreateTransaction(*locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, CCoinControl(), true, MWEB::Tx(pegout_tx.first))) {
-    //    //if (nAmount + nFeeRequired > curBalance)
-    //    //    strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
-    //    throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    //}
-    CValidationState state;
-    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
-        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-    return tx->GetHash().GetHex();
-}
-
-static UniValue sendmweb(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CWallet* const pwallet = wallet.get();
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 2)
-        throw std::runtime_error(
-            RPCHelpMan{
-                "sendmweb",
-                "\nSend an amount within the MWEB." +
-                    HelpRequiringPassphrase(pwallet) + "\n",
-                {
-                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
-                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The MWEB address to send to."},
-                },
-                RPCResult{
-                    "\"txid\"                  (string) The transaction id.\n"},
-                RPCExamples{
-                    HelpExampleCli("sendmweb", "10.0 mweb1...")},
-            }
-                .ToString());
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
-
-    // Amount
-    CAmount nAmount = AmountFromValue(request.params[0]);
-    if (nAmount <= 0) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
-    }
-
-    // Address
-    std::string address = request.params[1].get_str();
-    if (!IsValidMWEBDestinationString(address)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid MWEB address");
-    }
-
-    EnsureWalletIsUnlocked(pwallet);
-
-    libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
-
-    // Check amount
-    if ((uint64_t)nAmount > balances.confirmed_balance) {
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient confirmed balance");
-    }
-
-    if (pwallet->GetBroadcastTransactions() && !g_connman) {
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-    }
-
-    auto mwtx = libmw::wallet::Send(pwallet->GetMWWallet(), nAmount, 100'000, address);
-
-    // Create and send the transaction
-    mapValue_t mapValue;
-
-    CReserveKey reservekey(pwallet);
-    std::string strError;
-
-    CMutableTransaction txNew;
-    txNew.m_mwtx = MWEB::Tx(mwtx);
-
-    CTransactionRef tx = MakeTransactionRef(txNew);
-    CValidationState state;
-    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
-        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-    return tx->GetHash().GetHex();
 }
 
 static UniValue sendtoaddress(const JSONRPCRequest& request)
@@ -831,7 +584,7 @@ static UniValue signmessage(const JSONRPCRequest& request)
     return EncodeBase64(vchSig.data(), vchSig.size());
 }
 
-static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
+static UniValue getreceivedbyaddress(const JSONRPCRequest& request) // MW: TODO - Support MWEB
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -877,7 +630,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Litecoin address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
-    if (!IsMine(*pwallet, scriptPubKey)) {
+    if (!IsMine(*pwallet, dest)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Address not found in wallet");
     }
 
@@ -1029,51 +782,6 @@ static UniValue getbalance(const JSONRPCRequest& request)
     }
 
     return ValueFromAmount(pwallet->GetBalance(filter, min_depth));
-}
-
-static UniValue getmwebbalance(const JSONRPCRequest& request)
-{
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CWallet* const pwallet = wallet.get();
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-
-    if (request.fHelp || (request.params.size() > 3))
-        throw std::runtime_error(
-            RPCHelpMan{
-                "getmwebbalance",
-                "\nReturns the mweb balances.\n",
-                {
-                    {"dummy", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Remains for backward compatibility. Must be excluded or set to \"*\"."},
-                    {"minconf", RPCArg::Type::NUM, /* default */ "0", "Only include transactions confirmed at least this many times."},
-                    {"include_watchonly", RPCArg::Type::BOOL, /* default */ "false", "Also include balance in watch-only addresses (see 'importaddress')"},
-                },
-                RPCResult{
-                    "amount              (numeric) The total amount in " + CURRENCY_UNIT + " received for this wallet.\n"},
-                RPCExamples{
-                    "\nThe total amount in the wallet with 1 or more confirmations\n" + HelpExampleCli("getbalance", "") +
-                    "\nThe total amount in the wallet at least 6 blocks confirmed\n" + HelpExampleCli("getbalance", "\"*\" 6") +
-                    "\nAs a JSON-RPC call\n" + HelpExampleRpc("getbalance", "\"*\", 6")},
-            }
-                .ToString());
-
-    // Make sure the results are valid at least up to the most recent block
-    // the user could have gotten from another RPC command prior to now
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
-
-    UniValue json(UniValue::VOBJ);
-    libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
-    json.pushKV("confirmed", ValueFromAmount(balances.confirmed_balance));
-    json.pushKV("unconfirmed", ValueFromAmount(balances.unconfirmed_balance));
-    json.pushKV("locked", ValueFromAmount(balances.locked_balance));
-    json.pushKV("immature", ValueFromAmount(balances.immature_balance));
-
-    return json;
 }
 
 static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
@@ -1254,7 +962,7 @@ static UniValue sendmany(const JSONRPCRequest& request)
     if (!fCreated)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, strFailReason);
     CValidationState state;
-    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, keyChange, g_connman.get(), state)) {
+    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, {&keyChange}, g_connman.get(), state)) {
         strFailReason = strprintf("Transaction commit failed:: %s", FormatStateMessage(state));
         throw JSONRPCError(RPC_WALLET_ERROR, strFailReason);
     }
@@ -1642,7 +1350,13 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             if (pwallet->mapAddressBook.count(s.destination)) {
                 entry.pushKV("label", pwallet->mapAddressBook[s.destination].name);
             }
-            entry.pushKV("vout", s.vout);
+
+            if (s.index.type() == typeid(COutPoint)) {
+                entry.pushKV("vout", (int)boost::get<COutPoint>(s.index).n);
+            } else {
+                entry.pushKV("commit", HexStr(boost::get<libmw::Commitment>(s.index)));
+            }
+
             entry.pushKV("fee", ValueFromAmount(-nFee));
             if (fLong)
                 WalletTxToJSON(pwallet->chain(), locked_chain, wtx, entry);
@@ -1672,7 +1386,7 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             {
                 if (wtx.GetDepthInMainChain(locked_chain) < 1)
                     entry.pushKV("category", "orphan");
-                else if (wtx.IsImmatureCoinBase(locked_chain))
+                else if (wtx.IsImmature(locked_chain))
                     entry.pushKV("category", "immature");
                 else
                     entry.pushKV("category", "generate");
@@ -1685,7 +1399,13 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             if (pwallet->mapAddressBook.count(r.destination)) {
                 entry.pushKV("label", label);
             }
-            entry.pushKV("vout", r.vout);
+
+            if (r.index.type() == typeid(COutPoint)) {
+                entry.pushKV("vout", (int)boost::get<COutPoint>(r.index).n);
+            } else {
+                entry.pushKV("commit", HexStr(boost::get<libmw::Commitment>(r.index)));
+            }
+
             if (fLong)
                 WalletTxToJSON(pwallet->chain(), locked_chain, wtx, entry);
             ret.push_back(entry);
@@ -2056,7 +1776,7 @@ static UniValue gettransaction(const JSONRPCRequest& request)
     CAmount nCredit = wtx.GetCredit(*locked_chain, filter);
     CAmount nDebit = wtx.GetDebit(filter);
     CAmount nNet = nCredit - nDebit;
-    CAmount nFee = (wtx.IsFromMe(filter) ? wtx.tx->GetValueOut() - nDebit : 0);
+    CAmount nFee = wtx.GetFee(filter);
 
     entry.pushKV("amount", ValueFromAmount(nNet - nFee));
     if (wtx.IsFromMe(filter))
@@ -2561,13 +2281,13 @@ static UniValue lockunspent(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, unknown transaction");
         }
 
-        const CWalletTx& trans = it->second;
+        const CWalletTx& wtx = it->second;
 
-        if (outpt.n >= trans.tx->vout.size()) {
+        if (outpt.n >= wtx.tx->vout.size()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, vout index out of bounds");
         }
 
-        if (pwallet->IsSpent(*locked_chain, outpt.hash, outpt.n)) {
+        if (pwallet->IsSpent(*locked_chain, outpt)) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, expected unspent output");
         }
 
@@ -2688,7 +2408,7 @@ static UniValue settxfee(const JSONRPCRequest& request)
     LOCK(pwallet->cs_wallet);
 
     CAmount nAmount = AmountFromValue(request.params[0]);
-    CFeeRate tx_fee_rate(nAmount, 1000);
+    CFeeRate tx_fee_rate(nAmount, 1000, 0);
     if (tx_fee_rate == 0) {
         // automatic selection
     } else if (tx_fee_rate < ::minRelayTxFee) {
@@ -2750,16 +2470,12 @@ static UniValue getwalletinfo(const JSONRPCRequest& request)
 
     UniValue obj(UniValue::VOBJ);
 
-    libmw::WalletBalance balances = libmw::wallet::GetBalance(pwallet->GetMWWallet());
     size_t kpExternalSize = pwallet->KeypoolCountExternalKeys();
     obj.pushKV("walletname", pwallet->GetName());
     obj.pushKV("walletversion", pwallet->GetVersion());
     obj.pushKV("balance",       ValueFromAmount(pwallet->GetBalance()));
-    obj.pushKV("mwbalance",     ValueFromAmount(balances.confirmed_balance));
     obj.pushKV("unconfirmed_balance", ValueFromAmount(pwallet->GetUnconfirmedBalance()));
-    obj.pushKV("unconfirmed_mwbalance", ValueFromAmount(balances.unconfirmed_balance));
     obj.pushKV("immature_balance",    ValueFromAmount(pwallet->GetImmatureBalance()));
-    obj.pushKV("immature_mwbalance",  ValueFromAmount(balances.immature_balance));
     obj.pushKV("txcount",       (int)pwallet->mapWallet.size());
     obj.pushKV("keypoololdest", pwallet->GetOldestKeyPoolTime());
     obj.pushKV("keypoolsize", (int64_t)kpExternalSize);
@@ -3201,7 +2917,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             continue;
         }
 
-        const COutput& out = *output_coin.out;
+        const COutput& out = boost::get<COutput>(output_coin.m_output);
         const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
 
         entry.pushKV("txid", out.tx->GetHash().GetHex());
@@ -4520,7 +4236,6 @@ static const CRPCCommand commands[] =
     { "wallet",             "getaddressesbylabel",              &getaddressesbylabel,           {"label"} },
     { "wallet",             "getaddressinfo",                   &getaddressinfo,                {"address"} },
     { "wallet",             "getbalance",                       &getbalance,                    {"dummy","minconf","include_watchonly"} },
-    { "wallet",             "getmwebbalance",                   &getmwebbalance,                {} },
     { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type"} },
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf"} },
@@ -4547,12 +4262,9 @@ static const CRPCCommand commands[] =
     { "wallet",             "listwallets",                      &listwallets,                   {} },
     { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },
     { "wallet",             "lockunspent",                      &lockunspent,                   {"unlock","transactions"} },
-    { "wallet",             "pegin",                            &pegin,                         {"amount"} },
-    { "wallet",             "pegout",                           &pegout,                        {"amount","address"} },
     { "wallet",             "removeprunedfunds",                &removeprunedfunds,             {"txid"} },
     { "wallet",             "rescanblockchain",                 &rescanblockchain,              {"start_height", "stop_height"} },
     { "wallet",             "sendmany",                         &sendmany,                      {"dummy","amounts","minconf","comment","subtractfeefrom","replaceable","conf_target","estimate_mode"} },
-    { "wallet",             "sendmweb",                         &sendmweb,                      {"amount","address"} },
     { "wallet",             "sendtoaddress",                    &sendtoaddress,                 {"address","amount","comment","comment_to","subtractfeefromamount","replaceable","conf_target","estimate_mode"} },
     { "wallet",             "sethdseed",                        &sethdseed,                     {"newkeypool","seed"} },
     { "wallet",             "setlabel",                         &setlabel,                      {"address","label"} },
