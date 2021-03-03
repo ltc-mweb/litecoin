@@ -143,7 +143,7 @@ void MWEB::Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pbl
     pblock->mwBlock = MWEB::Block(mw_block);
     pblocktemplate->vTxFees.push_back(mweb_fees);
     
-     // MWEB: TODO - Confirm that pcoinsTip is correct, and that we have the right locks for it. Also, account for sigop counts when adding the pegin/out instead (preferably in mempool using MempoolTxEntry).
+    // MW: TODO - Confirm that pcoinsTip is correct, and that we have the right locks for it. Also, account for sigop counts when adding the pegin/out instead (preferably in mempool using MempoolTxEntry).
     int64_t nSigOpCount = GetTransactionSigOpCost(*pblock->vtx.back(), *pcoinsTip, STANDARD_SCRIPT_VERIFY_FLAGS);
     pblocktemplate->vTxSigOpsCost.push_back(nSigOpCount);
 }

@@ -240,13 +240,13 @@ extern const char *GETBLOCKTXN;
 extern const char* BLOCKTXN;
 /**
  * Contains a MWEB::StateRequest.
- * @since protocol version ?? as described by LIP ?? // MW: Document version & LIP
+ * @since protocol version ?? as described by LIP ?? // MW: TODO - Document version & LIP
  */
 extern const char* GETMWEBSTATE;
 /**
  * Contains a MWEB::State.
  * Sent in response to a "getmwebstate" message.
- * @since protocol version ?? as described by LIP ?? // MW: Document version & LIP
+ * @since protocol version ?? as described by LIP ?? // MW: TODO - Document version & LIP
  */
 extern const char* MWEBSTATE;
 };

@@ -291,7 +291,7 @@ public:
         return true;
     }
 
-    bool operator()(const MWEBAddress& id) const
+    bool operator()(const MWEBDestination& id) const
     {
         script->clear();
         return false;
@@ -352,8 +352,8 @@ bool IsPegInOutput(const CTxOutput& output)
 
 DestinationScript::DestinationScript(const CTxDestination& dest)
 {
-    if (dest.type() == typeid(MWEBAddress)) {
-        m_script = boost::get<MWEBAddress>(dest).address;
+    if (dest.type() == typeid(MWEBDestination)) {
+        m_script = boost::get<MWEBDestination>(dest).address;
     } else {
         m_script = GetScriptForDestination(dest);
     }

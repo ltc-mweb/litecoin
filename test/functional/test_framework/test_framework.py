@@ -511,6 +511,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
             for i in range(MAX_NODES):
                 os.rmdir(cache_path(i, 'wallets'))  # Remove empty wallets dir
+                shutil.rmtree(cache_path(i, 'mw'))
                 for entry in os.listdir(cache_path(i)):
                     if entry not in ['chainstate', 'blocks']:
                         os.remove(cache_path(i, entry))

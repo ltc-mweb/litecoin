@@ -1152,7 +1152,6 @@ void CWallet::MarkInputsDirty(const CTransactionRef& tx)
     }
 }
 
-// MW: TODO - Support abandoning MWEB transactions
 bool CWallet::AbandonTransaction(interfaces::Chain::Lock& locked_chain, const uint256& hashTx)
 {
     auto locked_chain_recursive = chain().lock();  // Temporary. Removed in upcoming lock cleanup
@@ -1209,7 +1208,6 @@ bool CWallet::AbandonTransaction(interfaces::Chain::Lock& locked_chain, const ui
     return true;
 }
 
-// MW: TODO - Support marking MWEB transactions as conflicted
 void CWallet::MarkConflicted(const uint256& hashBlock, const uint256& hashTx)
 {
     auto locked_chain = chain().lock();
@@ -1595,7 +1593,6 @@ CAmount CWallet::GetChange(const CTransaction& tx) const
             throw std::runtime_error(std::string(__func__) + ": value out of range");
     }
 
-    // MW: TODO - Check MWEB outputs
     return nChange;
 }
 
@@ -2649,7 +2646,7 @@ std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins(interfaces
                     if (output_idx.type() == typeid(libmw::Commitment)) {
                         libmw::Coin coin;
                         if (GetCoin(boost::get<libmw::Commitment>(output_idx), coin)) {
-                            result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEBAddress>(address).address});
+                            result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEBDestination>(address).address});
                         }
                     } else {
                         result[address].emplace_back(
@@ -2693,7 +2690,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
         CCoinControl temp;
         temp.m_confirm_target = 1008;
         CFeeRate long_term_feerate = GetMinimumFeeRate(*this, temp, ::mempool, ::feeEstimator, &feeCalc);
-        uint64_t mweb_weight = 0; // MW: TODO - Currently, BnB is not used for MWEB transactions, so just set mweb_weight to 0 for now.
+        uint64_t mweb_weight = 0; // Currently, BnB is not used for MWEB transactions, so just set mweb_weight to 0 for now.
 
         // Calculate cost of change
         CAmount cost_of_change = GetDiscardRate(*this, ::feeEstimator).GetTotalFee(coin_selection_params.change_spend_size, mweb_weight) + coin_selection_params.effective_fee.GetTotalFee(coin_selection_params.change_output_size, mweb_weight);

@@ -583,7 +583,7 @@ static void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vec
                 return;
             }
             if (!State(nodeid)->fHaveMW && IsMimblewimbleEnabled(pindex->pprev, consensusParams)) {
-                // MW: Can't download this block from this peer.
+                // MWEB: Can't download this block from this peer.
                 return;
             }
             if (pindex->nStatus & BLOCK_HAVE_DATA || chainActive.Contains(pindex)) {
@@ -1395,7 +1395,7 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     LOCK(cs_main);
     const CNetMsgMaker msgMaker(pfrom->GetSendVersion());
     int nSendFlags = State(pfrom->GetId())->fWantsCmpctWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
-    // MW: Determine when to set SERIALIZE_NO_MIMBLEWIMBLE
+    // MW: TODO - Determine when to set SERIALIZE_NO_MIMBLEWIMBLE
     connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::BLOCKTXN, resp));
 }
 
@@ -2317,7 +2317,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
     }
 
-    // MW: Handle NetMsgType::MWTX
+    // MWEB: Handle NetMsgType::MWTX
     if (strCommand == NetMsgType::TX) {
         // Stop processing the transaction early if
         // We are in blocks only mode and peer is either not whitelisted or whitelistrelay is off
@@ -2838,14 +2838,14 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
     if (strCommand == NetMsgType::MWEBSTATE)
     {
-        // MW: Implement
+        // MW: TODO - Implement
         MWEB::State mw_state;
         vRecv >> mw_state;
 
         LogPrint(BCLog::NET, "received mw_state from peer=%d\n", pfrom->GetId());
 
-        // MW: Check that it was actually requested
-        // MW: Call Node::ApplyState
+        // MW: TODO - Check that it was actually requested
+        // MW: TODO - Call Node::ApplyState
 
         return true;
     }
@@ -3109,7 +3109,7 @@ bool PeerLogicValidation::ProcessMessages(CNode* pfrom, std::atomic<bool>& inter
         LOCK2(cs_main, g_cs_orphans);
         ProcessOrphanTx(connman, pfrom->orphan_work_set, removed_txn);
         for (const CTransactionRef& removedTx : removed_txn) {
-            AddToCompactExtraTransactions(removedTx); // MW: Investigate this
+            AddToCompactExtraTransactions(removedTx); // MW: TODO - Investigate this
         }
     }
 

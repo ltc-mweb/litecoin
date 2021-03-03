@@ -136,7 +136,7 @@ public:
         return obj;
     }
 
-    UniValue operator()(const MWEBAddress& id) const
+    UniValue operator()(const MWEBDestination& id) const
     {
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("isscript", false);

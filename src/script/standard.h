@@ -111,19 +111,19 @@ struct WitnessUnknown
     }
 };
 
-struct MWEBAddress
+struct MWEBDestination
 {
-    MWEBAddress(const libmw::MWEBAddress& address_)
+    MWEBDestination(const libmw::MWEBAddress& address_)
         : address(address_) { }
 
     libmw::MWEBAddress address;
 
-    friend bool operator==(const MWEBAddress& a1, const MWEBAddress& a2)
+    friend bool operator==(const MWEBDestination& a1, const MWEBDestination& a2)
     {
         return a1.address == a2.address;
     }
 
-    friend bool operator<(const MWEBAddress& a1, const MWEBAddress& a2)
+    friend bool operator<(const MWEBDestination& a1, const MWEBDestination& a2)
     {
         if (a1.address.size() < a2.address.size()) return true;
         if (a2.address.size() > a1.address.size()) return false;
@@ -139,10 +139,10 @@ struct MWEBAddress
  *  * WitnessV0ScriptHash: TX_WITNESS_V0_SCRIPTHASH destination (P2WSH)
  *  * WitnessV0KeyHash: TX_WITNESS_V0_KEYHASH destination (P2WPKH)
  *  * WitnessUnknown: TX_WITNESS_UNKNOWN destination (P2W???)
- *  * MWEBAddress: MWEB address destination
+ *  * MWEBDestination: MWEB address destination
  *  A CTxDestination is the internal data type encoded in a bitcoin address
  */
-typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown, MWEBAddress> CTxDestination;
+typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown, MWEBDestination> CTxDestination;
 
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);
@@ -213,8 +213,6 @@ class DestinationScript
 {
 public:
     DestinationScript() = default;
-    //DestinationScript(boost::variant<CScript, libmw::MWEBAddress> script)
-    //    : m_script(std::move(script)) { }
     DestinationScript(CScript script)
         : m_script(std::move(script)) { }
     DestinationScript(libmw::MWEBAddress address)

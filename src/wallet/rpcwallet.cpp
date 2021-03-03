@@ -220,7 +220,6 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
     return EncodeDestination(dest);
 }
 
-// MW: TODO - Support building raw transactions for mweb (createrawtransaction, decoderawtransaction, getrawtransaction, signrawtransaction, sendrawtransaction, getrawchangeaddress)
 static UniValue getrawchangeaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -584,7 +583,7 @@ static UniValue signmessage(const JSONRPCRequest& request)
     return EncodeBase64(vchSig.data(), vchSig.size());
 }
 
-static UniValue getreceivedbyaddress(const JSONRPCRequest& request) // MW: TODO - Support MWEB
+static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -626,7 +625,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request) // MW: TODO 
 
     // Bitcoin address
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest)) {
+    if (!IsValidDestination(dest) || dest.type() == typeid(MWEBDestination)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Litecoin address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
@@ -3656,7 +3655,7 @@ public:
         return obj;
     }
 
-    UniValue operator()(const MWEBAddress& id) const
+    UniValue operator()(const MWEBDestination& id) const
     {
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("mweb_address", id.address);

@@ -692,7 +692,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             }
         }
 
-        // MW: Check if inputs exist
+        // MWEB: Check if inputs exist
         std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
         std::set<libmw::Commitment> output_commits = tx.m_mwtx.GetOutputCommits();
         for (const libmw::Commitment& input_commit : input_commits) {
@@ -3203,7 +3203,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // checks that use witness data may be performed here.
 
     // Size limits
-    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE) // MW: Probably replace size check with MW weight check (different weights for kernels vs inputs/outputs)
+    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE) // MW: TODO -Replace size check with MW weight check
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-length", false, "size limits failed");
 
     // First transaction must be coinbase, the rest must not be
@@ -3227,7 +3227,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (nSigOps * WITNESS_SCALE_FACTOR > MAX_BLOCK_SIGOPS_COST)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
-    // MW: Ensure full MW block provided (except during IBD)
+    // MW: TODO - Ensure full MW block provided (except during IBD)
     if (!block.mwBlock.IsNull()) {
         // MW: TODO - Check HogEx transaction (pegins must match)
 

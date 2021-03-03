@@ -652,7 +652,7 @@ struct COutputCoin
     bool GetDestination(CTxDestination& dest) const
     {
         if (IsMWEB()) {
-            dest = MWEBAddress(boost::get<MWOutput>(m_output).address);
+            dest = MWEBDestination(boost::get<MWOutput>(m_output).address);
             return true;
         } else {
             const COutput& out = boost::get<COutput>(m_output);

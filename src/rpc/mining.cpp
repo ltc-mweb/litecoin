@@ -504,7 +504,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "getblocktemplate must be called with the segwit rule set (call with {\"rules\": [\"segwit\"]})");
     }
 
-    // MW: Handle deployment rule
+    // MW: TODO - Handle deployment rule
 
     // Update block
     static CBlockIndex* pindexPrev;

@@ -205,7 +205,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
         }
     }
 
-    // MW: Flushes mw coins
+    // MWEB: Flushes mw coins
     libmw::node::FlushCache(derivedView, nullptr);
 
     hashBlock = hashBlockIn;
@@ -257,7 +257,7 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
             }
         }
 
-        // MW: Check MWEB inputs
+        // MWEB: Check MWEB inputs
         std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
         for (const libmw::Commitment& input_commit : input_commits) {
             if (!libmw::node::HasCoin(GetMWView(), input_commit)) {

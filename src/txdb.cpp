@@ -132,7 +132,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, lib
         }
     }
 
-    // MW: Flushes mimblewimble coins & MMRs
+    // MWEB: Flushes mimblewimble coins & MMRs
     libmw::node::FlushCache(derivedView, std::make_unique<MWEB::DBBatch>(&db, batch));
 
     // In the last batch, mark the database as consistent with hashBlock again.

@@ -147,7 +147,7 @@ void CTxMemPool::UpdateTransactionsFromBlock(const std::vector<uint256> &vHashes
             }
         }
 
-        // MW: Check MWEB output commitments
+        // MWEB: Check MWEB output commitments
         std::set<libmw::Commitment> output_commits = it->GetTx().m_mwtx.GetOutputCommits();
         for (const libmw::Commitment& output_commit : output_commits) {
             auto childMWEBIter = mapNextTx_MWEB.find(output_commit);
@@ -410,7 +410,7 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
         setParentTransactions.insert(tx.vin[i].prevout.hash);
     }
 
-    // MW: Add transaction to mapNextTx_MWEB for each input
+    // MWEB: Add transaction to mapNextTx_MWEB for each input
     std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
     for (const libmw::Commitment& input_commit : input_commits) {
         mapNextTx_MWEB.insert(std::make_pair(&input_commit, &tx));
@@ -420,7 +420,7 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
         }
     }
 
-    // MW: Add transaction to mapTxOutputs_MWEB for each output
+    // MWEB: Add transaction to mapTxOutputs_MWEB for each output
     std::set<libmw::Commitment> output_commits = tx.m_mwtx.GetOutputCommits();
     for (const libmw::Commitment& output_commit : output_commits) {
         mapTxOutputs_MWEB.insert(std::make_pair(&output_commit, &tx));
@@ -455,13 +455,13 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
     for (const CTxIn& txin : it->GetTx().vin)
         mapNextTx.erase(txin.prevout);
 
-    // MW: Remove transaction from mapNextTx_MWEB for each input
+    // MWEB: Remove transaction from mapNextTx_MWEB for each input
     std::set<libmw::Commitment> input_commits = it->GetTx().m_mwtx.GetInputCommits();
     for (const libmw::Commitment& input_commit : input_commits) {
         mapNextTx_MWEB.erase(input_commit);
     }
 
-    // MW: Remove transaction from mapTxOutputs_MWEB for each output
+    // MWEB: Remove transaction from mapTxOutputs_MWEB for each output
     std::set<libmw::Commitment> output_commits = it->GetTx().m_mwtx.GetOutputCommits();
     for (const libmw::Commitment& output_commit : output_commits) {
         mapTxOutputs_MWEB.erase(output_commit);
@@ -537,7 +537,7 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx, MemPoolRemovalReaso
                 txToRemove.insert(nextit);
             }
 
-            // MW: Also recursively remove MW txs that depend on this tx
+            // MWEB: Also recursively remove MW txs that depend on this tx
             std::set<libmw::Commitment> output_commits = origTx.m_mwtx.GetOutputCommits();
             for (const libmw::Commitment& output_commit : output_commits) {
                 auto it = mapNextTx_MWEB.find(output_commit);
@@ -612,7 +612,7 @@ void CTxMemPool::removeConflicts(const CTransaction &tx)
         }
     }
 
-    // MW: Remove transactions which depend on MWEB inputs of tx, recursively
+    // MWEB: Remove transactions which depend on MWEB inputs of tx, recursively
     std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
     for (const libmw::Commitment& input_commit : input_commits) {
         auto it = mapNextTx_MWEB.find(input_commit);
