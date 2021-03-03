@@ -4443,7 +4443,7 @@ bool CWallet::ExtractOutputDestination(const CTxOutput& output, CTxDestination& 
             return false;
         }
 
-        dest = libmw::wallet::GetAddress(GetMWWallet(), coin.address_index);
+        dest = DecodeDestination(libmw::wallet::GetAddress(GetMWWallet(), coin.address_index));
         return true;
     } else {
         return ExtractDestination(output.GetTxOut().scriptPubKey, dest);
