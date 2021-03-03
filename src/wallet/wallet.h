@@ -633,7 +633,7 @@ struct MWOutput
     libmw::Coin coin;
     int nDepth;
     int64_t nTime;
-    libmw::MWEBAddress address;
+    MWEBDestination address;
 };
 
 struct COutputCoin
@@ -662,7 +662,7 @@ struct COutputCoin
 
     boost::variant<CScript, libmw::MWEBAddress> GetAddress() const
     {
-        if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
+        if (IsMWEB()) return EncodeDestination(boost::get<MWOutput>(m_output).address);
 
         const COutput& out = boost::get<COutput>(m_output);
         return out.tx->tx->vout[out.i].scriptPubKey;

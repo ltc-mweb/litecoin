@@ -9,6 +9,7 @@
 #include <script/script.h>
 #include <util/strencodings.h>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/variant/static_visitor.hpp>
 
@@ -69,7 +70,14 @@ public:
 
     std::string operator()(const MWEBDestination& id) const
     {
-        return id.address;
+        // MW: TODO - Create new bech32 encoder so we don't need to concat these 2.
+        std::vector<uint8_t> scan_data = {0};
+        ConvertBits<8, 5, true>([&](unsigned char c) { scan_data.push_back(c); }, id.scan_pubkey.begin(), id.scan_pubkey.end());
+
+        std::vector<uint8_t> spend_data = {0};
+        ConvertBits<8, 5, true>([&](unsigned char c) { spend_data.push_back(c); }, id.spend_pubkey.begin(), id.spend_pubkey.end());
+
+        return bech32::Encode("mweb", scan_data) + ":" + bech32::Encode(m_params.Bech32HRP(), spend_data);
     }
 
     std::string operator()(const CNoDestination& no) const { return {}; }
@@ -77,11 +85,6 @@ public:
 
 CTxDestination DecodeDestination(const std::string& str, const CChainParams& params)
 {
-    if (str.size() > 5 && str.substr(0, 5) == "mweb1") {
-        // MW: TODO - Validate the address
-        return MWEBDestination(str);
-    }
-
     std::vector<unsigned char> data;
     uint160 hash;
     if (DecodeBase58Check(str, data)) {
@@ -143,6 +146,32 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
             return unk;
         }
     }
+
+    std::vector<std::string> address_parts;
+    boost::split(address_parts, str, boost::is_any_of(":"));
+    if (address_parts.size() == 2) {
+        auto bech_scan = bech32::Decode(address_parts[0]);
+        auto bech_spend = bech32::Decode(address_parts[1]);
+        if (!bech_scan.second.empty() && bech_scan.first == "mweb" && !bech_spend.second.empty() && bech_spend.first == params.Bech32HRP()) {
+            std::vector<uint8_t> scan_data;
+            scan_data.reserve(((bech_scan.second.size() - 1) * 5) / 8);
+
+            std::vector<uint8_t> spend_data;
+            spend_data.reserve(((bech_spend.second.size() - 1) * 5) / 8);
+
+            if (ConvertBits<5, 8, false>([&](unsigned char c) { scan_data.push_back(c); }, bech_scan.second.begin() + 1, bech_scan.second.end())
+                && ConvertBits<5, 8, false>([&](unsigned char c) { spend_data.push_back(c); }, bech_spend.second.begin() + 1, bech_spend.second.end())) {
+
+                if (scan_data.size() == 33 && spend_data.size() == 33) {
+                    MWEBDestination mweb_dest;
+                    mweb_dest.scan_pubkey = CPubKey(scan_data);
+                    mweb_dest.spend_pubkey = CPubKey(spend_data);
+                    return mweb_dest;
+                }
+            }
+        }
+    }
+
     return CNoDestination();
 }
 } // namespace
