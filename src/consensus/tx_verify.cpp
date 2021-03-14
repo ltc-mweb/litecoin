@@ -173,9 +173,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
 
     // MWEB: CheckTransaction
     if (tx.HasMWData()) {
-        try {
-            libmw::node::CheckTransaction(tx.m_mwtx.m_transaction);
-        } catch (std::exception& e) {
+        if (!libmw::node::CheckTransaction(tx.m_mwtx.m_transaction)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
         }
     }
@@ -270,9 +268,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     }
 
     if (tx.HasMWData()) {
-        try {
-            libmw::node::CheckTxInputs(inputs.GetMWView(), tx.m_mwtx.m_transaction, nSpendHeight);
-        } catch (std::exception&) {
+        if (!libmw::node::CheckTxInputs(inputs.GetMWView(), tx.m_mwtx.m_transaction, nSpendHeight)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-mweb", false,
                              strprintf("%s: MWEB inputs missing/immature", __func__));
         }

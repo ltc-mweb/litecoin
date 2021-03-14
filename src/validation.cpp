@@ -3210,9 +3210,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         libmw::BlockHash mweb_hash;
         std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MWEB_HEADERHASH_SIZE, mweb_hash.data());
 
-        try {
-            libmw::node::CheckBlock(block.mwBlock.m_block, mweb_hash, block.GetPegInCoins(), block.GetPegOutCoins());
-        } catch (const std::exception& e) {
+        if (!libmw::node::CheckBlock(block.mwBlock.m_block, mweb_hash, block.GetPegInCoins(), block.GetPegOutCoins())) {
             return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, 
                 strprintf("libmw::node::CheckBlock failed: %s", e.what()));
         }
