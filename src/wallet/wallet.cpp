@@ -1060,11 +1060,6 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
     }
 }
 
-void CWallet::LoadToWallet(const libmw::Coin& coin)
-{
-    mweb_wallet->LoadToWallet(coin);
-}
-
 bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const uint256& block_hash, int posInBlock, bool fUpdate)
 {
     const CTransaction& tx = *ptx;
@@ -2587,7 +2582,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
                 }
                 
                 libmw::MWEBAddress address = libmw::wallet::GetAddress(GetMWWallet(), coin.address_index);
-                vCoins.push_back(MWOutput{coin, nDepth, pcoin->GetTxTime(), address});
+                vCoins.push_back(MWOutput{coin, nDepth, pcoin->GetTxTime(), boost::get<MWEBDestination>(DecodeDestination(address))});
             } else {
                 size_t i = boost::get<COutPoint>(output.GetIndex()).n;
                 vCoins.push_back(COutput(pcoin, i, nDepth, spendable, solvable, safeTx, (coinControl && coinControl->fAllowWatchOnly)));
@@ -2646,7 +2641,7 @@ std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins(interfaces
                     if (output_idx.type() == typeid(libmw::Commitment)) {
                         libmw::Coin coin;
                         if (GetCoin(boost::get<libmw::Commitment>(output_idx), coin)) {
-                            result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEBDestination>(address).address});
+                            result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEBDestination>(address)});
                         }
                     } else {
                         result[address].emplace_back(
@@ -4443,7 +4438,7 @@ bool CWallet::ExtractOutputDestination(const CTxOutput& output, CTxDestination& 
             return false;
         }
 
-        dest = libmw::wallet::GetAddress(GetMWWallet(), coin.address_index);
+        dest = DecodeDestination(libmw::wallet::GetAddress(GetMWWallet(), coin.address_index));
         return true;
     } else {
         return ExtractDestination(output.GetTxOut().scriptPubKey, dest);

@@ -9,6 +9,7 @@
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
 #include <validation.h>
+#include <key_io.h>
 #include <policy/policy.h>
 #include <policy/fees.h>
 #include <reverse_iterator.h>
@@ -52,7 +53,17 @@ void CTxMemPoolEntry::UpdateLockPoints(const LockPoints& lp)
 
 size_t CTxMemPoolEntry::GetTxSize() const
 {
-    return GetVirtualTransactionSize(nTxWeight, sigOpCost);
+    // MW: TODO - Verify this logic. Maybe just use max input & output weights rather than building the actual pegouts?
+    // Move this to a reusable location
+    size_t weight = nTxWeight + (GetTransactionInputWeight(CTxIn()) * tx->m_mwtx.GetPegIns().size());
+
+    for (const libmw::PegOut& pegout : tx->m_mwtx.GetPegOuts()) {
+        CTxDestination destination = DecodeDestination(pegout.address);
+        CTxOut pegout_output(pegout.amount, GetScriptForDestination(destination));
+        weight += (::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR);
+    }
+
+    return GetVirtualTransactionSize(weight, sigOpCost);
 }
 
 // Update the given tx for any in-mempool descendants.
@@ -661,7 +672,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
 /**
  * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
  */
-void CTxMemPool::removeForMWBlock(const MWEB::Block& mwBlock, unsigned int nBlockHeight)
+void CTxMemPool::removeForMWBlock(const MWEB::Block& mwBlock, unsigned int nBlockHeight) // MW: TODO - Can we combine this with removeForBlock?
 {
     LOCK(cs);
 

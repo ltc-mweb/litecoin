@@ -751,7 +751,7 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
     return EncodeSecret(vchSecret);
 }
 
-
+// MW: TODO - Make sure we dump any important MWEB tx & key data
 UniValue dumpwallet(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);

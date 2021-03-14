@@ -363,7 +363,6 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
     }
     else if(type == Receive && address_type == OutputType::MWEB)
     {
-        libmw::MWEBAddress address;
         if (!walletModel->wallet().getMWEBAddress(strAddress)) {
             editStatus = KEY_GENERATION_FAILURE;
             return QString();

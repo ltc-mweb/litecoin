@@ -5,6 +5,7 @@
 #ifndef LITECOIN_MIMBLEWIMBLE_MODELS_H
 #define LITECOIN_MIMBLEWIMBLE_MODELS_H
 
+#include <amount.h>
 #include <serialize.h>
 #include <libmw/libmw.h>
 #include <tinyformat.h>
@@ -22,9 +23,9 @@ struct Block {
     Block(const libmw::BlockRef& block)
         : m_block(block) {}
 
-    uint64_t GetTotalFee() const noexcept
+    CAmount GetTotalFee() const noexcept
     {
-        return IsNull() ? 0 : m_block.GetTotalFee();
+        return IsNull() ? 0 : CAmount(m_block.GetTotalFee());
     }
 
     libmw::HeaderRef GetMWEBHeader() const noexcept
@@ -112,6 +113,11 @@ struct Tx {
     uint64_t GetMWEBWeight() const noexcept
     {
         return IsNull() ? 0 : m_transaction.GetWeight();
+    }
+
+    CAmount GetFee() const noexcept
+    {
+        return IsNull() ? 0 : CAmount(m_transaction.GetTotalFee());
     }
 
     ADD_SERIALIZE_METHODS;

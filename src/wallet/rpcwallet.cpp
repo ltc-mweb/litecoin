@@ -3658,7 +3658,9 @@ public:
     UniValue operator()(const MWEBDestination& id) const
     {
         UniValue obj(UniValue::VOBJ);
-        obj.pushKV("mweb_address", id.address);
+        obj.pushKV("mweb_address", EncodeDestination(id));
+        obj.pushKV("scan_pubkey", HexStr(id.scan_pubkey));
+        obj.pushKV("spend_pubkey", HexStr(id.spend_pubkey));
         return obj;
     }
 

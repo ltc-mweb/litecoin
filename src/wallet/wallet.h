@@ -8,6 +8,7 @@
 
 #include <amount.h>
 #include <interfaces/chain.h>
+#include <key_io.h>
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <streams.h>
@@ -633,7 +634,7 @@ struct MWOutput
     libmw::Coin coin;
     int nDepth;
     int64_t nTime;
-    libmw::MWEBAddress address;
+    MWEBDestination address;
 };
 
 struct COutputCoin
@@ -662,7 +663,7 @@ struct COutputCoin
 
     boost::variant<CScript, libmw::MWEBAddress> GetAddress() const
     {
-        if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
+        if (IsMWEB()) return EncodeDestination(boost::get<MWOutput>(m_output).address);
 
         const COutput& out = boost::get<COutput>(m_output);
         return out.tx->tx->vout[out.i].scriptPubKey;
@@ -1047,7 +1048,6 @@ public:
     void MarkDirty();
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void LoadToWallet(const libmw::Coin& coin) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void TransactionAddedToMempool(const CTransactionRef& tx) override;
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindex, const std::vector<CTransactionRef>& vtxConflicted) override;
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock) override;

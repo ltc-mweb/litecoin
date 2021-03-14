@@ -14,6 +14,7 @@ public:
     Wallet(CWallet* pWallet)
         : m_pWallet(pWallet) {}
 
+    bool IsMine(const libmw::PubKey& spend_pubkey, uint32_t& index_out) const final;
     libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final;
     bool GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const final;
 

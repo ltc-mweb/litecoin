@@ -142,7 +142,7 @@ public:
         obj.pushKV("isscript", false);
         obj.pushKV("iswitness", false);
         obj.pushKV("ismweb", true);
-        obj.pushKV("mweb_address", id.address);
+        obj.pushKV("mweb_address", EncodeDestination(id));
         return obj;
     }
 };

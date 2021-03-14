@@ -6,6 +6,7 @@
 #include <script/standard.h>
 
 #include <crypto/sha256.h>
+#include <key_io.h>
 #include <pubkey.h>
 #include <script/script.h>
 #include <util/system.h>
@@ -353,7 +354,7 @@ bool IsPegInOutput(const CTxOutput& output)
 DestinationScript::DestinationScript(const CTxDestination& dest)
 {
     if (dest.type() == typeid(MWEBDestination)) {
-        m_script = boost::get<MWEBDestination>(dest).address;
+        m_script = EncodeDestination(boost::get<MWEBDestination>(dest));
     } else {
         m_script = GetScriptForDestination(dest);
     }

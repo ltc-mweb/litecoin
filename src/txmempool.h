@@ -562,7 +562,7 @@ private:
     std::vector<indexed_transaction_set::const_iterator> GetSortedDepthAndScore() const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
 public:
-    indirectmap<COutPoint, const CTransaction*> mapNextTx GUARDED_BY(cs);
+    indirectmap<COutPoint, const CTransaction*> mapNextTx GUARDED_BY(cs); // MW: TODO - Change this to OutputIndex
     indirectmap<libmw::Commitment, const CTransaction*> mapNextTx_MWEB GUARDED_BY(cs); // MW: TODO - Maybe wrap mapNextTx and mapNextTx_MWEB in a custom container?
     indirectmap<libmw::Commitment, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
     std::map<uint256, CAmount> mapDeltas;

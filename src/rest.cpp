@@ -391,6 +391,7 @@ static bool rest_tx(HTTPRequest* req, const std::string& strURIPart)
     }
 }
 
+// MW: TODO - Include MWEB UTXOs
 static bool rest_getutxos(HTTPRequest* req, const std::string& strURIPart)
 {
     if (!CheckWarmup(req))

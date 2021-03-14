@@ -22,55 +22,6 @@
 
 #include <boost/thread.hpp>
 
-
-static const std::string s_mweb_coin_key = "mwebcoin";
-
-//
-// MWEB
-//
-struct MWCoin {
-    libmw::Coin coin;
-
-    MWCoin() = default;
-    MWCoin(const libmw::Coin& in)
-        : coin(in) {}
-
-    ADD_SERIALIZE_METHODS
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action)
-    {
-        READWRITE(coin.features);
-        READWRITE(coin.address_index);
-        READWRITE(coin.commitment);
-        READWRITE(coin.amount);
-
-        bool fKey = coin.key != nullopt;
-        READWRITE(fKey);
-        if (fKey) {
-            if (ser_action.ForRead()) {
-                libmw::BlindingFactor key;
-                READWRITE(key);
-                coin.key = boost::make_optional(std::move(key));
-            } else {
-                READWRITE(*coin.key);
-            }
-        }
-
-        bool fBlind = coin.blind != nullopt;
-        READWRITE(fBlind);
-        if (fBlind) {
-            if (ser_action.ForRead()) {
-                libmw::BlindingFactor blind;
-                READWRITE(blind);
-                coin.blind = boost::make_optional(std::move(blind));
-            } else {
-                READWRITE(*coin.blind);
-            }
-        }
-    }
-};
-
 //
 // WalletBatch
 //
@@ -278,20 +229,6 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                 wss.fAnyUnordered = true;
 
             pwallet->LoadToWallet(wtx);
-        }
-        else if (strType == s_mweb_coin_key)
-        {
-            libmw::Commitment output_commit;
-            ssKey >> output_commit;
-
-            MWCoin wrapped_coin;
-            ssValue >> wrapped_coin;
-
-            if (wrapped_coin.coin.commitment != output_commit) {
-                return false;
-            }
-
-            pwallet->LoadToWallet(wrapped_coin.coin);
         }
         else if (strType == "watchs")
         {
@@ -845,63 +782,4 @@ bool WalletBatch::ReadVersion(int& nVersion)
 bool WalletBatch::WriteVersion(int nVersion)
 {
     return m_batch.WriteVersion(nVersion);
-}
-
-bool WalletBatch::WriteMWCoin(const libmw::Coin& coin)
-{
-    return WriteIC(std::make_pair(s_mweb_coin_key, coin.commitment), MWCoin{coin});
-}
-
-bool WalletBatch::EraseMWCoin(const libmw::Commitment& commitment)
-{
-    return EraseIC(std::make_pair(s_mweb_coin_key, commitment));
-}
-
-DBErrors WalletBatch::FindMWCoins(std::vector<libmw::Coin>& coins)
-{
-    DBErrors result = DBErrors::LOAD_OK;
-
-    try {
-        int nMinVersion = 0;
-        if (m_batch.Read((std::string) "minversion", nMinVersion)) {
-            if (nMinVersion > FEATURE_LATEST)
-                return DBErrors::TOO_NEW;
-        }
-
-        // Get cursor
-        Dbc* pcursor = m_batch.GetCursor();
-        if (!pcursor) {
-            LogPrintf("Error getting wallet database cursor\n");
-            return DBErrors::CORRUPT;
-        }
-
-        while (true) {
-            // Read next record
-            CDataStream ssKey(SER_DISK, CLIENT_VERSION);
-            CDataStream ssValue(SER_DISK, CLIENT_VERSION);
-            int ret = m_batch.ReadAtCursor(pcursor, ssKey, ssValue);
-            if (ret == DB_NOTFOUND)
-                break;
-            else if (ret != 0) {
-                LogPrintf("Error reading next record from wallet database\n");
-                return DBErrors::CORRUPT;
-            }
-
-            std::string strType;
-            ssKey >> strType;
-            if (strType == s_mweb_coin_key) {
-                MWCoin mw_coin;
-                ssValue >> mw_coin;
-
-                coins.push_back(std::move(mw_coin.coin));
-            }
-        }
-        pcursor->close();
-    } catch (const boost::thread_interrupted&) {
-        throw;
-    } catch (...) {
-        result = DBErrors::CORRUPT;
-    }
-
-    return result;
 }

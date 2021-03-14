@@ -62,8 +62,12 @@ bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return db.Read(CoinEntry(&outpoint), coin);
 }
 
-bool CCoinsViewDB::HaveCoin(const COutPoint &outpoint) const {
-    return db.Exists(CoinEntry(&outpoint));
+bool CCoinsViewDB::HaveCoin(const OutputIndex& index) const {
+    if (index.type() == typeid(libmw::Commitment)) {
+        return libmw::node::HasCoin(GetMWView(), boost::get<libmw::Commitment>(index));
+    } else {
+        return db.Exists(CoinEntry(boost::get<COutPoint>(&index)));
+    }
 }
 
 uint256 CCoinsViewDB::GetBestBlock() const {

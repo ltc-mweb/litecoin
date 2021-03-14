@@ -7,6 +7,7 @@
 #define BITCOIN_SCRIPT_STANDARD_H
 
 #include <script/interpreter.h>
+#include <pubkey.h>
 #include <uint256.h>
 
 #include <boost/variant.hpp>
@@ -113,21 +114,21 @@ struct WitnessUnknown
 
 struct MWEBDestination
 {
-    MWEBDestination(const libmw::MWEBAddress& address_)
-        : address(address_) { }
+    CPubKey scan_pubkey;
+    CPubKey spend_pubkey;
 
-    libmw::MWEBAddress address;
+    CKeyID GetID() const { return spend_pubkey.GetID(); }
 
     friend bool operator==(const MWEBDestination& a1, const MWEBDestination& a2)
     {
-        return a1.address == a2.address;
+        return a1.scan_pubkey == a2.scan_pubkey && a1.spend_pubkey == a2.spend_pubkey;
     }
 
     friend bool operator<(const MWEBDestination& a1, const MWEBDestination& a2)
     {
-        if (a1.address.size() < a2.address.size()) return true;
-        if (a2.address.size() > a1.address.size()) return false;
-        return std::lexicographical_compare(a1.address.begin(), a1.address.end(), a2.address.begin(), a2.address.end());
+        if (a1.scan_pubkey < a2.scan_pubkey) return true;
+        if (a1.scan_pubkey != a2.scan_pubkey) return false;
+        return a2.spend_pubkey < a2.spend_pubkey;
     }
 };
 

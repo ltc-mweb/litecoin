@@ -81,7 +81,7 @@ void BlockAssembler::resetBlock()
 
     // Reserve space for coinbase tx
     nBlockWeight = 4000; // MW: TODO - Reserve extra weight for HogEx transaction
-    nBlockSigOpsCost = 400; // MW: TODO - Reserve extra sigops for HogEx transaction
+    nBlockSigOpsCost = 400;
     nBlockMWEBWeight = 0;
     fIncludeWitness = false;
     fIncludeMWEB = false;
@@ -212,7 +212,7 @@ bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost
         return false;
     if (nBlockSigOpsCost + packageSigOpsCost >= MAX_BLOCK_SIGOPS_COST)
         return false;
-    if (nBlockMWEBWeight + packageMWEBWeight > libmw::MAX_BLOCK_WEIGHT)
+    if (nBlockMWEBWeight + packageMWEBWeight >= libmw::MAX_BLOCK_WEIGHT)
         return false;
     return true;
 }
@@ -256,7 +256,7 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
     pblock->vtx.emplace_back(pTx);
     pblocktemplate->vTxFees.push_back(iter->GetFee());
     pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
-    nBlockWeight += iter->GetTxWeight();
+    nBlockWeight += iter->GetTxWeight(); // MW: TODO - Include peg-in inputs & peg-out outputs.
     ++nBlockTx;
     nBlockSigOpsCost += iter->GetSigOpCost();
     nBlockMWEBWeight += iter->GetMWEBWeight();

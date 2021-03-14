@@ -52,7 +52,7 @@ public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
 
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
-    bool HaveCoin(const COutPoint &outpoint) const override;
+    bool HaveCoin(const OutputIndex& index) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) override;

@@ -20,56 +20,65 @@ void MWEB::Miner::NewBlock(const uint64_t nHeight)
 bool MWEB::Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
 {
     CTransactionRef pTx = iter->GetSharedTx();
-    libmw::TxRef mw_tx = pTx->m_mwtx.m_transaction;
+    libmw::TxRef mweb_tx = pTx->m_mwtx.m_transaction;
 
     //
     // Pegin
     //
     std::vector<CTxIn> vin;
-    uint64_t pegin_amount = 0;
-    std::vector<libmw::PegIn> pegins;
+    CAmount pegin_amount = 0;
+    std::vector<libmw::PegIn> pegins = mweb_tx.GetPegins();
+
+    if (!ValidatePegIns(pTx, pegins)) {
+        LogPrintf("Peg-in Mismatch\n");
+        return false;
+    }
 
     for (size_t nOut = 0; nOut < pTx->vout.size(); nOut++) {
-        const auto& output = pTx->vout[nOut];
-        int version;
-        std::vector<uint8_t> program;
-        if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-            if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-                vin.push_back(CTxIn{pTx->GetHash(), (uint32_t)nOut});
-                pegin_amount += output.nValue;
+        if (IsPegInOutput(pTx->GetOutput(nOut))) {
+            vin.push_back(CTxIn{pTx->GetHash(), (uint32_t)nOut});
 
-                libmw::PegIn pegin;
-                pegin.amount = output.nValue;
-                std::copy_n(std::make_move_iterator(program.begin()), WITNESS_MWEB_PEGIN_SIZE, pegin.commitment.begin());
-                pegins.push_back(std::move(pegin));
+            assert(MoneyRange(pTx->vout[nOut].nValue));
+            pegin_amount += pTx->vout[nOut].nValue;
+
+            if (!MoneyRange(pegin_amount)) {
+                LogPrintf("Invalid total peg-in amount\n");
+                return false;
             }
         }
     }
-
-    // MW: TODO - Verify pegins match.
 
     //
     // Pegout
     //
     std::vector<CTxOut> vout;
-    uint64_t pegout_amount = 0;
-    std::vector<libmw::PegOut> pegouts = mw_tx.GetPegouts();
+    CAmount pegout_amount = 0;
+    std::vector<libmw::PegOut> pegouts = mweb_tx.GetPegouts();
 
     for (const libmw::PegOut& pegout : pegouts) {
         CTxDestination destination = DecodeDestination(pegout.address);
-        if (!IsValidDestination(destination)) {
-            LogPrintf("Invalid pegout destination\n");
+        if (!IsValidDestination(destination) || destination.type() == typeid(MWEBDestination)) {
+            LogPrintf("Invalid peg-out destination\n");
             return false;
         }
 
+        CAmount amount(pegout.amount);
+        assert(MoneyRange(amount));
+
         CScript scriptPubKey = GetScriptForDestination(destination);
-        vout.push_back(CTxOut{CAmount(pegout.amount), scriptPubKey});
-        pegout_amount += pegout.amount;
+        vout.push_back(CTxOut{amount, scriptPubKey});
+
+        pegout_amount += amount;
+        if (!MoneyRange(pegout_amount)) {
+            LogPrintf("Invalid total peg-out amount\n");
+            return false;
+        }
     }
 
-    // Validate amount ranges
-    if (!MoneyRange(pegin_amount) || !MoneyRange(pegout_amount)) {
-        LogPrintf("Invalid pegin/pegout amount\n");
+    // Validate fee amount range
+    CAmount tx_fee = mweb_tx.GetTotalFee();
+    if (!MoneyRange(tx_fee)) {
+        LogPrintf("Invalid MWEB fee amount\n");
         return false;
     }
 
@@ -83,9 +92,44 @@ bool MWEB::Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
 
     hogex_inputs.insert(hogex_inputs.end(), vin.cbegin(), vin.cend());
     hogex_outputs.insert(hogex_outputs.end(), vout.cbegin(), vout.cend());
-    const uint64_t tx_fee = mw_tx.GetTotalFee();
     mweb_fees += tx_fee;
     mweb_amount_change += (CAmount(pegin_amount) - CAmount(pegout_amount + tx_fee));
+
+    return true;
+}
+
+namespace std {
+template <>
+struct hash<libmw::PegIn> {
+    size_t operator()(const libmw::PegIn& pegin) const
+    {
+        return boost::hash_value(pegin.commitment) + boost::hash_value(pegin.amount);
+    }
+};
+} // namespace std
+
+bool MWEB::Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<libmw::PegIn>& pegins) const
+{
+    std::unordered_set<libmw::PegIn> pegin_set(pegins.cbegin(), pegins.cend());
+
+    for (const CTxOut& output : pTx->vout) {
+        int version;
+        std::vector<uint8_t> program;
+        if (output.scriptPubKey.IsWitnessProgram(version, program)) {
+            if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
+                libmw::PegIn pegin;
+                pegin.amount = output.nValue;
+                std::copy_n(std::make_move_iterator(program.begin()), WITNESS_MWEB_PEGIN_SIZE, pegin.commitment.begin());
+                if (pegin_set.erase(pegin) != 1) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (!pegin_set.empty()) {
+        return false;
+    }
 
     return true;
 }
@@ -143,7 +187,5 @@ void MWEB::Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pbl
     pblock->mwBlock = MWEB::Block(mw_block);
     pblocktemplate->vTxFees.push_back(mweb_fees);
     
-    // MW: TODO - Confirm that pcoinsTip is correct, and that we have the right locks for it. Also, account for sigop counts when adding the pegin/out instead (preferably in mempool using MempoolTxEntry).
-    int64_t nSigOpCount = GetTransactionSigOpCost(*pblock->vtx.back(), *pcoinsTip, STANDARD_SCRIPT_VERIFY_FLAGS);
-    pblocktemplate->vTxSigOpsCost.push_back(nSigOpCount);
+    pblocktemplate->vTxSigOpsCost.push_back(0);
 }

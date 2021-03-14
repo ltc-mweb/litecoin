@@ -1395,7 +1395,8 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     LOCK(cs_main);
     const CNetMsgMaker msgMaker(pfrom->GetSendVersion());
     int nSendFlags = State(pfrom->GetId())->fWantsCmpctWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
-    // MW: TODO - Determine when to set SERIALIZE_NO_MIMBLEWIMBLE
+    nSendFlags |= State(pfrom->GetId())->fWantsCmpctMW ? 0 : SERIALIZE_NO_MIMBLEWIMBLE;
+
     connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::BLOCKTXN, resp));
 }
 
@@ -2474,7 +2475,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             CBlockIndex* pTip = chainActive.Tip();
             assert(pTip);
             if (IsMimblewimbleEnabled(pTip->pprev, chainparams.GetConsensus()) && !State(pfrom->GetId())->fWantsCmpctMW) {
-                vRecv.SetVersion(vRecv.GetVersion() | SERIALIZE_NO_MIMBLEWIMBLE); // MW: TODO - This may be already set
+                vRecv.SetVersion(vRecv.GetVersion() | SERIALIZE_NO_MIMBLEWIMBLE); // MWEB: This may already be set.
             }
         }
 

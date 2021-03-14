@@ -252,13 +252,6 @@ public:
     //! Write wallet version
     bool WriteVersion(int nVersion);
 
-    //
-    // MWEB
-    //
-    bool WriteMWCoin(const libmw::Coin& coin);
-    bool EraseMWCoin(const libmw::Commitment& commitment);
-    DBErrors FindMWCoins(std::vector<libmw::Coin>& coins);
-
 private:
     BerkeleyBatch m_batch;
     WalletDatabase& m_database;
