@@ -14,15 +14,19 @@ std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint
 bool CCoinsView::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 
-bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
+bool CCoinsView::HaveCoin(const OutputIndex& index) const
 {
-    Coin coin;
-    return GetCoin(outpoint, coin);
+    if (index.type() == typeid(libmw::Commitment)) {
+        return libmw::node::HasCoin(GetMWView(), boost::get<libmw::Commitment>(index));
+    } else {
+        Coin coin;
+        return GetCoin(boost::get<COutPoint>(index), coin);
+    }
 }
 
 CCoinsViewBacked::CCoinsViewBacked(CCoinsView *viewIn) : base(viewIn) { }
 bool CCoinsViewBacked::GetCoin(const COutPoint &outpoint, Coin &coin) const { return base->GetCoin(outpoint, coin); }
-bool CCoinsViewBacked::HaveCoin(const COutPoint &outpoint) const { return base->HaveCoin(outpoint); }
+bool CCoinsViewBacked::HaveCoin(const OutputIndex& index) const { return base->HaveCoin(index); }
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetHeadBlocks(); }
 void CCoinsViewBacked::SetBackend(CCoinsView& viewIn) { base = &viewIn; }
@@ -124,14 +128,22 @@ const Coin& CCoinsViewCache::AccessCoin(const COutPoint &outpoint) const {
     }
 }
 
-bool CCoinsViewCache::HaveCoin(const COutPoint &outpoint) const {
-    CCoinsMap::const_iterator it = FetchCoin(outpoint);
-    return (it != cacheCoins.end() && !it->second.coin.IsSpent());
+bool CCoinsViewCache::HaveCoin(const OutputIndex& index) const {
+    if (index.type() == typeid(libmw::Commitment)) {
+        return libmw::node::HasCoin(GetMWView(), boost::get<libmw::Commitment>(index));
+    } else {
+        CCoinsMap::const_iterator it = FetchCoin(boost::get<COutPoint>(index));
+        return (it != cacheCoins.end() && !it->second.coin.IsSpent());
+    }
 }
 
-bool CCoinsViewCache::HaveCoinInCache(const COutPoint &outpoint) const {
-    CCoinsMap::const_iterator it = cacheCoins.find(outpoint);
-    return (it != cacheCoins.end() && !it->second.coin.IsSpent());
+bool CCoinsViewCache::HaveCoinInCache(const OutputIndex& index) const {
+    if (index.type() == typeid(libmw::Commitment)) {
+        return libmw::node::HasCoinInCache(GetMWView(), boost::get<libmw::Commitment>(index));
+    } else {
+        CCoinsMap::const_iterator it = cacheCoins.find(boost::get<COutPoint>(index));
+        return (it != cacheCoins.end() && !it->second.coin.IsSpent());
+    }
 }
 
 uint256 CCoinsViewCache::GetBestBlock() const {
@@ -251,16 +263,8 @@ CAmount CCoinsViewCache::GetValueIn(const CTransaction& tx) const
 bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
 {
     if (!tx.IsCoinBase()) {
-        for (unsigned int i = 0; i < tx.vin.size(); i++) {
-            if (!HaveCoin(tx.vin[i].prevout)) {
-                return false;
-            }
-        }
-
-        // MWEB: Check MWEB inputs
-        std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
-        for (const libmw::Commitment& input_commit : input_commits) {
-            if (!libmw::node::HasCoin(GetMWView(), input_commit)) {
+        for (const CTxInput& input : tx.GetInputs()) {
+            if (!HaveCoin(input.GetIndex())) {
                 return false;
             }
         }

@@ -3,6 +3,12 @@
 #include <wallet/coincontrol.h>
 #include <util/bip32.h>
 
+bool MWEB::Wallet::IsMine(const libmw::PubKey& spend_pubkey, uint32_t& index_out) const
+{
+    // MW: TODO - Implement
+    return true;
+}
+
 libmw::PrivateKey MWEB::Wallet::GetHDKey(const std::string& bip32Path) const
 {
     // Currently, MWEB only supports HD wallets
@@ -59,7 +65,6 @@ void MWEB::Wallet::AddCoins(const std::vector<libmw::Coin>& coins)
 {
     WalletBatch batch(m_pWallet->GetDBHandle());
     for (const auto& coin : coins) {
-        batch.WriteMWCoin(coin);
         m_coins[coin.commitment] = coin;
     }
 }
@@ -68,7 +73,6 @@ void MWEB::Wallet::DeleteCoins(const std::vector<libmw::Coin>& coins)
 {
     WalletBatch batch(m_pWallet->GetDBHandle());
     for (const auto& coin : coins) {
-        batch.EraseMWCoin(coin.commitment);
         m_coins.erase(coin.commitment);
     }
 }

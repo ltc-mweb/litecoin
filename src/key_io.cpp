@@ -71,11 +71,11 @@ public:
     std::string operator()(const MWEBDestination& id) const
     {
         // MW: TODO - Create new bech32 encoder so we don't need to concat these 2.
-        std::vector<uint8_t> scan_data = {0};
-        ConvertBits<8, 5, true>([&](unsigned char c) { scan_data.push_back(c); }, id.scan_pubkey.begin(), id.scan_pubkey.end());
+        std::vector<uint8_t> scan_data = {id.scan_pubkey[0]};
+        ConvertBits<8, 5, true>([&](unsigned char c) { scan_data.push_back(c); }, id.scan_pubkey.begin() + 1, id.scan_pubkey.end());
 
-        std::vector<uint8_t> spend_data = {0};
-        ConvertBits<8, 5, true>([&](unsigned char c) { spend_data.push_back(c); }, id.spend_pubkey.begin(), id.spend_pubkey.end());
+        std::vector<uint8_t> spend_data = {id.spend_pubkey[0]};
+        ConvertBits<8, 5, true>([&](unsigned char c) { spend_data.push_back(c); }, id.spend_pubkey.begin() + 1, id.spend_pubkey.end());
 
         return bech32::Encode("mweb", scan_data) + ":" + bech32::Encode(m_params.Bech32HRP(), spend_data);
     }
@@ -155,9 +155,11 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
         if (!bech_scan.second.empty() && bech_scan.first == "mweb" && !bech_spend.second.empty() && bech_spend.first == params.Bech32HRP()) {
             std::vector<uint8_t> scan_data;
             scan_data.reserve(((bech_scan.second.size() - 1) * 5) / 8);
+            scan_data.push_back(bech_scan.second[0]);
 
             std::vector<uint8_t> spend_data;
             spend_data.reserve(((bech_spend.second.size() - 1) * 5) / 8);
+            spend_data.push_back(bech_spend.second[0]);
 
             if (ConvertBits<5, 8, false>([&](unsigned char c) { scan_data.push_back(c); }, bech_scan.second.begin() + 1, bech_scan.second.end())
                 && ConvertBits<5, 8, false>([&](unsigned char c) { spend_data.push_back(c); }, bech_spend.second.begin() + 1, bech_spend.second.end())) {
@@ -272,15 +274,4 @@ bool IsValidDestinationString(const std::string& str, const CChainParams& params
 bool IsValidDestinationString(const std::string& str)
 {
     return IsValidDestinationString(str, Params());
-}
-
-bool IsValidMWEBDestinationString(const std::string& str) // MW: TODO - Belongs in libmw
-{
-    std::size_t pos = str.find(':');
-    if (pos == std::string::npos) return false;
-    auto decoded = bech32::Decode(str.substr(0, pos));
-    if (decoded.first != "mweb" || decoded.second.size() != 53) return false;
-    decoded = bech32::Decode(str.substr(pos + 1, std::string::npos));
-    if (decoded.first != "ltc" || decoded.second.size() != 53) return false;
-    return true;
 }

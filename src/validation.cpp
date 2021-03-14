@@ -331,7 +331,7 @@ bool CheckFinalTx(const CTransaction &tx, int flags)
     // rules would be enforced for the next block and setting the
     // appropriate flags. At the present time no soft-forks are
     // scheduled, so no flags are set.
-    flags = std::max(flags, 0); // MW: TODO - Set & Check appropriate flags
+    flags = std::max(flags, 0);
 
     // CheckFinalTx() uses chainActive.Height()+1 to evaluate
     // nLockTime because when IsFinalTx() is called within
@@ -614,9 +614,9 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
 
     // Check for conflicts with in-memory transactions
     std::set<uint256> setConflicts;
-    for (const CTxIn &txin : tx.vin)
+    for (const CTxInput& txin : tx.GetInputs())
     {
-        const CTransaction* ptxConflicting = pool.GetConflictTx(txin.prevout);
+        const CTransaction* ptxConflicting = pool.GetConflictTx(txin.GetIndex());
         if (ptxConflicting) {
             if (!setConflicts.count(ptxConflicting->GetHash()))
             {
@@ -632,6 +632,9 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
                 // first-seen mempool behavior should be checking all
                 // unconfirmed ancestors anyway; doing otherwise is hopelessly
                 // insecure.
+
+                // MW: TODO - For now, we're just not allowing tx replacement for MWEB txs,
+                // but we'll want to eventually support some form of RBF
                 bool fReplacementOptOut = true;
                 if (fEnableReplacement)
                 {
@@ -653,16 +656,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         }
     }
 
-    // MW: TODO - For now, we're just not allowing tx replacement for MWEB txs,
-    // but we'll want to eventually support some form of RBF
-    std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
-    for (const libmw::Commitment& input_commit : input_commits) {
-        const CTransaction* pTxConflicting = pool.GetConflictTx(input_commit);
-        if (pTxConflicting) {
-            return state.Invalid(false, REJECT_DUPLICATE, "txn-mempool-conflict");
-        }
-    }
-
     {
         CCoinsView dummy;
         CCoinsViewCache view(&dummy);
@@ -672,39 +665,15 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         view.SetBackend(viewMemPool);
 
         // do all inputs exist?
-        for (const CTxIn& txin : tx.vin) {
-            if (!pcoinsTip->HaveCoinInCache(txin.prevout)) {
-                coins_to_uncache.push_back(txin.prevout);
+        for (const CTxInput& txin : tx.GetInputs()) {
+            if (!pcoinsTip->HaveCoinInCache(txin.GetIndex())) {
+                coins_to_uncache.push_back(txin.GetIndex());
             }
-            if (!view.HaveCoin(txin.prevout)) {
+            if (!view.HaveCoin(txin.GetIndex())) {
                 // Are inputs missing because we already have the tx?
-                for (size_t out = 0; out < tx.vout.size(); out++) {
+                for (const CTxOutput& txout : tx.GetOutputs()) {
                     // Optimistically just do efficient check of cache for outputs
-                    if (pcoinsTip->HaveCoinInCache(COutPoint(hash, out))) {
-                        return state.Invalid(false, REJECT_DUPLICATE, "txn-already-known");
-                    }
-                }
-                // Otherwise assume this might be an orphan tx for which we just haven't seen parents yet
-                if (pfMissingInputs) {
-                    *pfMissingInputs = true;
-                }
-                return false; // fMissingInputs and !state.IsInvalid() is used to detect this condition, don't set state.Invalid()
-            }
-        }
-
-        // MWEB: Check if inputs exist
-        std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
-        std::set<libmw::Commitment> output_commits = tx.m_mwtx.GetOutputCommits();
-        for (const libmw::Commitment& input_commit : input_commits) {
-            if (!libmw::node::HasCoinInCache(pcoinsTip->GetMWView(), input_commit)) {
-                coins_to_uncache.push_back(input_commit);
-            }
-
-            if (!libmw::node::HasCoin(view.GetMWView(), input_commit)) {
-                // Are inputs missing because we already have the tx?
-                for (const libmw::Commitment& output_commit : output_commits) {
-                    // Optimistically just do efficient check of cache for outputs
-                    if (libmw::node::HasCoinInCache(pcoinsTip->GetMWView(), output_commit)) {
+                    if (pcoinsTip->HaveCoinInCache(txout.GetIndex())) {
                         return state.Invalid(false, REJECT_DUPLICATE, "txn-already-known");
                     }
                 }
@@ -861,9 +830,13 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
                                   oldFeeRate.ToString()));
                 }
 
-                for (const CTxIn &txin : mi->GetTx().vin)
+                for (const CTxInput& txin : mi->GetTx().GetInputs())
                 {
-                    setConflictsParents.insert(txin.prevout.hash);
+                    if (txin.IsMWEB()) {
+                        // MW: TODO - Get parent hash
+                    } else {
+                        setConflictsParents.insert(txin.GetTxIn().prevout.hash);
+                    }
                 }
 
                 nConflictingCount += mi->GetCountWithDescendants();
@@ -892,6 +865,8 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
 
             for (unsigned int j = 0; j < tx.vin.size(); j++)
             {
+                // MW: TODO - Change to CTxInput
+
                 // We don't want to accept replacements that require low
                 // feerate junk to be mined first. Ideally we'd keep track of
                 // the ancestor feerates and make the decision based on that,
@@ -2038,6 +2013,15 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
             }
 
+            // MWEB: For HogEx transaction, the fee must not be greater than the total fee of the extension block.
+            if (tx.IsHogEx()) {
+                CAmount mweb_fee = block.mwBlock.GetTotalFee();
+                if (txfee > mweb_fee) {
+                    return state.DoS(100, error("%s: HogEx fee does not match MWEB fee.", __func__),
+                        REJECT_INVALID, "bad-txns-mweb-fee-mismatch");
+                }
+            }
+
             // Check that transaction is BIP68 final
             // BIP68 lock checks (as opposed to nLockTime checks) must
             // be in ConnectBlock because they require the UTXO set
@@ -2081,16 +2065,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    // MW: Add MWEB fees
-    if (!block.mwBlock.IsNull()) {
-        const CAmount mw_fee(block.mwBlock.GetTotalFee());
-        nFees += mw_fee;
-        if (!MoneyRange(mw_fee) || !MoneyRange(nFees)) {
-            return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
-                REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
-        }
-    }
-
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
     if (block.vtx[0]->GetValueOut() > blockReward)
         return state.DoS(100,
@@ -2103,7 +2077,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
 
-    // MW: Check activation
+    // MWEB: Check activation
     const bool mw_enabled = IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus());
     if (mw_enabled && block.mwBlock.IsNull()) {
         return state.DoS(100, error("ConnectBlock(): Mimblewimble activated, but no MWEB included"),
@@ -2113,7 +2087,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             REJECT_INVALID, "unexpected-mweb");
     }
 
-    // MW: Connect block to chain
+    // MWEB: Connect block to chain
     if (!block.mwBlock.IsNull()) {
         // MW: TODO - Check HogEx transaction: `new value == (prev value + pegins) - (pegouts + fees)`
         try {
@@ -2517,8 +2491,8 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     LogPrint(BCLog::BENCH, "  - Writing chainstate: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime5 - nTime4) * MILLI, nTimeChainState * MICRO, nTimeChainState * MILLI / nBlocksTotal);
     // Remove conflicting transactions from the mempool.;
     mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
-    disconnectpool.removeForBlock(blockConnecting.vtx);
-    // MW: Remove conflicting transactions from the mempool.
+    disconnectpool.removeForBlock(blockConnecting.vtx); // MW: TODO - Do we have to do something with this?
+    // MWEB: Remove conflicting transactions from the mempool.
     if (!blockConnecting.mwBlock.IsNull()) {
         mempool.removeForMWBlock(blockConnecting.mwBlock, pindexNew->nHeight);
     }
@@ -2788,6 +2762,7 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
 
                 for (const PerBlockConnectTrace& trace : connectTrace.GetBlocksConnected()) {
                     assert(trace.pblock && trace.pindex);
+                    LogPrintf("Connected Block: %s\n", trace.pblock->GetHash().ToString().c_str());
                     GetMainSignals().BlockConnected(trace.pblock, trace.pindex, trace.conflictedTxs);
                 }
             } while (!chainActive.Tip() || (starting_tip && CBlockIndexWorkComparator()(chainActive.Tip(), starting_tip)));
@@ -3203,7 +3178,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // checks that use witness data may be performed here.
 
     // Size limits
-    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE) // MW: TODO -Replace size check with MW weight check
+    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-length", false, "size limits failed");
 
     // First transaction must be coinbase, the rest must not be
@@ -3480,11 +3455,6 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         }
     }
 
-    // Check max size of mimblewimble extension block data
-    if (::GetSerializeSize(block.mwBlock) > MAX_MW_EB_SIZE) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
-    }
-
     return true;
 }
 
@@ -3692,7 +3662,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
     AssertLockNotHeld(cs_main);
-    LogPrintf("%s: Processing new block", __func__);
+    LogPrintf("%s: Processing new block\n", __func__);
     {
         CBlockIndex *pindex = nullptr;
         if (fNewBlock) *fNewBlock = false;

@@ -1144,6 +1144,7 @@ static UniValue gettxoutsetinfo(const JSONRPCRequest& request)
     return ret;
 }
 
+// MW: TODO - Include MWEB UTXOs
 UniValue gettxout(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
