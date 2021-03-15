@@ -95,7 +95,7 @@ public:
     virtual bool haveWatchOnly() = 0;
 
     //! Generates a new MWEB receive address.
-    virtual bool getMWEBAddress(libmw::MWEBAddress& address) = 0;
+    virtual bool generateMWEBAddress(libmw::MWEBAddress& address) = 0;
 
     //! Add or update address.
     virtual bool setAddressBook(const CTxDestination& dest, const std::string& name, const std::string& purpose) = 0;

@@ -3409,7 +3409,7 @@ int64_t CWallet::GetOldestKeyPoolTime()
     return oldestKey;
 }
 
-bool CWallet::GetMWEBAddress(libmw::MWEBAddress& address)
+bool CWallet::GenerateMWEBAddress(libmw::MWEBAddress& address)
 {
     LOCK(cs_wallet);
     if (!CanGenerateKeys()) {

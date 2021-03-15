@@ -195,7 +195,7 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
 
     if (output_type == OutputType::MWEB) {
         libmw::MWEBAddress address;
-        if (!pwallet->GetMWEBAddress(address)) {
+        if (!pwallet->GenerateMWEBAddress(address)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error: Failed to generate an MWEB address");
         }
 

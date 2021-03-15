@@ -2,11 +2,28 @@
 #include <wallet/wallet.h>
 #include <wallet/coincontrol.h>
 #include <util/bip32.h>
+#include <climits>
 
-bool MWEB::Wallet::IsMine(const libmw::PubKey& spend_pubkey, uint32_t& index_out) const
+bool MWEB::Wallet::IsMine(const libmw::PubKey& spend_pubkey, uint32_t& index_out)
 {
-    // MW: TODO - Implement
-    return true;
+    while (m_pubkeys.size() < m_pWallet->GetHDChain().nMWEBIndexCounter) {
+        assert(m_pubkeys.size() < ULONG_MAX);
+        uint32_t pubkey_index = (uint32_t)m_pubkeys.size();
+
+        libmw::MWEBAddress address = libmw::wallet::GetAddress(m_pWallet->GetMWWallet(), pubkey_index);
+        CTxDestination dest = DecodeDestination(address);
+        assert(dest.type() == typeid(MWEBDestination));
+
+        m_pubkeys.insert({boost::get<MWEBDestination>(dest).spend_pubkey, pubkey_index});
+    }
+    
+    auto iter = m_pubkeys.find(CPubKey(spend_pubkey.begin(), spend_pubkey.end()));
+    if (iter != m_pubkeys.end()) {
+        index_out = iter->second;
+        return true;
+    }
+
+    return false;
 }
 
 libmw::PrivateKey MWEB::Wallet::GetHDKey(const std::string& bip32Path) const
