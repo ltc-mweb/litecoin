@@ -52,16 +52,10 @@ bool MWEB::Transact::CreateTx(
 
             mweb_recipients.push_back(std::move(mweb_recipient));
         } else {
-            CTxDestination dest;
-            if (!ExtractDestination(recipient.receiver.GetScript(), dest)) {
-                return false;
-            }
-
-            // MW: TODO - Verify bech32 address
-
             libmw::PegOutRecipient pegout_recipient{
                 (uint64_t)recipient.nAmount,
-                EncodeDestination(dest)};
+                std::vector<uint8_t>(recipient.receiver.GetScript().begin(), recipient.receiver.GetScript().end())
+            };
             mweb_recipients.push_back(std::move(pegout_recipient));
         }
     }

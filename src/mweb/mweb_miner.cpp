@@ -56,17 +56,11 @@ bool MWEB::Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     std::vector<libmw::PegOut> pegouts = mweb_tx.GetPegouts();
 
     for (const libmw::PegOut& pegout : pegouts) {
-        CTxDestination destination = DecodeDestination(pegout.address);
-        if (!IsValidDestination(destination) || destination.type() == typeid(MWEBDestination)) {
-            LogPrintf("Invalid peg-out destination\n");
-            return false;
-        }
-
         CAmount amount(pegout.amount);
         assert(MoneyRange(amount));
 
-        CScript scriptPubKey = GetScriptForDestination(destination);
-        vout.push_back(CTxOut{amount, scriptPubKey});
+        CScript scriptPubKey(pegout.scriptPubKey);
+        vout.push_back(CTxOut{amount, std::move(scriptPubKey)});
 
         pegout_amount += amount;
         if (!MoneyRange(pegout_amount)) {

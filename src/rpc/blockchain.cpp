@@ -462,7 +462,7 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
         for (const libmw::PegOut& pegout : tx.m_mwtx.GetPegOuts()) {
             UniValue pegout_uni(UniValue::VOBJ);
             pegout_uni.pushKV("amount", pegout.amount);
-            pegout_uni.pushKV("address", pegout.address);
+            pegout_uni.pushKV("scriptpubkey", HexStr(pegout.scriptPubKey));
         }
 
         mweb_info.pushKV("pegouts", pegouts);

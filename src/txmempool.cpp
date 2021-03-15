@@ -58,8 +58,7 @@ size_t CTxMemPoolEntry::GetTxSize() const
     size_t weight = nTxWeight + (GetTransactionInputWeight(CTxIn()) * tx->m_mwtx.GetPegIns().size());
 
     for (const libmw::PegOut& pegout : tx->m_mwtx.GetPegOuts()) {
-        CTxDestination destination = DecodeDestination(pegout.address);
-        CTxOut pegout_output(pegout.amount, GetScriptForDestination(destination));
+        CTxOut pegout_output(pegout.amount, CScript(pegout.scriptPubKey));
         weight += (::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR);
     }
 
