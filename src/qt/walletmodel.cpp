@@ -185,7 +185,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             switch (rcp.type) {
             case SendCoinsRecipient::MWEB_PEGIN: {
                 coin_control_copy.fPegIn = true;
-                receiver = libmw::wallet::GetAddress(m_wallet->GetMWWallet(), libmw::PEGIN_INDEX);
+                receiver = m_wallet->getPeginAddress();
                 break;
             }
             case SendCoinsRecipient::MWEB_PEGOUT: {

@@ -2,6 +2,7 @@
 
 #include <libmw/libmw.h>
 #include <mweb/mweb_models.h>
+#include <mweb/mweb_wallet.h>
 #include <wallet/coinselection.h>
 #include <wallet/wallet.h>
 #include <boost/optional.hpp>
@@ -22,7 +23,7 @@ class Transact
 {
 public:
     static bool CreateTx(
-        const libmw::IWallet::Ptr& mweb_wallet,
+        const std::shared_ptr<MWEB::Wallet>& mweb_wallet,
         CMutableTransaction& transaction,
         const std::vector<CInputCoin>& selected_coins,
         const std::vector<CRecipient>& recipients,
@@ -32,13 +33,13 @@ public:
     );
 
 private:
-    static std::vector<libmw::Commitment> GetInputCommits(const std::vector<CInputCoin>& inputs);
+    static std::vector<libmw::Coin> GetInputCoins(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetLTCInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBRecipientAmount(const std::vector<CRecipient>& recipients);
     static bool UpdatePegInOutput(CMutableTransaction& transaction, const libmw::PegIn& pegin);
     static libmw::Recipient BuildChangeRecipient(
-        const libmw::IWallet::Ptr& mweb_wallet,
+        const std::shared_ptr<MWEB::Wallet>& mweb_wallet,
         CMutableTransaction& transaction,
         const std::vector<CInputCoin>& selected_coins,
         const std::vector<CRecipient>& recipients,

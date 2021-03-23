@@ -90,7 +90,7 @@ public:
         nVersion = CHDChain::CURRENT_VERSION;
         nExternalChainCounter = 0;
         nInternalChainCounter = 0;
-        nMWEBIndexCounter = 0;
+        nMWEBIndexCounter = 2; // First 2 addresses are reserved for change & pegins
         seed_id.SetNull();
     }
 };

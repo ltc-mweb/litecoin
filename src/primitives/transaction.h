@@ -224,7 +224,6 @@ public:
         : m_tx(pTx), m_idx(std::move(idx)), m_output(std::move(txout)) {}
 
     bool IsMWEB() const noexcept { return m_output.type() == typeid(libmw::Commitment); }
-    const CTransaction* GetTx() const noexcept { return m_tx; }
 
     const OutputIndex& GetIndex() const noexcept { return m_idx; }
     

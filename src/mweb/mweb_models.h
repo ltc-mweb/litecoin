@@ -77,8 +77,6 @@ struct Block {
 };
 
 struct Tx {
-    using CPtr = std::shared_ptr<MWEB::Tx>;
-
     libmw::TxRef m_transaction;
 
     Tx() = default;

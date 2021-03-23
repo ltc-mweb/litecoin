@@ -770,25 +770,6 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
     BOOST_CHECK(!IsStandardTx(CTransaction(t), reason));
 }
 
-class MockMWWallet : public libmw::IWallet
-{
-public:
-    MockMWWallet() : m_bip32_index(1) { }
-
-    libmw::PrivateKey GetHDKey(const std::string& bip32Path) const final
-    {
-        libmw::PrivateKey privateKey;
-        privateKey.bip32Path = bip32Path;
-        GetRandBytes(privateKey.keyBytes.data(), 32);
-        return privateKey;
-    }
-
-    bool GetCoin(const libmw::Commitment& commitment, libmw::Coin& coin) const final { return false; }
-
-private:
-    int m_bip32_index;
-};
-
 // MW: TODO - Fix this test
 //BOOST_AUTO_TEST_CASE(test_mweb)
 //{

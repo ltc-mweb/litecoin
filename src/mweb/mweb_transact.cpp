@@ -1,7 +1,9 @@
 #include <mweb/mweb_transact.h>
 #include <key_io.h>
 
-MWEB::TxType MWEB::GetTxType(const std::vector<CRecipient>& recipients, const std::vector<CInputCoin>& input_coins)
+using namespace MWEB;
+
+TxType MWEB::GetTxType(const std::vector<CRecipient>& recipients, const std::vector<CInputCoin>& input_coins)
 {
     assert(!recipients.empty());
 
@@ -28,8 +30,8 @@ MWEB::TxType MWEB::GetTxType(const std::vector<CRecipient>& recipients, const st
     }
 }
 
-bool MWEB::Transact::CreateTx(
-    const libmw::IWallet::Ptr& mweb_wallet,
+bool Transact::CreateTx(
+    const std::shared_ptr<MWEB::Wallet>& mweb_wallet,
     CMutableTransaction& transaction,
     const std::vector<CInputCoin>& selected_coins,
     const std::vector<CRecipient>& recipients,
@@ -37,7 +39,7 @@ bool MWEB::Transact::CreateTx(
     const CAmount& mweb_fee,
     const bool include_mweb_change)
 {
-    TxType type = GetTxType(recipients, selected_coins);
+    TxType type = MWEB::GetTxType(recipients, selected_coins);
     if (type == TxType::LTC_TO_LTC) {
         return true;
     }
@@ -80,10 +82,9 @@ bool MWEB::Transact::CreateTx(
     }
 
     // Create transaction
-    std::vector<libmw::Commitment> input_commits = GetInputCommits(selected_coins);
+    std::vector<libmw::Coin> input_coins = GetInputCoins(selected_coins);
     transaction.m_mwtx = libmw::wallet::CreateTx(
-        mweb_wallet,
-        input_commits,
+        input_coins,
         mweb_recipients,
         pegin_amount,
         (uint64_t)mweb_fee);
@@ -97,40 +98,40 @@ bool MWEB::Transact::CreateTx(
     return true;
 }
 
-std::vector<libmw::Commitment> MWEB::Transact::GetInputCommits(const std::vector<CInputCoin>& inputs)
+std::vector<libmw::Coin> Transact::GetInputCoins(const std::vector<CInputCoin>& inputs)
 {
-    std::vector<libmw::Commitment> input_commits;
+    std::vector<libmw::Coin> input_coins;
     for (const auto& coin : inputs) {
         if (coin.IsMWEB()) {
-            input_commits.push_back(boost::get<libmw::Commitment>(coin.GetIndex()));
+            input_coins.push_back(coin.GetMWEBCoin());
         }
     }
 
-    return input_commits;
+    return input_coins;
 }
 
-CAmount MWEB::Transact::GetMWEBInputAmount(const std::vector<CInputCoin>& inputs)
+CAmount Transact::GetMWEBInputAmount(const std::vector<CInputCoin>& inputs)
 {
     return std::accumulate(
         inputs.cbegin(), inputs.cend(), CAmount(0),
         [](CAmount amt, const CInputCoin& input) { return amt + (input.IsMWEB() ? input.GetAmount() : 0); });
 }
 
-CAmount MWEB::Transact::GetLTCInputAmount(const std::vector<CInputCoin>& inputs)
+CAmount Transact::GetLTCInputAmount(const std::vector<CInputCoin>& inputs)
 {
     return std::accumulate(
         inputs.cbegin(), inputs.cend(), CAmount(0),
         [](CAmount amt, const CInputCoin& input) { return amt + (input.IsMWEB() ? 0 : input.GetAmount()); });
 }
 
-CAmount MWEB::Transact::GetMWEBRecipientAmount(const std::vector<CRecipient>& recipients)
+CAmount Transact::GetMWEBRecipientAmount(const std::vector<CRecipient>& recipients)
 {
     return std::accumulate(
         recipients.cbegin(), recipients.cend(), CAmount(0),
         [](CAmount amt, const CRecipient& recipient) { return amt + (recipient.IsMWEB() ? recipient.nAmount : 0); });
 }
 
-bool MWEB::Transact::UpdatePegInOutput(CMutableTransaction& transaction, const libmw::PegIn& pegin)
+bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const libmw::PegIn& pegin)
 {
     for (size_t i = 0; i < transaction.vout.size(); i++) {
         if (IsPegInOutput(CTransaction(transaction).GetOutput(i))) {
@@ -146,8 +147,8 @@ bool MWEB::Transact::UpdatePegInOutput(CMutableTransaction& transaction, const l
     return false;
 }
 
-libmw::Recipient MWEB::Transact::BuildChangeRecipient(
-    const libmw::IWallet::Ptr& mweb_wallet,
+libmw::Recipient Transact::BuildChangeRecipient(
+    const std::shared_ptr<MWEB::Wallet>& mweb_wallet,
     CMutableTransaction& transaction,
     const std::vector<CInputCoin>& selected_coins,
     const std::vector<CRecipient>& recipients,
@@ -170,6 +171,6 @@ libmw::Recipient MWEB::Transact::BuildChangeRecipient(
 
     CAmount change_amount = (pegin_amount.value_or(0) + GetMWEBInputAmount(selected_coins)) - (recipient_amount + mweb_fee);
 
-    libmw::MWEBAddress change_address = libmw::wallet::GetAddress(mweb_wallet, libmw::CHANGE_INDEX);
+    libmw::MWEBAddress change_address = mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
     return libmw::MWEBRecipient{(uint64_t)change_amount, change_address};
 }

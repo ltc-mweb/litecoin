@@ -76,8 +76,8 @@ public:
 //! Construct wallet tx struct.
 WalletTx MakeWalletTx(interfaces::Chain::Lock& locked_chain, CWallet& wallet, const CWalletTx& wtx)
 {
-    std::vector<CTxInput> inputs = wtx.tx->GetInputs();
-    std::vector<CTxOutput> outputs = wtx.tx->GetOutputs();
+    std::vector<CTxInput> inputs = wtx.GetInputs();
+    std::vector<CTxOutput> outputs = wtx.GetOutputs();
 
     WalletTx result;
     result.tx = wtx.tx;
@@ -107,6 +107,9 @@ WalletTx MakeWalletTx(interfaces::Chain::Lock& locked_chain, CWallet& wallet, co
     result.time = wtx.GetTxTime();
     result.value_map = wtx.mapValue;
     result.is_coinbase = wtx.IsCoinBase();
+    result.wtx_hash = wtx.GetHash();
+    result.inputs = std::move(inputs);
+    result.outputs = std::move(outputs);
     return result;
 }
 
@@ -491,7 +494,7 @@ public:
                     if (output.type() == typeid(libmw::Commitment)) {
                         libmw::Coin coin;
                         if (m_wallet->GetCoin(boost::get<libmw::Commitment>(output), coin)) {
-                            libmw::MWEBAddress address = libmw::wallet::GetAddress(GetMWWallet(), coin.address_index);
+                            libmw::MWEBAddress address = m_wallet->GetMWWallet()->GetStealthAddress(coin.address_index);
                             result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEBDestination>(DecodeDestination(address))});
                         }
                     } else {
@@ -529,9 +532,9 @@ public:
     {
         RemoveWallet(m_wallet);
     }
-    libmw::IWallet::Ptr GetMWWallet() override
+    libmw::MWEBAddress getPeginAddress() override
     {
-        return m_wallet->GetMWWallet();
+        return m_wallet->GetMWWallet()->GetStealthAddress(libmw::PEGIN_INDEX);
     }
     bool extractOutputDestination(const CTxOutput& output, CTxDestination& dest) override
     {

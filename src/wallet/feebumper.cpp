@@ -96,7 +96,7 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
     // figure out which output was change
     // if there was no change output or multiple change outputs, fail
     boost::optional<OutputIndex> change_output = boost::none;
-    for (const CTxOutput& output : wtx.tx->GetOutputs()) {
+    for (const CTxOutput& output : wtx.GetOutputs()) {
         if (wallet->IsChange(output)) {
             if (change_output) {
                 errors.push_back("Transaction has multiple change outputs");

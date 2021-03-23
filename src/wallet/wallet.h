@@ -356,7 +356,6 @@ public:
     bool isAbandoned() const { return (hashBlock == ABANDON_HASH); }
     void setAbandoned() { hashBlock = ABANDON_HASH; }
 
-    const uint256& GetHash() const { return tx->GetHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
     bool IsImmature(interfaces::Chain::Lock& locked_chain) const;
 };
@@ -421,6 +420,8 @@ public:
     char fFromMe;
     int64_t nOrderPos; //!< position in ordered transaction list
     std::multimap<int64_t, CWalletTx*>::const_iterator m_it_wtxOrdered;
+
+    boost::optional<MWEB::WalletTxInfo> mweb_wtx_info;
 
     // memory only
     mutable bool fDebitCached;
@@ -491,6 +492,10 @@ public:
             mapValueCopy["timesmart"] = strprintf("%u", nTimeSmart);
         }
 
+        if (mweb_wtx_info) {
+            mapValueCopy["mweb_info"] = mweb_wtx_info->ToHex();
+        }
+
         s << static_cast<const CMerkleTx&>(*this);
         std::vector<CMerkleTx> vUnused; //!< Used to be vtxPrev
         s << vUnused << mapValueCopy << vOrderForm << fTimeReceivedIsTxTime << nTimeReceived << fFromMe << fSpent;
@@ -508,11 +513,13 @@ public:
 
         ReadOrderPos(nOrderPos, mapValue);
         nTimeSmart = mapValue.count("timesmart") ? (unsigned int)atoi64(mapValue["timesmart"]) : 0;
+        mweb_wtx_info = mapValue.count("mweb_info") ? boost::make_optional(MWEB::WalletTxInfo::FromHex(mapValue["mweb_info"])) : boost::none;
 
         mapValue.erase("fromaccount");
         mapValue.erase("spent");
         mapValue.erase("n");
         mapValue.erase("timesmart");
+        mapValue.erase("mweb_info");
     }
 
     //! make sure balances are recalculated
@@ -583,6 +590,37 @@ public:
     // that we still have the runtime check "AssertLockHeld(pwallet->cs_wallet)"
     // in place.
     std::set<uint256> GetConflicts() const NO_THREAD_SAFETY_ANALYSIS;
+
+    std::vector<CTxInput> GetInputs() const
+    {
+        std::vector<CTxInput> inputs = tx->GetInputs();
+        if (mweb_wtx_info && mweb_wtx_info->spent_input) {
+            inputs.push_back(*mweb_wtx_info->spent_input);
+        }
+
+        return inputs;
+    }
+
+    std::vector<CTxOutput> GetOutputs() const {
+        std::vector<CTxOutput> outputs = tx->GetOutputs();
+        if (mweb_wtx_info && mweb_wtx_info->received_coin) {
+            outputs.push_back(CTxOutput{tx.get(), mweb_wtx_info->received_coin->commitment});
+        }
+
+        return outputs;
+    }
+
+    bool IsPartialMWEB() const {
+        return tx->IsNull() && mweb_wtx_info;
+    }
+
+    const uint256& GetHash() const {
+        if (IsPartialMWEB()) {
+            return mweb_wtx_info->GetHash();
+        }
+
+        return tx->GetHash();
+    }
 };
 
 class COutput
@@ -1362,7 +1400,7 @@ public:
     const CWalletTx* FindPrevTx(const CTxInput& input) const;
     CWalletTx* FindPrevTx(const CTxInput& input);
 
-    libmw::IWallet::Ptr GetMWWallet() const;
+    std::shared_ptr<MWEB::Wallet> GetMWWallet() const;
     libmw::IChain::Ptr GetMWChain();
 };
 

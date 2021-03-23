@@ -8,7 +8,9 @@
 #include <key_io.h>
 #include <miner.h>
 
-void MWEB::Miner::NewBlock(const uint64_t nHeight)
+using namespace MWEB;
+
+void Miner::NewBlock(const uint64_t nHeight)
 {
     mweb_builder = libmw::miner::NewBuilder(nHeight, pcoinsTip->GetMWView());
     mweb_fees = 0;
@@ -17,7 +19,7 @@ void MWEB::Miner::NewBlock(const uint64_t nHeight)
     hogex_outputs.clear();
 }
 
-bool MWEB::Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
+bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
 {
     CTransactionRef pTx = iter->GetSharedTx();
     libmw::TxRef mweb_tx = pTx->m_mwtx.m_transaction;
@@ -102,7 +104,7 @@ struct hash<libmw::PegIn> {
 };
 } // namespace std
 
-bool MWEB::Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<libmw::PegIn>& pegins) const
+bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<libmw::PegIn>& pegins) const
 {
     std::unordered_set<libmw::PegIn> pegin_set(pegins.cbegin(), pegins.cend());
 
@@ -128,7 +130,7 @@ bool MWEB::Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<l
     return true;
 }
 
-void MWEB::Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, CBlockTemplate* pblocktemplate, CAmount& nFees)
+void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, CBlockTemplate* pblocktemplate, CAmount& nFees)
 {
     CMutableTransaction hogExTransaction;
     hogExTransaction.m_hogEx = true;
@@ -178,7 +180,7 @@ void MWEB::Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pbl
     //
     nFees += mweb_fees;
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
-    pblock->mwBlock = MWEB::Block(mw_block);
+    pblock->mwBlock = Block(mw_block);
     pblocktemplate->vTxFees.push_back(mweb_fees);
     
     pblocktemplate->vTxSigOpsCost.push_back(0);

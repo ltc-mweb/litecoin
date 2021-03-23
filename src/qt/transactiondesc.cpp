@@ -137,7 +137,7 @@ QString TransactionDesc::toHTML(interfaces::Node& node, interfaces::Wallet& wall
         // Coinbase
         //
         CAmount nUnmatured = 0;
-        for (const CTxOutput& txout : wtx.tx->GetOutputs())
+        for (const CTxOutput& txout : wtx.outputs)
             nUnmatured += wallet.getCredit(txout, ISMINE_ALL);
         strHTML += "<b>" + tr("Credit") + ":</b> ";
         if (status.is_in_main_chain)
@@ -177,7 +177,7 @@ QString TransactionDesc::toHTML(interfaces::Node& node, interfaces::Wallet& wall
             //
             auto mine = wtx.txout_is_mine.begin();
             auto amount_iter = wtx.txout_amount.begin();
-            for (const CTxOutput& txout : wtx.tx->GetOutputs())
+            for (const CTxOutput& txout : wtx.outputs)
             {
                 // Ignore change
                 isminetype toSelf = *(mine++);
@@ -229,13 +229,13 @@ QString TransactionDesc::toHTML(interfaces::Node& node, interfaces::Wallet& wall
             // Mixed debit transaction
             //
             auto mine = wtx.txin_is_mine.begin();
-            for (const CTxInput& txin : wtx.tx->GetInputs()) {
+            for (const CTxInput& txin : wtx.inputs) {
                 if (*(mine++)) {
                     strHTML += "<b>" + tr("Debit") + ":</b> " + BitcoinUnits::formatHtmlWithUnit(unit, -wallet.getDebit(txin, ISMINE_ALL)) + "<br>";
                 }
             }
             mine = wtx.txout_is_mine.begin();
-            for (const CTxOutput& txout : wtx.tx->GetOutputs()) {
+            for (const CTxOutput& txout : wtx.outputs) {
                 if (*(mine++)) {
                     strHTML += "<b>" + tr("Credit") + ":</b> " + BitcoinUnits::formatHtmlWithUnit(unit, wallet.getCredit(txout, ISMINE_ALL)) + "<br>";
                 }
@@ -292,10 +292,10 @@ QString TransactionDesc::toHTML(interfaces::Node& node, interfaces::Wallet& wall
     if (node.getLogCategories() != BCLog::NONE)
     {
         strHTML += "<hr><br>" + tr("Debug information") + "<br><br>";
-        for (const CTxInput& txin : wtx.tx->GetInputs())
+        for (const CTxInput& txin : wtx.inputs)
             if(wallet.txinIsMine(txin))
                 strHTML += "<b>" + tr("Debit") + ":</b> " + BitcoinUnits::formatHtmlWithUnit(unit, -wallet.getDebit(txin, ISMINE_ALL)) + "<br>";
-        for (const CTxOutput& txout : wtx.tx->GetOutputs())
+        for (const CTxOutput& txout : wtx.outputs)
             if(wallet.txoutIsMine(txout))
                 strHTML += "<b>" + tr("Credit") + ":</b> " + BitcoinUnits::formatHtmlWithUnit(unit, wallet.getCredit(txout, ISMINE_ALL)) + "<br>";
 
@@ -306,7 +306,7 @@ QString TransactionDesc::toHTML(interfaces::Node& node, interfaces::Wallet& wall
         strHTML += "<ul>";
 
         // MW: TODO - Reimplement
-        //for (const CTxInput& txin : wtx.tx->GetInputs())
+        //for (const CTxInput& txin : wtx.inputs)
         //{
         //    CTxOutput output;
         //    if (node.getUnspentOutput(txin.GetIndex(), output))

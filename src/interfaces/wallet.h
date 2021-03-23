@@ -260,7 +260,7 @@ public:
     virtual void remove() = 0;
 
     // Get MWEB wallet.
-    virtual libmw::IWallet::Ptr GetMWWallet() = 0;
+    virtual libmw::MWEBAddress getPeginAddress() = 0;
 
     virtual bool extractOutputDestination(const CTxOutput& output, CTxDestination& dest) = 0;
 
@@ -368,6 +368,9 @@ struct WalletTx
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;
+    uint256 wtx_hash;
+    std::vector<CTxInput> inputs;
+    std::vector<CTxOutput> outputs;
 };
 
 //! Updated transaction status.

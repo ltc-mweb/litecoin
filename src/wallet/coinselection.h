@@ -44,6 +44,12 @@ public:
     CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<libmw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
     const OutputIndex& GetIndex() const noexcept { return m_index; }
 
+    libmw::Coin GetMWEBCoin() const noexcept
+    {
+        assert(IsMWEB());
+        return boost::get<libmw::Coin>(m_output);
+    }
+
     CAmount CalculateFee(const CFeeRate& feerate) const noexcept
     {
         if (IsMWEB()) {

@@ -31,7 +31,7 @@ class State
 public:
     // An MWEB::State message
     uint256 blockhash;
-    std::vector<uint8_t> serialized_state;
+    libmw::StateRef state;
 
     ADD_SERIALIZE_METHODS;
 
@@ -39,7 +39,15 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(blockhash);
-        READWRITE(serialized_state);
+
+        if (ser_action.ForRead()) {
+            std::vector<uint8_t> serialized;
+            READWRITE(serialized);
+            state = libmw::DeserializeState(serialized);
+        } else {
+            std::vector<uint8_t> serialized = libmw::SerializeState(state);
+            READWRITE(serialized);
+        }
     }
 };
 
