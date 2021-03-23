@@ -31,13 +31,6 @@ public:
     bool Valid() const noexcept final { return m_locked->getHeight() != nullopt && m_height <= *m_locked->getHeight(); }
 
     uint64_t GetHeight() const final { return m_height; }
-    libmw::BlockHash GetCanonicalHash() const final
-    {
-        uint256 hash256 = m_locked->getBlockHash(m_height);
-        libmw::BlockHash block_hash;
-        std::copy_n(hash256.begin(), 32, block_hash.begin());
-        return block_hash;
-    }
 
     libmw::HeaderRef GetHeader() const final
     {
@@ -47,18 +40,6 @@ public:
         }
 
         throw std::runtime_error("MWEB header not found");
-    }
-
-    libmw::HeaderAndPegsRef GetHeaderAndPegs() const final
-    {
-        CBlock block;
-        if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mwBlock.IsNull()) {
-            libmw::HeaderRef header = block.mwBlock.m_block.GetHeader();
-
-            return libmw::HeaderAndPegsRef{header, block.GetPegInCoins(), block.GetPegOutCoins()};
-        }
-
-        throw std::runtime_error("MWEB block not found");
     }
 
     libmw::BlockRef GetBlock() const final
