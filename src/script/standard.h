@@ -6,6 +6,7 @@
 #ifndef BITCOIN_SCRIPT_STANDARD_H
 #define BITCOIN_SCRIPT_STANDARD_H
 
+#include <libmw/libmw.h>
 #include <script/interpreter.h>
 #include <pubkey.h>
 #include <uint256.h>
@@ -118,6 +119,22 @@ struct MWEBDestination
     CPubKey spend_pubkey;
 
     CKeyID GetID() const { return spend_pubkey.GetID(); }
+
+    static MWEBDestination From(const libmw::MWEBAddress& address)
+    {
+        return MWEBDestination{
+            CPubKey(address.first.begin(), address.first.end()),
+            CPubKey(address.second.begin(), address.second.end())
+        };
+    }
+
+    libmw::MWEBAddress ToMWEBAddress() const noexcept
+    {
+        libmw::MWEBAddress address;
+        std::copy(scan_pubkey.begin(), scan_pubkey.end(), address.first.begin());
+        std::copy(spend_pubkey.begin(), spend_pubkey.end(), address.second.begin());
+        return address;
+    }
 
     friend bool operator==(const MWEBDestination& a1, const MWEBDestination& a2)
     {

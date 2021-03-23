@@ -354,7 +354,7 @@ bool IsPegInOutput(const CTxOutput& output)
 DestinationScript::DestinationScript(const CTxDestination& dest)
 {
     if (dest.type() == typeid(MWEBDestination)) {
-        m_script = EncodeDestination(boost::get<MWEBDestination>(dest));
+        m_script = boost::get<MWEBDestination>(dest).ToMWEBAddress();
     } else {
         m_script = GetScriptForDestination(dest);
     }

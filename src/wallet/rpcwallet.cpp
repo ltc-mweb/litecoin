@@ -199,7 +199,7 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_ERROR, "Error: Failed to generate an MWEB address");
         }
 
-        dest = DecodeDestination(address);
+        dest = MWEBDestination::From(address);
     } else {
         if (!pwallet->IsLocked()) {
             pwallet->TopUpKeyPool();

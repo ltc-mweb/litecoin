@@ -2600,7 +2600,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
                 }
                 
                 libmw::MWEBAddress address = mweb_wallet->GetStealthAddress(coin.address_index);
-                vCoins.push_back(MWOutput{coin, nDepth, pcoin->GetTxTime(), boost::get<MWEBDestination>(DecodeDestination(address))});
+                vCoins.push_back(MWOutput{coin, nDepth, pcoin->GetTxTime(), MWEBDestination::From(address)});
             } else {
                 size_t i = boost::get<COutPoint>(output.GetIndex()).n;
                 vCoins.push_back(COutput(pcoin, i, nDepth, spendable, solvable, safeTx, (coinControl && coinControl->fAllowWatchOnly)));
@@ -4452,7 +4452,7 @@ bool CWallet::ExtractOutputDestination(const CTxOutput& output, CTxDestination& 
         }
 
         libmw::MWEBAddress address = mweb_wallet->GetStealthAddress(coin.address_index);
-        dest = DecodeDestination(address);
+        dest = MWEBDestination::From(address);
         return true;
     } else {
         return ExtractDestination(output.GetTxOut().scriptPubKey, dest);

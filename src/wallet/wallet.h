@@ -691,7 +691,7 @@ struct COutputCoin
     bool GetDestination(CTxDestination& dest) const
     {
         if (IsMWEB()) {
-            dest = MWEBDestination(boost::get<MWOutput>(m_output).address);
+            dest = boost::get<MWOutput>(m_output).address;
             return true;
         } else {
             const COutput& out = boost::get<COutput>(m_output);
@@ -701,7 +701,7 @@ struct COutputCoin
 
     boost::variant<CScript, libmw::MWEBAddress> GetAddress() const
     {
-        if (IsMWEB()) return EncodeDestination(boost::get<MWOutput>(m_output).address);
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).address.ToMWEBAddress();
 
         const COutput& out = boost::get<COutput>(m_output);
         return out.tx->tx->vout[out.i].scriptPubKey;

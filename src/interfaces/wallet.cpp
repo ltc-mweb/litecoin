@@ -495,7 +495,7 @@ public:
                         libmw::Coin coin;
                         if (m_wallet->GetCoin(boost::get<libmw::Commitment>(output), coin)) {
                             libmw::MWEBAddress address = m_wallet->GetMWWallet()->GetStealthAddress(coin.address_index);
-                            result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEBDestination>(DecodeDestination(address))});
+                            result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), MWEBDestination::From(address)});
                         }
                     } else {
                         result.back() = MakeWalletTxOut(*locked_chain, *m_wallet, *wtx, boost::get<COutPoint>(output).n, depth);
