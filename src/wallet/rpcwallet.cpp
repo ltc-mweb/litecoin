@@ -194,12 +194,12 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
     CTxDestination dest;
 
     if (output_type == OutputType::MWEB) {
-        libmw::MWEBAddress address;
+        MWEB::StealthAddress address;
         if (!pwallet->GenerateMWEBAddress(address)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error: Failed to generate an MWEB address");
         }
 
-        dest = MWEBDestination::From(address);
+        dest = address;
     } else {
         if (!pwallet->IsLocked()) {
             pwallet->TopUpKeyPool();
@@ -625,7 +625,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 
     // Bitcoin address
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest) || dest.type() == typeid(MWEBDestination)) {
+    if (!IsValidDestination(dest) || dest.type() == typeid(MWEB::StealthAddress)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Litecoin address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
@@ -3655,7 +3655,7 @@ public:
         return obj;
     }
 
-    UniValue operator()(const MWEBDestination& id) const
+    UniValue operator()(const MWEB::StealthAddress& id) const
     {
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("mweb_address", EncodeDestination(id));

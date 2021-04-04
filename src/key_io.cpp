@@ -68,7 +68,7 @@ public:
         return bech32::Encode(m_params.Bech32HRP(), data);
     }
 
-    std::string operator()(const MWEBDestination& id) const
+    std::string operator()(const MWEB::StealthAddress& id) const
     {
         // MW: TODO - Create new bech32 encoder so we don't need to concat these 2.
         std::vector<uint8_t> scan_data = {id.scan_pubkey[0]};
@@ -165,7 +165,7 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
                 && ConvertBits<5, 8, false>([&](unsigned char c) { spend_data.push_back(c); }, bech_spend.second.begin() + 1, bech_spend.second.end())) {
 
                 if (scan_data.size() == 33 && spend_data.size() == 33) {
-                    MWEBDestination mweb_dest;
+                    MWEB::StealthAddress mweb_dest;
                     mweb_dest.scan_pubkey = CPubKey(scan_data);
                     mweb_dest.spend_pubkey = CPubKey(spend_data);
                     return mweb_dest;

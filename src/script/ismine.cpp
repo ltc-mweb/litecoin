@@ -189,7 +189,7 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey)
 
 isminetype IsMine(const CKeyStore& keystore, const CTxDestination& dest)
 {
-    if (dest.type() == typeid(MWEBDestination)) {
+    if (dest.type() == typeid(MWEB::StealthAddress)) {
         // MW: TODO - Check MWEB address
         return ISMINE_SPENDABLE;
     } else {

@@ -50,7 +50,7 @@ bool Transact::CreateTx(
         if (recipient.IsMWEB()) {
             libmw::MWEBRecipient mweb_recipient{
                 (uint64_t)recipient.nAmount,
-                recipient.GetMWEBAddress()};
+                recipient.GetMWEBAddress().to_libmw()};
 
             mweb_recipients.push_back(std::move(mweb_recipient));
         } else {
@@ -171,6 +171,6 @@ libmw::Recipient Transact::BuildChangeRecipient(
 
     CAmount change_amount = (pegin_amount.value_or(0) + GetMWEBInputAmount(selected_coins)) - (recipient_amount + mweb_fee);
 
-    libmw::MWEBAddress change_address = mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
-    return libmw::MWEBRecipient{(uint64_t)change_amount, change_address};
+    MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
+    return libmw::MWEBRecipient{(uint64_t)change_amount, change_address.to_libmw()};
 }

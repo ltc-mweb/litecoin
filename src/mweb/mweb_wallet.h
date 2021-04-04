@@ -1,8 +1,9 @@
 #pragma once
 
-#include <libmw/libmw.h>
 #include <amount.h>
 #include <key.h>
+#include <libmw/libmw.h>
+#include <mweb/mweb_address.h>
 #include <streams.h>
 #include <util/strencodings.h>
 #include <boost/optional.hpp>
@@ -28,8 +29,8 @@ public:
         const libmw::Commitment& output_commit,
         libmw::Coin& coin
     );
-    libmw::MWEBAddress GetStealthAddress(const uint32_t index);
-    bool GenerateNewAddress(libmw::MWEBAddress& address);
+    MWEB::StealthAddress GetStealthAddress(const uint32_t index);
+    bool GenerateNewAddress(MWEB::StealthAddress& address);
 
     void LoadToWallet(const libmw::Coin& coin);
     void DeleteCoins(const std::vector<libmw::Coin>& coins);

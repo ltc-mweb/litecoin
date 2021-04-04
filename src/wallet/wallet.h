@@ -230,7 +230,7 @@ struct CRecipient
         return receiver.IsMWEB();
     }
 
-    const libmw::MWEBAddress& GetMWEBAddress() const noexcept
+    const MWEB::StealthAddress& GetMWEBAddress() const noexcept
     {
         return receiver.GetMWEBAddress();
     }
@@ -672,7 +672,7 @@ struct MWOutput
     libmw::Coin coin;
     int nDepth;
     int64_t nTime;
-    MWEBDestination address;
+    MWEB::StealthAddress address;
 };
 
 struct COutputCoin
@@ -699,9 +699,9 @@ struct COutputCoin
         }
     }
 
-    boost::variant<CScript, libmw::MWEBAddress> GetAddress() const
+    boost::variant<CScript, MWEB::StealthAddress> GetAddress() const
     {
-        if (IsMWEB()) return boost::get<MWOutput>(m_output).address.ToMWEBAddress();
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
 
         const COutput& out = boost::get<COutput>(m_output);
         return out.tx->tx->vout[out.i].scriptPubKey;
@@ -1187,7 +1187,7 @@ public:
     void KeepKey(int64_t nIndex);
     void ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey);
     bool GetKeyFromPool(CPubKey &key, bool internal = false);
-    bool GenerateMWEBAddress(libmw::MWEBAddress& address);
+    bool GenerateMWEBAddress(MWEB::StealthAddress& address);
     int64_t GetOldestKeyPoolTime();
     /**
      * Marks all keys in the keypool up to and including reserve_key as used.
@@ -1400,8 +1400,7 @@ public:
     const CWalletTx* FindPrevTx(const CTxInput& input) const;
     CWalletTx* FindPrevTx(const CTxInput& input);
 
-    std::shared_ptr<MWEB::Wallet> GetMWWallet() const;
-    libmw::IChain::Ptr GetMWChain();
+    const std::shared_ptr<MWEB::Wallet>& GetMWWallet() const noexcept { return mweb_wallet; }
 };
 
 /** A key allocated from the key pool. */

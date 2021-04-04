@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef LITECOIN_MIMBLEWIMBLE_MODELS_H
-#define LITECOIN_MIMBLEWIMBLE_MODELS_H
+#ifndef LITECOIN_MWEB_MODELS_H
+#define LITECOIN_MWEB_MODELS_H
 
 #include <amount.h>
 #include <serialize.h>
@@ -118,6 +118,11 @@ struct Tx {
         return IsNull() ? 0 : CAmount(m_transaction.GetTotalFee());
     }
 
+    uint64_t GetLockHeight() const noexcept
+    {
+        return IsNull() ? 0 : m_transaction.GetLockHeight();
+    }
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -153,4 +158,4 @@ struct Tx {
 
 } // namespace MWEB
 
-#endif // LITECOIN_MIMBLEWIMBLE_MODELS_H
+#endif // LITECOIN_MWEB_MODELS_H

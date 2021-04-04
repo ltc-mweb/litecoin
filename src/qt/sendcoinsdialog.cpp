@@ -265,7 +265,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     // Reserve pegout keys and set pegout addresses
     for (SendCoinsRecipient& rcp : recipients) {
         if (rcp.type == SendCoinsRecipient::MWEB_PEGIN) {
-            rcp.address = QString::fromStdString(EncodeDestination(MWEBDestination::From(model->wallet().getPeginAddress())));
+            rcp.address = QString::fromStdString(EncodeDestination(model->wallet().getPeginAddress()));
         } else if (rcp.type == SendCoinsRecipient::MWEB_PEGOUT) {
             CPubKey newKey;
             std::unique_ptr<CReserveKey> reservedkey = model->wallet().getReservedKey(true, newKey);
@@ -946,7 +946,7 @@ void SendCoinsDialog::mwebPegInButtonClicked(bool checked)
 
     SendCoinsEntry *entry = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
     if (checked) {
-        entry->setPegInAddress(EncodeDestination(MWEBDestination::From(model->wallet().getPeginAddress())));
+        entry->setPegInAddress(EncodeDestination(model->wallet().getPeginAddress()));
     } else {
         entry->setPegInAddress("");
     }

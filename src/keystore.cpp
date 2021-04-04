@@ -193,7 +193,7 @@ CKeyID GetKeyForDestination(const CKeyStore& store, const CTxDestination& dest)
             }
         }
     }
-    if (auto mweb_dest = boost::get<MWEBDestination>(&dest)) {
+    if (auto mweb_dest = boost::get<MWEB::StealthAddress>(&dest)) {
         return mweb_dest->GetID();
     }
     return CKeyID();

@@ -35,15 +35,15 @@ bool Wallet::RewindOutput(const boost::variant<libmw::BlockRef, libmw::TxRef>& p
     return rewound;
 }
 
-libmw::MWEBAddress Wallet::GetStealthAddress(const uint32_t index)
+MWEB::StealthAddress Wallet::GetStealthAddress(const uint32_t index)
 {
-    return GetKeychain().GetAddress(index);
+    return MWEB::StealthAddress::From(GetKeychain().GetAddress(index));
 }
 
-bool Wallet::GenerateNewAddress(libmw::MWEBAddress& address)
+bool Wallet::GenerateNewAddress(MWEB::StealthAddress& address)
 {
     CHDChain hdChain = m_pWallet->GetHDChain();
-    address = GetKeychain().GetAddress(hdChain.nMWEBIndexCounter++);
+    address = MWEB::StealthAddress::From(GetKeychain().GetAddress(hdChain.nMWEBIndexCounter++));
 
     return WalletBatch(m_pWallet->GetDBHandle()).WriteHDChain(hdChain);
 }

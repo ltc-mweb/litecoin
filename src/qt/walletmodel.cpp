@@ -194,7 +194,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 break;
             }
             case SendCoinsRecipient::MWEB_SEND: {
-                receiver = boost::get<MWEBDestination>(DecodeDestination(rcp.address.toStdString())).ToMWEBAddress();
+                receiver = boost::get<MWEB::StealthAddress>(DecodeDestination(rcp.address.toStdString()));
                 break;
             }
             default:

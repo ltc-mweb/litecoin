@@ -17,7 +17,9 @@
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
 {
-    // MW: TODO - Check MWEB kernel lock time
+    // MWEB: Check kernel lock heights
+    if (tx.m_mwtx.GetLockHeight() > nBlockHeight)
+        return false;
 
     if (tx.nLockTime == 0)
         return true;

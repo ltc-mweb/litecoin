@@ -201,7 +201,7 @@ public:
     bool getPrivKey(const CKeyID& address, CKey& key) override { return m_wallet->GetKey(address, key); }
     bool isSpendable(const CTxDestination& dest) override { return IsMine(*m_wallet, dest) & ISMINE_SPENDABLE; }
     bool haveWatchOnly() override { return m_wallet->HaveWatchOnly(); };
-    bool generateMWEBAddress(libmw::MWEBAddress& address) override
+    bool generateMWEBAddress(MWEB::StealthAddress& address) override
     {
         return m_wallet->GenerateMWEBAddress(address);
     }
@@ -494,8 +494,8 @@ public:
                     if (output.type() == typeid(libmw::Commitment)) {
                         libmw::Coin coin;
                         if (m_wallet->GetCoin(boost::get<libmw::Commitment>(output), coin)) {
-                            libmw::MWEBAddress address = m_wallet->GetMWWallet()->GetStealthAddress(coin.address_index);
-                            result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), MWEBDestination::From(address)});
+                            MWEB::StealthAddress address = m_wallet->GetMWWallet()->GetStealthAddress(coin.address_index);
+                            result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), address});
                         }
                     } else {
                         result.back() = MakeWalletTxOut(*locked_chain, *m_wallet, *wtx, boost::get<COutPoint>(output).n, depth);
@@ -532,7 +532,7 @@ public:
     {
         RemoveWallet(m_wallet);
     }
-    libmw::MWEBAddress getPeginAddress() override
+    MWEB::StealthAddress getPeginAddress() override
     {
         return m_wallet->GetMWWallet()->GetStealthAddress(libmw::PEGIN_INDEX);
     }

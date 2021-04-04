@@ -95,7 +95,7 @@ public:
     virtual bool haveWatchOnly() = 0;
 
     //! Generates a new MWEB receive address.
-    virtual bool generateMWEBAddress(libmw::MWEBAddress& address) = 0;
+    virtual bool generateMWEBAddress(MWEB::StealthAddress& address) = 0;
 
     //! Add or update address.
     virtual bool setAddressBook(const CTxDestination& dest, const std::string& name, const std::string& purpose) = 0;
@@ -260,7 +260,7 @@ public:
     virtual void remove() = 0;
 
     // Get MWEB wallet.
-    virtual libmw::MWEBAddress getPeginAddress() = 0;
+    virtual MWEB::StealthAddress getPeginAddress() = 0;
 
     virtual bool extractOutputDestination(const CTxOutput& output, CTxDestination& dest) = 0;
 
@@ -391,7 +391,7 @@ struct WalletTxStatus
 //! Wallet transaction output.
 struct WalletTxOut
 {
-    boost::variant<CScript, libmw::MWEBAddress> address;
+    boost::variant<CScript, MWEB::StealthAddress> address;
     OutputIndex output_index;
     CAmount nValue;
     int64_t time;

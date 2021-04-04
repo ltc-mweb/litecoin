@@ -148,6 +148,7 @@ BITCOIN_CORE_H = \
   memusage.h \
   merkleblock.h \
   miner.h \
+  mweb/mweb_address.h \
   mweb/mweb_chain.h \
   mweb/mweb_db.h \
   mweb/mweb_miner.h \
