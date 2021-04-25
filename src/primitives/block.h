@@ -143,6 +143,25 @@ public:
         return vtx.back()->GetMWEBHash();
     }
 
+    uint256 GetHogExHash() const noexcept
+    {
+        if (!HasHogEx()) {
+            return uint256();
+        }
+
+        return vtx.back()->GetHash();
+    }
+
+    // The amount of the first output in the HogEx transaction.
+    CAmount GetMWEBAmount() const noexcept
+    {
+        if (!HasHogEx() || vtx.back()->vout.empty()) {
+            return 0;
+        }
+
+        return vtx.back()->vout[0].nValue;
+    }
+
     std::vector<libmw::PegIn> GetPegInCoins() const noexcept;
     std::vector<libmw::PegOut> GetPegOutCoins() const noexcept;
 };

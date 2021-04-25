@@ -153,6 +153,7 @@ BITCOIN_CORE_H = \
   mweb/mweb_db.h \
   mweb/mweb_miner.h \
   mweb/mweb_models.h \
+  mweb/mweb_node.h \
   mweb/mweb_state.h \
   mweb/mweb_transact.h \
   mweb/mweb_wallet.h \
@@ -268,6 +269,7 @@ libbitcoin_server_a_SOURCES = \
   merkleblock.cpp \
   miner.cpp \
   mweb/mweb_miner.cpp \
+  mweb/mweb_node.cpp \
   net.cpp \
   net_processing.cpp \
   node/transaction.cpp \

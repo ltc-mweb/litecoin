@@ -383,17 +383,19 @@ bool CreateTransactionEx(
                 }
 
                 MWEB::TxType mweb_type = MWEB::GetTxType(vecSend, std::vector<CInputCoin>(setCoins.begin(), setCoins.end()));
+                change_on_mweb = IsChangeOnMWEB(mweb_type, coin_control);
+
                 if (mweb_type != MWEB::TxType::LTC_TO_LTC) {
-                    size_t mweb_outputs;
-                    if (mweb_type == MWEB::TxType::MWEB_TO_MWEB) {
-                        mweb_outputs = 2;
-                    } else {
-                        // Pegins have 1 output for the mweb receiver, but no mweb change
-                        // Pegouts have 1 mweb change output, but no mweb receiver
-                        mweb_outputs = 1;
+                    size_t mweb_outputs = 0;
+                    if (mweb_type == MWEB::TxType::PEGIN || mweb_type == MWEB::TxType::MWEB_TO_MWEB) {
+                        ++mweb_outputs; // MW: FUTURE - Look at actual recipients list, but for now we only support 1 MWEB recipient.
+                    }
+                    
+                    if (change_on_mweb) {
+                        ++mweb_outputs;
                     }
 
-                    mweb_weight = GetMWEBWeight(mweb_outputs, 2, 1);
+                    mweb_weight = GetMWEBWeight(mweb_outputs, 1, 1);
 
                     // We don't support multiple recipients for MWEB txs yet,
                     // so the only possible LTC outputs are pegins & change.
@@ -401,8 +403,6 @@ bool CreateTransactionEx(
                     txNew.vout.clear();
                     nChangePosInOut = -1;
                 }
-
-                change_on_mweb = IsChangeOnMWEB(mweb_type, coin_control);
 
                 const CAmount nChange = nValueIn - nValueToSelect;
                 if (nChange > 0 && !change_on_mweb) {

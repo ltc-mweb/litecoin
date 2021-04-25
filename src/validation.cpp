@@ -17,6 +17,7 @@
 #include <cuckoocache.h>
 #include <hash.h>
 #include <index/txindex.h>
+#include <mweb/mweb_node.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
@@ -2090,11 +2091,26 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     // MWEB: Connect block to chain
     if (!block.mwBlock.IsNull()) {
         // MW: TODO - Check HogEx transaction: `new value == (prev value + pegins) - (pegouts + fees)`
+        CAmount mweb_amount = pindex->pprev->mweb_amount + block.mwBlock.GetSupplyChange();
+        if (mweb_amount != block.GetMWEBAmount()) {
+            LogPrintf("prev_mweb_amount: %d, supply_change: %d, block_mweb_amount: %d\n", pindex->pprev->mweb_amount, block.mwBlock.GetSupplyChange(), block.GetMWEBAmount());
+            return state.DoS(100, error("ConnectBlock(): HogEx amount does not match expected MWEB amount"),
+                REJECT_INVALID, "mweb-amount-mismatch");
+        }
+
         try {
             blockundo.mwundo = libmw::node::ConnectBlock(block.mwBlock.m_block, view.GetMWView());
         } catch (const std::exception& e) {
             return state.DoS(100, error("ConnectBlock(): Failed to connect mw block: %s", e.what()),
                 REJECT_INVALID, "mw-connect-failed");
+        }
+
+        if ((pindex->nStatus & BLOCK_HAVE_MWEB) == 0) {
+            pindex->nStatus |= BLOCK_HAVE_MWEB;
+            pindex->mweb_hash = block.GetMWEBHash();
+            pindex->mweb_amount = block.GetMWEBAmount();
+            pindex->hogex_hash = block.GetHogExHash();
+            setDirtyBlockIndex.insert(pindex);
         }
     }
 
@@ -3202,17 +3218,8 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (nSigOps * WITNESS_SCALE_FACTOR > MAX_BLOCK_SIGOPS_COST)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-sigops", false, "out-of-bounds SigOpCount");
 
-    // MW: TODO - Ensure full MW block provided (except during IBD)
-    if (!block.mwBlock.IsNull()) {
-        // MW: TODO - Check HogEx transaction (pegins must match)
-
-        uint256 mweb256 = block.GetMWEBHash();
-        libmw::BlockHash mweb_hash;
-        std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MWEB_HEADERHASH_SIZE, mweb_hash.data());
-
-        if (!libmw::node::CheckBlock(block.mwBlock.m_block, mweb_hash, block.GetPegInCoins(), block.GetPegOutCoins())) {
-            return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "libmw::node::CheckBlock failed");
-        }
+    if (!MWEB::Node::CheckBlock(block, state)) {
+        return false;
     }
 
     if (fCheckPOW && fCheckMerkleRoot)

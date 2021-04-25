@@ -1004,13 +1004,7 @@ static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
         LOCK(cs_main);
         auto pBlockIndex = LookupBlockIndex(stats.hashBlock);
         stats.nHeight = pBlockIndex->nHeight;
-
-        CBlock block;
-        assert(ReadBlockFromDisk(block, pBlockIndex, Params().GetConsensus()));
-
-        if (block.HasHogEx()) {
-            stats.mwebTotal = block.vtx.back()->vout[0].nValue;
-        }
+        stats.mwebTotal = pBlockIndex->mweb_amount;
     }
     ss << stats.hashBlock;
     uint256 prevkey;

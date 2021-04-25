@@ -28,6 +28,11 @@ struct Block {
         return IsNull() ? 0 : CAmount(m_block.GetTotalFee());
     }
 
+    CAmount GetSupplyChange() const noexcept
+    {
+        return IsNull() ? 0 : m_block.GetSupplyChange();
+    }
+
     libmw::HeaderRef GetMWEBHeader() const noexcept
     {
         return IsNull() ? libmw::HeaderRef{} : m_block.GetHeader();
