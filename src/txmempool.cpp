@@ -53,6 +53,10 @@ void CTxMemPoolEntry::UpdateLockPoints(const LockPoints& lp)
 
 size_t CTxMemPoolEntry::GetTxSize() const
 {
+    if (tx->vin.empty() && tx->vout.empty() && tx->HasMWData()) {
+        return 0;
+    }
+
     // MW: TODO - Verify this logic. Maybe just use max input & output weights rather than building the actual pegouts?
     // Move this to a reusable location
     size_t weight = nTxWeight + (GetTransactionInputWeight(CTxIn()) * tx->m_mwtx.GetPegIns().size());
@@ -351,7 +355,7 @@ void CTxMemPoolEntry::UpdateDescendantState(int64_t modifySize, CAmount modifyFe
 void CTxMemPoolEntry::UpdateAncestorState(int64_t modifySize, CAmount modifyFee, int64_t modifyCount, int64_t modifySigOps, int64_t modifyMWEBWeight)
 {
     nSizeWithAncestors += modifySize;
-    assert(int64_t(nSizeWithAncestors) > 0);
+    assert(int64_t(nSizeWithAncestors) >= 0);
     nModFeesWithAncestors += modifyFee;
     nCountWithAncestors += modifyCount;
     assert(int64_t(nCountWithAncestors) > 0);

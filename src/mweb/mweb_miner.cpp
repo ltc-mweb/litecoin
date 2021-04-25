@@ -178,10 +178,9 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     //
     // Update block & template
     //
-    nFees += mweb_fees;
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
     pblock->mwBlock = Block(mw_block);
-    pblocktemplate->vTxFees.push_back(mweb_fees);
+    pblocktemplate->vTxFees.push_back(0);
     
     pblocktemplate->vTxSigOpsCost.push_back(0);
 }

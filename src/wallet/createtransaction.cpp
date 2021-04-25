@@ -446,7 +446,11 @@ bool CreateTransactionEx(
                     }
                 }
 
-                nBytes = CalculateMaximumSignedTxSize(CTransaction(txNew), &wallet, coin_control.fAllowWatchOnly);
+                if (mweb_type != MWEB::TxType::MWEB_TO_MWEB) {
+                    nBytes = CalculateMaximumSignedTxSize(CTransaction(txNew), &wallet, coin_control.fAllowWatchOnly);
+                } else {
+                    nBytes = 0;
+                }
                 if (nBytes < 0) {
                     LogPrintf("Transaction failed to sign: %s", CTransaction(txNew).ToString().c_str());
                     strFailReason = _("Signing transaction failed");
