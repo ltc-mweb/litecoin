@@ -61,7 +61,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
         CAmount amount(pegout.amount);
         assert(MoneyRange(amount));
 
-        CScript scriptPubKey(pegout.scriptPubKey);
+        CScript scriptPubKey(pegout.scriptPubKey.begin(), pegout.scriptPubKey.end());
         vout.push_back(CTxOut{amount, std::move(scriptPubKey)});
 
         pegout_amount += amount;
