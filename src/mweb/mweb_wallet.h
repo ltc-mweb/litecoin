@@ -45,7 +45,7 @@ private:
 
 struct WalletTxInfo
 {
-    // When connecting a block, if an output si found that belongs to us,
+    // When connecting a block, if an output is found that belongs to us,
     // we check if we have a CWalletTx that created it.
     // If none is found, then we assume it is a newly received coin,
     // so we create an empty transaction and store the received coin here.

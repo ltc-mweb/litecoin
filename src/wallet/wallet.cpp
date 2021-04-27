@@ -1313,6 +1313,11 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
                 if (wtx != nullptr) {
                     SyncTransaction(wtx->tx, pindex->GetBlockHash(), 0);
                     TransactionRemovedFromMempool(wtx->tx);
+                } else {
+                    CWalletTx wtx(this, MakeTransactionRef());
+                    wtx.mweb_wtx_info = MWEB::WalletTxInfo(mweb_coin);
+                    wtx.SetMerkleBranch(pindex->GetBlockHash(), 0);
+                    AddToWallet(wtx);
                 }
             }
         }
