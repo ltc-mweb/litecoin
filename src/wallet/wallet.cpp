@@ -746,6 +746,12 @@ void CWallet::AddToOutputCommits(const CWalletTx& wtx)
     for (const libmw::Commitment& output_commit : wtx.tx->m_mwtx.GetOutputCommits()) {
         mapOutputCommits.insert(std::make_pair(output_commit, wtx.GetHash()));
     }
+    if (wtx.mweb_wtx_info.has_value()) {
+        if (wtx.mweb_wtx_info->received_coin.has_value()) {
+            const libmw::Commitment& output_commit = wtx.mweb_wtx_info->received_coin->commitment;
+            mapOutputCommits.insert(std::make_pair(output_commit, wtx.GetHash()));
+        }
+    }
 }
 
 bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
