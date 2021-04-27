@@ -2616,7 +2616,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                         req.indexes.push_back(i);
                 }
                 if (req.indexes.empty()) {
-                    return ProcessMessage(pfrom, NetMsgType::BLOCKTXN, blockTxnMsg, nTimeReceived, chainparams, connman, interruptMsgProc, enable_bip61);
                     // Dirty hack to jump to BLOCKTXN code (TODO: move message handling into their own functions)
                     BlockTransactions txn;
                     txn.blockhash = cmpctblock.header.GetHash();
