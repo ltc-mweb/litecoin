@@ -45,6 +45,7 @@ bool Wallet::GenerateNewAddress(MWEB::StealthAddress& address)
     CHDChain hdChain = m_pWallet->GetHDChain();
     address = MWEB::StealthAddress::From(GetKeychain().GetAddress(hdChain.nMWEBIndexCounter++));
 
+    m_pWallet->SetHDChain(hdChain, true);
     return WalletBatch(m_pWallet->GetDBHandle()).WriteHDChain(hdChain);
 }
 
