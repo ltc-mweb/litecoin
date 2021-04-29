@@ -3655,7 +3655,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                     CInv inv(MSG_TX, hash);
                     pto->setInventoryTxToSend.erase(hash);
                     if (filterrate) {
-                        if (txinfo.feeRate.GetFeePerK() < filterrate)
+                        if (!txinfo.feeRate.MeetsFeePerK(filterrate))
                             continue;
                     }
                     if (pto->pfilter) {
@@ -3709,7 +3709,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                     if (!txinfo.tx) {
                         continue;
                     }
-                    if (filterrate && txinfo.feeRate.GetFeePerK() < filterrate) {
+                    if (filterrate && !txinfo.feeRate.MeetsFeePerK(filterrate)) {
                         continue;
                     }
                     if (pto->pfilter && !pto->pfilter->IsRelevantAndUpdate(*txinfo.tx)) continue;
