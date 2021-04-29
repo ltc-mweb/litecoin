@@ -30,7 +30,7 @@ public:
         libmw::Coin& coin
     );
     MWEB::StealthAddress GetStealthAddress(const uint32_t index);
-    bool GenerateNewAddress(MWEB::StealthAddress& address);
+    MWEB::StealthAddress GenerateNewAddress();
 
     void LoadToWallet(const libmw::Coin& coin);
     void DeleteCoins(const std::vector<libmw::Coin>& coins);

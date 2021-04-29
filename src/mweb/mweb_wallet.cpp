@@ -27,8 +27,7 @@ bool Wallet::RewindOutput(const boost::variant<libmw::BlockRef, libmw::TxRef>& p
         CHDChain hdChain = m_pWallet->GetHDChain();
         if (coin.address_index >= hdChain.nMWEBIndexCounter) {
             hdChain.nMWEBIndexCounter = (coin.address_index + 1);
-            bool success = WalletBatch(m_pWallet->GetDBHandle()).WriteHDChain(hdChain);
-            assert(success);
+            m_pWallet->SetHDChain(hdChain, false);
         }
     }
 
@@ -40,13 +39,13 @@ MWEB::StealthAddress Wallet::GetStealthAddress(const uint32_t index)
     return MWEB::StealthAddress::From(GetKeychain().GetAddress(index));
 }
 
-bool Wallet::GenerateNewAddress(MWEB::StealthAddress& address)
+MWEB::StealthAddress Wallet::GenerateNewAddress()
 {
     CHDChain hdChain = m_pWallet->GetHDChain();
-    address = MWEB::StealthAddress::From(GetKeychain().GetAddress(hdChain.nMWEBIndexCounter++));
+    MWEB::StealthAddress address = GetStealthAddress(hdChain.nMWEBIndexCounter++);
+    m_pWallet->SetHDChain(hdChain, false);
 
-    m_pWallet->SetHDChain(hdChain, true);
-    return WalletBatch(m_pWallet->GetDBHandle()).WriteHDChain(hdChain);
+    return address;
 }
 
 CExtKey Wallet::GetHDKey(const std::string& bip32Path) const
