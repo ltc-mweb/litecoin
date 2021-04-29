@@ -834,7 +834,10 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
                 for (const CTxInput& txin : mi->GetTx().GetInputs())
                 {
                     if (txin.IsMWEB()) {
-                        // MW: TODO - Get parent hash
+                        auto parent_iter = pool.mapTxOutputs_MWEB.find(txin.GetCommitment());
+                        if (parent_iter != pool.mapTxOutputs_MWEB.end()) {
+                            setConflictsParents.insert(parent_iter->second->GetHash());
+                        }
                     } else {
                         setConflictsParents.insert(txin.GetTxIn().prevout.hash);
                     }

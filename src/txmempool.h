@@ -562,9 +562,13 @@ private:
     std::vector<indexed_transaction_set::const_iterator> GetSortedDepthAndScore() const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
 public:
-    indirectmap<COutPoint, const CTransaction*> mapNextTx GUARDED_BY(cs); // MW: TODO - Change this to OutputIndex
-    indirectmap<libmw::Commitment, const CTransaction*> mapNextTx_MWEB GUARDED_BY(cs); // MW: TODO - Maybe wrap mapNextTx and mapNextTx_MWEB in a custom container?
-    indirectmap<libmw::Commitment, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
+    std::map<OutputIndex, const CTransaction*> mapNextTx GUARDED_BY(cs);
+
+    /**
+     * Maps output commitments to the transactions that create them.
+     */
+    std::map<libmw::Commitment, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
+
     std::map<uint256, CAmount> mapDeltas;
 
     /** Create a new CTxMemPool.
@@ -600,7 +604,7 @@ public:
     void _clear() EXCLUSIVE_LOCKS_REQUIRED(cs); //lock free
     bool CompareDepthAndScore(const uint256& hasha, const uint256& hashb);
     void queryHashes(std::vector<uint256>& vtxid);
-    bool isSpent(const COutPoint& outpoint) const;
+    bool isSpent(const OutputIndex& outpoint) const;
     unsigned int GetTransactionsUpdated() const;
     void AddTransactionsUpdated(unsigned int n);
     /**
