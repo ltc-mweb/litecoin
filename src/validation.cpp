@@ -2107,7 +2107,12 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             return state.DoS(100, error("ConnectBlock(): Failed to connect mw block: %s", e.what()),
                 REJECT_INVALID, "mw-connect-failed");
         }
+    }
 
+    if (fJustCheck)
+        return true;
+
+    if (!block.mwBlock.IsNull()) {
         if ((pindex->nStatus & BLOCK_HAVE_MWEB) == 0) {
             pindex->nStatus |= BLOCK_HAVE_MWEB;
             pindex->mweb_hash = block.GetMWEBHash();
@@ -2116,9 +2121,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             setDirtyBlockIndex.insert(pindex);
         }
     }
-
-    if (fJustCheck)
-        return true;
 
     if (!WriteUndoDataForBlock(blockundo, state, pindex, chainparams))
         return false;
