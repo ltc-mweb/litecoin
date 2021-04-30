@@ -78,7 +78,7 @@ bool Transact::CreateTx(
     CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
     if (ltc_input_amount > 0) {
         assert(ltc_fee < ltc_input_amount);
-        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee); // MW: TODO - There could also be LTC change
+        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee + mweb_fee); // MW: TODO - There could also be LTC change
     }
 
     // Create transaction
@@ -159,7 +159,7 @@ libmw::Recipient Transact::BuildChangeRecipient(
     CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
     if (ltc_input_amount > 0) {
         assert(ltc_fee < ltc_input_amount);
-        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee);
+        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee + mweb_fee);
     }
 
     CAmount recipient_amount = std::accumulate(
