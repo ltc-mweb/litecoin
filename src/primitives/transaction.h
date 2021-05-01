@@ -239,6 +239,12 @@ public:
         return boost::get<CTxOut>(m_output);
     }
 
+    const CScript& GetScriptPubKey() const noexcept
+    {
+        assert(!IsMWEB());
+        return GetTxOut().scriptPubKey;
+    }
+
 private:
     const CTransaction* m_tx;
     OutputIndex m_idx;

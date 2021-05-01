@@ -3767,7 +3767,7 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
 
     isminetype mine = IsMine(*pwallet, dest);
     ret.pushKV("ismine", bool(mine & ISMINE_SPENDABLE));
-    bool solvable = IsSolvable(*pwallet, scriptPubKey);
+    bool solvable = dest.type() == typeid(MWEB::StealthAddress) || IsSolvable(*pwallet, scriptPubKey);
     ret.pushKV("solvable", solvable);
     if (solvable) {
        ret.pushKV("desc", InferDescriptor(scriptPubKey, *pwallet)->ToString());
@@ -3778,7 +3778,7 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
     if (pwallet->mapAddressBook.count(dest)) {
         ret.pushKV("label", pwallet->mapAddressBook[dest].name);
     }
-    ret.pushKV("ischange", pwallet->IsChange(scriptPubKey));
+    ret.pushKV("ischange", pwallet->IsChange(dest));
     const CKeyMetadata* meta = nullptr;
     CKeyID key_id = GetKeyForDestination(*pwallet, dest);
     if (!key_id.IsNull()) {

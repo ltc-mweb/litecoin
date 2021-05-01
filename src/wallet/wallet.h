@@ -1209,6 +1209,7 @@ public:
     isminetype IsMine(const CTxOutput& output) const;
     CAmount GetCredit(const CTxOutput& output, const isminefilter& filter) const;
     bool IsChange(const CTxOutput& output) const;
+    bool IsChange(const CTxDestination& dest) const;
     bool IsChange(const CScript& script) const;
     CAmount GetChange(const CTxOutput& output) const;
     bool IsMine(const CTransaction& tx) const;

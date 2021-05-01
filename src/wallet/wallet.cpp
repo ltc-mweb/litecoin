@@ -189,7 +189,7 @@ std::vector<CKeyID> GetAffectedKeys(const CTxOutput& output, const CWallet& wall
 
     std::vector<CScript> dummy;
     FlatSigningProvider out;
-    InferDescriptor(output.GetTxOut().scriptPubKey, wallet)->Expand(0, DUMMY_SIGNING_PROVIDER, dummy, out);
+    InferDescriptor(output.GetScriptPubKey(), wallet)->Expand(0, DUMMY_SIGNING_PROVIDER, dummy, out);
     std::vector<CKeyID> ret;
     for (const auto& entry : out.pubkeys) {
         ret.push_back(entry.first);
@@ -1446,7 +1446,7 @@ isminetype CWallet::IsMine(const CTxOutput& output) const
         return GetCoin(output.GetCommitment(), coin) ? ISMINE_SPENDABLE : ISMINE_NO;
     }
 
-    return ::IsMine(*this, output.GetTxOut().scriptPubKey);
+    return ::IsMine(*this, output.GetScriptPubKey());
 }
 
 CAmount CWallet::GetCredit(const CTxOutput& output, const isminefilter& filter) const
@@ -1470,6 +1470,16 @@ bool CWallet::IsChange(const CTxOutput& output) const
 
     const CTxOut& txout = output.GetTxOut();
     return IsChange(txout.scriptPubKey);
+}
+
+bool CWallet::IsChange(const CTxDestination& dest) const
+{
+    if (dest.type() == typeid(MWEB::StealthAddress)) {
+        return boost::get<MWEB::StealthAddress>(dest) == mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
+    } else {
+        CScript scriptPubKey = GetScriptForDestination(dest);
+        return IsChange(scriptPubKey);
+    }
 }
 
 bool CWallet::IsChange(const CScript& script) const
@@ -1825,7 +1835,7 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
         // In either case, we need to get the destination address
         CTxDestination address;
 
-        if (!pwallet->ExtractOutputDestination(output, address) && (output.IsMWEB() || !output.GetTxOut().scriptPubKey.IsUnspendable()))
+        if (!pwallet->ExtractOutputDestination(output, address) && (output.IsMWEB() || !output.GetScriptPubKey().IsUnspendable()))
         {
             pwallet->WalletLogPrintf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
                                     this->GetHash().ToString());
@@ -2598,7 +2608,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
                 continue;
             }
 
-            bool solvable = output.IsMWEB() ? true : IsSolvable(*this, output.GetTxOut().scriptPubKey);
+            bool solvable = output.IsMWEB() || IsSolvable(*this, output.GetScriptPubKey());
             bool spendable = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (((mine & ISMINE_WATCH_ONLY) != ISMINE_NO) && (coinControl && coinControl->fAllowWatchOnly && solvable));
 
             if (output.IsMWEB()) {
@@ -4464,7 +4474,7 @@ bool CWallet::ExtractOutputDestination(const CTxOutput& output, CTxDestination& 
         dest = mweb_wallet->GetStealthAddress(coin.address_index);
         return true;
     } else {
-        return ExtractDestination(output.GetTxOut().scriptPubKey, dest);
+        return ExtractDestination(output.GetScriptPubKey(), dest);
     }
 }
 
