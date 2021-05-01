@@ -2612,8 +2612,8 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
             bool spendable = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (((mine & ISMINE_WATCH_ONLY) != ISMINE_NO) && (coinControl && coinControl->fAllowWatchOnly && solvable));
 
             if (output.IsMWEB()) {
-                // MW: TODO - Check maturity
-                
+                // MW: TODO - Ensure MWEB has been activated
+
                 libmw::Coin coin;
                 if (!GetCoin(output.GetCommitment(), coin)) {
                     continue;

@@ -157,14 +157,7 @@ struct Tx {
 
     std::string ToString() const
     {
-        return strprintf(
-            "MWEB::Tx(pegins=%d, pegouts=%d, inputs=%d, kernels=%d, outputs=%d)",
-            GetPegIns().size(),
-            GetPegOuts().size(),
-            GetInputCommits().size(),
-            GetKernelHashes().size(),
-            GetOutputCommits().size()
-        );
+        return IsNull() ? "" : m_transaction.ToString();
     }
 };
 

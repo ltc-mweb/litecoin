@@ -447,12 +447,22 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
     if (tx.HasMWData()) {
         UniValue mweb_info(UniValue::VOBJ);
 
+        UniValue mweb_weight(UniValue::VOBJ);
+        mweb_weight.pushKV("base", (int)e.GetMWEBWeight());
+        mweb_weight.pushKV("ancestor", (int)e.GetMWEBWeightWithAncestors());
+        mweb_weight.pushKV("descendant", (int)e.GetMWEBWeightWithDescendants());
+        mweb_info.pushKV("weight", mweb_weight);
+
+        mweb_info.pushKV("fee", ValueFromAmount(tx.m_mwtx.GetFee()));
+        mweb_info.pushKV("lock_height", (int)tx.m_mwtx.GetLockHeight());
+
         // Pegins
         UniValue pegins(UniValue::VARR);
         for (const libmw::PegIn& pegin : tx.m_mwtx.GetPegIns()) {
             UniValue pegin_uni(UniValue::VOBJ);
             pegin_uni.pushKV("amount", pegin.amount);
             pegin_uni.pushKV("commitment", HexStr(pegin.commitment.begin(), pegin.commitment.end()));
+            pegins.push_back(pegin_uni);
         }
 
         mweb_info.pushKV("pegins", pegins);
@@ -463,6 +473,7 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
             UniValue pegout_uni(UniValue::VOBJ);
             pegout_uni.pushKV("amount", pegout.amount);
             pegout_uni.pushKV("scriptpubkey", HexStr(pegout.scriptPubKey));
+            pegouts.push_back(pegout_uni);
         }
 
         mweb_info.pushKV("pegouts", pegouts);

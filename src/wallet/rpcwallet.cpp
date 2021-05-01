@@ -2361,8 +2361,7 @@ static UniValue listlockunspent(const JSONRPCRequest& request)
     for (const OutputIndex& output : vOutpts) {
         UniValue o(UniValue::VOBJ);
 
-        if (output.which() == 0) {
-
+        if (output.type() == typeid(COutPoint)) {
             const COutPoint& outpt = boost::get<COutPoint>(output);
             o.pushKV("txid", outpt.hash.GetHex());
             o.pushKV("vout", (int)outpt.n);
@@ -3658,7 +3657,6 @@ public:
     UniValue operator()(const MWEB::StealthAddress& id) const
     {
         UniValue obj(UniValue::VOBJ);
-        obj.pushKV("mweb_address", EncodeDestination(id));
         obj.pushKV("scan_pubkey", HexStr(id.scan_pubkey));
         obj.pushKV("spend_pubkey", HexStr(id.spend_pubkey));
         return obj;
@@ -3717,6 +3715,7 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
             "  \"iswitness\" : true|false,     (boolean) If the address is a witness address\n"
             "  \"witness_version\" : version   (numeric, optional) The version number of the witness program\n"
             "  \"witness_program\" : \"hex\"     (string, optional) The hex value of the witness program\n"
+            "  \"ismweb\" : true|false,        (boolean) If the address is an MWEB stealth address\n"
             "  \"script\" : \"type\"             (string, optional) The output script type. Only if \"isscript\" is true and the redeemscript is known. Possible types: nonstandard, pubkey, pubkeyhash, scripthash, multisig, nulldata, witness_v0_keyhash, witness_v0_scripthash, witness_unknown\n"
             "  \"hex\" : \"hex\",                (string, optional) The redeemscript for the p2sh address\n"
             "  \"pubkeys\"                     (string, optional) Array of pubkeys associated with the known redeemscript (only if \"script\" is \"multisig\")\n"
