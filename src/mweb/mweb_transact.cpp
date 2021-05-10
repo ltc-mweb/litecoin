@@ -62,23 +62,29 @@ bool Transact::CreateTx(
         }
     }
 
-    // Add Change
-    if (include_mweb_change) {
-        mweb_recipients.push_back(BuildChangeRecipient(
-            mweb_wallet,
-            transaction,
-            selected_coins,
-            recipients,
-            ltc_fee,
-            mweb_fee));
-    }
-
     // Calculate pegin_amount
     boost::optional<uint64_t> pegin_amount = boost::none;
     CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
     if (ltc_input_amount > 0) {
         assert(ltc_fee < ltc_input_amount);
         pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee + mweb_fee); // MW: TODO - There could also be LTC change
+    }
+
+    // Add Change
+    if (include_mweb_change) {
+        CAmount recipient_amount = std::accumulate(
+            recipients.cbegin(), recipients.cend(), CAmount(0),
+            [](CAmount amount, const CRecipient& recipient) {
+                return recipient.nAmount + amount;
+            }
+        );
+
+        CAmount change_amount = (pegin_amount.value_or(0) + GetMWEBInputAmount(selected_coins)) - (recipient_amount + mweb_fee);
+        if (change_amount <= 0) {
+            return false;
+        }
+        MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
+        mweb_recipients.push_back(libmw::MWEBRecipient{(uint64_t)change_amount, change_address.to_libmw()});
     }
 
     // Create transaction
@@ -145,32 +151,4 @@ bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const libmw::
     }
 
     return false;
-}
-
-libmw::Recipient Transact::BuildChangeRecipient(
-    const std::shared_ptr<MWEB::Wallet>& mweb_wallet,
-    CMutableTransaction& transaction,
-    const std::vector<CInputCoin>& selected_coins,
-    const std::vector<CRecipient>& recipients,
-    const CAmount& ltc_fee,
-    const CAmount& mweb_fee)
-{
-    boost::optional<uint64_t> pegin_amount = boost::none;
-    CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
-    if (ltc_input_amount > 0) {
-        assert(ltc_fee < ltc_input_amount);
-        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee + mweb_fee);
-    }
-
-    CAmount recipient_amount = std::accumulate(
-        recipients.cbegin(), recipients.cend(), CAmount(0),
-        [](CAmount amount, const CRecipient& recipient) {
-            return recipient.nAmount + amount;
-        }
-    );
-
-    CAmount change_amount = (pegin_amount.value_or(0) + GetMWEBInputAmount(selected_coins)) - (recipient_amount + mweb_fee);
-
-    MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
-    return libmw::MWEBRecipient{(uint64_t)change_amount, change_address.to_libmw()};
 }
