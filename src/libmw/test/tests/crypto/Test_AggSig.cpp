@@ -1,11 +1,18 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/MuSig.h>
 #include <mw/crypto/Schnorr.h>
 #include <mw/crypto/Random.h>
 
-TEST_CASE("AggSig Interaction")
+BOOST_FIXTURE_TEST_SUITE(TestAggSig, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(AggSigInteraction)
 {
     mw::Hash message = Random::CSPRNG<32>().GetBigInt();
 
@@ -54,7 +61,7 @@ TEST_CASE("AggSig Interaction")
         sumPubNonces,
         message
     );
-    REQUIRE(senderSigValid == true);
+    BOOST_REQUIRE(senderSigValid == true);
 
     const bool receiverSigValid = MuSig::VerifyPartial(
         receiverPartialSignature,
@@ -63,7 +70,7 @@ TEST_CASE("AggSig Interaction")
         sumPubNonces,
         message
     );
-    REQUIRE(receiverSigValid == true);
+    BOOST_REQUIRE(receiverSigValid == true);
 
     // Aggregate signature and validate
     Signature aggregateSignature = MuSig::Aggregate(
@@ -75,10 +82,10 @@ TEST_CASE("AggSig Interaction")
         sumPubKeys,
         message
     );
-    REQUIRE(aggSigValid == true);
+    BOOST_REQUIRE(aggSigValid == true);
 }
 
-TEST_CASE("Coinbase Signature")
+BOOST_AUTO_TEST_CASE(CoinbaseSignature)
 {
     mw::Hash message = Random::CSPRNG<32>().GetBigInt();
     SecretKey secret_key = Random::CSPRNG<32>();
@@ -86,5 +93,7 @@ TEST_CASE("Coinbase Signature")
     Signature signature = Schnorr::Sign(secret_key.data(), message);
 
     const bool valid = Schnorr::Verify(signature, public_key, message);
-    REQUIRE(valid == true);
+    BOOST_REQUIRE(valid == true);
 }
+
+BOOST_AUTO_TEST_SUITE_END()

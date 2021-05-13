@@ -1,4 +1,9 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/node/CoinsView.h>
@@ -10,7 +15,9 @@
 #include <test_framework/TestUtil.h>
 #include <test_framework/TxBuilder.h>
 
-TEST_CASE("ValidateState")
+BOOST_FIXTURE_TEST_SUITE(TestStateValidator, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(ValidateState)
 {
     FilePath datadir = test::TestUtil::GetTempDir();
     ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
@@ -18,7 +25,7 @@ TEST_CASE("ValidateState")
     {
         auto pDatabase = std::make_shared<TestDBWrapper>();
         auto pNode = mw::InitializeNode(datadir, "test", nullptr, pDatabase);
-        REQUIRE(pNode != nullptr);
+        BOOST_REQUIRE(pNode != nullptr);
 
         auto pDBView = pNode->GetDBView();
         auto pCachedView = std::make_shared<mw::CoinsViewCache>(pDBView);
@@ -58,3 +65,5 @@ TEST_CASE("ValidateState")
         pNode.reset();
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()

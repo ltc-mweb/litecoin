@@ -1,4 +1,9 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/node/CoinsView.h>
 #include <mw/crypto/Hasher.h>
@@ -10,7 +15,9 @@
 #include <test_framework/Miner.h>
 #include <test_framework/TestUtil.h>
 
-TEST_CASE("Reorg Chain")
+BOOST_FIXTURE_TEST_SUITE(TestReorg, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(ReorgChain)
 {
     FilePath datadir = test::TestUtil::GetTempDir();
     ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
@@ -18,7 +25,7 @@ TEST_CASE("Reorg Chain")
     {
         auto pDatabase = std::make_shared<TestDBWrapper>();
         auto pNode = mw::InitializeNode(datadir, "test", nullptr, pDatabase);
-        REQUIRE(pNode != nullptr);
+        BOOST_REQUIRE(pNode != nullptr);
 
         auto pDBView = pNode->GetDBView();
         auto pCachedView = std::make_shared<mw::CoinsViewCache>(pDBView);
@@ -34,8 +41,8 @@ TEST_CASE("Reorg Chain")
         pNode->ConnectBlock(block1.GetBlock(), pCachedView);
 
         const auto& block1_tx1_output1 = block1_tx1.GetOutputs()[0];
-        REQUIRE(pDBView->GetUTXOs(block1_tx1_output1.GetCommitment()).empty());
-        REQUIRE(pCachedView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pDBView->GetUTXOs(block1_tx1_output1.GetCommitment()).empty());
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
 
         ///////////////////////
         // Mine Block 2
@@ -46,15 +53,15 @@ TEST_CASE("Reorg Chain")
         mw::BlockUndo::CPtr undoBlock2 = pNode->ConnectBlock(block2.GetBlock(), pCachedView);
 
         const auto& block2_tx1_output1 = block2_tx1.GetOutputs()[0];
-        REQUIRE(pDBView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
-        REQUIRE(pCachedView->GetUTXOs(block2_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pDBView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block2_tx1_output1.GetCommitment()).size() == 1);
 
         ///////////////////////
         // Disconnect Block 2
         ///////////////////////
         pNode->DisconnectBlock(undoBlock2, pCachedView);
-        REQUIRE(pCachedView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
-        REQUIRE(pCachedView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
         miner.Rewind(1);
 
         ///////////////////////
@@ -66,8 +73,8 @@ TEST_CASE("Reorg Chain")
         pNode->ConnectBlock(block3.GetBlock(), pCachedView);
 
         const auto& block3_tx1_output1 = block3_tx1.GetOutputs()[0];
-        REQUIRE(pDBView->GetUTXOs(block3_tx1_output1.GetCommitment()).empty());
-        REQUIRE(pCachedView->GetUTXOs(block3_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pDBView->GetUTXOs(block3_tx1_output1.GetCommitment()).empty());
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block3_tx1_output1.GetCommitment()).size() == 1);
 
         ///////////////////////
         // Flush View
@@ -76,13 +83,15 @@ TEST_CASE("Reorg Chain")
         pCachedView->Flush(pBatch);
         pBatch->Commit();
 
-        REQUIRE(pDBView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
-        REQUIRE(pCachedView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
-        REQUIRE(pDBView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
-        REQUIRE(pCachedView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
-        REQUIRE(pDBView->GetUTXOs(block3_tx1_output1.GetCommitment()).size() == 1);
-        REQUIRE(pCachedView->GetUTXOs(block3_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pDBView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block1_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pDBView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block2_tx1_output1.GetCommitment()).empty());
+        BOOST_REQUIRE(pDBView->GetUTXOs(block3_tx1_output1.GetCommitment()).size() == 1);
+        BOOST_REQUIRE(pCachedView->GetUTXOs(block3_tx1_output1.GetCommitment()).size() == 1);
 
         pNode.reset();
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()

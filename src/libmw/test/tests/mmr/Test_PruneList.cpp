@@ -1,11 +1,18 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/mmr/PruneList.h>
 
 #include <test_framework/TestUtil.h>
 
-TEST_CASE("mmr::PruneList")
+BOOST_FIXTURE_TEST_SUITE(TestPruneList, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(PruneList)
 {
     FilePath tempDir = test::TestUtil::GetTempDir();
     ScopedFileRemover remover(tempDir);
@@ -16,9 +23,11 @@ TEST_CASE("mmr::PruneList")
 
     mmr::PruneList::Ptr pPruneList = mmr::PruneList::Open(tempDir, 9);
 
-    REQUIRE(pPruneList->GetTotalShift() == 15);
-    REQUIRE(pPruneList->GetShift(mmr::Index::At(1)) == 0);
-    REQUIRE(pPruneList->GetShift(mmr::Index::At(3)) == 1);
-    REQUIRE(pPruneList->GetShift(mmr::Index::At(28)) == 4);
-    REQUIRE(pPruneList->GetShift(mmr::Index::At(60)) == 15);
+    BOOST_REQUIRE(pPruneList->GetTotalShift() == 15);
+    BOOST_REQUIRE(pPruneList->GetShift(mmr::Index::At(1)) == 0);
+    BOOST_REQUIRE(pPruneList->GetShift(mmr::Index::At(3)) == 1);
+    BOOST_REQUIRE(pPruneList->GetShift(mmr::Index::At(28)) == 4);
+    BOOST_REQUIRE(pPruneList->GetShift(mmr::Index::At(60)) == 15);
 }
+
+BOOST_AUTO_TEST_SUITE_END()

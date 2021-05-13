@@ -1,10 +1,17 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/OutputId.h>
 
-TEST_CASE("Tx Output Identifier")
+BOOST_FIXTURE_TEST_SUITE(TestOutputId, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
 {
     Commitment commit = Random::CSPRNG<33>().GetBigInt();
     EOutputFeatures features = EOutputFeatures::DEFAULT_OUTPUT;
@@ -30,30 +37,32 @@ TEST_CASE("Tx Output Identifier")
     //
     {
         std::vector<uint8_t> serialized = outputId.Serialized();
-        REQUIRE(serialized.size() == 158);
+        BOOST_REQUIRE(serialized.size() == 158);
 
         Deserializer deserializer(serialized);
-        REQUIRE(deserializer.Read<Commitment>() == commit);
-        REQUIRE(deserializer.Read<uint8_t>() == features);
-        REQUIRE(deserializer.Read<PublicKey>() == receiverPubKey);
-        REQUIRE(deserializer.Read<PublicKey>() == exchangePubKey);
-        REQUIRE(deserializer.Read<uint8_t>() == viewTag);
-        REQUIRE(deserializer.Read<uint64_t>() == maskedValue);
-        REQUIRE(deserializer.Read<BigInt<16>>() == maskedNonce);
-        REQUIRE(deserializer.Read<PublicKey>() == senderPubKey);
+        BOOST_REQUIRE(deserializer.Read<Commitment>() == commit);
+        BOOST_REQUIRE(deserializer.Read<uint8_t>() == features);
+        BOOST_REQUIRE(deserializer.Read<PublicKey>() == receiverPubKey);
+        BOOST_REQUIRE(deserializer.Read<PublicKey>() == exchangePubKey);
+        BOOST_REQUIRE(deserializer.Read<uint8_t>() == viewTag);
+        BOOST_REQUIRE(deserializer.Read<uint64_t>() == maskedValue);
+        BOOST_REQUIRE(deserializer.Read<BigInt<16>>() == maskedNonce);
+        BOOST_REQUIRE(deserializer.Read<PublicKey>() == senderPubKey);
 
         Deserializer deserializer2(serialized);
-        REQUIRE(outputId == OutputId::Deserialize(deserializer2));
+        BOOST_REQUIRE(outputId == OutputId::Deserialize(deserializer2));
 
-        REQUIRE(outputId.GetHash() == Hashed(serialized));
+        BOOST_REQUIRE(outputId.GetHash() == Hashed(serialized));
     }
 
     //
     // Getters
     //
     {
-        REQUIRE_FALSE(outputId.IsPeggedIn());
+        BOOST_REQUIRE(!outputId.IsPeggedIn());
         //REQUIRE(outputId.GetFeatures() == features);
-        REQUIRE(outputId.GetCommitment() == commit);
+        BOOST_REQUIRE(outputId.GetCommitment() == commit);
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()

@@ -1,4 +1,9 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/crypto/Schnorr.h>
 #include <mw/crypto/Bulletproofs.h>
@@ -6,7 +11,9 @@
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
 
-TEST_CASE("Output::Create")
+BOOST_FIXTURE_TEST_SUITE(TestOutput, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(Create)
 {
     // Generate receiver addr
     SecretKey a = Random::CSPRNG<32>();
@@ -32,20 +39,20 @@ TEST_CASE("Output::Create")
 
     // Verify bulletproof
     ProofData proof_data = output.BuildProofData();
-    REQUIRE(proof_data.commitment == expected_commit);
-    REQUIRE(proof_data.pRangeProof == output.GetRangeProof());
-    REQUIRE(Bulletproofs::BatchVerify({ output.BuildProofData() }));
+    BOOST_REQUIRE(proof_data.commitment == expected_commit);
+    BOOST_REQUIRE(proof_data.pRangeProof == output.GetRangeProof());
+    BOOST_REQUIRE(Bulletproofs::BatchVerify({ output.BuildProofData() }));
 
     // Verify sender signature
     SignedMessage signed_msg = output.BuildSignedMsg();
-    REQUIRE(signed_msg.GetPublicKey() == PublicKey::From(sender_key));
-    REQUIRE(Schnorr::BatchVerify({ signed_msg }));
+    BOOST_REQUIRE(signed_msg.GetPublicKey() == PublicKey::From(sender_key));
+    BOOST_REQUIRE(Schnorr::BatchVerify({ signed_msg }));
 
     // Getters
-    REQUIRE_FALSE(output.IsPeggedIn());
-    REQUIRE(output.GetCommitment() == expected_commit);
-    REQUIRE(output.GetFeatures() == features);
-    REQUIRE(output.ToOutputId() == OutputId(
+    BOOST_REQUIRE(!output.IsPeggedIn());
+    BOOST_REQUIRE(output.GetCommitment() == expected_commit);
+    BOOST_REQUIRE(output.GetFeatures() == features);
+    BOOST_REQUIRE(output.ToOutputId() == OutputId(
         expected_commit,
         features,
         output.GetReceiverPubKey(),
@@ -62,17 +69,17 @@ TEST_CASE("Output::Create")
     {
         // Check view tag
         SecretKey t = Hashed(EHashTag::DERIVE, output.Ke().Mul(a));
-        REQUIRE(t[0] == output.GetViewTag());
+        BOOST_REQUIRE(t[0] == output.GetViewTag());
 
         // Make sure B belongs to wallet
-        REQUIRE(receiver_addr.B() == output.Ko().Sub(Hashed(EHashTag::OUT_KEY, t)));
+        BOOST_REQUIRE(receiver_addr.B() == output.Ko().Sub(Hashed(EHashTag::OUT_KEY, t)));
 
         Deserializer hash64(Hash512(t).vec());
         SecretKey r = hash64.Read<SecretKey>();
         uint64_t value = output.GetMaskedValue() ^ hash64.Read<uint64_t>();
         BigInt<16> n = output.GetMaskedNonce() ^ hash64.ReadVector(16);
 
-        REQUIRE(Commitment::Switch(r, value) == output.GetCommitment());
+        BOOST_REQUIRE(Commitment::Switch(r, value) == output.GetCommitment());
 
         // Calculate Carol's sending key 's' and check that s*B ?= Ke
         SecretKey s = Hasher(EHashTag::SEND_KEY)
@@ -81,10 +88,12 @@ TEST_CASE("Output::Create")
             .Append(value)
             .Append(n)
             .hash();
-        REQUIRE(output.Ke() == receiver_addr.B().Mul(s));
+        BOOST_REQUIRE(output.Ke() == receiver_addr.B().Mul(s));
 
         // Make sure receiver can generate the spend key
         SecretKey spend_key = Crypto::AddPrivateKeys(b, Hashed(EHashTag::OUT_KEY, t));
-        REQUIRE(output.GetReceiverPubKey() == PublicKey::From(spend_key));
+        BOOST_REQUIRE(output.GetReceiverPubKey() == PublicKey::From(spend_key));
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()
