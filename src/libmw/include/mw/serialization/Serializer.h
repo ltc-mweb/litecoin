@@ -108,8 +108,8 @@ public:
     template<class T>
     Serializer& Append(const boost::optional<T>& opt)
     {
-        Append<bool>(opt.has_value());
-        if (opt.has_value()) {
+        Append<bool>(!!opt);
+        if (opt) {
             Append(opt.value());
         }
 

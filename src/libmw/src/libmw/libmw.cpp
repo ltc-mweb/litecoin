@@ -83,12 +83,10 @@ MWEXPORT libmw::Coin DeserializeCoin(const std::vector<uint8_t>& bytes)
     libmw::Coin coin;
     coin.features = deserializer.Read<uint8_t>();
     coin.address_index = deserializer.Read<uint32_t>();
-    coin.key = deserializer.ReadOpt<::BlindingFactor>().map(
-        [](const ::BlindingFactor& blind) { return blind.array(); }
-    );
-    coin.blind = deserializer.ReadOpt<::BlindingFactor>().map(
-        [](const ::BlindingFactor& blind) { return blind.array(); }
-    );
+    auto key_opt = deserializer.ReadOpt<::BlindingFactor>();
+    coin.key = key_opt ? boost::make_optional<libmw::BlindingFactor>(key_opt.value().array()) : boost::none;
+    auto blind_opt = deserializer.ReadOpt<::BlindingFactor>();
+    coin.blind = blind_opt ? boost::make_optional<libmw::BlindingFactor>(blind_opt.value().array()) : boost::none;
     coin.amount = deserializer.Read<uint64_t>();
     coin.commitment = deserializer.Read<::Commitment>().array();
     return coin;

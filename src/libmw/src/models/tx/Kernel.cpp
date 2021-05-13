@@ -43,30 +43,30 @@ mw::Hash Kernel::GetSignatureMessage(
     const std::vector<uint8_t>& extra_data)
 {
     uint8_t features_byte =
-        (fee.has_value() ? FEE_FEATURE_BIT : 0) |
-        (pegin_amount.has_value() ? PEGIN_FEATURE_BIT : 0) |
-        (pegout.has_value() ? PEGOUT_FEATURE_BIT : 0) |
-        (lock_height.has_value() ? HEIGHT_LOCK_FEATURE_BIT : 0) |
+        (fee ? FEE_FEATURE_BIT : 0) |
+        (pegin_amount ? PEGIN_FEATURE_BIT : 0) |
+        (pegout ? PEGOUT_FEATURE_BIT : 0) |
+        (lock_height ? HEIGHT_LOCK_FEATURE_BIT : 0) |
         (extra_data.size() > 0 ? EXTRA_DATA_FEATURE_BIT : 0);
 
     Hasher sig_message_hasher = Hasher();
     sig_message_hasher.Append<uint8_t>(features_byte);
 
-    if (fee.has_value()) {
+    if (fee) {
         sig_message_hasher.Append<uint64_t>(fee.value());
     }
 
-    if (pegin_amount.has_value()) {
+    if (pegin_amount) {
         sig_message_hasher.Append<uint64_t>(pegin_amount.value());
     }
 
-    if (pegout.has_value()) {
+    if (pegout) {
         sig_message_hasher
             .Append<uint64_t>(pegout.value().GetAmount())
             .Append(pegout.value().GetScriptPubKey());
     }
 
-    if (lock_height.has_value()) {
+    if (lock_height) {
         sig_message_hasher.Append<uint64_t>(lock_height.value());
     }
 
@@ -80,30 +80,30 @@ mw::Hash Kernel::GetSignatureMessage(
 Serializer& Kernel::Serialize(Serializer& serializer) const noexcept
 {
     uint8_t features_byte =
-        (m_fee.has_value() ? FEE_FEATURE_BIT : 0) |
-        (m_pegin.has_value() ? PEGIN_FEATURE_BIT : 0) |
-        (m_pegout.has_value() ? PEGOUT_FEATURE_BIT : 0) |
-        (m_lockHeight.has_value() ? HEIGHT_LOCK_FEATURE_BIT : 0) |
+        (m_fee ? FEE_FEATURE_BIT : 0) |
+        (m_pegin ? PEGIN_FEATURE_BIT : 0) |
+        (m_pegout ? PEGOUT_FEATURE_BIT : 0) |
+        (m_lockHeight ? HEIGHT_LOCK_FEATURE_BIT : 0) |
         (m_extraData.size() > 0 ? EXTRA_DATA_FEATURE_BIT : 0);
 
     serializer.Append<uint8_t>(features_byte);
 
-    if (m_fee.has_value()) {
+    if (m_fee) {
         serializer.Append<uint64_t>(m_fee.value());
     }
 
-    if (m_pegin.has_value()) {
+    if (m_pegin) {
         serializer.Append<uint64_t>(m_pegin.value());
     }
 
-    if (m_pegout.has_value()) {
+    if (m_pegout) {
         serializer
             .Append<uint64_t>(m_pegout.value().GetAmount())
             .Append<uint8_t>((uint8_t)m_pegout.value().GetScriptPubKey().size())
             .Append(m_pegout.value().GetScriptPubKey());
     }
 
-    if (m_lockHeight.has_value()) {
+    if (m_lockHeight) {
         serializer.Append<uint64_t>(m_lockHeight.value());
     }
 

@@ -72,8 +72,7 @@ public:
     //
     mw::Hash GetHash() const noexcept final
     {
-        if (!m_hash.has_value())
-        {
+        if (!m_hash) {
             m_hash = boost::make_optional(Hashed(*this));
         }
 

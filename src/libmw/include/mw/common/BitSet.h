@@ -78,7 +78,11 @@ struct BitSet : public Traits::ISerializable
     }
 
     void set(size_t idx, bool val = true) noexcept { bitset.set(idx, val); }
-    void set(size_t idx, size_t len, bool val) noexcept { bitset.set(idx, len, val); }
+    void set(size_t idx, size_t len, bool val) noexcept {
+        for (size_t i = idx; i < (idx + len); i++) {
+            bitset.set(i, val);
+        }
+    }
     void push_back(bool val) noexcept { bitset.push_back(val); }
 
     Serializer& Serialize(Serializer& serializer) const noexcept final

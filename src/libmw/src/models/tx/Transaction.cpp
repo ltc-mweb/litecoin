@@ -18,7 +18,7 @@ std::string mw::Transaction::Print() const noexcept
             "kern(commit:{}, pegin: {}, pegout: {}, fee: {})",
             kernel.GetCommitment(),
             kernel.GetPegIn(),
-            kernel.GetPegOut().has_value() ? kernel.GetPegOut().value().GetAmount() : 0,
+            kernel.GetPegOut() ? kernel.GetPegOut().value().GetAmount() : 0,
             kernel.GetFee()
         );
     };

@@ -101,7 +101,7 @@ void TxBody::Validate() const
     bool extra_data_exceeds_max = std::any_of(
         m_kernels.cbegin(), m_kernels.cend(),
         [](const Kernel& kernel) {
-            size_t pubkeySize = kernel.GetPegOut().has_value() ? kernel.GetPegOut().value().GetScriptPubKey().size() : 4;
+            size_t pubkeySize = kernel.GetPegOut() ? kernel.GetPegOut().value().GetScriptPubKey().size() : 4;
             return pubkeySize > 42 || pubkeySize < 4 || kernel.GetExtraData().size() > libmw::MAX_KERNEL_EXTRADATA_SIZE;
         }
     );

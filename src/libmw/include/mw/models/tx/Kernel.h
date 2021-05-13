@@ -75,8 +75,8 @@ public:
         const std::vector<uint8_t>& extra_data
     );
 
-    bool HasPegIn() const noexcept { return m_pegin.has_value(); }
-    bool HasPegOut() const noexcept { return m_pegout.has_value(); }
+    bool HasPegIn() const noexcept { return !!m_pegin; }
+    bool HasPegOut() const noexcept { return !!m_pegout; }
 
     uint64_t GetPegIn() const noexcept { return m_pegin.value_or(0); }
     const boost::optional<PegOutCoin>& GetPegOut() const noexcept { return m_pegout; }
@@ -84,7 +84,7 @@ public:
     int64_t GetSupplyChange() const noexcept
     {
         return ((int64_t)m_pegin.value_or(0) - m_fee.value_or(0)) -
-            (int64_t)(m_pegout.has_value() ? m_pegout.value().GetAmount() : 0);
+            (int64_t)(m_pegout ? m_pegout.value().GetAmount() : 0);
     }
 
     //

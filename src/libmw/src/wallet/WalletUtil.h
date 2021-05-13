@@ -17,7 +17,7 @@ public:
             coins.cbegin(), coins.cend(),
             std::back_inserter(blinds),
             [](const libmw::Coin& coin) {
-                assert(coin.blind.has_value());
+                assert(!!coin.blind);
                 return BlindingFactor{ Crypto::BlindSwitch(coin.blind.value(), coin.amount) };
             }
         );
@@ -33,7 +33,7 @@ public:
             coins.cbegin(), coins.cend(),
             std::back_inserter(keys),
             [](const libmw::Coin& coin) {
-                assert(coin.key.has_value());
+                assert(!!coin.key);
                 return BlindingFactor(coin.key.value());
             }
         );
@@ -56,7 +56,7 @@ public:
             input_coins.cbegin(), input_coins.cend(),
             std::back_inserter(inputs),
             [](const libmw::Coin& input_coin) {
-                assert(input_coin.key.has_value());
+                assert(!!input_coin.key);
 
                 PublicKey pubkey = Crypto::CalculatePublicKey(input_coin.key.value());
                 Signature sig = Schnorr::Sign(input_coin.key.value().data(), InputMessage());

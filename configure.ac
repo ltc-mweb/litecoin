@@ -1177,11 +1177,7 @@ else
 fi
 
 
-dnl AC_CHECK_LIB([fmt],[main],MW_LIBS=-lfmt,AC_MSG_ERROR(libfmt missing))
-AC_CHECK_LIB([mw],[main],MW_LIBS=-lmw,
-  AC_CHECK_LIB([libmw.dll],[main],MW_LIBS=-llibmw.dll,AC_MSG_ERROR(libmw missing))
-)
-dnl MW_LIBS+= -ldl
+AC_CHECK_LIB([fmt],[main],MW_LIBS=-lfmt,AC_MSG_ERROR(libfmt missing))
 
 save_CXXFLAGS="${CXXFLAGS}"
 CXXFLAGS="${CXXFLAGS} ${CRYPTO_CFLAGS} ${SSL_CFLAGS}"
