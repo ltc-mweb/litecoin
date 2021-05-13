@@ -156,7 +156,6 @@ BITCOIN_TEST_SUITE += \
 endif
 
 BITCOIN_TEST_SUITE += \
-  libmw/test/framework/src/TestFramework.cpp \
   libmw/test/framework/src/TxBuilder.cpp \
   libmw/test/framework/src/models/Tx.cpp
 
