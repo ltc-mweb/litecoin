@@ -1,9 +1,16 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 
-TEST_CASE("Crypto::AddCommitment")
+BOOST_FIXTURE_TEST_SUITE(TestAddCommitments, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(AddCommitment)
 {
     // Test adding blinded commitment with transparent one
     {
@@ -18,7 +25,7 @@ TEST_CASE("Crypto::AddCommitment")
         );
         Commitment expected = Crypto::CommitBlinded(5, blind_a);
 
-        REQUIRE(sum == expected);
+        BOOST_REQUIRE(sum == expected);
     }
 
     // Test adding 2 blinded commitments
@@ -35,7 +42,7 @@ TEST_CASE("Crypto::AddCommitment")
 
         BlindingFactor blind_c = Crypto::AddBlindingFactors({ blind_a, blind_b });
         Commitment commit_c = Crypto::CommitBlinded(5, blind_c);
-        REQUIRE(commit_c == sum);
+        BOOST_REQUIRE(commit_c == sum);
     }
 
     // Test adding negative blinded commitment
@@ -52,6 +59,8 @@ TEST_CASE("Crypto::AddCommitment")
 
         BlindingFactor blind_c = Crypto::AddBlindingFactors({ blind_a }, { blind_b });
         Commitment commit_c = Crypto::CommitBlinded(1, blind_c);
-        REQUIRE(commit_c == difference);
+        BOOST_REQUIRE(commit_c == difference);
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()

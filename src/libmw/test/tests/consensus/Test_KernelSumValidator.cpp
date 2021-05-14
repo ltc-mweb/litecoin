@@ -1,4 +1,9 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/consensus/KernelSumValidator.h>
 #include <mw/consensus/Aggregation.h>
@@ -15,7 +20,9 @@
 
 // FUTURE: Create official test vectors for the consensus rules being tested
 
-TEST_CASE("KernelSumValidator::ValidateState")
+BOOST_FIXTURE_TEST_SUITE(TestKernelSumValidator, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(ValidateState)
 {
     // Pegin transaction
     test::Tx pegin_tx = test::TxBuilder()
@@ -65,10 +72,10 @@ TEST_CASE("KernelSumValidator::ValidateState")
     };
 
     // Consensus error should be thrown
-    REQUIRE_THROWS(KernelSumValidator::ValidateState(utxo_commitments, kernels, total_offset));
+    BOOST_REQUIRE_THROW(KernelSumValidator::ValidateState(utxo_commitments, kernels, total_offset), ValidationException);
 }
 
-TEST_CASE("KernelSumValidator::ValidateForBlock")
+BOOST_AUTO_TEST_CASE(ValidateForBlock)
 {
     // Standard transaction - 2 inputs, 2 outputs, 1 kernel
     mw::Transaction::CPtr tx1 = test::TxBuilder()
@@ -105,7 +112,7 @@ TEST_CASE("KernelSumValidator::ValidateForBlock")
 // This tests ValidateForBlock without using the TxBuilder utility, since in theory it could contain bugs.
 // In the future, it would be even better to replace this with official test vectors, and avoid relying on Random entirely.
 //
-TEST_CASE("KernelSumValidator::ValidateForBlock - Without Builder")
+BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
 {
     std::vector<Input> inputs;
     std::vector<Output> outputs;
@@ -172,7 +179,7 @@ TEST_CASE("KernelSumValidator::ValidateForBlock - Without Builder")
     KernelSumValidator::ValidateForBlock(pTransaction->GetBody(), total_offset, prev_total_offset);
 }
 
-TEST_CASE("KernelSumValidator::ValidateForTx")
+BOOST_AUTO_TEST_CASE(ValidateForTx)
 {
     // Standard transaction - 2 inputs, 2 outputs, 1 kernel
     mw::Transaction::CPtr tx1 = test::TxBuilder()
@@ -201,3 +208,5 @@ TEST_CASE("KernelSumValidator::ValidateForTx")
     mw::Transaction::CPtr pAggregated = Aggregation::Aggregate({ tx1, tx2, tx3 });
     KernelSumValidator::ValidateForTx(*pAggregated);
 }
+
+BOOST_AUTO_TEST_SUITE_END()

@@ -1,4 +1,9 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <libmw/libmw.h>
 #include <mw/consensus/ChainParams.h>
@@ -13,14 +18,16 @@
 #include <test_framework/TestUtil.h>
 #include <test_framework/TxBuilder.h>
 
-TEST_CASE("CheckTxInputs")
+BOOST_FIXTURE_TEST_SUITE(TestCheckTxInputs, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(CheckTxInputs)
 {
     FilePath datadir = test::TestUtil::GetTempDir();
     ScopedFileRemover remover(datadir);
 
     auto pDatabase = std::make_shared<TestDBWrapper>();
     auto pNode = mw::InitializeNode(datadir, "test", nullptr, pDatabase);
-    REQUIRE(pNode != nullptr);
+    BOOST_REQUIRE(pNode != nullptr);
 
     auto pDBView = pNode->GetDBView();
     auto pCachedView = libmw::CoinsViewRef{ std::make_shared<mw::CoinsViewCache>(pDBView) };
@@ -39,18 +46,20 @@ TEST_CASE("CheckTxInputs")
     const auto& output1 = tx1.GetOutputs().front();
     test::Tx tx2 = test::TxBuilder().AddInput(output1).AddPlainKernel(0).AddOutput(1000).Build();
     auto transaction = libmw::TxRef{ tx2.GetTransaction() };
-    REQUIRE(libmw::node::CheckTransaction(transaction));
-    REQUIRE_FALSE(libmw::node::CheckTxInputs(pCachedView, transaction, height - 1));
-    REQUIRE(libmw::node::CheckTxInputs(pCachedView, transaction, height));
+    BOOST_REQUIRE(libmw::node::CheckTransaction(transaction));
+    BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height - 1));
+    BOOST_REQUIRE(libmw::node::CheckTxInputs(pCachedView, transaction, height));
 
     // Try to spend an unknown pegin output
     test::Tx tx3 = test::Tx::CreatePegIn(1000);
     const auto& output2 = tx3.GetOutputs().front();
     test::Tx tx4 = test::TxBuilder().AddInput(output2).AddPlainKernel(0).AddOutput(1000).Build();
     transaction = libmw::TxRef{ tx4.GetTransaction() };
-    REQUIRE(libmw::node::CheckTransaction(transaction));
-    REQUIRE_FALSE(libmw::node::CheckTxInputs(pCachedView, transaction, height - 1));
-    REQUIRE_FALSE(libmw::node::CheckTxInputs(pCachedView, transaction, height));
+    BOOST_REQUIRE(libmw::node::CheckTransaction(transaction));
+    BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height - 1));
+    BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height));
 
     pNode.reset();
 }
+
+BOOST_AUTO_TEST_SUITE_END()

@@ -1,10 +1,17 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/models/block/Block.h>
 #include <mw/consensus/Aggregation.h>
 #include <test_framework/models/Tx.h>
 
-TEST_CASE("Block")
+BOOST_FIXTURE_TEST_SUITE(TestBlock, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(Block)
 {
     test::Tx tx1 = test::Tx::CreatePegIn(10);
     test::Tx tx2 = test::Tx::CreatePegIn(20);
@@ -26,25 +33,27 @@ TEST_CASE("Block")
 
     mw::Block block(pHeader, pTransaction->GetBody());
 
-    REQUIRE(*block.GetHeader() == *pHeader);
-    REQUIRE(block.GetInputs() == pTransaction->GetInputs());
-    REQUIRE(block.GetOutputs() == pTransaction->GetOutputs());
-    REQUIRE(block.GetKernels() == pTransaction->GetKernels());
-    REQUIRE(block.GetHeight() == pHeader->GetHeight());
-    REQUIRE(block.GetKernelOffset() == pHeader->GetKernelOffset());
-    REQUIRE(block.GetOwnerOffset() == pHeader->GetOwnerOffset());
+    BOOST_REQUIRE(*block.GetHeader() == *pHeader);
+    BOOST_REQUIRE(block.GetInputs() == pTransaction->GetInputs());
+    BOOST_REQUIRE(block.GetOutputs() == pTransaction->GetOutputs());
+    BOOST_REQUIRE(block.GetKernels() == pTransaction->GetKernels());
+    BOOST_REQUIRE(block.GetHeight() == pHeader->GetHeight());
+    BOOST_REQUIRE(block.GetKernelOffset() == pHeader->GetKernelOffset());
+    BOOST_REQUIRE(block.GetOwnerOffset() == pHeader->GetOwnerOffset());
 
-    REQUIRE(block.GetPegIns() == pTransaction->GetPegIns());
-    REQUIRE(block.GetPegInAmount() == 30);
-    REQUIRE(block.GetPegOuts().empty());
+    BOOST_REQUIRE(block.GetPegIns() == pTransaction->GetPegIns());
+    BOOST_REQUIRE(block.GetPegInAmount() == 30);
+    BOOST_REQUIRE(block.GetPegOuts().empty());
 
     Deserializer deserializer = block.Serialized();
     mw::Block block2 = mw::Block::Deserialize(deserializer);
-    REQUIRE(*block.GetHeader() == *block2.GetHeader());
-    REQUIRE(block.GetTxBody() == block2.GetTxBody());
+    BOOST_REQUIRE(*block.GetHeader() == *block2.GetHeader());
+    BOOST_REQUIRE(block.GetTxBody() == block2.GetTxBody());
 
-    REQUIRE_FALSE(block.WasValidated());
+    BOOST_REQUIRE(!block.WasValidated());
     block.Validate();
     block.MarkAsValidated();
-    REQUIRE(block.WasValidated());
+    BOOST_REQUIRE(block.WasValidated());
 }
+
+BOOST_AUTO_TEST_SUITE_END()

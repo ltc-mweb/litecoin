@@ -1,11 +1,18 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/node/INode.h>
 #include <mw/file/ScopedFileRemover.h>
 #include <test_framework/Miner.h>
 #include <test_framework/TestNode.h>
 
-TEST_CASE("BlockValidator")
+BOOST_FIXTURE_TEST_SUITE(TestBlockValidator, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(BlockValidator)
 {
     FilePath datadir = test::TestUtil::GetTempDir();
     ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
@@ -26,8 +33,10 @@ TEST_CASE("BlockValidator")
 
         mw::INode::Ptr pNode = test::CreateNode(datadir);
 
-        REQUIRE_FALSE(block_10.GetBlock()->WasValidated());
+        BOOST_REQUIRE(!block_10.GetBlock()->WasValidated());
         pNode->ValidateBlock(block_10.GetBlock(), block_10.GetHash(), pegInCoins, pegOutCoins);
-        REQUIRE(block_10.GetBlock()->WasValidated());
+        BOOST_REQUIRE(block_10.GetBlock()->WasValidated());
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()

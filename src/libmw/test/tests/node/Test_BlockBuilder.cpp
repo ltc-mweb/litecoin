@@ -1,4 +1,9 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <libmw/libmw.h>
 #include <mw/file/ScopedFileRemover.h>
@@ -8,7 +13,9 @@
 #include <test_framework/Miner.h>
 #include <test_framework/TestUtil.h>
 
-TEST_CASE("BlockBuilder")
+BOOST_FIXTURE_TEST_SUITE(TestBlockBuilder, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(BlockBuilder)
 {
     FilePath datadir = test::TestUtil::GetTempDir();
     ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
@@ -54,12 +61,14 @@ TEST_CASE("BlockBuilder")
             libmw::TxRef{ builder_tx1.GetTransaction() },
             { builder_tx1_pegin }
         );
-        REQUIRE(tx1_status);
+        BOOST_REQUIRE(tx1_status);
 
         libmw::BlockRef built_block = libmw::miner::BuildBlock(block_builder);
-        REQUIRE(built_block.pBlock->GetKernels().front() == builder_tx1.GetKernels().front());
+        BOOST_REQUIRE(built_block.pBlock->GetKernels().front() == builder_tx1.GetKernels().front());
         BlockValidator().Validate(built_block.pBlock, built_block.pBlock->GetHash(), { builder_tx1.GetPegInCoin() }, {});
 
         libmw::node::Shutdown();
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()

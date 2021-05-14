@@ -1,15 +1,22 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/mmr/MMRUtil.h>
 #include <unordered_set>
 
 using namespace mmr;
 
-#define REQUIRE_NEXT(iter, expected_pos) \
-    REQUIRE(iter.Next()); \
-    REQUIRE(iter.GetPosition() == expected_pos);
+BOOST_FIXTURE_TEST_SUITE(TestMMRUtil, BasicTestingSetup)
 
-TEST_CASE("mmr::SiblingIter")
+#define REQUIRE_NEXT(iter, expected_pos) \
+    BOOST_REQUIRE(iter.Next()); \
+    BOOST_REQUIRE(iter.GetPosition() == expected_pos);
+
+BOOST_AUTO_TEST_CASE(SiblingIterTest)
 {
     // Height 0
     {
@@ -27,7 +34,7 @@ TEST_CASE("mmr::SiblingIter")
         REQUIRE_NEXT(iter, 18);
         REQUIRE_NEXT(iter, 19);
         REQUIRE_NEXT(iter, 22);
-        REQUIRE_FALSE(iter.Next());
+        BOOST_REQUIRE(!iter.Next());
     }
 
     // Height 1
@@ -55,7 +62,7 @@ TEST_CASE("mmr::SiblingIter")
         REQUIRE_NEXT(iter, 75);
         REQUIRE_NEXT(iter, 80);
         REQUIRE_NEXT(iter, 83);
-        REQUIRE_FALSE(iter.Next());
+        BOOST_REQUIRE(!iter.Next());
     }
 
     // Height 2
@@ -74,7 +81,7 @@ TEST_CASE("mmr::SiblingIter")
         REQUIRE_NEXT(iter, 84);
         REQUIRE_NEXT(iter, 91);
         REQUIRE_NEXT(iter, 100);
-        REQUIRE_FALSE(iter.Next());
+        BOOST_REQUIRE(!iter.Next());
     }
 
     // Thorough check of positions 0-2500
@@ -85,19 +92,19 @@ TEST_CASE("mmr::SiblingIter")
             SiblingIter iter(height, last_node);
 
             while (iter.Next()) {
-                REQUIRE(nodes_found.count(iter.GetPosition()) == 0);
-                REQUIRE(mmr::Index::At(iter.GetPosition()).GetHeight() == height);
+                BOOST_REQUIRE(nodes_found.count(iter.GetPosition()) == 0);
+                BOOST_REQUIRE(mmr::Index::At(iter.GetPosition()).GetHeight() == height);
                 nodes_found.insert(iter.GetPosition());
             }
         }
 
         for (uint64_t i = 0; i <= last_node.GetPosition(); i++) {
-            REQUIRE(nodes_found.count(i) == 1);
+            BOOST_REQUIRE(nodes_found.count(i) == 1);
         }
     }
 }
 
-TEST_CASE("mmr::MMRUtil::BuildCompactBitSet")
+BOOST_AUTO_TEST_CASE(BuildCompactBitSet)
 {
     size_t num_leaves = 50;
     BitSet unspent_leaf_indices(num_leaves);
@@ -110,11 +117,11 @@ TEST_CASE("mmr::MMRUtil::BuildCompactBitSet")
     }
 
     BitSet compactable_node_indices = mmr::MMRUtil::BuildCompactBitSet(num_leaves, unspent_leaf_indices);
-    REQUIRE(compactable_node_indices.str() == "1100000111111000001100111111000111111111111110110000011000000000000000000000000000000000000000000000");
-    REQUIRE(compactable_node_indices.count() == 34);
+    BOOST_REQUIRE(compactable_node_indices.str() == "1100000111111000001100111111000111111111111110110000011000000000000000000000000000000000000000000000");
+    BOOST_REQUIRE(compactable_node_indices.count() == 34);
 }
 
-TEST_CASE("mmr::MMRUtil::DiffCompactBitSet")
+BOOST_AUTO_TEST_CASE(DiffCompactBitSet)
 {
     BitSet prev_compact(10);
     prev_compact.set(0, 5, true);
@@ -125,11 +132,11 @@ TEST_CASE("mmr::MMRUtil::DiffCompactBitSet")
 
     BitSet diff = mmr::MMRUtil::DiffCompactBitSet(prev_compact, new_compact);
 
-    REQUIRE(diff.size() == 15);
-    REQUIRE(diff.str() == "000111111111100");
+    BOOST_REQUIRE(diff.size() == 15);
+    BOOST_REQUIRE(diff.str() == "000111111111100");
 }
 
-TEST_CASE("mmr::MMRUtil::CalcPrunedParents")
+BOOST_AUTO_TEST_CASE(CalcPrunedParents)
 {
     size_t num_leaves = 50;
     BitSet unspent_leaf_indices(num_leaves);
@@ -142,5 +149,7 @@ TEST_CASE("mmr::MMRUtil::CalcPrunedParents")
     }
 
     BitSet pruned_parent_hashes = mmr::MMRUtil::CalcPrunedParents(unspent_leaf_indices);
-    REQUIRE(pruned_parent_hashes.str() == "0010100000000101000010000000100000000000000001001000000100000000000000000000000000000000000000000000");
+    BOOST_REQUIRE(pruned_parent_hashes.str() == "0010100000000101000010000000100000000000000001001000000100000000000000000000000000000000000000000000");
 }
+
+BOOST_AUTO_TEST_SUITE_END()

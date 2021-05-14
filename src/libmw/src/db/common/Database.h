@@ -31,6 +31,8 @@ public:
         typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
     std::unique_ptr<DBEntry<T>> Get(const DBTable& table, const std::string& key) const noexcept
     {
+        if (!m_pDB) return nullptr;
+
         if (m_pTx != nullptr)
         {
             return m_pTx->Get<T>(table, key);

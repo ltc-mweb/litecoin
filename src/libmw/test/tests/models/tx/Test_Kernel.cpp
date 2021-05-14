@@ -1,11 +1,18 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Schnorr.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/Kernel.h>
 
-//TEST_CASE("Plain Kernel")
+BOOST_FIXTURE_TEST_SUITE(TestKernel, BasicTestingSetup)
+
+//BOOST_AUTO_TEST_CASE(PlainKernel)
 //{
 //    uint64_t fee = 1000;
 //    BlindingFactor excess_blind(Random::CSPRNG<32>());
@@ -18,13 +25,13 @@
 //        std::vector<uint8_t> serialized = kernel.Serialized();
 //
 //        Deserializer deserializer(serialized);
-//        REQUIRE(deserializer.Read<uint8_t>() == 0);
-//        REQUIRE(deserializer.Read<uint64_t>() == fee);
-//        REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
-//        REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
+//        BOOST_REQUIRE(deserializer.Read<uint8_t>() == 0);
+//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == fee);
+//        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
+//        BOOST_REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
 //
 //        Deserializer deserializer2(serialized);
-//        REQUIRE(kernel == Kernel::Deserialize(deserializer2));
+//        BOOST_REQUIRE(kernel == Kernel::Deserialize(deserializer2));
 //    }
 //
 //    //
@@ -36,25 +43,25 @@
 //            .Append<uint8_t>(0)
 //            .Append<uint64_t>(fee)
 //            .hash();
-//        REQUIRE(hashed == message_hash);
+//        BOOST_REQUIRE(hashed == message_hash);
 //    }
 //
 //    //
 //    // Getters
 //    //
 //    {
-//        REQUIRE(!kernel.IsPegIn());
-//        REQUIRE(!kernel.IsPegOut());
-//        REQUIRE(kernel.GetPeggedIn() == 0);
-//        REQUIRE(kernel.GetPeggedOut() == 0);
-//        REQUIRE(kernel.GetLockHeight() == 0);
-//        REQUIRE(kernel.GetFee() == fee);
-//        REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
-//        REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
+//        BOOST_REQUIRE(!kernel.IsPegIn());
+//        BOOST_REQUIRE(!kernel.IsPegOut());
+//        BOOST_REQUIRE(kernel.GetPeggedIn() == 0);
+//        BOOST_REQUIRE(kernel.GetPeggedOut() == 0);
+//        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
+//        BOOST_REQUIRE(kernel.GetFee() == fee);
+//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //    }
 //}
 //
-//TEST_CASE("Peg-In Kernel")
+//BOOST_AUTO_TEST_CASE(PegInKernel)
 //{
 //    uint64_t amount = 50;
 //    BlindingFactor excess_blind(Random::CSPRNG<32>());
@@ -67,13 +74,13 @@
 //        std::vector<uint8_t> serialized = kernel.Serialized();
 //
 //        Deserializer deserializer(serialized);
-//        REQUIRE(deserializer.Read<uint8_t>() == 1);
-//        REQUIRE(deserializer.Read<uint64_t>() == amount);
-//        REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
-//        REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
+//        BOOST_REQUIRE(deserializer.Read<uint8_t>() == 1);
+//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == amount);
+//        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
+//        BOOST_REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
 //
 //        Deserializer deserializer2(serialized);
-//        REQUIRE(kernel == Kernel::Deserialize(deserializer2));
+//        BOOST_REQUIRE(kernel == Kernel::Deserialize(deserializer2));
 //    }
 //
 //    //
@@ -85,25 +92,25 @@
 //            .Append<uint8_t>(1)
 //            .Append<uint64_t>(amount)
 //            .hash();
-//        REQUIRE(hashed == message_hash);
+//        BOOST_REQUIRE(hashed == message_hash);
 //    }
 //
 //    //
 //    // Getters
 //    //
 //    {
-//        REQUIRE(kernel.IsPegIn());
-//        REQUIRE(!kernel.IsPegOut());
-//        REQUIRE(kernel.GetPeggedIn() == amount);
-//        REQUIRE(kernel.GetPeggedOut() == 0);
-//        REQUIRE(kernel.GetLockHeight() == 0);
-//        REQUIRE(kernel.GetFee() == 0);
-//        REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
-//        REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
+//        BOOST_REQUIRE(kernel.IsPegIn());
+//        BOOST_REQUIRE(!kernel.IsPegOut());
+//        BOOST_REQUIRE(kernel.GetPeggedIn() == amount);
+//        BOOST_REQUIRE(kernel.GetPeggedOut() == 0);
+//        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
+//        BOOST_REQUIRE(kernel.GetFee() == 0);
+//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //    }
 //}
 //
-//TEST_CASE("Peg-Out Kernel")
+//BOOST_AUTO_TEST_CASE(PegOutKernel)
 //{
 //    uint64_t amount = 50;
 //    uint64_t fee = 1000;
@@ -118,15 +125,15 @@
 //        std::vector<uint8_t> serialized = kernel.Serialized();
 //
 //        Deserializer deserializer(serialized);
-//        REQUIRE(deserializer.Read<uint8_t>() == 2);
-//        REQUIRE(deserializer.Read<uint64_t>() == fee);
-//        REQUIRE(deserializer.Read<uint64_t>() == amount);
-//        REQUIRE(Bech32Address::Deserialize(deserializer) == address);
-//        REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
-//        REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
+//        BOOST_REQUIRE(deserializer.Read<uint8_t>() == 2);
+//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == fee);
+//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == amount);
+//        BOOST_REQUIRE(Bech32Address::Deserialize(deserializer) == address);
+//        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
+//        BOOST_REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
 //
 //        Deserializer deserializer2(serialized);
-//        REQUIRE(kernel == Kernel::Deserialize(deserializer2));
+//        BOOST_REQUIRE(kernel == Kernel::Deserialize(deserializer2));
 //    }
 //
 //    //
@@ -140,25 +147,25 @@
 //            .Append<uint64_t>(amount)
 //            .Append(address)
 //            .hash();
-//        REQUIRE(hashed == message_hash);
+//        BOOST_REQUIRE(hashed == message_hash);
 //    }
 //
 //    //
 //    // Getters
 //    //
 //    {
-//        REQUIRE(!kernel.IsPegIn());
-//        REQUIRE(kernel.IsPegOut());
-//        REQUIRE(kernel.GetPeggedIn() == 0);
-//        REQUIRE(kernel.GetPeggedOut() == amount);
-//        REQUIRE(kernel.GetLockHeight() == 0);
-//        REQUIRE(kernel.GetFee() == fee);
-//        REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
-//        REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
+//        BOOST_REQUIRE(!kernel.IsPegIn());
+//        BOOST_REQUIRE(kernel.IsPegOut());
+//        BOOST_REQUIRE(kernel.GetPeggedIn() == 0);
+//        BOOST_REQUIRE(kernel.GetPeggedOut() == amount);
+//        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
+//        BOOST_REQUIRE(kernel.GetFee() == fee);
+//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //    }
 //}
 //
-//TEST_CASE("Height-Locked")
+//BOOST_AUTO_TEST_CASE(HeightLocked)
 //{
 //    uint64_t fee = 1000;
 //    uint64_t lockHeight = 2500;
@@ -172,14 +179,14 @@
 //        std::vector<uint8_t> serialized = kernel.Serialized();
 //
 //        Deserializer deserializer(serialized);
-//        REQUIRE(deserializer.Read<uint8_t>() == 3);
-//        REQUIRE(deserializer.Read<uint64_t>() == fee);
-//        REQUIRE(deserializer.Read<uint64_t>() == lockHeight);
-//        REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
-//        REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
+//        BOOST_REQUIRE(deserializer.Read<uint8_t>() == 3);
+//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == fee);
+//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == lockHeight);
+//        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
+//        BOOST_REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
 //
 //        Deserializer deserializer2(serialized);
-//        REQUIRE(kernel == Kernel::Deserialize(deserializer2));
+//        BOOST_REQUIRE(kernel == Kernel::Deserialize(deserializer2));
 //    }
 //
 //    //
@@ -192,25 +199,25 @@
 //            .Append<uint64_t>(fee)
 //            .Append<uint64_t>(lockHeight)
 //            .hash();
-//        REQUIRE(hashed == message_hash);
+//        BOOST_REQUIRE(hashed == message_hash);
 //    }
 //
 //    //
 //    // Getters
 //    //
 //    {
-//        REQUIRE(!kernel.HasPegIn());
-//        REQUIRE(!kernel.HasPegOut());
-//        REQUIRE(kernel.GetPegIn() == 0);
-//        REQUIRE(!kernel.GetPegOut().has_value());
-//        REQUIRE(kernel.GetLockHeight() == lockHeight);
-//        REQUIRE(kernel.GetFee() == fee);
-//        REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
-//        REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
+//        BOOST_REQUIRE(!kernel.HasPegIn());
+//        BOOST_REQUIRE(!kernel.HasPegOut());
+//        BOOST_REQUIRE(kernel.GetPegIn() == 0);
+//        BOOST_REQUIRE(!kernel.GetPegOut().has_value());
+//        BOOST_REQUIRE(kernel.GetLockHeight() == lockHeight);
+//        BOOST_REQUIRE(kernel.GetFee() == fee);
+//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //    }
 //}
 //
-//TEST_CASE("Unknown Kernel")
+//BOOST_AUTO_TEST_CASE(UnknownKernel)
 //{
 //    uint8_t features = 99;
 //    uint64_t fee = 1000;
@@ -243,30 +250,32 @@
 //        std::vector<uint8_t> serialized = kernel.Serialized();
 //
 //        Deserializer deserializer(serialized);
-//        REQUIRE(deserializer.Read<uint8_t>() == features);
-//        REQUIRE(deserializer.Read<uint64_t>() == fee);
-//        REQUIRE(deserializer.Read<uint8_t>() == extraData.size());
-//        REQUIRE(deserializer.ReadVector(extraData.size()) == extraData);
-//        REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
-//        REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
+//        BOOST_REQUIRE(deserializer.Read<uint8_t>() == features);
+//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == fee);
+//        BOOST_REQUIRE(deserializer.Read<uint8_t>() == extraData.size());
+//        BOOST_REQUIRE(deserializer.ReadVector(extraData.size()) == extraData);
+//        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
+//        BOOST_REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
 //
 //        Deserializer deserializer2(serialized);
-//        REQUIRE(kernel == Kernel::Deserialize(deserializer2));
+//        BOOST_REQUIRE(kernel == Kernel::Deserialize(deserializer2));
 //    }
 //
 //    //
 //    // Getters
 //    //
 //    {
-//        REQUIRE(!kernel.IsPegIn());
-//        REQUIRE(!kernel.IsPegOut());
-//        REQUIRE(kernel.GetPeggedIn() == 0);
-//        REQUIRE(kernel.GetPeggedOut() == 0);
-//        REQUIRE(kernel.GetLockHeight() == 0);
-//        REQUIRE(kernel.GetFee() == fee);
-//        REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
-//        REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
-//        REQUIRE(kernel.GetExtraData() == extraData);
-//        REQUIRE(kernel.GetSignatureMessage() == message_hash);
+//        BOOST_REQUIRE(!kernel.IsPegIn());
+//        BOOST_REQUIRE(!kernel.IsPegOut());
+//        BOOST_REQUIRE(kernel.GetPeggedIn() == 0);
+//        BOOST_REQUIRE(kernel.GetPeggedOut() == 0);
+//        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
+//        BOOST_REQUIRE(kernel.GetFee() == fee);
+//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
+//        BOOST_REQUIRE(kernel.GetExtraData() == extraData);
+//        BOOST_REQUIRE(kernel.GetSignatureMessage() == message_hash);
 //    }
 //}
+
+BOOST_AUTO_TEST_SUITE_END()

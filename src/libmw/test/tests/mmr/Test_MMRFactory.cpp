@@ -1,4 +1,9 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/crypto/Random.h>
 #include <mw/mmr/Leaf.h>
@@ -6,6 +11,8 @@
 #include <mw/mmr/MMRUtil.h>
 
 using namespace mmr;
+
+BOOST_FIXTURE_TEST_SUITE(TestMMRFactory, BasicTestingSetup)
 
 static std::vector<Leaf> RandomLeaves(const BitSet& leafset)
 {
@@ -27,7 +34,7 @@ static std::vector<mw::Hash> RandomHashes(const uint64_t num_hashes)
     return hashes;
 }
 
-TEST_CASE("mmr::MMRFactory::CalcHashes")
+BOOST_AUTO_TEST_CASE(CalcHashes)
 {
     size_t num_leaves = 50;
     BitSet unspent_leaf_indices(num_leaves);
@@ -42,13 +49,15 @@ TEST_CASE("mmr::MMRFactory::CalcHashes")
     std::vector<Leaf> leaves = RandomLeaves(unspent_leaf_indices);
 
     BitSet pruned_parent_indices = MMRUtil::CalcPrunedParents(unspent_leaf_indices);
-    REQUIRE(pruned_parent_indices.str() == "0010100000000101000010000000100000000000000001001000000100000000000000000000000000000000000000000000");
+    BOOST_REQUIRE(pruned_parent_indices.str() == "0010100000000101000010000000100000000000000001001000000100000000000000000000000000000000000000000000");
     std::vector<mw::Hash> pruned_parent_hashes = RandomHashes(pruned_parent_indices.count());
 
     std::vector<mw::Hash> hashes = MMRFactory::CalcHashes(unspent_leaf_indices, leaves, pruned_parent_hashes);
-    REQUIRE(hashes.size() == 63);
-    REQUIRE(hashes[0] == pruned_parent_hashes[0]);
-    REQUIRE(hashes[61] == leaves[23].GetHash());
+    BOOST_REQUIRE(hashes.size() == 63);
+    BOOST_REQUIRE(hashes[0] == pruned_parent_hashes[0]);
+    BOOST_REQUIRE(hashes[61] == leaves[23].GetHash());
 
     // Finish these assertions
 }
+
+BOOST_AUTO_TEST_SUITE_END()

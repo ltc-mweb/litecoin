@@ -1,8 +1,15 @@
-#include <catch.hpp>
+// Copyright (c) 2021 The Litecoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <boost/test/unit_test.hpp>
+#include <test/test_bitcoin.h>
 
 #include <mw/models/block/Header.h>
 
-TEST_CASE("Header")
+BOOST_FIXTURE_TEST_SUITE(TestHeader, BasicTestingSetup)
+
+BOOST_AUTO_TEST_CASE(Header)
 {
     const uint64_t height = 1;
     const uint64_t outputMMRSize = 2;
@@ -35,17 +42,19 @@ TEST_CASE("Header")
         kernelMMRSize
     );
 
-    REQUIRE_FALSE(header == header2);
-    REQUIRE(header.GetHeight() == height);
-    REQUIRE(header.GetOutputRoot() == outputRoot);
-    REQUIRE(header.GetKernelRoot() == kernelRoot);
-    REQUIRE(header.GetLeafsetRoot() == leafsetRoot);
-    REQUIRE(header.GetKernelOffset() == kernelOffset);
-    REQUIRE(header.GetOwnerOffset() == ownerOffset);
-    REQUIRE(header.GetNumTXOs() == outputMMRSize);
-    REQUIRE(header.GetNumKernels() == kernelMMRSize);
-    REQUIRE(header.Format() == "56f10c78905687658dff9aadf812498a68d5704932cb59efe95f13552eac73b5");
+    BOOST_REQUIRE(!(header == header2));
+    BOOST_REQUIRE(header.GetHeight() == height);
+    BOOST_REQUIRE(header.GetOutputRoot() == outputRoot);
+    BOOST_REQUIRE(header.GetKernelRoot() == kernelRoot);
+    BOOST_REQUIRE(header.GetLeafsetRoot() == leafsetRoot);
+    BOOST_REQUIRE(header.GetKernelOffset() == kernelOffset);
+    BOOST_REQUIRE(header.GetOwnerOffset() == ownerOffset);
+    BOOST_REQUIRE(header.GetNumTXOs() == outputMMRSize);
+    BOOST_REQUIRE(header.GetNumKernels() == kernelMMRSize);
+    BOOST_REQUIRE(header.Format() == "56f10c78905687658dff9aadf812498a68d5704932cb59efe95f13552eac73b5");
 
     Deserializer deserializer = header.Serialized();
-    REQUIRE(header == mw::Header::Deserialize(deserializer));
+    BOOST_REQUIRE(header == mw::Header::Deserialize(deserializer));
 }
+
+BOOST_AUTO_TEST_SUITE_END()
