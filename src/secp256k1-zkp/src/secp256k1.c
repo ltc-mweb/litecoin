@@ -3,8 +3,11 @@
  * Distributed under the MIT software license, see the accompanying   *
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.*
  **********************************************************************/
+
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4244 4267 4334)
+#endif
 
 #include "include/secp256k1.h"
 
@@ -711,4 +714,6 @@ int secp256k1_ec_privkey_tweak_neg(const secp256k1_context* ctx, unsigned char *
 # include "modules/surjection/main_impl.h"
 #endif
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
