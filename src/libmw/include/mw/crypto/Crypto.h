@@ -46,7 +46,7 @@ public:
     );
 
     //
-    // Takes a vector of blinding factors and calculates an additional blinding value that adds to zero.
+    // Adds blinding factors together (first negating those in the "negative" vector)
     //
     static BlindingFactor AddBlindingFactors(
         const std::vector<BlindingFactor>& positive,

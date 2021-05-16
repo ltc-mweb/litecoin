@@ -18,12 +18,12 @@ public:
         : m_blockHeight(blockHeight), m_leafIdx(std::move(leafIdx)), m_output(output) { }
 
     uint64_t GetBlockHeight() const noexcept { return m_blockHeight; }
-    const mmr::LeafIndex GetLeafIndex() const noexcept { return m_leafIdx; }
+    const mmr::LeafIndex& GetLeafIndex() const noexcept { return m_leafIdx; }
     const Output& GetOutput() const noexcept { return m_output; }
     OutputId ToOutputId() const noexcept { return m_output.ToOutputId(); }
 
     const Commitment& GetCommitment() const noexcept { return m_output.GetCommitment(); }
-    RangeProof::CPtr GetRangeProof() const noexcept { return m_output.GetRangeProof(); }
+    const RangeProof::CPtr& GetRangeProof() const noexcept { return m_output.GetRangeProof(); }
     ProofData BuildProofData() const noexcept { return m_output.BuildProofData(); }
     bool IsPeggedIn() const noexcept { return m_output.IsPeggedIn(); }
 

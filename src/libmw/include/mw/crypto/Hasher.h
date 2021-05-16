@@ -37,36 +37,8 @@ private:
     Serializer m_serializer;
 };
 
-static mw::Hash Hashed(const std::vector<uint8_t>& serialized)
-{
-    return mw::Hash(SerializeHash(serialized).begin());
-}
-
-static mw::Hash Hashed(const Traits::ISerializable& serializable)
-{
-    Serializer serializer;
-    serializable.Serialize(serializer);
-    return mw::Hash(SerializeHash(serializer.vec()).begin());
-}
-
-static mw::Hash Hashed(const EHashTag tag, const Traits::ISerializable& serializable)
-{
-    return Hasher(tag).Append(serializable).hash();
-}
-
-static const mw::Hash& InputMessage()
-{
-    static const mw::Hash mweb_hash = Hashed({ 'M', 'W', 'E', 'B' });
-    return mweb_hash;
-}
-
-static BigInt<64> Hash512(const Traits::ISerializable& serializable)
-{
-    BigInt<64> ret;
-
-    std::vector<uint8_t> serialized = serializable.Serialized();
-    CSHA512()
-        .Write(serialized.data(), serialized.size())
-        .Finalize(ret.data());
-    return ret;
-}
+extern mw::Hash Hashed(const std::vector<uint8_t>& serialized);
+extern mw::Hash Hashed(const Traits::ISerializable& serializable);
+extern mw::Hash Hashed(const EHashTag tag, const Traits::ISerializable& serializable);
+extern const mw::Hash& InputMessage();
+extern BigInt<64> Hash512(const Traits::ISerializable& serializable);

@@ -15,6 +15,8 @@ public:
 
     static ProofMessage FromKeyChain(const KeyChainPath& keyChainPath)
     {
+        assert(keyChainPath.GetKeyIndices().size() <= 4);
+
         BigInt<20> paddedPath = BigInt<20>::ValueOf(0);
         paddedPath[2] = 1;
         paddedPath[3] = (uint8_t)keyChainPath.GetKeyIndices().size();
@@ -24,6 +26,7 @@ public:
             serializer.Append(keyIndex);
         }
 
+        assert(serializer.size() <= 16);
         for (size_t i = 0; i < serializer.size(); i++) {
             paddedPath[i + 4] = serializer.vec()[i];
         }

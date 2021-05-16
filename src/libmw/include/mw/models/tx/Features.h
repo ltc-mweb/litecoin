@@ -1,5 +1,8 @@
 #pragma once
+
+#ifdef _MSC_VER
 #pragma warning(disable: 4505) // Unreferenced local function has been removed
+#endif
 
 // Copyright (c) 2018-2019 David Burkett
 // Distributed under the MIT software license, see the accompanying
@@ -35,33 +38,3 @@ public:
 private:
     uint8_t m_features;
 };
-
-namespace OutputFeatures
-{
-    static std::string ToString(const EOutputFeatures& features) noexcept
-    {
-        switch (features)
-        {
-            case DEFAULT_OUTPUT:
-                return "Plain";
-            case PEGGED_IN:
-                return "PeggedIn";
-        }
-
-        return "";
-    }
-
-    static EOutputFeatures FromString(const std::string& string)
-    {
-        if (string == "Plain")
-        {
-            return EOutputFeatures::DEFAULT_OUTPUT;
-        }
-        else if (string == "PeggedIn")
-        {
-            return EOutputFeatures::PEGGED_IN;
-        }
-
-        ThrowDeserialization_F("Failed to deserialize output feature: {}", string);
-    }
-}

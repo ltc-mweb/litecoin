@@ -18,7 +18,9 @@
 #include <algorithm>
 #include <array>
 
+#ifdef _MSC_VER
 #pragma warning(disable: 4505)
+#endif
 
 template<size_t NUM_BYTES, class ALLOC = std::allocator<uint8_t>>
 class BigInt :

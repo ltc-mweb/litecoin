@@ -124,12 +124,14 @@ Kernel Kernel::Deserialize(Deserializer& deserializer)
 {
     uint8_t features = deserializer.Read<uint8_t>();
 
-    boost::optional<uint64_t> fee = boost::none;
+    // Workaround for gcc warning when using: boost::optional<uint64_t> fee = boost::none;
+    auto fee([]() -> boost::optional<uint64_t> { return boost::none; }());
     if (features & FEE_FEATURE_BIT) {
         fee = deserializer.Read<uint64_t>();
     }
 
-    boost::optional<uint64_t> pegin = boost::none;
+    // Workaround for gcc warning when using: boost::optional<uint64_t> pegin = boost::none;
+    auto pegin([]() -> boost::optional<uint64_t> { return boost::none; }());
     if (features & PEGIN_FEATURE_BIT) {
         pegin = deserializer.Read<uint64_t>();
     }
@@ -142,7 +144,8 @@ Kernel Kernel::Deserialize(Deserializer& deserializer)
         pegout = PegOutCoin(amount, std::move(scriptPubKey));
     }
 
-    boost::optional<uint64_t> lock_height = boost::none;
+    // Workaround for gcc warning when using: boost::optional<uint64_t> lock_height = boost::none;
+    auto lock_height([]() -> boost::optional<uint64_t> { return boost::none; }());
     if (features & HEIGHT_LOCK_FEATURE_BIT) {
         lock_height = deserializer.Read<uint64_t>();
     }

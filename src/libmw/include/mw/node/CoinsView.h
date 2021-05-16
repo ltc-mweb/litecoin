@@ -58,7 +58,7 @@ public:
     }
 
 private:
-    void AddAction(const Commitment commitment, CoinAction&& action)
+    void AddAction(const Commitment& commitment, CoinAction&& action)
     {
         auto iter = m_actions.find(commitment);
         if (iter != m_actions.end()) {

@@ -13,7 +13,7 @@ MWEXPORT libmw::MWEBAddress KeychainRef::GetAddress(const uint32_t index)
 {
     assert(pKeychain != nullptr);
 
-    return TransformAddress(pKeychain->GetStealthAddress(index));
+    return Transform::Address(pKeychain->GetStealthAddress(index));
 }
 
 WALLET_NAMESPACE
@@ -43,10 +43,10 @@ MWEXPORT libmw::TxRef CreateTx(
     for (const libmw::Recipient& recipient : recipients) {
         if (recipient.which() == 0) {
             const libmw::MWEBRecipient& mweb_recipient = boost::get<libmw::MWEBRecipient>(recipient);
-            receivers.push_back(std::make_pair(mweb_recipient.amount, TransformAddress(mweb_recipient.address)));
+            receivers.push_back(std::make_pair(mweb_recipient.amount, Transform::Address(mweb_recipient.address)));
         } else if (recipient.which() == 1) {
             const libmw::PegInRecipient& pegin_recipient = boost::get<libmw::PegInRecipient>(recipient);
-            receivers.push_back(std::make_pair(pegin_recipient.amount, TransformAddress(pegin_recipient.address)));
+            receivers.push_back(std::make_pair(pegin_recipient.amount, Transform::Address(pegin_recipient.address)));
         } else {
             const libmw::PegOutRecipient& pegout_recipient = boost::get<libmw::PegOutRecipient>(recipient);
             pegouts.push_back(PegOutCoin(pegout_recipient.amount, pegout_recipient.scriptPubKey));

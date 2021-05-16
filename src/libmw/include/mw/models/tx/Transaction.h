@@ -145,7 +145,7 @@ private:
     // The transaction body.
     TxBody m_body;
 
-    mutable mw::Hash m_hash;
+    mw::Hash m_hash;
 };
 
 END_NAMESPACE

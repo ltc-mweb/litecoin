@@ -4,7 +4,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/util/EndianUtil.h>
 #include <mw/exceptions/DeserializationException.h>
 #include <mw/traits/Serializable.h>
 
@@ -14,6 +13,16 @@
 #include <cstring>
 #include <cstdint>
 #include <algorithm>
+
+constexpr bool IsBigEndian() noexcept
+{
+    constexpr union {
+        uint32_t i;
+        char c[4];
+    } bint = {0x01020304};
+
+    return bint.c[0] == 1;
+}
 
 class Deserializer
 {
@@ -90,7 +99,7 @@ public:
         m_index += T;
 
         std::array<uint8_t, T> arr;
-        std::copy(m_bytes.begin() + index, m_bytes.begin() + index + T, arr.begin());
+        std::copy_n(m_bytes.begin() + index, T, arr.begin());
         return arr;
     }
 
@@ -108,7 +117,7 @@ private:
             ThrowDeserialization("Attempted to read past end of buffer.");
         }
 
-        if (EndianUtil::IsBigEndian())
+        if (IsBigEndian())
         {
             memcpy(&t, &m_bytes[m_index], sizeof(T));
         }
@@ -128,10 +137,10 @@ private:
     {
         if (m_index + sizeof(T) > m_bytes.size())
         {
-            ThrowDeserialization("Attempted to read past end of Deserializer.");
+            ThrowDeserialization("Attempted to read past end of buffer.");
         }
 
-        if (EndianUtil::IsBigEndian())
+        if (IsBigEndian())
         {
             std::vector<uint8_t> temp((size_t)sizeof(T));
             std::reverse_copy(m_bytes.cbegin() + m_index, m_bytes.cbegin() + m_index + sizeof(T), temp.begin());

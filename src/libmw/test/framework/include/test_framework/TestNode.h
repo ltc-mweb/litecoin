@@ -8,7 +8,7 @@ TEST_NAMESPACE
 
 static mw::INode::Ptr CreateNode(const FilePath& datadir)
 {
-    return mw::InitializeNode(datadir, "unittest", nullptr, std::make_shared<TestDBWrapper>());
+    return mw::InitializeNode(datadir, nullptr, std::make_shared<TestDBWrapper>());
 }
 
 END_NAMESPACE

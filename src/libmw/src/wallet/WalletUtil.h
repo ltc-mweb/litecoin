@@ -2,6 +2,7 @@
 
 #include <libmw/defs.h>
 #include <mw/models/crypto/BlindingFactor.h>
+#include <mw/models/tx/Input.h>
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Hasher.h>
 #include <numeric>

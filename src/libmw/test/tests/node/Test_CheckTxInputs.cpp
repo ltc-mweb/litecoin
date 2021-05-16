@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     ScopedFileRemover remover(datadir);
 
     auto pDatabase = std::make_shared<TestDBWrapper>();
-    auto pNode = mw::InitializeNode(datadir, "test", nullptr, pDatabase);
+    auto pNode = mw::InitializeNode(datadir, nullptr, pDatabase);
     BOOST_REQUIRE(pNode != nullptr);
 
     auto pDBView = pNode->GetDBView();

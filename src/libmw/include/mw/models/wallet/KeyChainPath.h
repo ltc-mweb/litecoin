@@ -10,13 +10,13 @@
 #include <string>
 #include <vector>
 
-static const uint32_t MINIMUM_HARDENED_INDEX = 2147483648;
+static const uint32_t MINIMUM_HARDENED_INDEX = 0x80000000;
 
 class KeyChainPath : public Traits::IPrintable
 {
 public:
-    KeyChainPath(std::vector<uint32_t>&& keyIndices)
-        : m_keyIndices(keyIndices) { }
+    KeyChainPath(std::vector<uint32_t> keyIndices)
+        : m_keyIndices(std::move(keyIndices)) { }
 
     //
     // Operators
@@ -60,6 +60,10 @@ public:
             uint32_t key_index = 0;
 
             std::string str_index = str_indices[i];
+            if (str_index.empty()) {
+                ThrowDeserialization_F("Invalid path: {}", path);
+            }
+
             if (str_index.back() == '\'') {
                 key_index = MINIMUM_HARDENED_INDEX;
                 str_index = str_index.substr(0, str_index.size() - 1);
@@ -90,7 +94,7 @@ public:
     {
         assert(!m_keyIndices.empty());
         std::vector<uint32_t> keyIndicesCopy = m_keyIndices;
-        keyIndicesCopy[keyIndicesCopy.size() - 1] = keyIndicesCopy.back() + 1;
+        keyIndicesCopy.back()++;
         return KeyChainPath(std::move(keyIndicesCopy));
     }
 

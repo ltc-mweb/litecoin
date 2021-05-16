@@ -41,7 +41,7 @@ public:
     CCoinsViewTest()
     {
         mw_view_ = libmw::node::Initialize(
-            libmw::ChainParams{GetDataDir().string(), "thrp"},
+            libmw::ChainParams{GetDataDir().string()},
             {nullptr}, // MW: TODO - Load this first
             nullptr,
             {}
@@ -624,7 +624,7 @@ public:
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
         libmw::CoinsViewRef mw_view = libmw::node::Initialize(
-            libmw::ChainParams{GetDataDir().string(), "thrp"},
+            libmw::ChainParams{GetDataDir().string()},
             {nullptr}, // MW: TODO - Load this first
             nullptr,
             {}

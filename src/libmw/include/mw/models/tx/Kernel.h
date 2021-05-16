@@ -118,7 +118,7 @@ private:
 };
 
 // Sorts by net supply increase [pegin - (fee + pegout)] with highest increase first, then sorts by hash.
-static struct
+static const struct
 {
     bool operator()(const Kernel& a, const Kernel& b) const
     {

@@ -4,7 +4,7 @@
 #include <mw/traits/Printable.h>
 
 //
-// Represents coins being pegged in, i.e. moved from canonical chain to the extension block.
+// Represents coins being pegged out, i.e. moved from the extension block to the canonical chain.
 //
 class PegOutCoin : public Traits::ISerializable, public Traits::IPrintable
 {

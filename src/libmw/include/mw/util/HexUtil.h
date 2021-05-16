@@ -4,9 +4,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/util/EndianUtil.h>
-
+#include <compat/byteswap.h>
 #include <cassert>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -62,7 +62,7 @@ public:
 
     static std::string ToHex(const uint16_t value) noexcept
     {
-        const uint16_t bigEndian = EndianUtil::GetBigEndian16(value);
+        const uint16_t bigEndian = bswap_16(value);
 
         std::vector<uint8_t> bytes(2);
         memcpy(&bytes, (uint8_t*)&bigEndian, 2);

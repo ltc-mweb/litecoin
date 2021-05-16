@@ -17,7 +17,7 @@ namespace Traits
     };
 }
 
-static struct
+static const struct
 {
     bool operator()(const Traits::ICommitted& a, const Traits::ICommitted& b) const
     {

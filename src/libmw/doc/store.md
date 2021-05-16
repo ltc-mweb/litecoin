@@ -46,12 +46,12 @@ The hash file consists of un-compacted leaf hashes and their parent hashes.
 
 Stored in file `leaf<index>.dat`.
 
-The leafset file consists of a bitset indicating which leaf indices of the UTXO PMMR are unspent.
+The leafset file consists of a bitset indicating which leaf indices of the output PMMR are unspent.
 Example: If the PMMR contains 5 leaves where leaf indices 0, 1, and 2 are spent, but 3 and 4 are unspent, the file will contain a single byte of 00011000 = 0x18.
 
 ##### PruneList (file)
 
 Stored in file `prun<index>.dat`.
 
-The prunelist file consists of a bitset indicating which nodes of the UTXO PMMR are not included in the UTXO PMMR hash file.
+The prunelist file consists of a bitset indicating which nodes of the output PMMR are not included in the output PMMR hash file.
 Example: If nodes 0, 1, 3, and 4 are compacted (not included in PMMR), then the first byte of the prune list bitset will be 11011000 = 0xD8.

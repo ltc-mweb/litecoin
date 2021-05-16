@@ -32,7 +32,7 @@ public:
     }
 
     const mmr::Index& Get() const noexcept { return m_next; }
-    const uint64_t GetPosition() const noexcept { return m_next.GetPosition(); }
+    uint64_t GetPosition() const noexcept { return m_next.GetPosition(); }
 
 private:
     uint64_t m_height;

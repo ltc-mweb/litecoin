@@ -60,7 +60,7 @@ private:
         int hFile = open("/dev/urandom", O_RDONLY);
         if (hFile >= 0)
         {
-            if (read(hFile, buffer.data(), numBytes) == numBytes)
+            if (read(hFile, buffer.data(), numBytes) == (int)numBytes)
             {
                 success = true;
             }

@@ -27,7 +27,7 @@ MWEXPORT libmw::CoinsViewRef Initialize(
     const std::function<void(const std::string&)>& log_callback)
 {
     LoggerAPI::Initialize(log_callback);
-    NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, chainParams.hrp, header.pHeader, pDBWrapper);
+    NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, header.pHeader, pDBWrapper);
 
     return libmw::CoinsViewRef{ NODE->GetDBView() };
 }
@@ -65,9 +65,9 @@ MWEXPORT bool CheckBlock(
     assert(block.pBlock != nullptr);
 
     try {
-        auto mweb_hash = TransformHash(hash);
-        auto pegins = TransformPegIns(pegInCoins);
-        auto pegouts = TransformPegOuts(pegOutCoins);
+        auto mweb_hash = Transform::Hash(hash);
+        auto pegins = Transform::PegIns(pegInCoins);
+        auto pegouts = Transform::PegOuts(pegOutCoins);
         NODE->ValidateBlock(block.pBlock, mweb_hash, pegins, pegouts);
         return true;
     } catch (const std::exception& e) {

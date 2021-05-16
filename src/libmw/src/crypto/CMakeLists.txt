@@ -4,6 +4,7 @@ list_append_parent(
 	"Bulletproofs.cpp"
 	"ConversionUtil.cpp"
 	"Crypto.cpp"
+	"Hasher.cpp"
 	"MuSig.cpp"
 	"Pedersen.cpp"
 	"PublicKeys.cpp"

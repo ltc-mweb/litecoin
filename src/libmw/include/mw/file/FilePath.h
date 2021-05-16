@@ -8,10 +8,16 @@
 #undef _GLIBCXX_HAVE_TIMESPEC_GET
 #endif
 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4100 4127 4244)
+#endif
+
 #include <ghc/filesystem.hpp>
+
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 namespace filesystem = ghc::filesystem;
 using error_code = std::error_code;

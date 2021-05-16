@@ -193,7 +193,6 @@ struct StateRef
 struct ChainParams
 {
     boost::filesystem::path dataDirectory;
-    std::string hrp;
 };
 
 struct BlockBuilderRef

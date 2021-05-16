@@ -64,7 +64,6 @@ public:
 //
 INode::Ptr InitializeNode(
     const FilePath& datadir,
-    const std::string& hrp,
     const mw::Header::CPtr& pBestHeader,
     const libmw::IDBWrapper::Ptr& pDBWrapper
 );

@@ -19,7 +19,9 @@
 
 #include <util/strencodings.h>
 
+#ifdef _MSC_VER
 #pragma warning(disable : 4840)
+#endif
 
 class StringUtil
 {

@@ -67,7 +67,7 @@ public:
 
 private:
 	LeafSet(FilePath dir, MemMap&& mmap, const mmr::LeafIndex& nextLeafIdx)
-		: m_dir(std::move(dir)), m_mmap(std::move(mmap)), ILeafSet(nextLeafIdx) { }
+        : ILeafSet(nextLeafIdx), m_dir(std::move(dir)), m_mmap(std::move(mmap)) {}
 
 	FilePath m_dir;
 	MemMap m_mmap;
@@ -81,7 +81,7 @@ public:
 	using UPtr = std::unique_ptr<LeafSetCache>;
 
 	LeafSetCache(const ILeafSet::Ptr& pBacked)
-		: m_pBacked(pBacked), ILeafSet(pBacked->GetNextLeafIdx()) { }
+		: ILeafSet(pBacked->GetNextLeafIdx()), m_pBacked(pBacked) { }
 
 	uint8_t GetByte(const uint64_t byteIdx) const final;
 	void SetByte(const uint64_t byteIdx, const uint8_t value) final;

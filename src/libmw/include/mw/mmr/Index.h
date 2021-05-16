@@ -48,12 +48,12 @@ public:
     //
     // Height      Index
     //
-    // 2:            6
-    //              / \
-    //             /   \
-    // 1:         2     5
-    //           / \   / \
-    // 0:       0   1 3   4
+    // 2:            6              |
+    //              / \             |
+    //             /   \            |
+    // 1:         2     5           |
+    //           / \   / \          |
+    // 0:       0   1 3   4         |
     //
     uint64_t GetHeight() const noexcept { return m_height; }
 

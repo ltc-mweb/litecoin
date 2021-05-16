@@ -22,7 +22,7 @@ MWEXPORT bool AddTransaction(
     assert(transaction.pTransaction != nullptr);
 
     try {
-        return builder.pBuilder->AddTransaction(transaction.pTransaction, TransformPegIns(pegins));
+        return builder.pBuilder->AddTransaction(transaction.pTransaction, Transform::PegIns(pegins));
     } catch (std::exception& e) {
         LOG_DEBUG_F("Failed to add transaction {}. Error: {}", transaction.pTransaction, e.what());
     }

@@ -17,7 +17,7 @@ namespace Traits
     };
 }
 
-static struct
+static const struct
 {
     bool operator()(const Traits::IHashable& a, const Traits::IHashable& b) const
     {

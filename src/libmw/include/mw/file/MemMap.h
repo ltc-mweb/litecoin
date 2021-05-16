@@ -1,12 +1,18 @@
 #pragma once
 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4244)
 #pragma warning(disable:4267)
 #pragma warning(disable:4334)
 #pragma warning(disable:4018)
+#endif
+
 #include <mio/mmap.hpp>
+
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 #include <mw/file/File.h>
 #include <cassert>

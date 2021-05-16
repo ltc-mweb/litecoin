@@ -173,7 +173,7 @@ public:
 
 private:
     Writer(std::shared_ptr<InnerWriter<T>> pWriter)
-        : m_pWriter(pWriter), Reader<T>(Reader<T>::Create(pWriter->m_pObject, pWriter->m_pMutex, false, false))
+        : Reader<T>(Reader<T>::Create(pWriter->m_pObject, pWriter->m_pMutex, false, false)), m_pWriter(pWriter)
     {
 
     }
