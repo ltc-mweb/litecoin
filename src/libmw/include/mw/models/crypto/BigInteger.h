@@ -85,7 +85,7 @@ public:
     static BigInt<NUM_BYTES, ALLOC> Max()
     {
         std::vector<uint8_t, ALLOC> bytes(NUM_BYTES);
-        for (int i = 0; i < NUM_BYTES; i++)
+        for (size_t i = 0; i < NUM_BYTES; i++)
         {
             bytes[i] = 0xFF;
         }
