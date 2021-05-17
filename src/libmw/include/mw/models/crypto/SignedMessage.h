@@ -6,7 +6,7 @@
 #include <mw/models/crypto/Signature.h>
 #include <mw/traits/Hashable.h>
 #include <mw/traits/Serializable.h>
-#include <boost/container_hash/hash.hpp>
+#include <boost/functional/hash.hpp>
 
 /// <summary>
 /// Contains a hashed message, a signature of that message, and the public key it was signed for.

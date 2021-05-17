@@ -4,7 +4,7 @@
 #include <mw/models/crypto/SecretKey.h>
 #include <mw/traits/Printable.h>
 #include <mw/traits/Serializable.h>
-#include <boost/container_hash/hash.hpp>
+#include <boost/functional/hash.hpp>
 
 class PublicKey :
     public Traits::IPrintable,

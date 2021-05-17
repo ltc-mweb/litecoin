@@ -8,7 +8,7 @@
 #include <mw/traits/Printable.h>
 #include <mw/traits/Serializable.h>
 
-#include <boost/container_hash/hash.hpp>
+#include <boost/functional/hash.hpp>
 #include <cassert>
 
 // Forward Declarations

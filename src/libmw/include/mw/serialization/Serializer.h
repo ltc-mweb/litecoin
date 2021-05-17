@@ -15,7 +15,7 @@
 #include <string>
 #include <array>
 #include <algorithm>
-#include <byteswap.h>
+#include <compat/byteswap.h>
 
 class Serializer
 {
