@@ -32,14 +32,6 @@ public:
             .hash();
     }
 
-    Leaf& operator=(const Leaf& rhs) noexcept
-    {
-        m_index = rhs.m_index;
-        m_hash = rhs.m_hash;
-        m_data = rhs.m_data;
-        return *this;
-    }
-
     bool operator!=(const Leaf& rhs) const noexcept { return m_hash != rhs.m_hash; }
     bool operator==(const Leaf& rhs) const noexcept { return m_hash == rhs.m_hash; }
 
