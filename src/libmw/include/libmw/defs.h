@@ -16,23 +16,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 
-#if defined(_WIN32)
-//  Microsoft 
-#ifdef LIBMW
-#define MWEXPORT __declspec(dllexport)
-#define MWIMPORT __declspec(dllexport)
-#else
-#define MWIMPORT __declspec(dllimport)
-#endif
-#elif defined(__GNUC__)
-//  GCC
-#define MWEXPORT __attribute__((visibility("default")))
-#define MWIMPORT 
-#else
-#define MWEXPORT
-#define MWIMPORT
-#endif
-
 #define LIBMW_NAMESPACE namespace libmw {
 #define NODE_NAMESPACE namespace node {
 #define MINER_NAMESPACE namespace miner {
@@ -125,14 +108,14 @@ struct BlockRef
     /// <returns>true if interal pointer is null. Otherwise, false.</returns>
     bool IsNull() const noexcept { return pBlock == nullptr; }
 
-    MWIMPORT libmw::BlockHash GetHash() const noexcept;
-    MWIMPORT libmw::HeaderRef GetHeader() const noexcept;
-    MWIMPORT uint64_t GetTotalFee() const noexcept;
-    MWIMPORT uint64_t GetWeight() const noexcept;
-    MWIMPORT std::set<KernelHash> GetKernelHashes() const noexcept;
-    MWIMPORT std::vector<libmw::Commitment> GetInputCommits() const noexcept;
-    MWIMPORT std::vector<libmw::Commitment> GetOutputCommits() const noexcept;
-    MWIMPORT int64_t GetSupplyChange() const noexcept;
+    libmw::BlockHash GetHash() const noexcept;
+    libmw::HeaderRef GetHeader() const noexcept;
+    uint64_t GetTotalFee() const noexcept;
+    uint64_t GetWeight() const noexcept;
+    std::set<KernelHash> GetKernelHashes() const noexcept;
+    std::vector<libmw::Commitment> GetInputCommits() const noexcept;
+    std::vector<libmw::Commitment> GetOutputCommits() const noexcept;
+    int64_t GetSupplyChange() const noexcept;
 
     std::shared_ptr<mw::Block> pBlock;
 };
@@ -150,20 +133,20 @@ struct BlockUndoRef
 /// </summary>
 struct TxRef
 {
-    MWIMPORT std::vector<libmw::PegOut> GetPegouts() const noexcept;
-    MWIMPORT std::vector<libmw::PegIn> GetPegins() const noexcept;
-    MWIMPORT uint64_t GetTotalFee() const noexcept;
-    MWIMPORT uint64_t GetWeight() const noexcept;
-    MWIMPORT std::set<KernelHash> GetKernelHashes() const noexcept;
-    MWIMPORT std::set<libmw::Commitment> GetInputCommits() const noexcept;
-    MWIMPORT std::set<libmw::Commitment> GetOutputCommits() const noexcept;
-    MWIMPORT uint64_t GetLockHeight() const noexcept;
+    std::vector<libmw::PegOut> GetPegouts() const noexcept;
+    std::vector<libmw::PegIn> GetPegins() const noexcept;
+    uint64_t GetTotalFee() const noexcept;
+    uint64_t GetWeight() const noexcept;
+    std::set<KernelHash> GetKernelHashes() const noexcept;
+    std::set<libmw::Commitment> GetInputCommits() const noexcept;
+    std::set<libmw::Commitment> GetOutputCommits() const noexcept;
+    uint64_t GetLockHeight() const noexcept;
 
     /// <summary>
     /// Prints the transaction details.
     /// </summary>
     /// <returns>The formatted transaction details.</returns>
-    MWIMPORT std::string ToString() const noexcept;
+    std::string ToString() const noexcept;
 
     std::shared_ptr<const mw::Transaction> pTransaction;
 };
@@ -180,7 +163,7 @@ struct CoinsViewRef
     /// Creates a new CoinsViewCache on top of this CoinsView.
     /// </summary>
     /// <returns>A wrapper around the newly created CoinsViewCache, or null if the current view is null.</returns>
-    MWIMPORT CoinsViewRef CreateCache() const;
+    CoinsViewRef CreateCache() const;
 
     std::shared_ptr<mw::ICoinsView> pCoinsView;
 };

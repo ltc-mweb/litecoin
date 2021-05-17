@@ -7,31 +7,31 @@
 
 LIBMW_NAMESPACE
 
-MWEXPORT libmw::BlockHash BlockRef::GetHash() const noexcept
+libmw::BlockHash BlockRef::GetHash() const noexcept
 {
     assert(pBlock != nullptr);
     return pBlock->GetHash().ToArray();
 }
 
-MWEXPORT libmw::HeaderRef BlockRef::GetHeader() const noexcept
+libmw::HeaderRef BlockRef::GetHeader() const noexcept
 {
     assert(pBlock != nullptr);
     return libmw::HeaderRef{ pBlock->GetHeader() };
 }
 
-MWEXPORT uint64_t BlockRef::GetTotalFee() const noexcept
+uint64_t BlockRef::GetTotalFee() const noexcept
 {
     assert(pBlock != nullptr);
     return pBlock->GetTotalFee();
 }
 
-MWEXPORT uint64_t BlockRef::GetWeight() const noexcept
+uint64_t BlockRef::GetWeight() const noexcept
 {
     assert(pBlock != nullptr);
     return Weight::Calculate(pBlock->GetTxBody());
 }
 
-MWEXPORT std::set<KernelHash> BlockRef::GetKernelHashes() const noexcept
+std::set<KernelHash> BlockRef::GetKernelHashes() const noexcept
 {
     assert(pBlock != nullptr);
     std::set<KernelHash> kernelHashes;
@@ -41,7 +41,7 @@ MWEXPORT std::set<KernelHash> BlockRef::GetKernelHashes() const noexcept
     return kernelHashes;
 }
 
-MWEXPORT std::vector<libmw::Commitment> BlockRef::GetInputCommits() const noexcept
+std::vector<libmw::Commitment> BlockRef::GetInputCommits() const noexcept
 {
     assert(pBlock != nullptr);
     std::vector<libmw::Commitment> input_commits;
@@ -51,7 +51,7 @@ MWEXPORT std::vector<libmw::Commitment> BlockRef::GetInputCommits() const noexce
     return input_commits;
 }
 
-MWEXPORT std::vector<libmw::Commitment> BlockRef::GetOutputCommits() const noexcept
+std::vector<libmw::Commitment> BlockRef::GetOutputCommits() const noexcept
 {
     assert(pBlock != nullptr);
     std::vector<libmw::Commitment> output_commits;
@@ -61,14 +61,14 @@ MWEXPORT std::vector<libmw::Commitment> BlockRef::GetOutputCommits() const noexc
     return output_commits;
 }
 
-MWEXPORT int64_t BlockRef::GetSupplyChange() const noexcept
+int64_t BlockRef::GetSupplyChange() const noexcept
 {
     assert(pBlock != nullptr);
 
     return pBlock->GetSupplyChange();
 }
 
-MWEXPORT std::vector<libmw::PegOut> TxRef::GetPegouts() const noexcept
+std::vector<libmw::PegOut> TxRef::GetPegouts() const noexcept
 {
     assert(pTransaction != nullptr);
 
@@ -83,7 +83,7 @@ MWEXPORT std::vector<libmw::PegOut> TxRef::GetPegouts() const noexcept
     return pegouts;
 }
 
-MWEXPORT std::vector<libmw::PegIn> TxRef::GetPegins() const noexcept
+std::vector<libmw::PegIn> TxRef::GetPegins() const noexcept
 {
     assert(pTransaction != nullptr);
 
@@ -97,19 +97,19 @@ MWEXPORT std::vector<libmw::PegIn> TxRef::GetPegins() const noexcept
     return pegins;
 }
 
-MWEXPORT uint64_t TxRef::GetTotalFee() const noexcept
+uint64_t TxRef::GetTotalFee() const noexcept
 {
     assert(pTransaction != nullptr);
     return pTransaction->GetTotalFee();
 }
 
-MWEXPORT uint64_t TxRef::GetWeight() const noexcept
+uint64_t TxRef::GetWeight() const noexcept
 {
     assert(pTransaction != nullptr);
     return Weight::Calculate(pTransaction->GetBody());
 }
 
-MWEXPORT std::set<KernelHash> TxRef::GetKernelHashes() const noexcept
+std::set<KernelHash> TxRef::GetKernelHashes() const noexcept
 {
     assert(pTransaction != nullptr);
     std::set<KernelHash> kernelHashes;
@@ -120,7 +120,7 @@ MWEXPORT std::set<KernelHash> TxRef::GetKernelHashes() const noexcept
     return kernelHashes;
 }
 
-MWEXPORT std::set<libmw::Commitment> TxRef::GetInputCommits() const noexcept
+std::set<libmw::Commitment> TxRef::GetInputCommits() const noexcept
 {
     assert(pTransaction != nullptr);
     std::set<libmw::Commitment> input_commits;
@@ -131,7 +131,7 @@ MWEXPORT std::set<libmw::Commitment> TxRef::GetInputCommits() const noexcept
     return input_commits;
 }
 
-MWEXPORT std::set<libmw::Commitment> TxRef::GetOutputCommits() const noexcept
+std::set<libmw::Commitment> TxRef::GetOutputCommits() const noexcept
 {
     assert(pTransaction != nullptr);
     std::set<libmw::Commitment> output_commits;
@@ -142,21 +142,21 @@ MWEXPORT std::set<libmw::Commitment> TxRef::GetOutputCommits() const noexcept
     return output_commits;
 }
 
-MWEXPORT uint64_t TxRef::GetLockHeight() const noexcept
+uint64_t TxRef::GetLockHeight() const noexcept
 {
     assert(pTransaction != nullptr);
 
     return pTransaction->GetLockHeight();
 }
 
-MWEXPORT std::string TxRef::ToString() const noexcept
+std::string TxRef::ToString() const noexcept
 {
     assert(pTransaction != nullptr);
 
     return pTransaction->Print();
 }
 
-MWEXPORT libmw::CoinsViewRef CoinsViewRef::CreateCache() const
+libmw::CoinsViewRef CoinsViewRef::CreateCache() const
 {
     if (pCoinsView == nullptr) {
         return libmw::CoinsViewRef{ nullptr };

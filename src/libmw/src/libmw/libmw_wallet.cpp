@@ -9,7 +9,7 @@
 
 LIBMW_NAMESPACE
 
-MWEXPORT libmw::MWEBAddress KeychainRef::GetAddress(const uint32_t index)
+libmw::MWEBAddress KeychainRef::GetAddress(const uint32_t index)
 {
     assert(pKeychain != nullptr);
 
@@ -18,7 +18,7 @@ MWEXPORT libmw::MWEBAddress KeychainRef::GetAddress(const uint32_t index)
 
 WALLET_NAMESPACE
 
-MWEXPORT libmw::KeychainRef LoadKeychain(
+libmw::KeychainRef LoadKeychain(
     const libmw::PrivateKey& scan_key,
     const libmw::PrivateKey& spend_key,
     const uint32_t address_index_counter)
@@ -31,7 +31,7 @@ MWEXPORT libmw::KeychainRef LoadKeychain(
     return libmw::KeychainRef{ pKeychain };
 }
 
-MWEXPORT libmw::TxRef CreateTx(
+libmw::TxRef CreateTx(
     const std::vector<libmw::Coin>& input_coins,
     const std::vector<libmw::Recipient>& recipients,
     const boost::optional<uint64_t>& pegin_amount,
@@ -57,7 +57,7 @@ MWEXPORT libmw::TxRef CreateTx(
     return libmw::TxRef{ pTransaction };
 }
 
-MWEXPORT bool RewindBlockOutput(
+bool RewindBlockOutput(
     const libmw::KeychainRef& keychain,
     const libmw::BlockRef& block,
     const libmw::Commitment& output_commit,
@@ -78,7 +78,7 @@ MWEXPORT bool RewindBlockOutput(
     return false;
 }
 
-MWEXPORT bool RewindTxOutput(
+bool RewindTxOutput(
     const libmw::KeychainRef& keychain,
     const libmw::TxRef& tx,
     const libmw::Commitment& output_commit,

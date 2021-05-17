@@ -8,12 +8,12 @@
 LIBMW_NAMESPACE
 MINER_NAMESPACE
 
-MWEXPORT libmw::BlockBuilderRef NewBuilder(const uint64_t height, const libmw::CoinsViewRef& view)
+libmw::BlockBuilderRef NewBuilder(const uint64_t height, const libmw::CoinsViewRef& view)
 {
     return libmw::BlockBuilderRef{ std::make_shared<mw::BlockBuilder>(height, view.pCoinsView) };
 }
 
-MWEXPORT bool AddTransaction(
+bool AddTransaction(
     const libmw::BlockBuilderRef& builder,
     const libmw::TxRef& transaction,
     const std::vector<libmw::PegIn>& pegins)
@@ -30,7 +30,7 @@ MWEXPORT bool AddTransaction(
     return false;
 }
 
-MWEXPORT libmw::BlockRef BuildBlock(const libmw::BlockBuilderRef& builder)
+libmw::BlockRef BuildBlock(const libmw::BlockBuilderRef& builder)
 {
     assert(builder.pBuilder != nullptr);
     return libmw::BlockRef{ builder.pBuilder->BuildBlock() };

@@ -38,7 +38,7 @@ struct KeychainRef
     /// </summary>
     /// <param name="index">The index of the address keypair to use.</param>
     /// <returns>The generated stealth address.</returns>
-    MWIMPORT MWEBAddress GetAddress(const uint32_t index);
+    MWEBAddress GetAddress(const uint32_t index);
 };
 
 WALLET_NAMESPACE
@@ -50,27 +50,27 @@ WALLET_NAMESPACE
 /// <param name="spend_key">Spend private key generated with path m/1/0/101'</param>
 /// <param name="address_index_counter">The highest index known to be used by the wallet.</param>
 /// <returns>The loaded keychain</returns>
-MWIMPORT KeychainRef LoadKeychain(
+KeychainRef LoadKeychain(
     const libmw::PrivateKey& scan_key,
     const libmw::PrivateKey& spend_key,
     const uint32_t address_index_counter
 );
 
-MWIMPORT libmw::TxRef CreateTx(
+libmw::TxRef CreateTx(
     const std::vector<libmw::Coin>& input_coins,
     const std::vector<libmw::Recipient>& recipients,
     const boost::optional<uint64_t>& pegin_amount,
     const uint64_t fee
 );
 
-MWIMPORT bool RewindBlockOutput(
+bool RewindBlockOutput(
     const libmw::KeychainRef& keychain,
     const libmw::BlockRef& block,
     const libmw::Commitment& output_commit,
     libmw::Coin& coin_out
 );
 
-MWIMPORT bool RewindTxOutput(
+bool RewindTxOutput(
     const libmw::KeychainRef& keychain,
     const libmw::TxRef& tx,
     const libmw::Commitment& output_commit,
