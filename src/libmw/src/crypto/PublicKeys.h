@@ -8,7 +8,7 @@
 class PublicKeys
 {
 public:
-    PublicKeys(Locked<Context>& context) : m_context(context) { }
+    PublicKeys(const Locked<Context>& context) : m_context(context) { }
     ~PublicKeys() = default;
 
     PublicKey CalculatePublicKey(const BigInt<32>& privateKey) const;

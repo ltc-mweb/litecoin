@@ -23,18 +23,6 @@ BOOST_AUTO_TEST_CASE(DeserializerTest)
         BOOST_REQUIRE(Deserializer({ 202 }).Read<int8_t>() == (int8_t)-54);
     }
 
-    // ReadLE<T> (Little Endian)
-    {
-        BOOST_REQUIRE(Deserializer({ 210, 2, 150, 73, 0, 0, 0, 0 }).ReadLE<uint64_t>() == 1234567890ull);
-        BOOST_REQUIRE(Deserializer({ 202, 255, 255, 255, 255, 255, 255, 255 }).ReadLE<int64_t>() == -54ll);
-        BOOST_REQUIRE(Deserializer({ 210, 2, 150, 73 }).ReadLE<uint32_t>() == 1234567890ul);
-        BOOST_REQUIRE(Deserializer({ 202, 255, 255, 255 }).ReadLE<int32_t>() == -54l);
-        BOOST_REQUIRE(Deserializer({ 57, 48 }).ReadLE<uint16_t>() == (uint16_t)12345);
-        BOOST_REQUIRE(Deserializer({ 202, 255 }).ReadLE<int16_t>() == (int16_t)-54);
-        BOOST_REQUIRE(Deserializer({ 25 }).ReadLE<uint8_t>() == (uint8_t)25);
-        BOOST_REQUIRE(Deserializer({ 202 }).ReadLE<int8_t>() == (int8_t)-54);
-    }
-
     // TODO: ReadVec, ReadVector, ReadArray, ReadOpt
 }
 

@@ -5,6 +5,7 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/models/crypto/Commitment.h>
+#include <unordered_set>
 
 namespace Traits
 {
@@ -35,6 +36,19 @@ public:
         std::transform(
             committed.cbegin(), committed.cend(),
             std::back_inserter(commitments),
+            [](const T& committed) { return committed.GetCommitment(); }
+        );
+
+        return commitments;
+    }
+
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ICommitted, T>>>
+    static std::unordered_set<Commitment> SetFrom(const std::vector<T>& committed) noexcept
+    {
+        std::unordered_set<Commitment> commitments;
+        std::transform(
+            committed.cbegin(), committed.cend(),
+            std::inserter(commitments, commitments.end()),
             [](const T& committed) { return committed.GetCommitment(); }
         );
 

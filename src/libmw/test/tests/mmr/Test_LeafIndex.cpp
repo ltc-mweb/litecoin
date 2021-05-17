@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(GetLeafIndex)
 {
     for (uint64_t i = 0; i < 1000; i++)
     {
-        BOOST_REQUIRE(LeafIndex::At(i).GetLeafIndex() == i);
+        BOOST_REQUIRE(LeafIndex::At(i).Get() == i);
     }
 }
 

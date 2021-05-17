@@ -20,7 +20,7 @@ LeafSet::Ptr LeafSet::Open(const FilePath& leafset_dir, const uint32_t file_inde
 
     MemMap mappedFile{ file };
     mappedFile.Map();
-	return std::shared_ptr<LeafSet>(new LeafSet{ leafset_dir, std::move(mappedFile), nextLeafIdx });
+    return std::shared_ptr<LeafSet>(new LeafSet{ leafset_dir, std::move(mappedFile), nextLeafIdx });
 }
 
 FilePath LeafSet::GetPath(const FilePath& leafset_dir, const uint32_t file_index)
@@ -33,9 +33,9 @@ void LeafSet::ApplyUpdates(
     const mmr::LeafIndex& nextLeafIdx,
     const std::unordered_map<uint64_t, uint8_t>& modifiedBytes)
 {
-	for (auto byte : modifiedBytes) {
-		m_modifiedBytes[byte.first + 8] = byte.second;
-	}
+    for (auto byte : modifiedBytes) {
+        m_modifiedBytes[byte.first + 8] = byte.second;
+    }
 
     // In case of rewind, make sure to clear everything above the new next
     for (size_t idx = nextLeafIdx.Get(); idx < m_nextLeafIdx.Get(); idx++) {
@@ -92,7 +92,7 @@ uint8_t LeafSet::GetByte(const uint64_t byteIdx) const
 
 void LeafSet::SetByte(const uint64_t byteIdx, const uint8_t value)
 {
-	m_modifiedBytes[byteIdx + 8] = value;
+    m_modifiedBytes[byteIdx + 8] = value;
 }
 
 END_NAMESPACE

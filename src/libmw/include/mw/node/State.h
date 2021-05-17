@@ -24,12 +24,7 @@ struct State
 
         BitSet leafset = deserializer.Read<BitSet>();
 
-        const uint32_t num_utxos = deserializer.Read<uint32_t>();
-        std::vector<UTXO::CPtr> utxos(num_utxos);
-        for (uint32_t i = 0; i < num_utxos; i++) {
-            utxos[i] = std::make_shared<UTXO>(deserializer.Read<UTXO>());
-        }
-
+        std::vector<UTXO::CPtr> utxos = deserializer.ReadVecPtrs<UTXO>();
         std::vector<Hash> pruned_parent_hashes = deserializer.ReadVec<Hash>();
 
         return State{

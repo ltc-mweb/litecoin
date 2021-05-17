@@ -61,6 +61,7 @@ MWEXPORT libmw::TxRef DeserializeTx(const std::vector<uint8_t>& bytes)
 
 MWEXPORT std::vector<uint8_t> SerializeTx(const libmw::TxRef& tx)
 {
+    assert(tx.pTransaction != nullptr);
     return tx.pTransaction->Serialized();
 }
 
@@ -73,6 +74,7 @@ MWEXPORT libmw::StateRef DeserializeState(const std::vector<uint8_t>& bytes)
 
 MWEXPORT std::vector<uint8_t> SerializeState(const libmw::StateRef& state)
 {
+    assert(state.pState != nullptr);
     return state.pState->Serialized();
 }
 

@@ -53,8 +53,8 @@ public:
         boost::dynamic_bitset<> prunable_nodes(num_leaves * 2);
 
         mmr::LeafIndex leaf_idx = mmr::LeafIndex::At(0);
-        while (leaf_idx.GetLeafIndex() < num_leaves) {
-            if (unspent_leaf_indices.size() > leaf_idx.GetLeafIndex() && !unspent_leaf_indices.test(leaf_idx.GetLeafIndex())) {
+        while (leaf_idx.Get() < num_leaves) {
+            if (unspent_leaf_indices.size() > leaf_idx.Get() && !unspent_leaf_indices.test(leaf_idx.Get())) {
                 prunable_nodes.set(leaf_idx.GetPosition());
             }
 
@@ -112,8 +112,8 @@ public:
         BitSet ret(unspent_leaf_indices.size() * 2);
 
         mmr::LeafIndex leaf_idx = mmr::LeafIndex::At(0);
-        while (leaf_idx.GetLeafIndex() < unspent_leaf_indices.size()) {
-            if (!unspent_leaf_indices.test(leaf_idx.GetLeafIndex())) {
+        while (leaf_idx.Get() < unspent_leaf_indices.size()) {
+            if (!unspent_leaf_indices.test(leaf_idx.Get())) {
                 ret.set(leaf_idx.GetPosition());
             }
 

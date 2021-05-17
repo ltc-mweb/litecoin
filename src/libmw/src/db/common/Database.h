@@ -100,6 +100,7 @@ public:
         pBatch->Commit();
     }
 
+private:
     libmw::IDBWrapper* m_pDB;
     DBTransaction::UPtr m_pTx;
 };

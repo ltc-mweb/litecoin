@@ -39,6 +39,8 @@ public:
 
     static uint8_t CountRightmostZeros(const uint64_t input) noexcept
     {
+        assert(input != 0);
+
         uint8_t count = 0;
 
         uint64_t n = input;

@@ -199,7 +199,11 @@ CompactSignature ConversionUtil::ToCompact(const secp256k1_ecdsa_signature& sign
 Signature ConversionUtil::ToSignature(const secp256k1_schnorrsig& signature) const
 {
     Signature out;
-    const int serializedResult = secp256k1_schnorrsig_serialize(m_context.Read()->Get(), out.data(), &signature);
+    const int serializedResult = secp256k1_schnorrsig_serialize(
+        m_context.Read()->Get(),
+        out.data(),
+        &signature
+    );
     if (serializedResult != 1)
     {
         ThrowCrypto("Failed to serialize signature.");

@@ -43,7 +43,8 @@ public:
         typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
     std::unique_ptr<DBEntry<T>> Get(const DBTable& table, const std::string& key) const noexcept
     {
-        auto iter = m_added.find_last(table.BuildKey(key));
+        auto table_key = table.BuildKey(key);
+        auto iter = m_added.find_last(table_key);
         if (iter != nullptr)
         {
             auto pObject = std::dynamic_pointer_cast<const T>(iter);
@@ -54,7 +55,7 @@ public:
         }
 
         std::vector<uint8_t> entry;
-        const bool status = m_pDB->Read(table.BuildKey(key), entry);
+        const bool status = m_pDB->Read(table_key, entry);
         if (status)
         {
             Deserializer deserializer(std::move(entry));
@@ -66,8 +67,9 @@ public:
 
     void Delete(const DBTable& table, const std::string& key)
     {
-        m_pBatch->Erase(table.BuildKey(key));
-        m_added.erase(table.BuildKey(key));
+        auto table_key = table.BuildKey(key);
+        m_pBatch->Erase(table_key);
+        m_added.erase(table_key);
     }
 
 private:

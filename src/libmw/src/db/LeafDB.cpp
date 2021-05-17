@@ -11,7 +11,7 @@ LeafDB::~LeafDB() {}
 
 std::unique_ptr<mmr::Leaf> LeafDB::Get(const mmr::LeafIndex& idx) const
 {
-    auto pVec = m_pDatabase->Get<SerializableVec>(m_prefix, std::to_string(idx.GetLeafIndex()));
+    auto pVec = m_pDatabase->Get<SerializableVec>(m_prefix, std::to_string(idx.Get()));
     if (pVec == nullptr) {
         return nullptr;
     }
@@ -37,7 +37,7 @@ void LeafDB::Add(const std::vector<mmr::Leaf>& leaves)
 void LeafDB::Remove(const std::vector<mmr::LeafIndex>& indices)
 {
     for (const mmr::LeafIndex& idx : indices) {
-        m_pDatabase->Delete(m_prefix, std::to_string(idx.GetLeafIndex()));
+        m_pDatabase->Delete(m_prefix, std::to_string(idx.Get()));
     }
 }
 

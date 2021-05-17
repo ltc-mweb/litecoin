@@ -6,9 +6,6 @@
 #include <mw/models/tx/PegOutCoin.h>
 #include <libmw/defs.h>
 
-// Forward Declarations
-class Wallet;
-
 class Transact
 {
     struct Outputs

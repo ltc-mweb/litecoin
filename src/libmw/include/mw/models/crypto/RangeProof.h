@@ -68,9 +68,6 @@ public:
         return RangeProof(deserializer.ReadVector(proofSize));
     }
 
-    std::string ToHex() const { return HexUtil::ToHex(m_bytes); }
-    static RangeProof FromHex(const std::string& hex) { return RangeProof(HexUtil::FromHex(hex)); }
-
     //
     // Traits
     //

@@ -8,7 +8,7 @@
 class Pedersen
 {
 public:
-    Pedersen(Locked<Context>& context) : m_context(context) { }
+    Pedersen(const Locked<Context>& context) : m_context(context) { }
     ~Pedersen() = default;
 
     Commitment PedersenCommit(

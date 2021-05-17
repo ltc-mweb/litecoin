@@ -6,7 +6,7 @@ mw::Hash IMMR::Root() const
 {
     const uint64_t size = GetNextLeafIdx().GetPosition();
     if (size == 0) {
-        return ZERO_HASH;
+        return mw::Hash{};
     }
 
     // Find the "peaks"
@@ -28,10 +28,10 @@ mw::Hash IMMR::Root() const
     assert(numLeft == 0);
 
     // Bag 'em
-    mw::Hash hash = ZERO_HASH;
+    mw::Hash hash;
     for (auto iter = peakIndices.crbegin(); iter != peakIndices.crend(); iter++) {
         mw::Hash peakHash = GetHash(Index::At(*iter));
-        if (hash == ZERO_HASH) {
+        if (hash.IsZero()) {
             hash = peakHash;
         } else {
             hash = Node::CreateParent(Index::At(size), peakHash, hash).GetHash();

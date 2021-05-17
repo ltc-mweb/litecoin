@@ -12,7 +12,7 @@ public:
     void Add(const SignedMessage& signed_message)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_cache.Put(signed_message, signed_message);
+        m_cache.Put(signed_message, true);
     }
 
     bool Contains(const SignedMessage& signed_message) const
@@ -23,5 +23,5 @@ public:
 
 private:
     mutable std::mutex m_mutex;
-    mutable LRUCache<SignedMessage, SignedMessage> m_cache;
+    LRUCache<SignedMessage, bool> m_cache;
 };

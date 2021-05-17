@@ -70,6 +70,8 @@ MWEXPORT int64_t BlockRef::GetSupplyChange() const noexcept
 
 MWEXPORT std::vector<libmw::PegOut> TxRef::GetPegouts() const noexcept
 {
+    assert(pTransaction != nullptr);
+
     std::vector<PegOut> pegouts;
     for (const Kernel& kernel : pTransaction->GetKernels()) {
         if (kernel.HasPegOut()) {
@@ -83,6 +85,8 @@ MWEXPORT std::vector<libmw::PegOut> TxRef::GetPegouts() const noexcept
 
 MWEXPORT std::vector<libmw::PegIn> TxRef::GetPegins() const noexcept
 {
+    assert(pTransaction != nullptr);
+
     std::vector<libmw::PegIn> pegins;
     for (const Kernel& kernel : pTransaction->GetKernels()) {
         if (kernel.HasPegIn()) {

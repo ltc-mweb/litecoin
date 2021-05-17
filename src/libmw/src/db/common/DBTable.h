@@ -8,16 +8,8 @@
 class DBTable
 {
 public:
-    struct Options
-    {
-        static Options Default() { return Options({ false }); }
-
-        // Can there be multiple entries per key?
-        bool allowDuplicates;
-    };
-
-    DBTable(const char prefix, const Options& options = Options::Default())
-        : m_prefix(prefix), m_options(options) { }
+    DBTable(const char prefix)
+        : m_prefix(prefix) { }
 
     std::string BuildKey(const std::string& itemKey) const noexcept { return m_prefix + itemKey; }
 
@@ -29,5 +21,4 @@ public:
 
 private:
     char m_prefix;
-    Options m_options;
 };

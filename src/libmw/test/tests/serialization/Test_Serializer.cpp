@@ -23,18 +23,6 @@ BOOST_AUTO_TEST_CASE(SerializerTest)
         BOOST_REQUIRE(std::vector<uint8_t>({ 202 }) == Serializer().Append((int8_t)-54).vec());
     }
 
-    // AppendLE<T>
-    {
-        BOOST_REQUIRE(std::vector<uint8_t>({ 210, 2, 150, 73, 0, 0, 0, 0 }) == Serializer().AppendLE(1234567890ull).vec());
-        BOOST_REQUIRE(std::vector<uint8_t>({ 202, 255, 255, 255, 255, 255, 255, 255 }) == Serializer().AppendLE(-54ll).vec());
-        BOOST_REQUIRE(std::vector<uint8_t>({ 210, 2, 150, 73 }) == Serializer().AppendLE((uint32_t)1234567890ul).vec());
-        BOOST_REQUIRE(std::vector<uint8_t>({ 202, 255, 255, 255 }) == Serializer().AppendLE((int32_t)-54l).vec());
-        BOOST_REQUIRE(std::vector<uint8_t>({ 57, 48 }) == Serializer().AppendLE((uint16_t)12345).vec());
-        BOOST_REQUIRE(std::vector<uint8_t>({ 202, 255  }) == Serializer().AppendLE((int16_t)-54).vec());
-        BOOST_REQUIRE(std::vector<uint8_t>({ 25 }) == Serializer().AppendLE((uint8_t)25).vec());
-        BOOST_REQUIRE(std::vector<uint8_t>({ 202 }) == Serializer().AppendLE((int8_t)-54).vec());
-    }
-
     // Append(vector), Append(array)
     {
         Serializer serializer;

@@ -60,13 +60,13 @@ void mmr::FileBackend::Rewind(const LeafIndex& nextLeafIndex)
         pos -= m_pPruneList->GetShift(nextLeafIndex);
     }
 
-    m_pHashFile->Rewind(pos * 32);
+    m_pHashFile->Rewind(pos * mw::Hash::size());
 }
 
 void mmr::FileBackend::Compact(const uint32_t file_index, const boost::dynamic_bitset<uint64_t>& hashes_to_remove)
 {
     uint64_t num_hashes = m_pHashFile->GetSize() / mw::Hash::size();
-    assert(num_hashes = hashes_to_remove.size());
+    assert(num_hashes == hashes_to_remove.size());
 
     const FilePath path = GetPath(filesystem::temp_directory_path(), m_dbPrefix, file_index);
     AppendOnlyFile::Ptr pFile = AppendOnlyFile::Load(path);
@@ -133,5 +133,5 @@ void mmr::FileBackend::Commit(const uint32_t file_index, const std::unique_ptr<l
 
 FilePath mmr::FileBackend::GetPath(const FilePath& dir, const char prefix, const uint32_t file_index)
 {
-    return dir.GetChild(StringUtil::Format("{}{:0>6}.dat", prefix, file_index));;
+    return dir.GetChild(StringUtil::Format("{}{:0>6}.dat", prefix, file_index));
 }

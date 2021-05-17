@@ -32,6 +32,7 @@ MWEXPORT bool AddTransaction(
 
 MWEXPORT libmw::BlockRef BuildBlock(const libmw::BlockBuilderRef& builder)
 {
+    assert(builder.pBuilder != nullptr);
     return libmw::BlockRef{ builder.pBuilder->BuildBlock() };
 }
 

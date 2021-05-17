@@ -4,7 +4,7 @@ using namespace mmr;
 
 LeafIndex MMRCache::AddLeaf(std::vector<uint8_t>&& data)
 {
-    LeafIndex leafIdx = LeafIndex::At(m_firstLeaf.GetLeafIndex() + m_leaves.size());
+    LeafIndex leafIdx = LeafIndex::At(m_firstLeaf.Get() + m_leaves.size());
     Leaf leaf = Leaf::Create(leafIdx, std::move(data));
 
     m_nodes.push_back(leaf.GetHash());
@@ -30,7 +30,7 @@ Leaf MMRCache::GetLeaf(const LeafIndex& leafIdx) const
         return m_pBase->GetLeaf(leafIdx);
     }
 
-    const uint64_t cacheIdx = leafIdx.GetLeafIndex() - m_firstLeaf.GetLeafIndex();
+    const uint64_t cacheIdx = leafIdx.Get() - m_firstLeaf.Get();
     if (cacheIdx > m_leaves.size()) {
         throw std::out_of_range("Attempting to access non-existent leaf");
     }
@@ -90,8 +90,8 @@ void MMRCache::BatchWrite(
     const std::vector<Leaf>& leaves,
     const std::unique_ptr<libmw::IDBBatch>&)
 {
-    LOG_TRACE_F("MMRCache: Writing batch {}", firstLeafIdx.GetLeafIndex());
-    Rewind(firstLeafIdx.GetLeafIndex());
+    LOG_TRACE_F("MMRCache: Writing batch {}", firstLeafIdx.Get());
+    Rewind(firstLeafIdx.Get());
     for (const Leaf& leaf : leaves) {
         Add(leaf.vec());
     }
@@ -102,7 +102,7 @@ void MMRCache::Flush(const uint32_t file_index, const std::unique_ptr<libmw::IDB
     LOG_TRACE_F(
         "MMRCache: Flushing {} leaves at {} with file index {}",
         m_leaves.size(),
-        m_firstLeaf.GetLeafIndex(),
+        m_firstLeaf.Get(),
         file_index
     );
     m_pBase->BatchWrite(file_index, m_firstLeaf, m_leaves, pBatch);

@@ -15,7 +15,7 @@
 #pragma comment(lib, "crypt32")
 #endif
 
-Locked<Context> SECP256K1_CONTEXT(std::make_shared<Context>());
+static Locked<Context> SECP256K1_CONTEXT(std::make_shared<Context>());
 
 Commitment Crypto::CommitTransparent(const uint64_t value)
 {
@@ -67,31 +67,27 @@ BlindingFactor Crypto::AddBlindingFactors(
     const std::vector<BlindingFactor>& positive,
     const std::vector<BlindingFactor>& negative)
 {
-    BlindingFactor zeroBlindingFactor(ZERO_HASH);
-
     std::vector<BlindingFactor> sanitizedPositive;
     std::copy_if(
-        positive.cbegin(),
-        positive.cend(),
+        positive.cbegin(), positive.cend(),
         std::back_inserter(sanitizedPositive),
-        [&zeroBlindingFactor](const auto& positiveBlind) {
-            return positiveBlind != zeroBlindingFactor;
+        [](const auto& positiveBlind) {
+            return !positiveBlind.IsZero();
         }
     );
 
     std::vector<BlindingFactor> sanitizedNegative;
     std::copy_if(
-        negative.cbegin(),
-        negative.cend(),
+        negative.cbegin(), negative.cend(),
         std::back_inserter(sanitizedNegative),
-        [&zeroBlindingFactor](const auto& negativeBlind) {
-            return negativeBlind != zeroBlindingFactor;
+        [](const auto& negativeBlind) {
+            return !negativeBlind.IsZero();
         }
     );
 
     if (sanitizedPositive.empty() && sanitizedNegative.empty())
     {
-        return zeroBlindingFactor;
+        return BlindingFactor{};
     }
 
     return Pedersen(SECP256K1_CONTEXT).PedersenBlindSum(sanitizedPositive, sanitizedNegative);
@@ -108,15 +104,14 @@ SecretKey Crypto::AddPrivateKeys(const SecretKey& secretKey1, const SecretKey& s
 
     const int tweakResult = secp256k1_ec_privkey_tweak_add(
         SECP256K1_CONTEXT.Read()->Get(),
-        (uint8_t*)result.data(),
+        result.data(),
         secretKey2.data()
     );
-    if (tweakResult == 1)
-    {
-        return result;
+    if (tweakResult != 1) {
+        ThrowCrypto("secp256k1_ec_privkey_tweak_add failed");
     }
 
-    ThrowCrypto("secp256k1_ec_privkey_tweak_add failed");
+    return result;
 }
 
 PublicKey Crypto::CalculatePublicKey(const BigInt<32>& privateKey)
@@ -142,9 +137,9 @@ PublicKey Crypto::MultiplyKey(const PublicKey& public_key, const SecretKey& mul)
         &pubkey,
         mul.data()
     );
-    if (tweakResult == 1) {
-        return ConversionUtil(SECP256K1_CONTEXT).ToPublicKey(pubkey);
+    if (tweakResult != 1) {
+        ThrowCrypto("secp256k1_ec_pubkey_tweak_mul failed");
     }
 
-    ThrowCrypto("secp256k1_ec_pubkey_tweak_mul failed");
+    return ConversionUtil(SECP256K1_CONTEXT).ToPublicKey(pubkey);
 }

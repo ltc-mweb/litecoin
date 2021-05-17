@@ -2,7 +2,7 @@
 #include "common/Database.h"
 #include <limits>
 
-static const DBTable MMR_TABLE = { 'M', DBTable::Options({ false /* allowDuplicates */ }) };
+static const DBTable MMR_TABLE = { 'M' };
 static const uint32_t LATEST_INDEX = std::numeric_limits<uint32_t>::max();
 
 MMRInfoDB::MMRInfoDB(libmw::IDBWrapper* pDBWrapper, libmw::IDBBatch* pBatch)

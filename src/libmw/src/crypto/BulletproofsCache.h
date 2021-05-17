@@ -30,5 +30,5 @@ public:
 
 private:
     mutable std::mutex m_mutex;
-    mutable LRUCache<Commitment, ProofData> m_bulletproofsCache;
+    LRUCache<Commitment, ProofData> m_bulletproofsCache;
 };

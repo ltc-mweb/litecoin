@@ -23,6 +23,8 @@ FilePath PruneList::GetPath(const FilePath& dir, const uint32_t file_index)
 
 uint64_t PruneList::GetShift(const Index& index) const noexcept
 {
+    assert(!m_compacted.test(index.GetPosition()));
+
     // NOTE: rank() uses an inefficient algorithm.
     // A shift cache with an efficient "nearest-neighbor" searching algorithm would be better.
     return m_compacted.rank(index.GetPosition());

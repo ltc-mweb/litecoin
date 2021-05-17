@@ -38,7 +38,6 @@ public:
     }
 
     uint64_t Get() const noexcept { return m_leafIndex; }
-    uint64_t GetLeafIndex() const noexcept { return m_leafIndex; }
     const Index& GetNodeIndex() const noexcept { return m_nodeIndex; }
     uint64_t GetPosition() const noexcept { return m_nodeIndex.GetPosition(); }
     LeafIndex Next() const noexcept { return LeafIndex::At(m_leafIndex + 1); }

@@ -81,7 +81,7 @@ void File::Rename(const std::string& filename)
         ThrowFile_F("Failed to rename {} to {}", *this, destination);
     }
 
-    m_path = destination.m_path;
+    m_path = destination;
 }
 
 std::vector<uint8_t> File::ReadBytes() const
@@ -91,19 +91,9 @@ std::vector<uint8_t> File::ReadBytes() const
         ThrowFile_F("{} not found", *this);
     }
 
-    std::ifstream file(m_path.m_path, std::ios::in | std::ios::binary);
-    if (!file.is_open()) {
-        ThrowFile_F("Failed to open {} for reading", *this);
-    }
+    size_t size = (size_t)filesystem::file_size(m_path.m_path, ec);
 
-    const size_t size = (size_t)filesystem::file_size(m_path.m_path, ec);
-
-    std::vector<uint8_t> bytes((size_t)size);
-    file.seekg(0, std::ios::beg);
-    file.read((char*)bytes.data(), size);
-    file.close();
-
-    return bytes;
+    return ReadBytes(0, size);
 }
 
 std::vector<uint8_t> File::ReadBytes(const size_t startIndex, const size_t numBytes) const
@@ -123,7 +113,7 @@ std::vector<uint8_t> File::ReadBytes(const size_t startIndex, const size_t numBy
         ThrowFile_F("Failed to read {} bytes from {}.", numBytes, *this);
     }
 
-    std::vector<uint8_t> bytes((size_t)numBytes);
+    std::vector<uint8_t> bytes(numBytes);
     file.seekg(startIndex, std::ios::beg);
     file.read((char*)bytes.data(), numBytes);
     file.close();

@@ -3,7 +3,7 @@
 void null_logger(const std::string&) {}
 
 static std::function<void(const std::string&)> LOGGER_CALLBACK = null_logger;
-static LoggerAPI::LogLevel MIN_LOG_LEVEL = LoggerAPI::TRACE;
+static LoggerAPI::LogLevel MIN_LOG_LEVEL = LoggerAPI::DEBUG;
 
 namespace LoggerAPI
 {

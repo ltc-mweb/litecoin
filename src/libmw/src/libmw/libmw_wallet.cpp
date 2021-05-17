@@ -85,7 +85,7 @@ MWEXPORT bool RewindTxOutput(
     libmw::Coin& coin_out)
 {
     assert(keychain.pKeychain != nullptr);
-    assert(tx.pTransaction!= nullptr);
+    assert(tx.pTransaction != nullptr);
 
     Wallet wallet(keychain.pKeychain);
     ::Commitment commitment(output_commit);

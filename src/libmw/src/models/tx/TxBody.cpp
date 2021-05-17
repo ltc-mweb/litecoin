@@ -119,37 +119,19 @@ void TxBody::Validate() const
     }
 
     // Verify no duplicate inputs
-    std::unordered_set<Commitment> input_commits;
-    std::transform(
-        m_inputs.cbegin(), m_inputs.cend(),
-        std::inserter(input_commits, input_commits.end()),
-        [](const Input& input) { return input.GetCommitment(); }
-    );
-
+    std::unordered_set<Commitment> input_commits = Commitments::SetFrom(m_inputs);
     if (input_commits.size() != m_inputs.size()) {
         ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
     }
 
     // Verify no duplicate outputs
-    std::unordered_set<Commitment> output_commits;
-    std::transform(
-        m_outputs.cbegin(), m_outputs.cend(),
-        std::inserter(output_commits, output_commits.end()),
-        [](const Output& output) { return output.GetCommitment(); }
-    );
-
+    std::unordered_set<Commitment> output_commits = Commitments::SetFrom(m_outputs);
     if (output_commits.size() != m_outputs.size()) {
         ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
     }
 
     // Verify no duplicate kernels
-    std::unordered_set<Commitment> kernel_commits;
-    std::transform(
-        m_kernels.cbegin(), m_kernels.cend(),
-        std::inserter(kernel_commits, kernel_commits.end()),
-        [](const Kernel& kernel) { return kernel.GetCommitment(); }
-    );
-
+    std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels);
     if (kernel_commits.size() != m_kernels.size()) {
         ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
     }

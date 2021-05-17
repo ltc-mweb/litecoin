@@ -49,7 +49,7 @@ mw::Hash Kernel::GetSignatureMessage(
         (lock_height ? HEIGHT_LOCK_FEATURE_BIT : 0) |
         (extra_data.size() > 0 ? EXTRA_DATA_FEATURE_BIT : 0);
 
-    Hasher sig_message_hasher = Hasher();
+    Hasher sig_message_hasher;
     sig_message_hasher.Append<uint8_t>(features_byte);
 
     if (fee) {

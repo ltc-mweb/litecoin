@@ -38,7 +38,7 @@ public:
     void AddHash(const mw::Hash& hash) final { m_nodes.push_back(hash); }
     void Rewind(const LeafIndex& nextLeafIndex) final
     {
-        m_leaves.resize(nextLeafIndex.GetLeafIndex());
+        m_leaves.resize(nextLeafIndex.Get());
         m_nodes.resize(nextLeafIndex.GetPosition());
     }
 
@@ -47,7 +47,7 @@ public:
     uint64_t GetNumLeaves() const noexcept final { return m_leaves.size(); }
 
     mw::Hash GetHash(const Index& idx) const final { return m_nodes[idx.GetPosition()]; }
-    Leaf GetLeaf(const LeafIndex& idx) const final { return m_leaves[idx.GetLeafIndex()]; }
+    Leaf GetLeaf(const LeafIndex& idx) const final { return m_leaves[idx.Get()]; }
 
     // Not supported yet
     void Commit(const uint32_t index, const std::unique_ptr<libmw::IDBBatch>& pBatch) final { }

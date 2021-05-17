@@ -14,8 +14,6 @@ using Hash = BigInt<32>;
 
 END_NAMESPACE
 
-#define ZERO_HASH mw::Hash::ValueOf(0)
-
 namespace std
 {
     template<>

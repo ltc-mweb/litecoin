@@ -20,7 +20,7 @@ target_link_libraries(MW PUBLIC
     ${Boost_LIBRARIES}
 )
 target_include_directories(MW PUBLIC
-	${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/deps/caches/include
     ${PROJECT_SOURCE_DIR}/deps/ghc/include
     ${Boost_INCLUDE_DIRS}
@@ -28,9 +28,6 @@ target_include_directories(MW PUBLIC
 
 if (WIN32)
     target_compile_definitions(MW PUBLIC -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
-endif()
-
-if (WIN32)
     target_link_libraries(MW PUBLIC bcrypt)
 endif()
 

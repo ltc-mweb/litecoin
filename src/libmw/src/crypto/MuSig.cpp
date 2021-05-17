@@ -7,7 +7,7 @@
 #include <mw/exceptions/CryptoException.h>
 #include <mw/util/VectorUtil.h>
 
-Locked<Context> MUSIG_CONTEXT(std::make_shared<Context>());
+static Locked<Context> MUSIG_CONTEXT(std::make_shared<Context>());
 
 const uint64_t MAX_WIDTH = 1 << 20;
 const size_t SCRATCH_SPACE_SIZE = 256 * MAX_WIDTH;

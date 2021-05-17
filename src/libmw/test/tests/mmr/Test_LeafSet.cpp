@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(LeafSet)
     {
         mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(temp_dir, 0);
 
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 0);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 0);
         BOOST_REQUIRE(!pLeafset->Contains(mmr::LeafIndex::At(0)));
         BOOST_REQUIRE(!pLeafset->Contains(mmr::LeafIndex::At(1)));
         BOOST_REQUIRE(!pLeafset->Contains(mmr::LeafIndex::At(2)));
@@ -29,38 +29,38 @@ BOOST_AUTO_TEST_CASE(LeafSet)
 
         pLeafset->Add(mmr::LeafIndex::At(0));
         BOOST_REQUIRE(pLeafset->Contains(mmr::LeafIndex::At(0)));
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 1);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 1);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b10000000 }));
 
         pLeafset->Add(mmr::LeafIndex::At(1));
         BOOST_REQUIRE(pLeafset->Contains(mmr::LeafIndex::At(1)));
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 2);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 2);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b11000000 }));
 
         pLeafset->Add(mmr::LeafIndex::At(2));
         BOOST_REQUIRE(pLeafset->Contains(mmr::LeafIndex::At(2)));
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 3);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 3);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b11100000 }));
 
         pLeafset->Remove(mmr::LeafIndex::At(1));
         BOOST_REQUIRE(!pLeafset->Contains(mmr::LeafIndex::At(1)));
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 3);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 3);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b10100000 }));
 
         pLeafset->Rewind(2, { mmr::LeafIndex::At(1) });
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 2);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 2);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b11000000 }));
 
         // Flush to disk and validate
         pLeafset->Flush(1);
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 2);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 2);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b11000000 }));
     }
 
     {
         // Reload from disk and validate
         mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(temp_dir, 1);
-        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().GetLeafIndex() == 2);
+        BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 2);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b11000000 }));
     }
 }

@@ -63,7 +63,7 @@ public:
     /// eg. If the MMR contains leaves 0, 1, and 2, this will return 3.
     /// </summary>
     /// <returns>The number of (pruned and unpruned) leaves in the MMR.</returns>
-    uint64_t GetNumLeaves() const noexcept { return GetNextLeafIdx().GetLeafIndex(); }
+    uint64_t GetNumLeaves() const noexcept { return GetNextLeafIdx().Get(); }
 
     /// <summary>
     /// "Rewinds" the MMR to the given number of leaves.
@@ -71,7 +71,7 @@ public:
     /// </summary>
     /// <param name="numLeaves">The total number of (pruned and unpruned) leaves in the MMR.</param>
     virtual void Rewind(const uint64_t numLeaves) = 0;
-    void Rewind(const LeafIndex& nextLeaf) { Rewind(nextLeaf.GetLeafIndex()); }
+    void Rewind(const LeafIndex& nextLeaf) { Rewind(nextLeaf.Get()); }
     
     /// <summary>
     /// Unlike a Merkle tree, an MMR generally has no single root so we need a method to compute one.

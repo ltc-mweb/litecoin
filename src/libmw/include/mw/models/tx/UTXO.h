@@ -31,7 +31,7 @@ public:
     {
         return serializer
             .Append<uint64_t>(m_blockHeight)
-            .Append<uint64_t>(m_leafIdx.GetLeafIndex())
+            .Append<uint64_t>(m_leafIdx.Get())
             .Append(m_output);
     }
 
