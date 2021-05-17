@@ -6,6 +6,7 @@
 
 #include <mw/traits/Printable.h>
 
+#define FMT_HEADER_ONLY
 #include <fmt/format.h>
 #include <memory>
 #include <iostream>
