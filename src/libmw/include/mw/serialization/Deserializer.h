@@ -25,11 +25,12 @@ constexpr bool IsBigEndian() noexcept
     return bint.c[0] == 1;
 }
 
+inline char bswap(const char val) { return val; }
 inline int8_t bswap(const int8_t val) { return val; }
 inline uint8_t bswap(const uint8_t val) { return val; }
 inline int16_t bswap(const int16_t val) { return (int16_t)bswap_16((uint16_t)val); }
 inline uint16_t bswap(const uint16_t val) { return bswap_16(val); }
-inline int32_t bswap(const int32_t val) { return (int32_t)bswap_32((uint64_t)val); }
+inline int32_t bswap(const int32_t val) { return (int32_t)bswap_32((uint32_t)val); }
 inline uint32_t bswap(const uint32_t val) { return bswap_32(val); }
 inline int64_t bswap(const int64_t val) { return (int64_t)bswap_64((uint64_t)val); }
 inline uint64_t bswap(const uint64_t val) { return bswap_64(val); }

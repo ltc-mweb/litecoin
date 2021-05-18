@@ -13,8 +13,8 @@ BOOST_AUTO_TEST_CASE(SerializerTest)
 {
     // Append<T> (BigEndian)
     {
-        //BOOST_REQUIRE(std::vector<uint8_t>({ 0, 0, 0, 0, 73, 150, 2, 210 }) == Serializer().Append(1234567890ull).vec());
-        //BOOST_REQUIRE(std::vector<uint8_t>({ 255, 255, 255, 255, 255, 255, 255, 202 }) == Serializer().Append(-54ll).vec());
+        BOOST_REQUIRE(std::vector<uint8_t>({ 0, 0, 0, 0, 73, 150, 2, 210 }) == Serializer().Append((uint64_t)1234567890ull).vec());
+        BOOST_REQUIRE(std::vector<uint8_t>({ 255, 255, 255, 255, 255, 255, 255, 202 }) == Serializer().Append((int64_t)-54ll).vec());
         BOOST_REQUIRE(std::vector<uint8_t>({ 73, 150, 2, 210 }) == Serializer().Append((uint32_t)1234567890ul).vec());
         BOOST_REQUIRE(std::vector<uint8_t>({ 255, 255, 255, 202 }) == Serializer().Append((int32_t)-54l).vec());
         BOOST_REQUIRE(std::vector<uint8_t>({ 48, 57 }) == Serializer().Append((uint16_t)12345).vec());
