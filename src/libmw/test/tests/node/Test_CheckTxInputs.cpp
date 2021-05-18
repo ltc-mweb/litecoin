@@ -6,7 +6,6 @@
 #include <test/test_bitcoin.h>
 
 #include <libmw/libmw.h>
-#include <mw/consensus/ChainParams.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/mmr/backends/FileBackend.h>
@@ -40,7 +39,7 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     auto block = miner.MineBlock(height, { tx1 });
     pNode->ValidateBlock(block.GetBlock(), block.GetHash(), { tx1.GetPegInCoin() }, {});
     pNode->ConnectBlock(block.GetBlock(), pCachedView.pCoinsView);
-    height += mw::ChainParams::GetPegInMaturity();
+    height += libmw::PEGIN_MATURITY;
 
     // Try to spend the pegin output
     const auto& output1 = tx1.GetOutputs().front();

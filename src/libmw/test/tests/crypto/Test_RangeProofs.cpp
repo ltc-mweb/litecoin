@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE(RangeProofs)
     Commitment commit = Crypto::CommitBlinded(value, blind);
     SecretKey nonce = Random::CSPRNG<32>();
     SecretKey nonce2 = Random::CSPRNG<32>();
-    ProofMessage message = BigInt(Random::CSPRNG<20>().GetBigInt());
+    ProofMessage message = Random::CSPRNG<20>().GetBigInt();
     std::vector<uint8_t> extraData = Random::CSPRNG<100>().vec();
 
     // Create a RangeProof via Crypto::GenerateRangeProof. Use the same value for privateNonce and rewindNonce.

@@ -11,7 +11,7 @@ class ProofMessage
 {
 public:
     ProofMessage() = default;
-    ProofMessage(BigInt<20>&& bytes) : m_bytes(std::move(bytes)) { }
+    ProofMessage(BigInt<20> bytes) : m_bytes(std::move(bytes)) { }
 
     static ProofMessage FromKeyChain(const KeyChainPath& keyChainPath)
     {

@@ -29,7 +29,7 @@ static const struct
 class Commitments
 {
 public:
-    template<class T, typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ICommitted, T>>>
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ICommitted, T>::value>>
     static std::vector<Commitment> From(const std::vector<T>& committed) noexcept
     {
         std::vector<Commitment> commitments;
@@ -42,7 +42,7 @@ public:
         return commitments;
     }
 
-    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ICommitted, T>>>
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ICommitted, T>::value>>
     static std::unordered_set<Commitment> SetFrom(const std::vector<T>& committed) noexcept
     {
         std::unordered_set<Commitment> commitments;

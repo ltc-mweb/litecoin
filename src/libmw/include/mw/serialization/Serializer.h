@@ -23,7 +23,7 @@ public:
     Serializer(const size_t expectedSize) { m_serialized.reserve(expectedSize); }
     ~Serializer() { memory_cleanse(m_serialized.data(), m_serialized.size()); }
 
-    template <class T, typename SFINAE = typename std::enable_if_t<std::is_integral_v<T>>>
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_integral<T>::value>>
     Serializer& Append(const T& t)
     {
         size_t current_size = m_serialized.size();
@@ -62,7 +62,7 @@ public:
         return pSerializable->Serialize(*this);
     }
 
-    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     Serializer& AppendVec(const std::vector<T>& vec)
     {
         Append<uint32_t>((uint32_t)vec.size());
@@ -74,7 +74,7 @@ public:
         return *this;
     }
 
-    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     Serializer& AppendVec(const std::vector<std::shared_ptr<const T>>& vec)
     {
         Append<uint32_t>((uint32_t)vec.size());

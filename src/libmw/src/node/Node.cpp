@@ -1,7 +1,6 @@
 #include "Node.h"
 #include "CoinsViewFactory.h"
 
-#include <mw/consensus/ChainParams.h>
 #include <mw/db/MMRInfoDB.h>
 #include <mw/node/validation/BlockValidator.h>
 #include <mw/consensus/Aggregation.h>
@@ -15,8 +14,6 @@ mw::INode::Ptr mw::InitializeNode(
     const mw::Header::CPtr& pBestHeader,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper)
 {
-    mw::ChainParams::Initialize(libmw::PEGIN_MATURITY);
-
     auto current_mmr_info = MMRInfoDB(pDBWrapper.get(), nullptr).GetLatest();
     uint32_t file_index = current_mmr_info ? current_mmr_info->index : 0;
     uint32_t compact_index = current_mmr_info ? current_mmr_info->compact_index : 0;

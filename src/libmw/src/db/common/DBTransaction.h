@@ -22,7 +22,7 @@ public:
         : m_pDB(pDB), m_pBatch(pBatch) { }
 
     template<typename T,
-        typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+        typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     DBTransaction& Put(const DBTable& table, const std::vector<DBEntry<T>>& entries)
     {
         for (const auto& entry : entries)
@@ -40,7 +40,7 @@ public:
     }
 
     template<typename T,
-        typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+        typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     std::unique_ptr<DBEntry<T>> Get(const DBTable& table, const std::string& key) const noexcept
     {
         auto table_key = table.BuildKey(key);

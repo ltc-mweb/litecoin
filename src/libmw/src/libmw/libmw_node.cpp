@@ -3,7 +3,6 @@
 #include "Transformers.h"
 
 #include <mw/common/Logger.h>
-#include <mw/consensus/ChainParams.h>
 #include <mw/exceptions/ValidationException.h>
 #include <mw/models/block/Block.h>
 #include <mw/models/block/BlockUndo.h>
@@ -129,7 +128,7 @@ bool CheckTxInputs(const libmw::CoinsViewRef& view, const libmw::TxRef& transact
                 ThrowValidation(EConsensusError::UTXO_MISSING);
             }
 
-            if (utxos.back()->IsPeggedIn() && nSpendHeight < utxos.back()->GetBlockHeight() + mw::ChainParams::GetPegInMaturity()) {
+            if (utxos.back()->IsPeggedIn() && nSpendHeight < utxos.back()->GetBlockHeight() + libmw::PEGIN_MATURITY) {
                 ThrowValidation(EConsensusError::PEGIN_MATURITY);
             }
         }

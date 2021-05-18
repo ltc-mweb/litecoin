@@ -40,7 +40,7 @@ public:
     Deserializer(const std::vector<uint8_t>& bytes) : m_index(0), m_bytes(bytes) {}
     Deserializer(std::vector<uint8_t>&& bytes) : m_index(0), m_bytes(std::move(bytes)) {}
 
-    template <class T, typename SFINAE = std::enable_if_t<std::is_integral_v<T>>>
+    template <class T, typename SFINAE = std::enable_if_t<std::is_integral<T>::value>>
     T Read()
     {
         T value;
@@ -48,13 +48,13 @@ public:
         return value;
     }
 
-    template <class T, typename SFINAE = std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+    template <class T, typename SFINAE = std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     decltype(auto) Read()
     {
         return T::Deserialize(*this);
     }
 
-    template <class T, typename SFINAE = std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+    template <class T, typename SFINAE = std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     boost::optional<T> ReadOpt()
     {
         if (Read<bool>()) {
@@ -64,7 +64,7 @@ public:
         return boost::none;
     }
 
-    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     std::vector<T> ReadVec()
     {
         const uint32_t num_entries = Read<uint32_t>();
@@ -76,7 +76,7 @@ public:
         return vec;
     }
 
-    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     std::vector<std::shared_ptr<const T>> ReadVecPtrs()
     {
         const uint32_t num_entries = Read<uint32_t>();

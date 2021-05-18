@@ -170,7 +170,7 @@ private:
         return std::string(e.what());
     }
 
-    template <class T, typename SFINAE = std::enable_if_t<std::is_fundamental_v<T>>>
+    template <class T, typename SFINAE = std::enable_if_t<std::is_fundamental<T>::value>>
     static decltype(auto) ConvertArg(const T& x)
     {
         return x;

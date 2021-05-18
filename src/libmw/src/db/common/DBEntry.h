@@ -5,7 +5,7 @@
 #include <memory>
 
 template<typename T,
-    typename SFINAE = typename std::enable_if_t<std::is_base_of_v<Traits::ISerializable, T>>>
+    typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
 struct DBEntry
 {
     DBEntry(const std::string& _key, const std::shared_ptr<const T>& _item)
