@@ -19,7 +19,7 @@ class RangeProof :
 {
 public:
     using CPtr = std::shared_ptr<const RangeProof>;
-    static constexpr size_t const& MAX_SIZE = 675;
+    enum { MAX_SIZE = 675 };
 
     //
     // Constructors

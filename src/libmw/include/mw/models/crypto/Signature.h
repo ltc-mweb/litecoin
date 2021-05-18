@@ -14,7 +14,7 @@ class Signature :
 {
 public:
     using UPtr = std::unique_ptr<const Signature>;
-    static constexpr size_t const& SIZE = 64;
+    enum { SIZE = 64 };
 
     //
     // Constructors
