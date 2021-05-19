@@ -40,8 +40,8 @@ public:
         PublicKey&& sender_pubkey,
         Signature&& signature,
         const RangeProof::CPtr& pProof
-    )
-      : m_commitment(std::move(commitment)),
+    ) :
+        m_commitment(std::move(commitment)),
         m_features(features),
         m_receiverPubKey(std::move(receiver_pubkey)),
         m_keyExchangePubKey(std::move(key_exchange_pubkey)),

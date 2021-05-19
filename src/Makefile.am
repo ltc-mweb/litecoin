@@ -103,7 +103,6 @@ endif
 LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/caches/include -I$(srcdir)/libmw/deps/crypto/include -I$(srcdir)/libmw/deps/ghc/include  -I$(srcdir)/libmw/deps/mio/include
 libmw_libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
 libmw_libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-
 libmw_libmw_a_SOURCES = \
 	libmw/src/common/Logger.cpp \
 	libmw/src/crypto/Bulletproofs.cpp \
