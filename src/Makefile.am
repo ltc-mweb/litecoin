@@ -104,22 +104,12 @@ LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/ca
 libmw_libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
 libmw_libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
-libmw_consensus_SOURCES = \
-  libmw/src/consensus/libmw.cpp \
-  libmw/src/consensus/Commitment.cpp \
-  libmw/src/consensus/Kernel.cpp \
-  libmw/src/consensus/Output.cpp \
-  libmw/src/consensus/Transaction.cpp \
-  libmw/src/consensus/TxBody.cpp \
-  libmw/src/crypto/Hasher.cpp \
-  libmw/src/traits/Serializable.cpp
-
 libmw_libmw_a_SOURCES = \
-	$(libmw_consensus_SOURCES) \
 	libmw/src/common/Logger.cpp \
 	libmw/src/crypto/Bulletproofs.cpp \
 	libmw/src/crypto/ConversionUtil.cpp \
 	libmw/src/crypto/Crypto.cpp \
+	libmw/src/crypto/Hasher.cpp \
 	libmw/src/crypto/MuSig.cpp \
 	libmw/src/crypto/Pedersen.cpp \
 	libmw/src/crypto/PublicKeys.cpp \
@@ -159,6 +149,7 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/node/ICoinsView.cpp \
 	libmw/src/node/Node.cpp \
 	libmw/src/node/Snapshot.cpp \
+	libmw/src/traits/Serializable.cpp \
 	libmw/src/wallet/Keychain.cpp \
 	libmw/src/wallet/Transact.cpp \
 	libmw/src/wallet/Wallet.cpp
@@ -667,7 +658,8 @@ include_HEADERS = script/bitcoinconsensus.h
 libbitcoinconsensus_la_SOURCES = \
   $(crypto_libbitcoin_crypto_base_a_SOURCES) \
   $(libbitcoin_consensus_a_SOURCES) \
-  $(libmw_consensus_SOURCES) \
+  libmw/src/crypto/Hasher.cpp \
+  libmw/src/traits/Serializable.cpp \
   support/cleanse.cpp
 
 if GLIBC_BACK_COMPAT

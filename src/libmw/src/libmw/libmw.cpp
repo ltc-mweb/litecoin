@@ -52,6 +52,19 @@ std::vector<uint8_t> SerializeBlockUndo(const libmw::BlockUndoRef& blockUndo)
     return blockUndo.pUndo->Serialized();
 }
 
+libmw::TxRef DeserializeTx(const std::vector<uint8_t>& bytes)
+{
+    Deserializer deserializer{ bytes };
+    auto pTx = std::make_shared<mw::Transaction>(mw::Transaction::Deserialize(deserializer));
+    return libmw::TxRef{ pTx };
+}
+
+std::vector<uint8_t> SerializeTx(const libmw::TxRef& tx)
+{
+    assert(tx.pTransaction != nullptr);
+    return tx.pTransaction->Serialized();
+}
+
 libmw::StateRef DeserializeState(const std::vector<uint8_t>& bytes)
 {
     Deserializer deserializer{ bytes };

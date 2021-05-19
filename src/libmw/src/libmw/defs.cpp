@@ -149,6 +149,13 @@ uint64_t TxRef::GetLockHeight() const noexcept
     return pTransaction->GetLockHeight();
 }
 
+std::string TxRef::ToString() const noexcept
+{
+    assert(pTransaction != nullptr);
+
+    return pTransaction->Print();
+}
+
 libmw::CoinsViewRef CoinsViewRef::CreateCache() const
 {
     if (pCoinsView == nullptr) {

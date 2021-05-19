@@ -1,5 +1,4 @@
 #include <mw/models/tx/Kernel.h>
-#include <mw/models/tx/KernelBits.h>
 #include <mw/crypto/Schnorr.h>
 
 Kernel Kernel::Create(
