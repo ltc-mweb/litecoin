@@ -21,12 +21,12 @@ NODE_NAMESPACE
 
 libmw::CoinsViewRef Initialize(
     const libmw::ChainParams& chainParams,
-    const libmw::HeaderRef& header,
+    const mw::Header::CPtr& header,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
     const std::function<void(const std::string&)>& log_callback)
 {
     LoggerAPI::Initialize(log_callback);
-    NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, header.pHeader, pDBWrapper);
+    NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, header, pDBWrapper);
 
     return libmw::CoinsViewRef{ NODE->GetDBView() };
 }
@@ -39,13 +39,13 @@ void Shutdown()
 libmw::CoinsViewRef ApplyState(
     const libmw::IChain::Ptr& pChain,
     const libmw::IDBWrapper::Ptr& pCoinsDB,
-    const libmw::HeaderRef& stateHeader,
+    const mw::Header::CPtr& stateHeader,
     const mw::State& state)
 {
     auto pCoinsViewDB = NODE->ApplyState(
         pCoinsDB,
         pChain,
-        stateHeader.pHeader,
+        stateHeader,
         state.utxos,
         state.kernels,
         state.leafset,

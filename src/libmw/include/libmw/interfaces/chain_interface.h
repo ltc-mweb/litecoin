@@ -23,7 +23,7 @@ public:
     virtual bool Valid() const noexcept = 0;
 
     virtual uint64_t GetHeight() const = 0;
-    virtual libmw::HeaderRef GetHeader() const = 0;
+    virtual mw::Header::CPtr GetHeader() const = 0;
     virtual mw::Block::CPtr GetBlock() const = 0;
 };
 

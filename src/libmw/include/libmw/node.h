@@ -21,7 +21,7 @@ NODE_NAMESPACE
 /// <returns>The CoinsViewDB which represents the state of the flushed chain.</returns>
 libmw::CoinsViewRef Initialize(
     const libmw::ChainParams& chainParams,
-    const libmw::HeaderRef& header,
+    const mw::Header::CPtr& header,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
     const std::function<void(const std::string&)>& log_callback
 );
@@ -42,7 +42,7 @@ void Shutdown();
 /// <returns>The CoinsViewDB which represents the state of the flushed chain.</returns>
 libmw::CoinsViewRef ApplyState(
     const libmw::IChain::Ptr& pChain,
-    const libmw::HeaderRef& stateHeader,
+    const mw::Header::CPtr& stateHeader,
     const libmw::IDBWrapper::Ptr& pCoinsDB,
     const mw::State& state
 );

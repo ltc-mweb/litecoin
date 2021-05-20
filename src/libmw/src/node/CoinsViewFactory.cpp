@@ -151,13 +151,13 @@ mmr::MMR::Ptr CoinsViewFactory::BuildAndValidateKernelMMR(
 		++kernels_added;
 
         // We have to loop here because some blocks may not have any new kernels.
-        while (pChainIter->Valid() && kernels_added == pChainIter->GetHeader().pHeader->GetNumKernels())
+        while (pChainIter->Valid() && kernels_added == pChainIter->GetHeader()->GetNumKernels())
         {
-            if (pChainIter->GetHeader().pHeader->GetKernelRoot() != pMMR->Root()) {
+            if (pChainIter->GetHeader()->GetKernelRoot() != pMMR->Root()) {
                 ThrowValidation(EConsensusError::MMR_MISMATCH);
             }
 
-            if (pChainIter->GetHeader().pHeader == pStateHeader) {
+            if (pChainIter->GetHeader() == pStateHeader) {
                 break;
             }
 

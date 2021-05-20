@@ -33,9 +33,9 @@ struct Block {
         return IsNull() ? 0 : m_block->GetSupplyChange();
     }
 
-    libmw::HeaderRef GetMWEBHeader() const noexcept
+    mw::Header::CPtr GetMWEBHeader() const noexcept
     {
-        return IsNull() ? libmw::HeaderRef{} : libmw::HeaderRef{m_block->GetHeader()};
+        return IsNull() ? mw::Header::CPtr{nullptr} : m_block->GetHeader();
     }
 
     std::vector<Commitment> GetInputCommits() const

@@ -32,7 +32,7 @@ public:
 
     uint64_t GetHeight() const final { return m_height; }
 
-    libmw::HeaderRef GetHeader() const final
+    mw::Header::CPtr GetHeader() const final
     {
         CBlock block;
         if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mwBlock.IsNull()) {

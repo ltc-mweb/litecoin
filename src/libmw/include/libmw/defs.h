@@ -87,19 +87,6 @@ struct PegOut
     std::vector<uint8_t> scriptPubKey;
 };
 
-struct HeaderRef
-{
-    std::shared_ptr<const mw::Header> pHeader;
-};
-
-/// <summary>
-/// A wrapper around an internal pointer to a BlockUndo object.
-/// </summary>
-struct BlockUndoRef
-{
-    std::shared_ptr<const mw::BlockUndo> pUndo;
-};
-
 /// <summary>
 /// A wrapper around an internal pointer to a coin view.
 /// This can either be a CoinsViewDB, which represents the flushed view, or a CoinsViewCache.
