@@ -13,7 +13,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     }
 
     bool rewound = false;
-    if (parent.type() == typeid(mw::Block)) {
+    if (parent.type() == typeid(mw::Block::CPtr)) {
         const mw::Block::CPtr& block = boost::get<mw::Block::CPtr>(parent);
         rewound = libmw::wallet::RewindBlockOutput(GetKeychain(), block, output_commit, coin);
     } else {
