@@ -70,7 +70,7 @@ static constexpr uint32_t PEGIN_INDEX{ 1 };
 struct PegIn
 {
     uint64_t amount;
-    std::array<uint8_t, 33> commitment;
+    Commitment commitment;
 
     bool operator==(const PegIn& rhs) const {
         return amount == rhs.amount && commitment == rhs.commitment;
@@ -117,19 +117,9 @@ struct CoinsViewRef
     std::shared_ptr<mw::ICoinsView> pCoinsView;
 };
 
-struct StateRef
-{
-    std::shared_ptr<mw::State> pState;
-};
-
 struct ChainParams
 {
     boost::filesystem::path dataDirectory;
-};
-
-struct BlockBuilderRef
-{
-    std::shared_ptr<mw::BlockBuilder> pBuilder;
 };
 
 /// <summary>

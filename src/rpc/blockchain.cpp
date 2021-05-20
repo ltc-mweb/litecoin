@@ -461,7 +461,7 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
         for (const libmw::PegIn& pegin : tx.m_mwtx.GetPegIns()) {
             UniValue pegin_uni(UniValue::VOBJ);
             pegin_uni.pushKV("amount", pegin.amount);
-            pegin_uni.pushKV("commitment", HexStr(pegin.commitment.begin(), pegin.commitment.end()));
+            pegin_uni.pushKV("commitment", pegin.commitment.ToHex());
             pegins.push_back(pegin_uni);
         }
 

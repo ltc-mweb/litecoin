@@ -114,7 +114,7 @@ bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<libmw::
             if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                 libmw::PegIn pegin;
                 pegin.amount = output.nValue;
-                std::copy_n(std::make_move_iterator(program.begin()), WITNESS_MWEB_PEGIN_SIZE, pegin.commitment.begin());
+                pegin.commitment = Commitment{std::move(program)};
                 if (pegin_set.erase(pegin) != 1) {
                     return false;
                 }

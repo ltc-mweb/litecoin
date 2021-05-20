@@ -16,7 +16,7 @@ public:
         std::transform(
             pegInCoins.cbegin(), pegInCoins.cend(),
             std::back_inserter(pegins),
-            [](const libmw::PegIn& pegin) { return PegInCoin{pegin.amount, Commitment{pegin.commitment}}; }
+            [](const libmw::PegIn& pegin) { return PegInCoin{pegin.amount, pegin.commitment}; }
         );
 
         return pegins;
