@@ -13,16 +13,16 @@ MINER_NAMESPACE
 /// </summary>
 /// <param name="height">The height of the block being built.</param>
 /// <param name="view">The CoinsView representing the latest state of the active chain. Must not be null.</param>
-/// <returns>A non-null BlockBuilderRef</returns>
-libmw::BlockBuilderRef NewBuilder(const uint64_t height, const libmw::CoinsViewRef& view);
+/// <returns>A non-null BlockBuilder</returns>
+std::shared_ptr<mw::BlockBuilder> NewBuilder(const uint64_t height, const libmw::CoinsViewRef& view);
 
 bool AddTransaction(
-    const libmw::BlockBuilderRef& builder,
+    const std::shared_ptr<mw::BlockBuilder>& builder,
     const mw::Transaction::CPtr& transaction,
     const std::vector<libmw::PegIn>& pegins
 );
 
-mw::Block::Ptr BuildBlock(const libmw::BlockBuilderRef& builder);
+mw::Block::Ptr BuildBlock(const std::shared_ptr<mw::BlockBuilder>& builder);
 
 END_NAMESPACE // miner
 END_NAMESPACE // libmw

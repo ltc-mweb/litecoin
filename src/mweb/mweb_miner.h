@@ -19,7 +19,7 @@ private:
     bool ValidatePegIns(const CTransactionRef& pTx, const std::vector<libmw::PegIn>& pegins) const;
 
     // MWEB Attributes
-    libmw::BlockBuilderRef mweb_builder;
+    std::shared_ptr<mw::BlockBuilder> mweb_builder;
     CAmount mweb_amount_change;
     CAmount mweb_fees;
     std::vector<CTxIn> hogex_inputs;

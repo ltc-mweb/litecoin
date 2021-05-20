@@ -75,14 +75,14 @@ bool CheckBlock(
     return false;
 }
 
-libmw::BlockUndoRef ConnectBlock(const mw::Block::CPtr& block, const CoinsViewRef& view)
+mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const CoinsViewRef& view)
 {
-    return libmw::BlockUndoRef{ NODE->ConnectBlock(block, view.pCoinsView) };
+    return NODE->ConnectBlock(block, view.pCoinsView);
 }
 
-void DisconnectBlock(const libmw::BlockUndoRef& undoData, const CoinsViewRef& view)
+void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const CoinsViewRef& view)
 {
-    NODE->DisconnectBlock(undoData.pUndo, view.pCoinsView);
+    NODE->DisconnectBlock(undoData, view.pCoinsView);
 }
 
 void FlushCache(const libmw::CoinsViewRef& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)

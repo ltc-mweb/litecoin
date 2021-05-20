@@ -13,18 +13,13 @@
 #include "interfaces/db_interface.h"
 
 #include <mw/models/block/Block.h>
+#include <mw/models/block/BlockUndo.h>
 #include <mw/models/tx/Transaction.h>
 
 #include <memory>
 #include <cstdint>
 
 LIBMW_NAMESPACE
-
-libmw::HeaderRef DeserializeHeader(const std::vector<uint8_t>& bytes);
-std::vector<uint8_t> SerializeHeader(const libmw::HeaderRef& header);
-
-libmw::BlockUndoRef DeserializeBlockUndo(const std::vector<uint8_t>& bytes);
-std::vector<uint8_t> SerializeBlockUndo(const libmw::BlockUndoRef& blockUndo);
 
 libmw::StateRef DeserializeState(const std::vector<uint8_t>& bytes);
 std::vector<uint8_t> SerializeState(const libmw::StateRef& state);

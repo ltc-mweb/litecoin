@@ -5,6 +5,7 @@
 #include <libmw/interfaces/db_interface.h>
 
 #include <mw/models/block/Block.h>
+#include <mw/models/block/BlockUndo.h>
 #include <mw/models/tx/Transaction.h>
 
 LIBMW_NAMESPACE
@@ -69,14 +70,14 @@ bool CheckBlock(
 /// <param name="block">The block to connect. Must not be null.</param>
 /// <param name="view">The CoinsView to connect the block to. Must not be null.</param>
 /// <throws>ValidationException if consensus rules are not met.</throws>
-libmw::BlockUndoRef ConnectBlock(const mw::Block::CPtr& block, const libmw::CoinsViewRef& view);
+mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const libmw::CoinsViewRef& view);
 
 /// <summary>
 /// Removes a MW ext block from the end of the chain in the given CoinsView.
 /// </summary>
 /// <param name="undoData">The MW ext block undo data to apply. Must not be null.</param>
 /// <param name="view">The CoinsView to disconnect the block from. Must not be null.</param>
-void DisconnectBlock(const libmw::BlockUndoRef& undoData, const libmw::CoinsViewRef& view);
+void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const libmw::CoinsViewRef& view);
 
 /// <summary>
 /// Commits the changes from the cached CoinsView to the base CoinsView.
