@@ -98,7 +98,7 @@ template <>
 struct hash<libmw::PegIn> {
     size_t operator()(const libmw::PegIn& pegin) const
     {
-        return boost::hash_value(pegin.commitment) + boost::hash_value(pegin.amount);
+        return boost::hash_value(pegin.commitment.vec()) + boost::hash_value(pegin.amount);
     }
 };
 } // namespace std
