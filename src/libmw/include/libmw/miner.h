@@ -2,6 +2,9 @@
 
 #include "defs.h"
 
+#include <mw/models/block/Block.h>
+#include <mw/models/tx/Transaction.h>
+
 LIBMW_NAMESPACE
 MINER_NAMESPACE
 
@@ -15,11 +18,11 @@ libmw::BlockBuilderRef NewBuilder(const uint64_t height, const libmw::CoinsViewR
 
 bool AddTransaction(
     const libmw::BlockBuilderRef& builder,
-    const libmw::TxRef& transaction,
+    const mw::Transaction::CPtr& transaction,
     const std::vector<libmw::PegIn>& pegins
 );
 
-libmw::BlockRef BuildBlock(const libmw::BlockBuilderRef& builder);
+mw::Block::Ptr BuildBlock(const libmw::BlockBuilderRef& builder);
 
 END_NAMESPACE // miner
 END_NAMESPACE // libmw

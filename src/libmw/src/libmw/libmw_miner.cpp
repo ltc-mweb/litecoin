@@ -15,25 +15,25 @@ libmw::BlockBuilderRef NewBuilder(const uint64_t height, const libmw::CoinsViewR
 
 bool AddTransaction(
     const libmw::BlockBuilderRef& builder,
-    const libmw::TxRef& transaction,
+    const mw::Transaction::CPtr& transaction,
     const std::vector<libmw::PegIn>& pegins)
 {
     assert(builder.pBuilder != nullptr);
-    assert(transaction.pTransaction != nullptr);
+    assert(transaction != nullptr);
 
     try {
-        return builder.pBuilder->AddTransaction(transaction.pTransaction, Transform::PegIns(pegins));
+        return builder.pBuilder->AddTransaction(transaction, Transform::PegIns(pegins));
     } catch (std::exception& e) {
-        LOG_DEBUG_F("Failed to add transaction {}. Error: {}", transaction.pTransaction, e.what());
+        LOG_DEBUG_F("Failed to add transaction {}. Error: {}", transaction, e.what());
     }
 
     return false;
 }
 
-libmw::BlockRef BuildBlock(const libmw::BlockBuilderRef& builder)
+mw::Block::Ptr BuildBlock(const libmw::BlockBuilderRef& builder)
 {
     assert(builder.pBuilder != nullptr);
-    return libmw::BlockRef{ builder.pBuilder->BuildBlock() };
+    return builder.pBuilder->BuildBlock();
 }
 
 END_NAMESPACE // miner

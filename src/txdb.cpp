@@ -63,8 +63,8 @@ bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
 }
 
 bool CCoinsViewDB::HaveCoin(const OutputIndex& index) const {
-    if (index.type() == typeid(libmw::Commitment)) {
-        return libmw::node::HasCoin(GetMWView(), boost::get<libmw::Commitment>(index));
+    if (index.type() == typeid(Commitment)) {
+        return libmw::node::HasCoin(GetMWView(), boost::get<Commitment>(index));
     } else {
         return db.Exists(CoinEntry(boost::get<COutPoint>(&index)));
     }

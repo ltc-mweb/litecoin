@@ -22,14 +22,13 @@ void Miner::NewBlock(const uint64_t nHeight)
 bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
 {
     CTransactionRef pTx = iter->GetSharedTx();
-    libmw::TxRef mweb_tx = pTx->m_mwtx.m_transaction;
 
     //
     // Pegin
     //
     std::vector<CTxIn> vin;
     CAmount pegin_amount = 0;
-    std::vector<libmw::PegIn> pegins = mweb_tx.GetPegins();
+    std::vector<libmw::PegIn> pegins = pTx->m_mwtx.GetPegIns();
 
     if (!ValidatePegIns(pTx, pegins)) {
         LogPrintf("Peg-in Mismatch\n");
@@ -55,7 +54,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     std::vector<CTxOut> vout;
     CAmount pegout_amount = 0;
-    std::vector<libmw::PegOut> pegouts = mweb_tx.GetPegouts();
+    std::vector<libmw::PegOut> pegouts = pTx->m_mwtx.GetPegOuts();
 
     for (const libmw::PegOut& pegout : pegouts) {
         CAmount amount(pegout.amount);
@@ -72,7 +71,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     }
 
     // Validate fee amount range
-    CAmount tx_fee = mweb_tx.GetTotalFee();
+    CAmount tx_fee = pTx->m_mwtx.GetFee();
     if (!MoneyRange(tx_fee)) {
         LogPrintf("Invalid MWEB fee amount\n");
         return false;
@@ -159,11 +158,10 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     //
     // Add New HogAddr
     //
-    libmw::BlockRef mw_block = libmw::miner::BuildBlock(mweb_builder);
-    libmw::BlockHash mweb_hash = mw_block.GetHash();
+    mw::Block::Ptr mw_block = libmw::miner::BuildBlock(mweb_builder);
 
     CTxOut hogAddr;
-    hogAddr.scriptPubKey = CScript() << OP_9 << std::vector<uint8_t>(mweb_hash.begin(), mweb_hash.end());
+    hogAddr.scriptPubKey = CScript() << OP_9 << mw_block->GetHash().vec();
     hogAddr.nValue = previous_amount + mweb_amount_change;
     assert(MoneyRange(hogAddr.nValue));
     hogExTransaction.vout.push_back(std::move(hogAddr));

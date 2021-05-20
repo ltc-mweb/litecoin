@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     // Try to spend the pegin output
     const auto& output1 = tx1.GetOutputs().front();
     test::Tx tx2 = test::TxBuilder().AddInput(output1).AddPlainKernel(0).AddOutput(1000).Build();
-    auto transaction = libmw::TxRef{ tx2.GetTransaction() };
+    auto transaction = tx2.GetTransaction();
     BOOST_REQUIRE(libmw::node::CheckTransaction(transaction));
     BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height - 1));
     BOOST_REQUIRE(libmw::node::CheckTxInputs(pCachedView, transaction, height));
@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     test::Tx tx3 = test::Tx::CreatePegIn(1000);
     const auto& output2 = tx3.GetOutputs().front();
     test::Tx tx4 = test::TxBuilder().AddInput(output2).AddPlainKernel(0).AddOutput(1000).Build();
-    transaction = libmw::TxRef{ tx4.GetTransaction() };
+    transaction = tx4.GetTransaction();
     BOOST_REQUIRE(libmw::node::CheckTransaction(transaction));
     BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height - 1));
     BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height));

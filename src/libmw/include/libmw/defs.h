@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include <mw/models/crypto/Commitment.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 
@@ -38,12 +40,9 @@ namespace mw
 
 LIBMW_NAMESPACE
 
-typedef std::array<uint8_t, 32> BlockHash;
-typedef std::array<uint8_t, 32> KernelHash;
 typedef std::array<uint8_t, 32> Offset;
 typedef std::array<uint8_t, 32> BlindingFactor;
 typedef std::array<uint8_t, 32> PrivateKey;
-typedef std::array<uint8_t, 33> Commitment;
 typedef std::array<uint8_t, 33> PubKey;
 typedef std::pair<PubKey, PubKey> MWEBAddress;
 
@@ -55,9 +54,6 @@ static const uint8_t PEGIN_OUTPUT = 1;
 /// Any change to these will cause a hardfork!
 /// </summary>
 static constexpr size_t MAX_BLOCK_WEIGHT = 21'000;
-static constexpr size_t KERNEL_WEIGHT = 2;
-static constexpr size_t OWNER_SIG_WEIGHT = 1;
-static constexpr size_t OUTPUT_WEIGHT = 18;
 static constexpr uint16_t PEGIN_MATURITY = 20;
 static constexpr uint8_t MAX_KERNEL_EXTRADATA_SIZE = 33;
 
@@ -97,58 +93,11 @@ struct HeaderRef
 };
 
 /// <summary>
-/// A simple interface for accessing members of an MWEB block.
-/// </summary>
-struct BlockRef
-{
-    /// <summary>
-    /// Checks whether the internal block pointer is null.
-    /// If it's null, it is unsafe to call any other methods on this object.
-    /// </summary>
-    /// <returns>true if interal pointer is null. Otherwise, false.</returns>
-    bool IsNull() const noexcept { return pBlock == nullptr; }
-
-    libmw::BlockHash GetHash() const noexcept;
-    libmw::HeaderRef GetHeader() const noexcept;
-    uint64_t GetTotalFee() const noexcept;
-    uint64_t GetWeight() const noexcept;
-    std::set<KernelHash> GetKernelHashes() const noexcept;
-    std::vector<libmw::Commitment> GetInputCommits() const noexcept;
-    std::vector<libmw::Commitment> GetOutputCommits() const noexcept;
-    int64_t GetSupplyChange() const noexcept;
-
-    std::shared_ptr<mw::Block> pBlock;
-};
-
-/// <summary>
 /// A wrapper around an internal pointer to a BlockUndo object.
 /// </summary>
 struct BlockUndoRef
 {
     std::shared_ptr<const mw::BlockUndo> pUndo;
-};
-
-/// <summary>
-/// A simple interface for accessing members of an MWEB transaction.
-/// </summary>
-struct TxRef
-{
-    std::vector<libmw::PegOut> GetPegouts() const noexcept;
-    std::vector<libmw::PegIn> GetPegins() const noexcept;
-    uint64_t GetTotalFee() const noexcept;
-    uint64_t GetWeight() const noexcept;
-    std::set<KernelHash> GetKernelHashes() const noexcept;
-    std::set<libmw::Commitment> GetInputCommits() const noexcept;
-    std::set<libmw::Commitment> GetOutputCommits() const noexcept;
-    uint64_t GetLockHeight() const noexcept;
-
-    /// <summary>
-    /// Prints the transaction details.
-    /// </summary>
-    /// <returns>The formatted transaction details.</returns>
-    std::string ToString() const noexcept;
-
-    std::shared_ptr<const mw::Transaction> pTransaction;
 };
 
 /// <summary>
@@ -208,7 +157,7 @@ struct Coin
     uint64_t amount;
 
     // The output commitment (v*H + r*G).
-    libmw::Commitment commitment;
+    Commitment commitment;
 
     bool IsChange() const noexcept { return address_index == CHANGE_INDEX; }
     bool IsPegIn() const noexcept { return address_index == PEGIN_INDEX; }

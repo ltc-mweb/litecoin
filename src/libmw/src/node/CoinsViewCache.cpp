@@ -25,7 +25,7 @@ std::vector<UTXO::CPtr> CoinsViewCache::GetUTXOs(const Commitment& commitment) c
     return utxos;
 }
 
-mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::Ptr& pBlock)
+mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::CPtr& pBlock)
 {
     assert(pBlock != nullptr);
 

@@ -5,6 +5,7 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
+#include <mw/consensus/Weight.h>
 #include <mw/crypto/Crypto.h>
 #include <mw/models/crypto/Hash.h>
 #include <mw/models/crypto/BigInteger.h>
@@ -99,6 +100,7 @@ public:
     const std::vector<SignedMessage>& GetOwnerSigs() const noexcept { return m_body.GetOwnerSigs(); }
     uint64_t GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
     uint64_t GetLockHeight() const noexcept { return m_body.GetLockHeight(); }
+    uint64_t CalcWeight() const noexcept { return (uint64_t)Weight::Calculate(m_body); }
 
     std::vector<Commitment> GetKernelCommits() const noexcept { return m_body.GetKernelCommits(); }
     std::vector<Commitment> GetInputCommits() const noexcept { return m_body.GetInputCommits(); }

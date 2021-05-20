@@ -26,19 +26,6 @@ std::vector<uint8_t> SerializeHeader(const libmw::HeaderRef& header)
     return header.pHeader->Serialized();
 }
 
-libmw::BlockRef DeserializeBlock(const std::vector<uint8_t>& bytes)
-{
-    Deserializer deserializer{ bytes };
-    auto pBlock = std::make_shared<mw::Block>(mw::Block::Deserialize(deserializer));
-    return libmw::BlockRef{ pBlock };
-}
-
-std::vector<uint8_t> SerializeBlock(const libmw::BlockRef& block)
-{
-    assert(block.pBlock != nullptr);
-    return block.pBlock->Serialized();
-}
-
 libmw::BlockUndoRef DeserializeBlockUndo(const std::vector<uint8_t>& bytes)
 {
     Deserializer deserializer{ bytes };
@@ -50,19 +37,6 @@ std::vector<uint8_t> SerializeBlockUndo(const libmw::BlockUndoRef& blockUndo)
 {
     assert(blockUndo.pUndo != nullptr);
     return blockUndo.pUndo->Serialized();
-}
-
-libmw::TxRef DeserializeTx(const std::vector<uint8_t>& bytes)
-{
-    Deserializer deserializer{ bytes };
-    auto pTx = std::make_shared<mw::Transaction>(mw::Transaction::Deserialize(deserializer));
-    return libmw::TxRef{ pTx };
-}
-
-std::vector<uint8_t> SerializeTx(const libmw::TxRef& tx)
-{
-    assert(tx.pTransaction != nullptr);
-    return tx.pTransaction->Serialized();
 }
 
 libmw::StateRef DeserializeState(const std::vector<uint8_t>& bytes)

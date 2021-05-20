@@ -1353,7 +1353,7 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             if (s.index.type() == typeid(COutPoint)) {
                 entry.pushKV("vout", (int)boost::get<COutPoint>(s.index).n);
             } else {
-                entry.pushKV("commit", HexStr(boost::get<libmw::Commitment>(s.index)));
+                entry.pushKV("commit", boost::get<Commitment>(s.index).ToHex());
             }
 
             entry.pushKV("fee", ValueFromAmount(-nFee));
@@ -1402,7 +1402,7 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             if (r.index.type() == typeid(COutPoint)) {
                 entry.pushKV("vout", (int)boost::get<COutPoint>(r.index).n);
             } else {
-                entry.pushKV("commit", HexStr(boost::get<libmw::Commitment>(r.index)));
+                entry.pushKV("commit", boost::get<Commitment>(r.index).ToHex());
             }
 
             if (fLong)
@@ -2366,8 +2366,7 @@ static UniValue listlockunspent(const JSONRPCRequest& request)
             o.pushKV("txid", outpt.hash.GetHex());
             o.pushKV("vout", (int)outpt.n);
         } else {
-            libmw::Commitment output_commit = boost::get<libmw::Commitment>(output);
-            o.pushKV("commit", HexStr(output_commit));
+            o.pushKV("commit", boost::get<Commitment>(output).ToHex());
         }
 
         ret.push_back(o);

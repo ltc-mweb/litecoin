@@ -133,7 +133,7 @@ public:
     bool IsCache() const noexcept final { return true; }
 
     std::vector<UTXO::CPtr> GetUTXOs(const Commitment& commitment) const noexcept final;
-    mw::BlockUndo::CPtr ApplyBlock(const mw::Block::Ptr& pBlock);
+    mw::BlockUndo::CPtr ApplyBlock(const mw::Block::CPtr& pBlock);
     void UndoBlock(const mw::BlockUndo::CPtr& pUndo);
     void WriteBatch(
         const libmw::IDBBatch::UPtr& pBatch,

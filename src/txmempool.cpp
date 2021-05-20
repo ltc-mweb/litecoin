@@ -419,8 +419,7 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
     }
 
     // MWEB: Add transaction to mapTxOutputs_MWEB for each output
-    std::set<libmw::Commitment> output_commits = tx.m_mwtx.GetOutputCommits();
-    for (const libmw::Commitment& output_commit : output_commits) {
+    for (const Commitment& output_commit : tx.m_mwtx.GetOutputCommits()) {
         mapTxOutputs_MWEB.insert(std::make_pair(output_commit, &tx));
     }
 
@@ -454,8 +453,7 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
         mapNextTx.erase(txin.GetIndex());
 
     // MWEB: Remove transaction from mapTxOutputs_MWEB for each output
-    std::set<libmw::Commitment> output_commits = it->GetTx().m_mwtx.GetOutputCommits();
-    for (const libmw::Commitment& output_commit : output_commits) {
+    for (const Commitment& output_commit : it->GetTx().m_mwtx.GetOutputCommits()) {
         mapTxOutputs_MWEB.erase(output_commit);
     }
 
@@ -640,7 +638,7 @@ void CTxMemPool::removeForMWBlock(const MWEB::Block& mwBlock, unsigned int nBloc
         if (!it->GetTx().HasMWData()) continue;
 
         auto txKernelHashes = it->GetTx().m_mwtx.GetKernelHashes();
-        std::vector<libmw::KernelHash> commonKernelHashes;
+        std::vector<mw::Hash> commonKernelHashes;
         std::set_intersection(blockKernelHashes.begin(), blockKernelHashes.end(),
                               txKernelHashes.begin(), txKernelHashes.end(),
                               std::back_inserter(commonKernelHashes));

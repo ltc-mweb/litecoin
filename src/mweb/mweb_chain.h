@@ -42,7 +42,7 @@ public:
         throw std::runtime_error("MWEB header not found");
     }
 
-    libmw::BlockRef GetBlock() const final
+    mw::Block::CPtr GetBlock() const final
     {
         CBlock block;
         if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mwBlock.IsNull()) {

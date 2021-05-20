@@ -44,7 +44,7 @@ Node::~Node()
 }
 
 void Node::ValidateBlock(
-    const mw::Block::Ptr& pBlock,
+    const mw::Block::CPtr& pBlock,
     const mw::Hash& mweb_hash,
     const std::vector<PegInCoin>& pegInCoins,
     const std::vector<PegOutCoin>& pegOutCoins) const
@@ -56,7 +56,7 @@ void Node::ValidateBlock(
     LOG_TRACE_F("Block {} validated", pBlock);
 }
 
-mw::BlockUndo::CPtr Node::ConnectBlock(const mw::Block::Ptr& pBlock, const mw::ICoinsView::Ptr& pView)
+mw::BlockUndo::CPtr Node::ConnectBlock(const mw::Block::CPtr& pBlock, const mw::ICoinsView::Ptr& pView)
 {
     assert(pBlock != nullptr);
     assert(pView != nullptr);

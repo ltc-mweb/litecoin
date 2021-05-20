@@ -30,7 +30,7 @@ public:
     // Context-free validation of a block.
     //
     virtual void ValidateBlock(
-        const mw::Block::Ptr& pBlock,
+        const mw::Block::CPtr& pBlock,
         const mw::Hash& mweb_hash,
         const std::vector<PegInCoin>& pegInCoins,
         const std::vector<PegOutCoin>& pegOutCoins
@@ -40,7 +40,7 @@ public:
     // Contextual validation of the block and application of the block to the supplied ICoinsView.
     // Consumer is required to call ValidateBlock first.
     //
-    virtual mw::BlockUndo::CPtr ConnectBlock(const mw::Block::Ptr& pBlock, const ICoinsView::Ptr& pView) = 0;
+    virtual mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& pBlock, const ICoinsView::Ptr& pView) = 0;
 
     virtual void DisconnectBlock(
         const mw::BlockUndo::CPtr& pUndoData,

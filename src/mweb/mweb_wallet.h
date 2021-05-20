@@ -22,11 +22,11 @@ public:
         : m_pWallet(pWallet) {}
     
     CExtKey GetHDKey(const std::string& bip32Path) const;
-    bool GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const;
+    bool GetCoin(const Commitment& output_commit, libmw::Coin& coin) const;
 
     bool RewindOutput(
-        const boost::variant<libmw::BlockRef, libmw::TxRef>& parent,
-        const libmw::Commitment& output_commit,
+        const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
+        const Commitment& output_commit,
         libmw::Coin& coin
     );
     MWEB::StealthAddress GetStealthAddress(const uint32_t index);
@@ -40,7 +40,7 @@ private:
 
     CWallet* m_pWallet;
     libmw::KeychainRef m_keychain;
-    std::map<libmw::Commitment, libmw::Coin> m_coins;
+    std::map<Commitment, libmw::Coin> m_coins;
 };
 
 struct WalletTxInfo
@@ -55,7 +55,7 @@ struct WalletTxInfo
     // we check if we have a CWalletTx that spent it.
     // If none is found, then we assume it was spent by another wallet,
     // so we create an empty Transaction and store the spent commitment here.
-    boost::optional<libmw::Commitment> spent_input;
+    boost::optional<Commitment> spent_input;
 
     uint256 hash;
 
@@ -66,7 +66,7 @@ struct WalletTxInfo
     {
         hash = SerializeHash(*this);
     }
-    WalletTxInfo(libmw::Commitment spent)
+    WalletTxInfo(Commitment spent)
         : received_coin(boost::none), spent_input(std::move(spent))
     {
         hash = SerializeHash(*this);
@@ -86,9 +86,9 @@ struct WalletTxInfo
                 READWRITE(bytes);
                 received_coin = libmw::DeserializeCoin(bytes);
             } else {
-                libmw::Commitment input_commit;
-                READWRITE(input_commit);
-                spent_input = input_commit;
+                std::array<uint8_t, 33> input_commit;
+                READWRITE(input_commit); // MW: TODO - Add serialization/deserialization for Commitment objects
+                spent_input = boost::make_optional<Commitment>(Commitment(input_commit));
             }
 
             hash = SerializeHash(*this);
@@ -100,7 +100,7 @@ struct WalletTxInfo
                 std::vector<uint8_t> bytes = libmw::SerializeCoin(*received_coin);
                 READWRITE(bytes);
             } else {
-                READWRITE(*spent_input);
+                READWRITE(spent_input->array()); // MW: TODO - Add serialization/deserialization for Commitment objects
             }
         }
     }

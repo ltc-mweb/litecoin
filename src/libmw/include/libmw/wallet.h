@@ -1,7 +1,10 @@
 #pragma once
 
 #include "defs.h"
+
 #include <boost/variant.hpp>
+#include <mw/models/block/Block.h>
+#include <mw/models/tx/Transaction.h>
 
 LIBMW_NAMESPACE
 
@@ -56,7 +59,7 @@ KeychainRef LoadKeychain(
     const uint32_t address_index_counter
 );
 
-libmw::TxRef CreateTx(
+mw::Transaction::CPtr CreateTx(
     const std::vector<libmw::Coin>& input_coins,
     const std::vector<libmw::Recipient>& recipients,
     const boost::optional<uint64_t>& pegin_amount,
@@ -65,15 +68,15 @@ libmw::TxRef CreateTx(
 
 bool RewindBlockOutput(
     const libmw::KeychainRef& keychain,
-    const libmw::BlockRef& block,
-    const libmw::Commitment& output_commit,
+    const mw::Block::CPtr& block,
+    const Commitment& output_commit,
     libmw::Coin& coin_out
 );
 
 bool RewindTxOutput(
     const libmw::KeychainRef& keychain,
-    const libmw::TxRef& tx,
-    const libmw::Commitment& output_commit,
+    const mw::Transaction::CPtr& tx,
+    const Commitment& output_commit,
     libmw::Coin& coin_out
 );
 

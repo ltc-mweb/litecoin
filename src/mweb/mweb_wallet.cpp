@@ -5,19 +5,19 @@
 
 using namespace MWEB;
 
-bool Wallet::RewindOutput(const boost::variant<libmw::BlockRef, libmw::TxRef>& parent,
-        const libmw::Commitment& output_commit, libmw::Coin& coin)
+bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
+        const Commitment& output_commit, libmw::Coin& coin)
 {
     if (GetCoin(output_commit, coin)) {
         return true;
     }
 
     bool rewound = false;
-    if (parent.type() == typeid(libmw::BlockRef)) {
-        const libmw::BlockRef& block = boost::get<libmw::BlockRef>(parent);
+    if (parent.type() == typeid(mw::Block)) {
+        const mw::Block::CPtr& block = boost::get<mw::Block::CPtr>(parent);
         rewound = libmw::wallet::RewindBlockOutput(GetKeychain(), block, output_commit, coin);
     } else {
-        const libmw::TxRef& tx = boost::get<libmw::TxRef>(parent);
+        const mw::Transaction::CPtr& tx = boost::get<mw::Transaction::CPtr>(parent);
         rewound = libmw::wallet::RewindTxOutput(GetKeychain(), tx, output_commit, coin);
     }
 
@@ -85,7 +85,7 @@ void Wallet::LoadToWallet(const libmw::Coin& coin)
     m_coins[coin.commitment] = coin;
 }
 
-bool Wallet::GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const
+bool Wallet::GetCoin(const Commitment& output_commit, libmw::Coin& coin) const
 {
     auto iter = m_coins.find(output_commit);
     if (iter != m_coins.end()) {

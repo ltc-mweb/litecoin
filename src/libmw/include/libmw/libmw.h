@@ -12,6 +12,9 @@
 #include "interfaces/chain_interface.h"
 #include "interfaces/db_interface.h"
 
+#include <mw/models/block/Block.h>
+#include <mw/models/tx/Transaction.h>
+
 #include <memory>
 #include <cstdint>
 
@@ -20,14 +23,8 @@ LIBMW_NAMESPACE
 libmw::HeaderRef DeserializeHeader(const std::vector<uint8_t>& bytes);
 std::vector<uint8_t> SerializeHeader(const libmw::HeaderRef& header);
 
-libmw::BlockRef DeserializeBlock(const std::vector<uint8_t>& bytes);
-std::vector<uint8_t> SerializeBlock(const libmw::BlockRef& block);
-
 libmw::BlockUndoRef DeserializeBlockUndo(const std::vector<uint8_t>& bytes);
 std::vector<uint8_t> SerializeBlockUndo(const libmw::BlockUndoRef& blockUndo);
-
-libmw::TxRef DeserializeTx(const std::vector<uint8_t>& bytes);
-std::vector<uint8_t> SerializeTx(const libmw::TxRef& tx);
 
 libmw::StateRef DeserializeState(const std::vector<uint8_t>& bytes);
 std::vector<uint8_t> SerializeState(const libmw::StateRef& state);
