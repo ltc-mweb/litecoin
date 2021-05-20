@@ -41,13 +41,13 @@ bool Wallet::RewindOutput(const Output& output, libmw::Coin& coin) const
         Hashed(EHashTag::OUT_KEY, t),
         m_pKeychain->GetSpendKey(index)
     );
-    coin = libmw::Coin{
-        output.GetFeatures().Get(),
-        index,
-        private_key.array(),
-        r.array(),
-        value,
-        output.GetCommitment().array()
-    };
+
+    coin.features = output.GetFeatures().Get();
+    coin.address_index = index;
+    coin.key = boost::make_optional(BlindingFactor(private_key.data()));
+    coin.blind = boost::make_optional(BlindingFactor(r.data()));
+    coin.amount = value;
+    coin.commitment = output.GetCommitment();
+
     return true;
 }

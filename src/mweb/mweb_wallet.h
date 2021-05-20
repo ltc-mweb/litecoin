@@ -84,7 +84,8 @@ struct WalletTxInfo
             if (received) {
                 std::vector<uint8_t> bytes;
                 READWRITE(bytes);
-                received_coin = libmw::DeserializeCoin(bytes);
+                Deserializer deserializer(std::move(bytes));
+                received_coin = libmw::Coin::Deserialize(deserializer);
             } else {
                 std::array<uint8_t, 33> input_commit;
                 READWRITE(input_commit); // MW: TODO - Add serialization/deserialization for Commitment objects
@@ -97,7 +98,7 @@ struct WalletTxInfo
             READWRITE(received);
 
             if (received) {
-                std::vector<uint8_t> bytes = libmw::SerializeCoin(*received_coin);
+                std::vector<uint8_t> bytes = received_coin->Serialized();
                 READWRITE(bytes);
             } else {
                 READWRITE(spent_input->array()); // MW: TODO - Add serialization/deserialization for Commitment objects

@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
 
 #include <boost/filesystem.hpp>
@@ -41,7 +42,6 @@ namespace mw
 LIBMW_NAMESPACE
 
 typedef std::array<uint8_t, 32> Offset;
-typedef std::array<uint8_t, 32> BlindingFactor;
 typedef std::array<uint8_t, 32> PrivateKey;
 typedef std::array<uint8_t, 33> PubKey;
 typedef std::pair<PubKey, PubKey> MWEBAddress;
@@ -135,7 +135,7 @@ struct BlockBuilderRef
 /// <summary>
 /// Represents an output owned by the wallet, and the keys necessary to spend it.
 /// </summary>
-struct Coin
+struct Coin : public Traits::ISerializable
 {
     // 0 for typical outputs or 1 for pegged-in outputs
     // This is used to determine the required number of confirmations before spending.
@@ -146,11 +146,11 @@ struct Coin
 
     // The private key needed in order to spend the coin.
     // May be empty for watch-only wallets.
-    boost::optional<libmw::BlindingFactor> key;
+    boost::optional<BlindingFactor> key;
 
     // The blinding factor needed in order to spend the coin.
     // May be empty for watch-only wallets.
-    boost::optional<libmw::BlindingFactor> blind;
+    boost::optional<BlindingFactor> blind;
 
     // The output amount in litoshis.
     // Typically positive, but could be 0 in the future when we start using decoys to improve privacy.
@@ -161,6 +161,29 @@ struct Coin
 
     bool IsChange() const noexcept { return address_index == CHANGE_INDEX; }
     bool IsPegIn() const noexcept { return address_index == PEGIN_INDEX; }
+
+    Serializer& Serialize(Serializer& serializer) const noexcept final
+    {
+        return Serializer()
+            .Append<uint8_t>(features)
+            .Append<uint32_t>(address_index)
+            .Append(key)
+            .Append(blind)
+            .Append<uint64_t>(amount)
+            .Append(commitment);
+    }
+
+    static Coin Deserialize(Deserializer& deserializer)
+    {
+        Coin coin;
+        coin.features = deserializer.Read<uint8_t>();
+        coin.address_index = deserializer.Read<uint32_t>();
+        coin.key = deserializer.ReadOpt<BlindingFactor>();
+        coin.blind = deserializer.ReadOpt<BlindingFactor>();
+        coin.amount = deserializer.Read<uint64_t>();
+        coin.commitment = deserializer.Read<Commitment>();
+        return coin;
+    }
 };
 
 END_NAMESPACE

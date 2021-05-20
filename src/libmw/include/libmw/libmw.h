@@ -29,7 +29,4 @@ std::vector<uint8_t> SerializeBlockUndo(const libmw::BlockUndoRef& blockUndo);
 libmw::StateRef DeserializeState(const std::vector<uint8_t>& bytes);
 std::vector<uint8_t> SerializeState(const libmw::StateRef& state);
 
-libmw::Coin DeserializeCoin(const std::vector<uint8_t>& bytes);
-std::vector<uint8_t> SerializeCoin(const libmw::Coin& coin);
-
 END_NAMESPACE // libmw

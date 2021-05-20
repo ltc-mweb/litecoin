@@ -52,32 +52,4 @@ std::vector<uint8_t> SerializeState(const libmw::StateRef& state)
     return state.pState->Serialized();
 }
 
-libmw::Coin DeserializeCoin(const std::vector<uint8_t>& bytes)
-{
-    Deserializer deserializer{ bytes };
-
-    libmw::Coin coin;
-    coin.features = deserializer.Read<uint8_t>();
-    coin.address_index = deserializer.Read<uint32_t>();
-    auto key_opt = deserializer.ReadOpt<::BlindingFactor>();
-    coin.key = key_opt ? boost::make_optional<libmw::BlindingFactor>(key_opt.value().array()) : boost::none;
-    auto blind_opt = deserializer.ReadOpt<::BlindingFactor>();
-    coin.blind = blind_opt ? boost::make_optional<libmw::BlindingFactor>(blind_opt.value().array()) : boost::none;
-    coin.amount = deserializer.Read<uint64_t>();
-    coin.commitment = deserializer.Read<::Commitment>().array();
-    return coin;
-}
-
-std::vector<uint8_t> SerializeCoin(const libmw::Coin& coin)
-{
-    return Serializer()
-        .Append<uint8_t>(coin.features)
-        .Append<uint32_t>(coin.address_index)
-        .Append(coin.key)
-        .Append(coin.blind)
-        .Append<uint64_t>(coin.amount)
-        .Append(coin.commitment)
-        .vec();
-}
-
 END_NAMESPACE // libmw
