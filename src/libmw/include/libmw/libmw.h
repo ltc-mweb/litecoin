@@ -15,13 +15,7 @@
 #include <mw/models/block/Block.h>
 #include <mw/models/block/BlockUndo.h>
 #include <mw/models/tx/Transaction.h>
+#include <mw/node/State.h>
 
 #include <memory>
 #include <cstdint>
-
-LIBMW_NAMESPACE
-
-libmw::StateRef DeserializeState(const std::vector<uint8_t>& bytes);
-std::vector<uint8_t> SerializeState(const libmw::StateRef& state);
-
-END_NAMESPACE // libmw

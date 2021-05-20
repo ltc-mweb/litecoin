@@ -44,7 +44,7 @@ libmw::CoinsViewRef ApplyState(
     const libmw::IChain::Ptr& pChain,
     const libmw::HeaderRef& stateHeader,
     const libmw::IDBWrapper::Ptr& pCoinsDB,
-    const libmw::StateRef& state
+    const mw::State& state
 );
 
 /// <summary>
@@ -95,7 +95,7 @@ void FlushCache(
 /// </summary>
 /// <param name="view">The CoinsView containing the chainstate to snapshot. Must not be null.</param>
 /// <returns>A non-null snapshot of the chainstate.</returns>
-libmw::StateRef SnapshotState(const libmw::CoinsViewRef& view);
+std::unique_ptr<mw::State> SnapshotState(const libmw::CoinsViewRef& view);
 
 /// <summary>
 /// Context-free validation of the MWEB transaction.

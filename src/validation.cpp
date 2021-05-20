@@ -1647,7 +1647,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
         }
     }
 
-    if (blockUndo.mwundo.pUndo != nullptr) {
+    if (blockUndo.mwundo != nullptr) {
         libmw::node::DisconnectBlock(blockUndo.mwundo, view.GetMWView());
     }
 

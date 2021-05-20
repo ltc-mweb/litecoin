@@ -40,16 +40,16 @@ libmw::CoinsViewRef ApplyState(
     const libmw::IChain::Ptr& pChain,
     const libmw::IDBWrapper::Ptr& pCoinsDB,
     const libmw::HeaderRef& stateHeader,
-    const libmw::StateRef& state)
+    const mw::State& state)
 {
     auto pCoinsViewDB = NODE->ApplyState(
         pCoinsDB,
         pChain,
         stateHeader.pHeader,
-        state.pState->utxos,
-        state.pState->kernels,
-        state.pState->leafset,
-        state.pState->pruned_parent_hashes
+        state.utxos,
+        state.kernels,
+        state.leafset,
+        state.pruned_parent_hashes
     );
 
     return libmw::CoinsViewRef{ pCoinsViewDB };
@@ -95,10 +95,10 @@ void FlushCache(const libmw::CoinsViewRef& view, const std::unique_ptr<libmw::ID
     LOG_TRACE("Cache flushed");
 }
 
-libmw::StateRef SnapshotState(const libmw::CoinsViewRef& view)
+std::unique_ptr<mw::State> SnapshotState(const libmw::CoinsViewRef& view)
 {
     assert(view.pCoinsView != nullptr);
-    return { std::make_shared<mw::State>(mw::Snapshot::Build(view.pCoinsView)) };
+    return { std::make_unique<mw::State>(mw::Snapshot::Build(view.pCoinsView)) };
 }
 
 bool CheckTransaction(const mw::Transaction::CPtr& transaction)

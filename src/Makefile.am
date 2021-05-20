@@ -118,7 +118,6 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/db/MMRInfoDB.cpp \
 	libmw/src/file/File.cpp \
 	libmw/src/libmw/defs.cpp \
-	libmw/src/libmw/libmw.cpp \
 	libmw/src/libmw/libmw_miner.cpp \
 	libmw/src/libmw/libmw_node.cpp \
 	libmw/src/libmw/libmw_wallet.cpp \
