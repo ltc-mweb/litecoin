@@ -30,7 +30,7 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
                 if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                     libmw::PegIn pegin;
                     pegin.amount = pTx->vout[nOut].nValue;
-                    std::move(program.begin(), program.begin() + WITNESS_MWEB_PEGIN_SIZE, pegin.commitment.begin());
+                    pegin.commitment = Commitment{std::move(program)};
                     pegins.push_back(std::move(pegin));
 
                     expected_inputs.push_back(CTxIn(pTx->GetHash(), nOut));
@@ -49,10 +49,7 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
     //    }
     //}
 
-    libmw::BlockHash mweb_hash;
-    std::copy_n(std::make_move_iterator(mweb256.begin()), WITNESS_MWEB_HEADERHASH_SIZE, mweb_hash.data());
-
-    if (!libmw::node::CheckBlock(block.mwBlock.m_block, mweb_hash, pegins, block.GetPegOutCoins())) {
+    if (!libmw::node::CheckBlock(block.mwBlock.m_block, mw::Hash(mweb256.begin()), pegins, block.GetPegOutCoins())) {
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "libmw::node::CheckBlock failed");
     }
 

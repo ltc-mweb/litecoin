@@ -110,7 +110,7 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
         return Result::WALLET_ERROR;
     }
 
-    if (change_output->type() == typeid(libmw::Commitment)) {
+    if (change_output->type() == typeid(Commitment)) {
         errors.push_back("Bumping fee with MWEB change output is not yet supported.");
         return Result::WALLET_ERROR;
     }

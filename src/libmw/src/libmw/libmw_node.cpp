@@ -21,12 +21,12 @@ NODE_NAMESPACE
 
 libmw::CoinsViewRef Initialize(
     const libmw::ChainParams& chainParams,
-    const libmw::HeaderRef& header,
+    const mw::Header::CPtr& header,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
     const std::function<void(const std::string&)>& log_callback)
 {
     LoggerAPI::Initialize(log_callback);
-    NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, header.pHeader, pDBWrapper);
+    NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, header, pDBWrapper);
 
     return libmw::CoinsViewRef{ NODE->GetDBView() };
 }
@@ -39,51 +39,50 @@ void Shutdown()
 libmw::CoinsViewRef ApplyState(
     const libmw::IChain::Ptr& pChain,
     const libmw::IDBWrapper::Ptr& pCoinsDB,
-    const libmw::HeaderRef& stateHeader,
-    const libmw::StateRef& state)
+    const mw::Header::CPtr& stateHeader,
+    const mw::State& state)
 {
     auto pCoinsViewDB = NODE->ApplyState(
         pCoinsDB,
         pChain,
-        stateHeader.pHeader,
-        state.pState->utxos,
-        state.pState->kernels,
-        state.pState->leafset,
-        state.pState->pruned_parent_hashes
+        stateHeader,
+        state.utxos,
+        state.kernels,
+        state.leafset,
+        state.pruned_parent_hashes
     );
 
     return libmw::CoinsViewRef{ pCoinsViewDB };
 }
 
 bool CheckBlock(
-    const libmw::BlockRef& block,
-    const libmw::BlockHash& hash,
+    const mw::Block::CPtr& block,
+    const mw::Hash& hash,
     const std::vector<libmw::PegIn>& pegInCoins,
     const std::vector<libmw::PegOut>& pegOutCoins)
 {
-    assert(block.pBlock != nullptr);
+    assert(block != nullptr);
 
     try {
-        auto mweb_hash = Transform::Hash(hash);
         auto pegins = Transform::PegIns(pegInCoins);
         auto pegouts = Transform::PegOuts(pegOutCoins);
-        NODE->ValidateBlock(block.pBlock, mweb_hash, pegins, pegouts);
+        NODE->ValidateBlock(block, hash, pegins, pegouts);
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR_F("Failed to validate {}. Error: {}", *block.pBlock, e);
+        LOG_ERROR_F("Failed to validate {}. Error: {}", *block, e);
     }
 
     return false;
 }
 
-libmw::BlockUndoRef ConnectBlock(const libmw::BlockRef& block, const CoinsViewRef& view)
+mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const CoinsViewRef& view)
 {
-    return libmw::BlockUndoRef{ NODE->ConnectBlock(block.pBlock, view.pCoinsView) };
+    return NODE->ConnectBlock(block, view.pCoinsView);
 }
 
-void DisconnectBlock(const libmw::BlockUndoRef& undoData, const CoinsViewRef& view)
+void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const CoinsViewRef& view)
 {
-    NODE->DisconnectBlock(undoData.pUndo, view.pCoinsView);
+    NODE->DisconnectBlock(undoData, view.pCoinsView);
 }
 
 void FlushCache(const libmw::CoinsViewRef& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)
@@ -96,33 +95,33 @@ void FlushCache(const libmw::CoinsViewRef& view, const std::unique_ptr<libmw::ID
     LOG_TRACE("Cache flushed");
 }
 
-libmw::StateRef SnapshotState(const libmw::CoinsViewRef& view)
+std::unique_ptr<mw::State> SnapshotState(const libmw::CoinsViewRef& view)
 {
     assert(view.pCoinsView != nullptr);
-    return { std::make_shared<mw::State>(mw::Snapshot::Build(view.pCoinsView)) };
+    return { std::make_unique<mw::State>(mw::Snapshot::Build(view.pCoinsView)) };
 }
 
-bool CheckTransaction(const libmw::TxRef& transaction)
+bool CheckTransaction(const mw::Transaction::CPtr& transaction)
 {
-    assert(transaction.pTransaction != nullptr);
+    assert(transaction != nullptr);
 
     try {
-        transaction.pTransaction->Validate();
+        transaction->Validate();
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR_F("Failed to validate {}. Error: {}", transaction.pTransaction->Print(), e);
+        LOG_ERROR_F("Failed to validate {}. Error: {}", transaction->Print(), e);
     }
 
     return false;
 }
 
-bool CheckTxInputs(const libmw::CoinsViewRef& view, const libmw::TxRef& transaction, uint64_t nSpendHeight)
+bool CheckTxInputs(const libmw::CoinsViewRef& view, const mw::Transaction::CPtr& transaction, uint64_t nSpendHeight)
 {
     assert(view.pCoinsView != nullptr);
-    assert(transaction.pTransaction != nullptr);
+    assert(transaction != nullptr);
 
     try {
-        for (const Input& input : transaction.pTransaction->GetInputs()) {
+        for (const Input& input : transaction->GetInputs()) {
             auto utxos = view.pCoinsView->GetUTXOs(input.GetCommitment());
             if (utxos.empty()) {
                 ThrowValidation(EConsensusError::UTXO_MISSING);
@@ -135,20 +134,20 @@ bool CheckTxInputs(const libmw::CoinsViewRef& view, const libmw::TxRef& transact
 
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR_F("Failed to validate: {}. Error: {}", transaction.pTransaction->Print(), e);
+        LOG_ERROR_F("Failed to validate: {}. Error: {}", transaction->Print(), e);
     }
 
     return false;
 }
 
-bool HasCoin(const libmw::CoinsViewRef& view, const libmw::Commitment& commitment)
+bool HasCoin(const libmw::CoinsViewRef& view, const Commitment& commitment)
 {
     assert(view.pCoinsView != nullptr);
 
     return !view.pCoinsView->GetUTXOs(commitment).empty();
 }
 
-bool HasCoinInCache(const libmw::CoinsViewRef& view, const libmw::Commitment& commitment)
+bool HasCoinInCache(const libmw::CoinsViewRef& view, const Commitment& commitment)
 {
     assert(view.pCoinsView != nullptr);
 

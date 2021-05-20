@@ -10,18 +10,13 @@
 class Transform
 {
 public:
-    static mw::Hash Hash(const libmw::BlockHash& hash)
-    {
-        return mw::Hash(hash);
-    }
-
     static std::vector<PegInCoin> PegIns(const std::vector<libmw::PegIn>& pegInCoins)
     {
         std::vector<PegInCoin> pegins;
         std::transform(
             pegInCoins.cbegin(), pegInCoins.cend(),
             std::back_inserter(pegins),
-            [](const libmw::PegIn& pegin) { return PegInCoin{pegin.amount, Commitment{pegin.commitment}}; }
+            [](const libmw::PegIn& pegin) { return PegInCoin{pegin.amount, pegin.commitment}; }
         );
 
         return pegins;
@@ -37,18 +32,6 @@ public:
         );
 
         return pegouts;
-    }
-
-    static std::vector<mw::Transaction::CPtr> Txs(const std::vector<libmw::TxRef>& txs)
-    {
-        std::vector<mw::Transaction::CPtr> transactions;
-        std::transform(
-            txs.cbegin(), txs.cend(),
-            std::back_inserter(transactions),
-            [](const libmw::TxRef& tx) { return tx.pTransaction; }
-        );
-
-        return transactions;
     }
 
     static libmw::MWEBAddress Address(const StealthAddress& address)

@@ -260,5 +260,5 @@ int64_t GetVirtualTransactionInputSize(const CTxIn& txin, int64_t nSigOpCost)
 
 int64_t GetMWEBWeight(size_t nOutputs, size_t nKernels, size_t nOwnerSigs)
 {
-    return (nOutputs * libmw::OUTPUT_WEIGHT) + (nKernels * libmw::KERNEL_WEIGHT) + (nOwnerSigs * libmw::OWNER_SIG_WEIGHT);
+    return (int64_t)Weight::Calculate(nKernels, nOwnerSigs, nOutputs);
 }

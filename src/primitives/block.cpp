@@ -61,7 +61,7 @@ std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
                 if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                     libmw::PegIn pegin;
                     pegin.amount = output.nValue;
-                    std::move(program.begin(), program.begin() + WITNESS_MWEB_PEGIN_SIZE, pegin.commitment.begin());
+                    pegin.commitment = Commitment{std::move(program)};
                     pegins.push_back(std::move(pegin));
                 }
             }

@@ -66,8 +66,15 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final;
-    static Commitment Deserialize(Deserializer& deserializer);
+    Serializer& Serialize(Serializer& serializer) const noexcept final
+    {
+        return m_bytes.Serialize(serializer);
+    }
+
+    static Commitment Deserialize(Deserializer& deserializer)
+    {
+        return Commitment(BigInt<SIZE>::Deserialize(deserializer));
+    }
 
     std::string ToHex() const { return m_bytes.ToHex(); }
     static Commitment FromHex(const std::string& hex) { return Commitment(BigInt<SIZE>::FromHex(hex)); }

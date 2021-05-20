@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mw/util/StringUtil.h>
-#include <mw/file/FilePath.h>
+#include <functional>
 
 namespace LoggerAPI
 {

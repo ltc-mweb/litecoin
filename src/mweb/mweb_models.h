@@ -17,40 +17,67 @@ namespace MWEB {
 struct Block {
     using CPtr = std::shared_ptr<MWEB::Block>;
 
-    libmw::BlockRef m_block;
+    mw::Block::CPtr m_block;
 
     Block() = default;
-    Block(const libmw::BlockRef& block)
+    Block(const mw::Block::CPtr& block)
         : m_block(block) {}
 
     CAmount GetTotalFee() const noexcept
     {
-        return IsNull() ? 0 : CAmount(m_block.GetTotalFee());
+        return IsNull() ? 0 : CAmount(m_block->GetTotalFee());
     }
 
     CAmount GetSupplyChange() const noexcept
     {
-        return IsNull() ? 0 : m_block.GetSupplyChange();
+        return IsNull() ? 0 : m_block->GetSupplyChange();
     }
 
-    libmw::HeaderRef GetMWEBHeader() const noexcept
+    mw::Header::CPtr GetMWEBHeader() const noexcept
     {
-        return IsNull() ? libmw::HeaderRef{} : m_block.GetHeader();
+        return IsNull() ? mw::Header::CPtr{nullptr} : m_block->GetHeader();
     }
 
-    std::vector<libmw::Commitment> GetInputCommits() const
+    std::vector<Commitment> GetInputCommits() const
     {
-        return IsNull() ? std::vector<libmw::Commitment>{} : m_block.GetInputCommits();
+        if (IsNull()) {
+            return std::vector<Commitment>{};
+        }
+
+        std::vector<Commitment> input_commits;
+        for (const Input& input : m_block->GetInputs()) {
+            input_commits.push_back(input.GetCommitment());
+        }
+
+        return input_commits;
     }
 
-    std::vector<libmw::Commitment> GetOutputCommits() const
+    std::vector<Commitment> GetOutputCommits() const
     {
-        return IsNull() ? std::vector<libmw::Commitment>{} : m_block.GetOutputCommits();
+        if (IsNull()) {
+            return std::vector<Commitment>{};
+        }
+
+        std::vector<Commitment> output_commits;
+        for (const Output& output : m_block->GetOutputs()) {
+            output_commits.push_back(output.GetCommitment());
+        }
+
+        return output_commits;
     }
 
-    std::set<libmw::KernelHash> GetKernelHashes() const
+    std::set<mw::Hash> GetKernelHashes() const
     {
-        return IsNull() ? std::set<libmw::KernelHash>{} : m_block.GetKernelHashes();
+        if (IsNull()) {
+            return std::set<mw::Hash>{};
+        }
+
+        std::set<mw::Hash> kernel_hashes;
+        for (const Kernel& kernel : m_block->GetKernels()) {
+            kernel_hashes.insert(kernel.GetHash());
+        }
+
+        return kernel_hashes;
     }
 
     ADD_SERIALIZE_METHODS;
@@ -64,12 +91,13 @@ struct Block {
             READWRITE(bytes);
 
             if (!bytes.empty()) {
-                m_block = libmw::DeserializeBlock(bytes);
+                Deserializer deserializer{bytes};
+                m_block = std::make_shared<mw::Block>(mw::Block::Deserialize(deserializer));
             }
         } else {
             // Serialize
             if (!IsNull()) {
-                std::vector<uint8_t> bytes = libmw::SerializeBlock(m_block);
+                std::vector<uint8_t> bytes = m_block->Serialized();
                 READWRITE(bytes);
             } else {
                 READWRITE(std::vector<uint8_t>{});
@@ -77,55 +105,105 @@ struct Block {
         }
     }
 
-    bool IsNull() const noexcept { return m_block.pBlock == nullptr; }
-    void SetNull() noexcept { m_block = libmw::BlockRef{nullptr}; }
+    bool IsNull() const noexcept { return m_block == nullptr; }
+    void SetNull() noexcept { m_block.reset(); }
 };
 
 struct Tx {
-    libmw::TxRef m_transaction;
+    mw::Transaction::CPtr m_transaction;
 
     Tx() = default;
-    Tx(const libmw::TxRef& tx)
+    Tx(const mw::Transaction::CPtr& tx)
         : m_transaction(tx) {}
 
-    std::set<libmw::KernelHash> GetKernelHashes() const
+    std::set<mw::Hash> GetKernelHashes() const
     {
-        return IsNull() ? std::set<libmw::KernelHash>{} : m_transaction.GetKernelHashes();
+        if (IsNull()) {
+            return std::set<mw::Hash>{};
+        }
+
+        std::set<mw::Hash> kernel_hashes;
+        for (const Kernel& kernel : m_transaction->GetKernels()) {
+            kernel_hashes.insert(kernel.GetHash());
+        }
+
+        return kernel_hashes;
     }
 
-    std::set<libmw::Commitment> GetInputCommits() const noexcept
+    std::set<Commitment> GetInputCommits() const noexcept
     {
-        return IsNull() ? std::set<libmw::Commitment>{} : m_transaction.GetInputCommits();
+        if (IsNull()) {
+            return std::set<Commitment>{};
+        }
+
+        std::set<Commitment> input_commits;
+        for (const Input& input : m_transaction->GetInputs()) {
+            input_commits.insert(input.GetCommitment());
+        }
+
+        return input_commits;
     }
 
-    std::set<libmw::Commitment> GetOutputCommits() const noexcept
+    std::set<Commitment> GetOutputCommits() const noexcept
     {
-        return IsNull() ? std::set<libmw::Commitment>{} : m_transaction.GetOutputCommits();
+        if (IsNull()) {
+            return std::set<Commitment>{};
+        }
+
+        std::set<Commitment> output_commits;
+        for (const Output& output : m_transaction->GetOutputs()) {
+            output_commits.insert(output.GetCommitment());
+        }
+
+        return output_commits;
     }
 
     std::vector<libmw::PegIn> GetPegIns() const noexcept
     {
-        return IsNull() ? std::vector<libmw::PegIn>{} : m_transaction.GetPegins();
+        if (IsNull()) {
+            return std::vector<libmw::PegIn>{};
+        }
+
+        std::vector<libmw::PegIn> pegins;
+        for (const Kernel& kernel : m_transaction->GetKernels()) {
+            if (kernel.HasPegIn()) {
+                pegins.emplace_back(libmw::PegIn{kernel.GetPegIn(), kernel.GetCommitment().array()});
+            }
+        }
+
+        return pegins;
     }
 
     std::vector<libmw::PegOut> GetPegOuts() const noexcept
     {
-        return IsNull() ? std::vector<libmw::PegOut>{} : m_transaction.GetPegouts();
+        if (IsNull()) {
+            return std::vector<libmw::PegOut>{};
+        }
+
+        std::vector<libmw::PegOut> pegouts;
+        for (const Kernel& kernel : m_transaction->GetKernels()) {
+            if (kernel.HasPegOut()) {
+                const PegOutCoin& pegout = kernel.GetPegOut().value();
+                pegouts.emplace_back(libmw::PegOut{ pegout.GetAmount(), pegout.GetScriptPubKey() });
+            }
+        }
+
+        return pegouts;
     }
 
     uint64_t GetMWEBWeight() const noexcept
     {
-        return IsNull() ? 0 : m_transaction.GetWeight();
+        return IsNull() ? 0 : m_transaction->CalcWeight();
     }
 
     CAmount GetFee() const noexcept
     {
-        return IsNull() ? 0 : CAmount(m_transaction.GetTotalFee());
+        return IsNull() ? 0 : CAmount(m_transaction->GetTotalFee());
     }
 
     uint64_t GetLockHeight() const noexcept
     {
-        return IsNull() ? 0 : m_transaction.GetLockHeight();
+        return IsNull() ? 0 : m_transaction->GetLockHeight();
     }
 
     ADD_SERIALIZE_METHODS;
@@ -139,12 +217,13 @@ struct Tx {
             READWRITE(bytes);
 
             if (!bytes.empty()) {
-                m_transaction = libmw::DeserializeTx(bytes);
+                Deserializer deserializer{bytes};
+                m_transaction = std::make_shared<mw::Transaction>(mw::Transaction::Deserialize(deserializer));
             }
         } else {
             // Serialize
             if (!IsNull()) {
-                std::vector<uint8_t> bytes = libmw::SerializeTx(m_transaction);
+                std::vector<uint8_t> bytes = m_transaction->Serialized();
                 READWRITE(bytes);
             } else {
                 READWRITE(std::vector<uint8_t>{});
@@ -152,12 +231,12 @@ struct Tx {
         }
     }
 
-    bool IsNull() const noexcept { return m_transaction.pTransaction == nullptr; }
-    void SetNull() noexcept { m_transaction.pTransaction = nullptr; }
+    bool IsNull() const noexcept { return m_transaction == nullptr; }
+    void SetNull() noexcept { m_transaction.reset(); }
 
     std::string ToString() const
     {
-        return IsNull() ? "" : m_transaction.ToString();
+        return IsNull() ? "" : m_transaction->Print();
     }
 };
 

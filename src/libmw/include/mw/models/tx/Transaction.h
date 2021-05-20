@@ -5,6 +5,7 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
+#include <mw/consensus/Weight.h>
 #include <mw/crypto/Crypto.h>
 #include <mw/models/crypto/Hash.h>
 #include <mw/models/crypto/BigInteger.h>
@@ -15,6 +16,7 @@
 #include <mw/traits/Hashable.h>
 
 #include <memory>
+#include <numeric>
 #include <vector>
 
 MW_NAMESPACE
@@ -98,6 +100,7 @@ public:
     const std::vector<SignedMessage>& GetOwnerSigs() const noexcept { return m_body.GetOwnerSigs(); }
     uint64_t GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
     uint64_t GetLockHeight() const noexcept { return m_body.GetLockHeight(); }
+    uint64_t CalcWeight() const noexcept { return (uint64_t)Weight::Calculate(m_body); }
 
     std::vector<Commitment> GetKernelCommits() const noexcept { return m_body.GetKernelCommits(); }
     std::vector<Commitment> GetInputCommits() const noexcept { return m_body.GetInputCommits(); }
@@ -134,7 +137,34 @@ public:
     mw::Hash GetHash() const noexcept final { return m_hash; }
 
     void Validate() const;
-    std::string Print() const noexcept;
+
+    std::string Print() const noexcept
+    {
+        auto print_kernel = [](const Kernel& kernel) -> std::string {
+            return StringUtil::Format(
+                "kern(commit:{}, pegin: {}, pegout: {}, fee: {})",
+                kernel.GetCommitment(),
+                kernel.GetPegIn(),
+                kernel.GetPegOut() ? kernel.GetPegOut().value().GetAmount() : 0,
+                kernel.GetFee()
+            );
+        };
+        std::string kernels_str = std::accumulate(
+            GetKernels().begin(), GetKernels().end(), std::string{},
+            [&print_kernel](std::string str, const Kernel& kern) {
+                return str.empty() ? print_kernel(kern) : std::move(str) + ", " + print_kernel(kern);
+            }
+        );
+
+        return StringUtil::Format(
+            "tx(hash:{}, offset:{}, kernels:[{}], inputs:{}, outputs:{})",
+            GetHash(),
+            GetKernelOffset().ToHex(),
+            kernels_str,
+            GetInputCommits(),
+            GetOutputCommits()
+        );
+    }
 
 private:
     // The kernel "offset" k2 excess is k1G after splitting the key k = k1 + k2.

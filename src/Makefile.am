@@ -118,7 +118,6 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/db/MMRInfoDB.cpp \
 	libmw/src/file/File.cpp \
 	libmw/src/libmw/defs.cpp \
-	libmw/src/libmw/libmw.cpp \
 	libmw/src/libmw/libmw_miner.cpp \
 	libmw/src/libmw/libmw_node.cpp \
 	libmw/src/libmw/libmw_wallet.cpp \
@@ -654,14 +653,19 @@ litecoin_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LI
 # bitcoinconsensus library #
 if BUILD_BITCOIN_LIBS
 include_HEADERS = script/bitcoinconsensus.h
-libbitcoinconsensus_la_SOURCES = $(crypto_libbitcoin_crypto_base_a_SOURCES) $(libbitcoin_consensus_a_SOURCES)
+libbitcoinconsensus_la_SOURCES = \
+  $(crypto_libbitcoin_crypto_base_a_SOURCES) \
+  $(libbitcoin_consensus_a_SOURCES) \
+  libmw/src/crypto/Hasher.cpp \
+  libmw/src/traits/Serializable.cpp \
+  support/cleanse.cpp
 
 if GLIBC_BACK_COMPAT
   libbitcoinconsensus_la_SOURCES += compat/glibc_compat.cpp
 endif
 
 libbitcoinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libbitcoinconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS)
+libbitcoinconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS) $(BOOST_SYSTEM_LIB) $(MW_LIBS)
 libbitcoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1-zkp/include -DBUILD_BITCOIN_INTERNAL $(SSL_CFLAGS) $(LIBMW_CPPFLAGS)
 libbitcoinconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 

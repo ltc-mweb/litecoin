@@ -8,7 +8,7 @@ public:
     BlockValidator() = default;
 
     void Validate(
-        const mw::Block::Ptr& pBlock,
+        const mw::Block::CPtr& pBlock,
         const mw::Hash& mweb_hash,
         const std::vector<PegInCoin>& pegInCoins,
         const std::vector<PegOutCoin>& pegOutCoins

@@ -202,10 +202,7 @@ OutputIndex CoinControlDialog::BuildOutputIndex(QTreeWidgetItem* item)
     } else {
         assert(IsMWEB(item));
 
-        std::vector<uint8_t> parsed = ParseHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
-        libmw::Commitment output_commit;
-        std::copy_n(parsed.begin(), parsed.size(), output_commit.begin());
-        return output_commit;
+        return Commitment::FromHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
     }
 }
 
@@ -388,9 +385,7 @@ void CoinControlDialog::radioListMode(bool checked)
 CInputCoin CoinControlDialog::BuildInputCoin(QTreeWidgetItem* item)
 {
     if (IsMWEB(item)) {
-        std::vector<uint8_t> parsed = ParseHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
-        libmw::Commitment output_commit;
-        std::copy_n(parsed.begin(), parsed.size(), output_commit.begin());
+        Commitment output_commit = Commitment::FromHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
         
         libmw::Coin coin;
         bool found = model->wallet().findCoin(output_commit, coin);
@@ -753,8 +748,8 @@ void CoinControlDialog::updateView()
                 // vout index
                 itemOutput->setData(COLUMN_ADDRESS, VOutRole, outpoint.n);
             } else {
-                const libmw::Commitment& output_commit = boost::get<libmw::Commitment>(out.output_index);
-                itemOutput->setData(COLUMN_ADDRESS, CommitmentRole, QString::fromStdString(HexStr(output_commit)));
+                const Commitment& output_commit = boost::get<Commitment>(out.output_index);
+                itemOutput->setData(COLUMN_ADDRESS, CommitmentRole, QString::fromStdString(output_commit.ToHex()));
             }
 
              // disable locked coins

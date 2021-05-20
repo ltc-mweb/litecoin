@@ -13,6 +13,9 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include <mw/models/crypto/BlindingFactor.h>
+#include <mw/models/crypto/Commitment.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 
@@ -38,12 +41,8 @@ namespace mw
 
 LIBMW_NAMESPACE
 
-typedef std::array<uint8_t, 32> BlockHash;
-typedef std::array<uint8_t, 32> KernelHash;
 typedef std::array<uint8_t, 32> Offset;
-typedef std::array<uint8_t, 32> BlindingFactor;
 typedef std::array<uint8_t, 32> PrivateKey;
-typedef std::array<uint8_t, 33> Commitment;
 typedef std::array<uint8_t, 33> PubKey;
 typedef std::pair<PubKey, PubKey> MWEBAddress;
 
@@ -55,9 +54,6 @@ static const uint8_t PEGIN_OUTPUT = 1;
 /// Any change to these will cause a hardfork!
 /// </summary>
 static constexpr size_t MAX_BLOCK_WEIGHT = 21'000;
-static constexpr size_t KERNEL_WEIGHT = 2;
-static constexpr size_t OWNER_SIG_WEIGHT = 1;
-static constexpr size_t OUTPUT_WEIGHT = 18;
 static constexpr uint16_t PEGIN_MATURITY = 20;
 static constexpr uint8_t MAX_KERNEL_EXTRADATA_SIZE = 33;
 
@@ -74,7 +70,7 @@ static constexpr uint32_t PEGIN_INDEX{ 1 };
 struct PegIn
 {
     uint64_t amount;
-    std::array<uint8_t, 33> commitment;
+    Commitment commitment;
 
     bool operator==(const PegIn& rhs) const {
         return amount == rhs.amount && commitment == rhs.commitment;
@@ -89,66 +85,6 @@ struct PegOut
 {
     uint64_t amount;
     std::vector<uint8_t> scriptPubKey;
-};
-
-struct HeaderRef
-{
-    std::shared_ptr<const mw::Header> pHeader;
-};
-
-/// <summary>
-/// A simple interface for accessing members of an MWEB block.
-/// </summary>
-struct BlockRef
-{
-    /// <summary>
-    /// Checks whether the internal block pointer is null.
-    /// If it's null, it is unsafe to call any other methods on this object.
-    /// </summary>
-    /// <returns>true if interal pointer is null. Otherwise, false.</returns>
-    bool IsNull() const noexcept { return pBlock == nullptr; }
-
-    libmw::BlockHash GetHash() const noexcept;
-    libmw::HeaderRef GetHeader() const noexcept;
-    uint64_t GetTotalFee() const noexcept;
-    uint64_t GetWeight() const noexcept;
-    std::set<KernelHash> GetKernelHashes() const noexcept;
-    std::vector<libmw::Commitment> GetInputCommits() const noexcept;
-    std::vector<libmw::Commitment> GetOutputCommits() const noexcept;
-    int64_t GetSupplyChange() const noexcept;
-
-    std::shared_ptr<mw::Block> pBlock;
-};
-
-/// <summary>
-/// A wrapper around an internal pointer to a BlockUndo object.
-/// </summary>
-struct BlockUndoRef
-{
-    std::shared_ptr<const mw::BlockUndo> pUndo;
-};
-
-/// <summary>
-/// A simple interface for accessing members of an MWEB transaction.
-/// </summary>
-struct TxRef
-{
-    std::vector<libmw::PegOut> GetPegouts() const noexcept;
-    std::vector<libmw::PegIn> GetPegins() const noexcept;
-    uint64_t GetTotalFee() const noexcept;
-    uint64_t GetWeight() const noexcept;
-    std::set<KernelHash> GetKernelHashes() const noexcept;
-    std::set<libmw::Commitment> GetInputCommits() const noexcept;
-    std::set<libmw::Commitment> GetOutputCommits() const noexcept;
-    uint64_t GetLockHeight() const noexcept;
-
-    /// <summary>
-    /// Prints the transaction details.
-    /// </summary>
-    /// <returns>The formatted transaction details.</returns>
-    std::string ToString() const noexcept;
-
-    std::shared_ptr<const mw::Transaction> pTransaction;
 };
 
 /// <summary>
@@ -168,25 +104,15 @@ struct CoinsViewRef
     std::shared_ptr<mw::ICoinsView> pCoinsView;
 };
 
-struct StateRef
-{
-    std::shared_ptr<mw::State> pState;
-};
-
 struct ChainParams
 {
     boost::filesystem::path dataDirectory;
 };
 
-struct BlockBuilderRef
-{
-    std::shared_ptr<mw::BlockBuilder> pBuilder;
-};
-
 /// <summary>
 /// Represents an output owned by the wallet, and the keys necessary to spend it.
 /// </summary>
-struct Coin
+struct Coin : public Traits::ISerializable
 {
     // 0 for typical outputs or 1 for pegged-in outputs
     // This is used to determine the required number of confirmations before spending.
@@ -197,21 +123,44 @@ struct Coin
 
     // The private key needed in order to spend the coin.
     // May be empty for watch-only wallets.
-    boost::optional<libmw::BlindingFactor> key;
+    boost::optional<BlindingFactor> key;
 
     // The blinding factor needed in order to spend the coin.
     // May be empty for watch-only wallets.
-    boost::optional<libmw::BlindingFactor> blind;
+    boost::optional<BlindingFactor> blind;
 
     // The output amount in litoshis.
     // Typically positive, but could be 0 in the future when we start using decoys to improve privacy.
     uint64_t amount;
 
     // The output commitment (v*H + r*G).
-    libmw::Commitment commitment;
+    Commitment commitment;
 
     bool IsChange() const noexcept { return address_index == CHANGE_INDEX; }
     bool IsPegIn() const noexcept { return address_index == PEGIN_INDEX; }
+
+    Serializer& Serialize(Serializer& serializer) const noexcept final
+    {
+        return serializer
+            .Append<uint8_t>(features)
+            .Append<uint32_t>(address_index)
+            .Append(key)
+            .Append(blind)
+            .Append<uint64_t>(amount)
+            .Append(commitment);
+    }
+
+    static Coin Deserialize(Deserializer& deserializer)
+    {
+        Coin coin;
+        coin.features = deserializer.Read<uint8_t>();
+        coin.address_index = deserializer.Read<uint32_t>();
+        coin.key = deserializer.ReadOpt<BlindingFactor>();
+        coin.blind = deserializer.ReadOpt<BlindingFactor>();
+        coin.amount = deserializer.Read<uint64_t>();
+        coin.commitment = deserializer.Read<Commitment>();
+        return coin;
+    }
 };
 
 END_NAMESPACE

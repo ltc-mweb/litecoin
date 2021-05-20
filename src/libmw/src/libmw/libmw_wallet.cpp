@@ -31,7 +31,7 @@ libmw::KeychainRef LoadKeychain(
     return libmw::KeychainRef{ pKeychain };
 }
 
-libmw::TxRef CreateTx(
+mw::Transaction::CPtr CreateTx(
     const std::vector<libmw::Coin>& input_coins,
     const std::vector<libmw::Recipient>& recipients,
     const boost::optional<uint64_t>& pegin_amount,
@@ -53,24 +53,22 @@ libmw::TxRef CreateTx(
         }
     }
 
-    mw::Transaction::CPtr pTransaction = Transact::CreateTx(input_coins, receivers, pegouts, pegin_amount, fee);
-    return libmw::TxRef{ pTransaction };
+    return Transact::CreateTx(input_coins, receivers, pegouts, pegin_amount, fee);
 }
 
 bool RewindBlockOutput(
     const libmw::KeychainRef& keychain,
-    const libmw::BlockRef& block,
-    const libmw::Commitment& output_commit,
+    const mw::Block::CPtr& block,
+    const Commitment& output_commit,
     libmw::Coin& coin_out)
 {
     assert(keychain.pKeychain != nullptr);
-    assert(block.pBlock != nullptr);
+    assert(block != nullptr);
 
     Wallet wallet(keychain.pKeychain);
-    ::Commitment commitment(output_commit);
 
-    for (const Output& output : block.pBlock->GetOutputs()) {
-        if (output.GetCommitment() == commitment) {
+    for (const Output& output : block->GetOutputs()) {
+        if (output.GetCommitment() == output_commit) {
             return wallet.RewindOutput(output, coin_out);
         }
     }
@@ -80,18 +78,17 @@ bool RewindBlockOutput(
 
 bool RewindTxOutput(
     const libmw::KeychainRef& keychain,
-    const libmw::TxRef& tx,
-    const libmw::Commitment& output_commit,
+    const mw::Transaction::CPtr& tx,
+    const Commitment& output_commit,
     libmw::Coin& coin_out)
 {
     assert(keychain.pKeychain != nullptr);
-    assert(tx.pTransaction != nullptr);
+    assert(tx != nullptr);
 
     Wallet wallet(keychain.pKeychain);
-    ::Commitment commitment(output_commit);
 
-    for (const Output& output : tx.pTransaction->GetOutputs()) {
-        if (output.GetCommitment() == commitment) {
+    for (const Output& output : tx->GetOutputs()) {
+        if (output.GetCommitment() == output_commit) {
             return wallet.RewindOutput(output, coin_out);
         }
     }

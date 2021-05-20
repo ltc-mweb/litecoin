@@ -9,6 +9,7 @@
 #include <coins.h>
 #include <compressor.h>
 #include <consensus/consensus.h>
+#include <libmw/libmw.h>
 #include <primitives/transaction.h>
 #include <serialize.h>
 #include <version.h>
@@ -103,7 +104,7 @@ class CBlockUndo
 {
 public:
     std::vector<CTxUndo> vtxundo; // for all but the coinbase
-    libmw::BlockUndoRef mwundo;
+    mw::BlockUndo::CPtr mwundo;
 
     ADD_SERIALIZE_METHODS;
 
@@ -111,8 +112,8 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(vtxundo);
 
-        if (mwundo.pUndo != nullptr) {
-            std::vector<uint8_t> bytes = libmw::SerializeBlockUndo(mwundo);
+        if (mwundo != nullptr) {
+            std::vector<uint8_t> bytes = mwundo->Serialized();
             READWRITE(bytes);
         }
     }
@@ -133,7 +134,8 @@ inline void UnserializeBlockUndo(CBlockUndo& blockundo, Stream& s, const unsigne
         // There's more data to read. Mimblewimble rewind data must be available.
         std::vector<uint8_t> mwundo_bytes;
         s >> mwundo_bytes;
-        blockundo.mwundo = libmw::DeserializeBlockUndo(mwundo_bytes);
+        Deserializer deserializer(std::move(mwundo_bytes));
+        blockundo.mwundo = std::make_shared<mw::BlockUndo>(mw::BlockUndo::Deserialize(deserializer));
     }
 }
 

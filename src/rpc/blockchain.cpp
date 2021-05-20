@@ -436,9 +436,9 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
             setDepends.insert(txin.prevout.hash.ToString());
     }
 
-    std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+    std::set<Commitment> input_commits = tx.m_mwtx.GetInputCommits();
     uint256 created_tx_hash;
-    for (const libmw::Commitment& input_commit : input_commits) {
+    for (const Commitment& input_commit : input_commits) {
         if (mempool.GetCreatedTx(input_commit, created_tx_hash)) {
             setDepends.insert(created_tx_hash.ToString());
         }
@@ -461,7 +461,7 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
         for (const libmw::PegIn& pegin : tx.m_mwtx.GetPegIns()) {
             UniValue pegin_uni(UniValue::VOBJ);
             pegin_uni.pushKV("amount", pegin.amount);
-            pegin_uni.pushKV("commitment", HexStr(pegin.commitment.begin(), pegin.commitment.end()));
+            pegin_uni.pushKV("commitment", pegin.commitment.ToHex());
             pegins.push_back(pegin_uni);
         }
 
@@ -480,16 +480,16 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
 
         // Inputs
         UniValue input_commits(UniValue::VARR);
-        for (const libmw::Commitment& input_commit : tx.m_mwtx.GetInputCommits()) {
-            input_commits.push_back(HexStr(input_commit.begin(), input_commit.end()));
+        for (const Commitment& input_commit : tx.m_mwtx.GetInputCommits()) {
+            input_commits.push_back(input_commit.ToHex());
         }
 
         mweb_info.pushKV("inputs", input_commits);
 
         // Outputs
         UniValue output_commits(UniValue::VARR);
-        for (const libmw::Commitment& output_commit : tx.m_mwtx.GetOutputCommits()) {
-            output_commits.push_back(HexStr(output_commit.begin(), output_commit.end()));
+        for (const Commitment& output_commit : tx.m_mwtx.GetOutputCommits()) {
+            output_commits.push_back(output_commit.ToHex());
         }
 
         mweb_info.pushKV("outputs", output_commits);

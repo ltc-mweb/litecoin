@@ -16,8 +16,8 @@ CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 
 bool CCoinsView::HaveCoin(const OutputIndex& index) const
 {
-    if (index.type() == typeid(libmw::Commitment)) {
-        return libmw::node::HasCoin(GetMWView(), boost::get<libmw::Commitment>(index));
+    if (index.type() == typeid(Commitment)) {
+        return libmw::node::HasCoin(GetMWView(), boost::get<Commitment>(index));
     } else {
         Coin coin;
         return GetCoin(boost::get<COutPoint>(index), coin);
@@ -129,8 +129,8 @@ const Coin& CCoinsViewCache::AccessCoin(const COutPoint &outpoint) const {
 }
 
 bool CCoinsViewCache::HaveCoin(const OutputIndex& index) const {
-    if (index.type() == typeid(libmw::Commitment)) {
-        return libmw::node::HasCoin(GetMWView(), boost::get<libmw::Commitment>(index));
+    if (index.type() == typeid(Commitment)) {
+        return libmw::node::HasCoin(GetMWView(), boost::get<Commitment>(index));
     } else {
         CCoinsMap::const_iterator it = FetchCoin(boost::get<COutPoint>(index));
         return (it != cacheCoins.end() && !it->second.coin.IsSpent());
@@ -138,8 +138,8 @@ bool CCoinsViewCache::HaveCoin(const OutputIndex& index) const {
 }
 
 bool CCoinsViewCache::HaveCoinInCache(const OutputIndex& index) const {
-    if (index.type() == typeid(libmw::Commitment)) {
-        return libmw::node::HasCoinInCache(GetMWView(), boost::get<libmw::Commitment>(index));
+    if (index.type() == typeid(Commitment)) {
+        return libmw::node::HasCoinInCache(GetMWView(), boost::get<Commitment>(index));
     } else {
         CCoinsMap::const_iterator it = cacheCoins.find(boost::get<COutPoint>(index));
         return (it != cacheCoins.end() && !it->second.coin.IsSpent());
@@ -240,7 +240,7 @@ void CCoinsViewCache::Uncache(const OutputIndex& coin)
             cacheCoins.erase(it);
         }
     } else {
-        // MW: TODO - libmw::node::Uncache(GetMWView(), boost::get<libmw::Commitment>(coin));
+        // MW: TODO - libmw::node::Uncache(GetMWView(), boost::get<Commitment>(coin));
     }
 }
 

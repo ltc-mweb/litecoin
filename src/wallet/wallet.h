@@ -831,7 +831,7 @@ private:
     /**
      * Used to keep track of which CWalletTx an MWEB output came from.
      */
-    std::map<libmw::Commitment, uint256> mapOutputCommits GUARDED_BY(cs_wallet);
+    std::map<Commitment, uint256> mapOutputCommits GUARDED_BY(cs_wallet);
     void AddToOutputCommits(const CWalletTx& wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
@@ -1392,7 +1392,7 @@ public:
     /** Add a KeyOriginInfo to the wallet */
     bool AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info);
 
-    bool GetCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) const;
+    bool GetCoin(const Commitment& output_commit, libmw::Coin& coin) const;
 
     CAmount GetAmount(const CTxOutput& output) const;
     bool ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const;

@@ -131,26 +131,26 @@ public:
     std::string ToString() const;
 };
 
-typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
+typedef boost::variant<COutPoint, Commitment> OutputIndex;
 
 class CTxInput
 {
 public:
-    CTxInput(libmw::Commitment commitment)
+    CTxInput(Commitment commitment)
         : m_input(std::move(commitment)) {}
     CTxInput(CTxIn txin)
         : m_input(std::move(txin)) {}
 
-    bool IsMWEB() const noexcept { return m_input.type() == typeid(libmw::Commitment); }
+    bool IsMWEB() const noexcept { return m_input.type() == typeid(Commitment); }
     OutputIndex GetIndex() const noexcept
     {
         return IsMWEB() ? OutputIndex{GetCommitment()} : OutputIndex{GetTxIn().prevout};
     }
 
-    const libmw::Commitment& GetCommitment() const noexcept
+    const Commitment& GetCommitment() const noexcept
     {
         assert(IsMWEB());
-        return boost::get<libmw::Commitment>(m_input);
+        return boost::get<Commitment>(m_input);
     }
 
     const CTxIn& GetTxIn() const noexcept
@@ -160,7 +160,7 @@ public:
     }
 
 private:
-    boost::variant<CTxIn, libmw::Commitment> m_input;
+    boost::variant<CTxIn, Commitment> m_input;
 };
 
 /** An output of a transaction.  It contains the public key that the next input
@@ -218,19 +218,19 @@ class CTxOutput
 {
 public:
     CTxOutput() = default;
-    CTxOutput(const CTransaction* pTx, libmw::Commitment commitment)
-        : m_tx(pTx), m_idx(commitment), m_output(commitment) {}
+    CTxOutput(const CTransaction* pTx, Commitment commitment)
+        : m_tx(pTx), m_idx(commitment), m_output(std::move(commitment)) {}
     CTxOutput(const CTransaction* pTx, OutputIndex idx, CTxOut txout)
         : m_tx(pTx), m_idx(std::move(idx)), m_output(std::move(txout)) {}
 
-    bool IsMWEB() const noexcept { return m_output.type() == typeid(libmw::Commitment); }
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(Commitment); }
 
     const OutputIndex& GetIndex() const noexcept { return m_idx; }
     
-    const libmw::Commitment& GetCommitment() const noexcept
+    const Commitment& GetCommitment() const noexcept
     {
         assert(IsMWEB());
-        return boost::get<libmw::Commitment>(m_output);
+        return boost::get<Commitment>(m_output);
     }
 
     const CTxOut& GetTxOut() const noexcept
@@ -248,7 +248,7 @@ public:
 private:
     const CTransaction* m_tx;
     OutputIndex m_idx;
-    boost::variant<CTxOut, libmw::Commitment> m_output;
+    boost::variant<CTxOut, Commitment> m_output;
 };
 
 struct CMutableTransaction;
@@ -489,7 +489,7 @@ public:
             inputs.push_back(txin);
         }
 
-        for (libmw::Commitment commit : m_mwtx.GetInputCommits()) {
+        for (Commitment commit : m_mwtx.GetInputCommits()) {
             inputs.push_back(std::move(commit));
         }
 
@@ -504,9 +504,9 @@ public:
 
     CTxOutput GetOutput(const OutputIndex& idx) const noexcept
     {
-        if (idx.type() == typeid(libmw::Commitment)) {
+        if (idx.type() == typeid(Commitment)) {
             // MW: TODO - Assert output with commit exists
-            return CTxOutput{this, boost::get<libmw::Commitment>(idx)};
+            return CTxOutput{this, boost::get<Commitment>(idx)};
         } else {
             const COutPoint& outpoint = boost::get<COutPoint>(idx);
             assert(vout.size() > outpoint.n);
@@ -522,7 +522,7 @@ public:
             outputs.push_back(CTxOutput{this, COutPoint(GetHash(), n), vout[n]});
         }
 
-        for (libmw::Commitment commit : m_mwtx.GetOutputCommits()) {
+        for (Commitment commit : m_mwtx.GetOutputCommits()) {
             outputs.push_back(CTxOutput{this, std::move(commit)});
         }
 

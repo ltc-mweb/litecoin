@@ -567,7 +567,7 @@ public:
     /**
      * Maps output commitments to the transactions that create them.
      */
-    std::map<libmw::Commitment, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
+    std::map<Commitment, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
 
     std::map<uint256, CAmount> mapDeltas;
 
@@ -705,7 +705,7 @@ public:
         return (mapTx.count(hash) != 0);
     }
 
-    bool GetCreatedTx(const libmw::Commitment& input, uint256& hash) const
+    bool GetCreatedTx(const Commitment& input, uint256& hash) const
     {
         LOCK(cs);
         auto iter = mapTxOutputs_MWEB.find(input);

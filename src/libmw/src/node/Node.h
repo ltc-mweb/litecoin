@@ -13,13 +13,13 @@ public:
     mw::CoinsViewDB::Ptr GetDBView() final { return m_pDBView; }
 
     void ValidateBlock(
-        const mw::Block::Ptr& pBlock,
+        const mw::Block::CPtr& pBlock,
         const mw::Hash& mweb_hash,
         const std::vector<PegInCoin>& pegInCoins,
         const std::vector<PegOutCoin>& pegOutCoins
     ) const final;
 
-    mw::BlockUndo::CPtr ConnectBlock(const mw::Block::Ptr& pBlock, const mw::ICoinsView::Ptr& pView) final;
+    mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& pBlock, const mw::ICoinsView::Ptr& pView) final;
     void DisconnectBlock(const mw::BlockUndo::CPtr& pUndoData, const mw::ICoinsView::Ptr& pView) final;
 
     mw::ICoinsView::Ptr ApplyState(

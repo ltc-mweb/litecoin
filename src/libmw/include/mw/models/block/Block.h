@@ -87,12 +87,12 @@ public:
     void Validate() const;
 
     bool WasValidated() const noexcept { return m_validated; }
-    void MarkAsValidated() noexcept { m_validated = true; }
+    void MarkAsValidated() const noexcept { m_validated = true; }
 
 private:
     mw::Header::CPtr m_pHeader;
     TxBody m_body;
-    bool m_validated;
+    mutable bool m_validated;
 };
 
 END_NAMESPACE

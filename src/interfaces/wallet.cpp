@@ -259,7 +259,7 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetDestValues(prefix);
     }
-    bool findCoin(const libmw::Commitment& output_commit, libmw::Coin& coin) override
+    bool findCoin(const Commitment& output_commit, libmw::Coin& coin) override
     {
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetCoin(output_commit, coin);
@@ -491,9 +491,9 @@ public:
             if (wtx != nullptr) {
                 int depth = wtx->GetDepthInMainChain(*locked_chain);
                 if (depth >= 0) {
-                    if (output.type() == typeid(libmw::Commitment)) {
+                    if (output.type() == typeid(Commitment)) {
                         libmw::Coin coin;
-                        if (m_wallet->GetCoin(boost::get<libmw::Commitment>(output), coin)) {
+                        if (m_wallet->GetCoin(boost::get<Commitment>(output), coin)) {
                             MWEB::StealthAddress address = m_wallet->GetMWWallet()->GetStealthAddress(coin.address_index);
                             result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), address});
                         }

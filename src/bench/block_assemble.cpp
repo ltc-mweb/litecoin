@@ -80,7 +80,7 @@ static void AssembleBlock(benchmark::State& state)
 
         libmw::CoinsViewRef mweb_dbview = libmw::node::Initialize(
             libmw::ChainParams{GetDataDir().string()},
-            libmw::HeaderRef{nullptr},
+            mw::Header::CPtr{nullptr},
             std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),
             [](const std::string& logstr) { LogPrintf(logstr.c_str()); });
         pcoinsdbview->SetMWView(mweb_dbview);

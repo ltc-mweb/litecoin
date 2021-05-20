@@ -16,13 +16,3 @@ Commitment Commitment::Transparent(const uint64_t value)
 {
     return Crypto::CommitTransparent(value);
 }
-
-Serializer& Commitment::Serialize(Serializer& serializer) const noexcept
-{
-    return m_bytes.Serialize(serializer);
-}
-
-Commitment Commitment::Deserialize(Deserializer& deserializer)
-{
-    return Commitment(BigInt<SIZE>::Deserialize(deserializer));
-}
