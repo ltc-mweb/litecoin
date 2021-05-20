@@ -8,6 +8,7 @@
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <consensus/validation.h>
+#include <logging.h>
 
 // TODO remove the following dependencies
 #include <chain.h>
@@ -16,6 +17,10 @@
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
 {
+    // MWEB: Check kernel lock heights
+    if (tx.m_mwtx.GetLockHeight() > (uint64_t)nBlockHeight)
+        return false;
+
     if (tx.nLockTime == 0)
         return true;
     if ((int64_t)tx.nLockTime < ((int64_t)tx.nLockTime < LOCKTIME_THRESHOLD ? (int64_t)nBlockHeight : nBlockTime))
@@ -99,6 +104,7 @@ bool EvaluateSequenceLocks(const CBlockIndex& block, std::pair<int, int64_t> loc
     return true;
 }
 
+// MW: TODO - Do we want to support relative locks for anything?
 bool SequenceLocks(const CTransaction &tx, int flags, std::vector<int>* prevHeights, const CBlockIndex& block)
 {
     return EvaluateSequenceLocks(block, CalculateSequenceLocks(tx, flags, prevHeights, block));
@@ -167,10 +173,9 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
         return state.DoS(10, false, REJECT_INVALID, "bad-txns-mwdata-in-block");
     }
 
+    // MWEB: CheckTransaction
     if (tx.HasMWData()) {
-        try {
-            libmw::node::CheckTransaction(tx.m_mwtx.m_transaction);
-        } catch (std::exception&) {
+        if (!libmw::node::CheckTransaction(tx.m_mwtx.m_transaction)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
         }
     }
@@ -260,19 +265,22 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
 
     // Tally transaction fees
     CAmount txfee_aux = nValueIn - value_out;
+    if (!MoneyRange(txfee_aux)) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
+    }
 
     if (tx.HasMWData()) {
-        try {
-            libmw::node::CheckTxInputs(inputs.GetMWView(), tx.m_mwtx.m_transaction, nSpendHeight);
-        } catch (std::exception&) {
+        if (!libmw::node::CheckTxInputs(inputs.GetMWView(), tx.m_mwtx.m_transaction, nSpendHeight)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-mweb", false,
                              strprintf("%s: MWEB inputs missing/immature", __func__));
         }
-        txfee_aux += tx.m_mwtx.m_transaction.GetTotalFee();
-    }
 
-    if (!MoneyRange(txfee_aux)) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
+        CAmount mweb_fee = tx.m_mwtx.GetFee();
+        txfee_aux += mweb_fee;
+
+        if (!MoneyRange(mweb_fee) || !MoneyRange(txfee_aux)) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-mwebfee-outofrange");
+        }
     }
 
     txfee = txfee_aux;

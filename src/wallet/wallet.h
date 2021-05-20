@@ -8,6 +8,7 @@
 
 #include <amount.h>
 #include <interfaces/chain.h>
+#include <key_io.h>
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <streams.h>
@@ -23,6 +24,7 @@
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
 #include <libmw/libmw.h>
+#include <mweb/mweb_wallet.h>
 
 #include <algorithm>
 #include <atomic>
@@ -106,6 +108,7 @@ class CBlockPolicyEstimator;
 class CWalletTx;
 struct FeeCalculation;
 enum class FeeEstimateMode;
+namespace MWEB { class Wallet; }
 
 /** (client) version numbers for particular wallet features */
 enum WalletFeature
@@ -218,9 +221,37 @@ public:
 
 struct CRecipient
 {
-    CScript scriptPubKey;
+    DestinationScript receiver;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
+
+    bool IsMWEB() const noexcept
+    {
+        return receiver.IsMWEB();
+    }
+
+    const MWEB::StealthAddress& GetMWEBAddress() const noexcept
+    {
+        return receiver.GetMWEBAddress();
+    }
+
+    const CScript& GetScript() const noexcept
+    {
+        return receiver.GetScript();
+    }
+
+    bool IsWitnessProgram() const
+    {
+        if (!receiver.IsMWEB()) {
+            int witnessversion = 0;
+            std::vector<unsigned char> witnessprogram;
+            if (receiver.GetScript().IsWitnessProgram(witnessversion, witnessprogram)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 typedef std::map<std::string, std::string> mapValue_t;
@@ -248,7 +279,7 @@ struct COutputEntry
 {
     CTxDestination destination;
     CAmount amount;
-    int vout;
+    OutputIndex index;
 };
 
 /** A transaction with a merkle branch linking it to the block chain. */
@@ -320,13 +351,13 @@ public:
      * >0 : is a coinbase transaction which matures in this many blocks
      */
     int GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const;
+
     bool hashUnset() const { return (hashBlock.IsNull() || hashBlock == ABANDON_HASH); }
     bool isAbandoned() const { return (hashBlock == ABANDON_HASH); }
     void setAbandoned() { hashBlock = ABANDON_HASH; }
 
-    const uint256& GetHash() const { return tx->GetHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
-    bool IsImmatureCoinBase(interfaces::Chain::Lock& locked_chain) const;
+    bool IsImmature(interfaces::Chain::Lock& locked_chain) const;
 };
 
 //Get the marginal bytes of spending the specified output
@@ -389,6 +420,8 @@ public:
     char fFromMe;
     int64_t nOrderPos; //!< position in ordered transaction list
     std::multimap<int64_t, CWalletTx*>::const_iterator m_it_wtxOrdered;
+
+    boost::optional<MWEB::WalletTxInfo> mweb_wtx_info;
 
     // memory only
     mutable bool fDebitCached;
@@ -459,6 +492,10 @@ public:
             mapValueCopy["timesmart"] = strprintf("%u", nTimeSmart);
         }
 
+        if (mweb_wtx_info) {
+            mapValueCopy["mweb_info"] = mweb_wtx_info->ToHex();
+        }
+
         s << static_cast<const CMerkleTx&>(*this);
         std::vector<CMerkleTx> vUnused; //!< Used to be vtxPrev
         s << vUnused << mapValueCopy << vOrderForm << fTimeReceivedIsTxTime << nTimeReceived << fFromMe << fSpent;
@@ -476,11 +513,13 @@ public:
 
         ReadOrderPos(nOrderPos, mapValue);
         nTimeSmart = mapValue.count("timesmart") ? (unsigned int)atoi64(mapValue["timesmart"]) : 0;
+        mweb_wtx_info = mapValue.count("mweb_info") ? boost::make_optional(MWEB::WalletTxInfo::FromHex(mapValue["mweb_info"])) : boost::none;
 
         mapValue.erase("fromaccount");
         mapValue.erase("spent");
         mapValue.erase("n");
         mapValue.erase("timesmart");
+        mapValue.erase("mweb_info");
     }
 
     //! make sure balances are recalculated
@@ -514,6 +553,7 @@ public:
     CAmount GetAvailableCredit(interfaces::Chain::Lock& locked_chain, bool fUseCache=true, const isminefilter& filter=ISMINE_SPENDABLE) const NO_THREAD_SAFETY_ANALYSIS;
     CAmount GetImmatureWatchOnlyCredit(interfaces::Chain::Lock& locked_chain, const bool fUseCache=true) const;
     CAmount GetChange() const;
+    CAmount GetFee(const isminefilter& filter) const;
 
     // Get the marginal bytes if spending the specified output from this transaction
     int GetSpendSize(unsigned int out, bool use_max_sig = false) const
@@ -550,6 +590,37 @@ public:
     // that we still have the runtime check "AssertLockHeld(pwallet->cs_wallet)"
     // in place.
     std::set<uint256> GetConflicts() const NO_THREAD_SAFETY_ANALYSIS;
+
+    std::vector<CTxInput> GetInputs() const
+    {
+        std::vector<CTxInput> inputs = tx->GetInputs();
+        if (mweb_wtx_info && mweb_wtx_info->spent_input) {
+            inputs.push_back(*mweb_wtx_info->spent_input);
+        }
+
+        return inputs;
+    }
+
+    std::vector<CTxOutput> GetOutputs() const {
+        std::vector<CTxOutput> outputs = tx->GetOutputs();
+        if (mweb_wtx_info && mweb_wtx_info->received_coin) {
+            outputs.push_back(CTxOutput{tx.get(), mweb_wtx_info->received_coin->commitment});
+        }
+
+        return outputs;
+    }
+
+    bool IsPartialMWEB() const {
+        return tx->IsNull() && mweb_wtx_info;
+    }
+
+    const uint256& GetHash() const {
+        if (IsPartialMWEB()) {
+            return mweb_wtx_info->GetHash();
+        }
+
+        return tx->GetHash();
+    }
 };
 
 class COutput
@@ -596,31 +667,88 @@ public:
     }
 };
 
+struct MWOutput
+{
+    libmw::Coin coin;
+    int nDepth;
+    int64_t nTime;
+    MWEB::StealthAddress address;
+};
+
 struct COutputCoin
 {
-    const COutput *out;
-    const libmw::Coin *mwCoin;
+    COutputCoin(const COutput& out) : m_output(out) {}
+    COutputCoin(const MWOutput& out) : m_output(out) {}
 
-    COutputCoin(const COutput& out) : out(&out) {}
-    COutputCoin(const libmw::Coin& coin) : mwCoin(&coin) {}
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(MWOutput); }
 
-    inline bool IsSpendable() const
+    bool IsSpendable() const
     {
-        if (mwCoin) return mwCoin->key && !mwCoin->spent;
-        return out->fSpendable;
+        if (IsMWEB()) return true;
+        return boost::get<COutput>(m_output).fSpendable;
     }
 
-    inline CAmount GetValue() const
+    bool GetDestination(CTxDestination& dest) const
     {
-        if (mwCoin) return mwCoin->amount;
-        return out->tx->tx->vout[out->i].nValue;
+        if (IsMWEB()) {
+            dest = boost::get<MWOutput>(m_output).address;
+            return true;
+        } else {
+            const COutput& out = boost::get<COutput>(m_output);
+            return ExtractDestination(out.tx->tx->vout[out.i].scriptPubKey, dest);
+        }
     }
 
-    inline CInputCoin GetInputCoin() const
+    boost::variant<CScript, MWEB::StealthAddress> GetAddress() const
     {
-        if (mwCoin) return CInputCoin(*mwCoin);
-        return out->GetInputCoin();
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return out.tx->tx->vout[out.i].scriptPubKey;
     }
+
+    CAmount GetValue() const
+    {
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.amount;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return out.tx->tx->vout[out.i].nValue;
+    }
+
+    int64_t GetTime() const
+    {
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).nTime;
+        return boost::get<COutput>(m_output).tx->GetTxTime();
+    }
+
+    int GetDepth() const
+    {
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).nDepth;
+        return boost::get<COutput>(m_output).nDepth;
+    }
+
+    CInputCoin GetInputCoin() const
+    {
+        if (IsMWEB()) return CInputCoin(boost::get<MWOutput>(m_output).coin);
+        return boost::get<COutput>(m_output).GetInputCoin();
+    }
+
+    OutputIndex GetIndex() const
+    {
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.commitment;
+
+        const COutput& out = boost::get<COutput>(m_output);
+        return COutPoint(out.tx->GetHash(), out.i);
+    }
+
+    // Returns nullptr for MWEB outputs
+    const CWalletTx* GetWalletTx() const
+    {
+        if (IsMWEB()) return nullptr;
+        return boost::get<COutput>(m_output).tx;
+    }
+
+    boost::variant<COutput, MWOutput> m_output;
 };
 
 /** Private key that includes an expiration date in case it never gets used. */
@@ -658,6 +786,9 @@ struct CoinSelectionParams
     CFeeRate effective_fee = CFeeRate(0);
     size_t tx_noinputs_size = 0;
 
+    boost::optional<OutputType> change_type = boost::none;
+    InputPreference input_preference = InputPreference::PREFER_LTC;
+
     CoinSelectionParams(bool use_bnb, size_t change_output_size, size_t change_spend_size, CFeeRate effective_fee, size_t tx_noinputs_size) : use_bnb(use_bnb), change_output_size(change_output_size), change_spend_size(change_spend_size), effective_fee(effective_fee), tx_noinputs_size(tx_noinputs_size) {}
     CoinSelectionParams() {}
 };
@@ -692,10 +823,16 @@ private:
      * detect and report conflicts (double-spends or
      * mutated transactions where the mutant gets mined).
      */
-    typedef std::multimap<COutPoint, uint256> TxSpends;
+    typedef std::multimap<OutputIndex, uint256> TxSpends;
     TxSpends mapTxSpends GUARDED_BY(cs_wallet);
-    void AddToSpends(const COutPoint& outpoint, const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void AddToSpends(const OutputIndex& outpoint, const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void AddToSpends(const uint256& wtxid) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+
+    /**
+     * Used to keep track of which CWalletTx an MWEB output came from.
+     */
+    std::map<Commitment, uint256> mapOutputCommits GUARDED_BY(cs_wallet);
+    void AddToOutputCommits(const CWalletTx& wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Add a transaction to the wallet, or update it.  pIndex and posInBlock should
@@ -769,6 +906,8 @@ private:
      */
     uint256 m_last_block_processed;
 
+    std::shared_ptr<MWEB::Wallet> mweb_wallet;
+
 public:
     /*
      * Main wallet lock.
@@ -792,18 +931,6 @@ public:
     bool SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    inline bool SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
-                    const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
-    {
-        std::vector<COutputCoin> vCoins;
-        std::transform(
-            vAvailableCoins.cbegin(), vAvailableCoins.cend(),
-            std::back_inserter(vCoins),
-            [](const COutput& out) { return COutputCoin(out); }
-        );
-        return SelectCoins(vCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
-    }
-
     const WalletLocation& GetLocation() const { return m_location; }
 
     /** Get a name for this wallet for logging/debugging purposes.
@@ -826,9 +953,7 @@ public:
     unsigned int nMasterKeyMaxID = 0;
 
     /** Construct wallet with specified name and database implementation. */
-    CWallet(interfaces::Chain& chain, const WalletLocation& location, std::unique_ptr<WalletDatabase> database) : m_chain(chain), m_location(location), database(std::move(database))
-    {
-    }
+    CWallet(interfaces::Chain& chain, const WalletLocation& location, std::unique_ptr<WalletDatabase> database);
 
     ~CWallet()
     {
@@ -848,7 +973,7 @@ public:
 
     std::map<CTxDestination, CAddressBookData> mapAddressBook GUARDED_BY(cs_wallet);
 
-    std::set<COutPoint> setLockedCoins GUARDED_BY(cs_wallet);
+    std::set<OutputIndex> setLockedCoins GUARDED_BY(cs_wallet);
 
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { return m_chain; }
@@ -861,17 +986,17 @@ public:
     /**
      * populate vCoins with vector of available COutputs.
      */
-    void AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<COutput>& vCoins, bool fOnlySafe=true, const CCoinControl *coinControl = nullptr, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0, const int nMinDepth = 0, const int nMaxDepth = 9999999) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<COutputCoin>& vCoins, bool fOnlySafe = true, const CCoinControl* coinControl = nullptr, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0, const int nMinDepth = 0, const int nMaxDepth = 9999999) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Return list of available coins and locked coins grouped by non-change output address.
      */
-    std::map<CTxDestination, std::vector<COutput>> ListCoins(interfaces::Chain::Lock& locked_chain) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    std::map<CTxDestination, std::vector<COutputCoin>> ListCoins(interfaces::Chain::Lock& locked_chain) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Find non-change parent output.
      */
-    const CTxOut& FindNonChangeParentOutput(const CTransaction& tx, int output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    CTxOutput FindNonChangeParentOutput(const CTransaction& tx, const OutputIndex& output_idx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Shuffle and select coins until nTargetValue is reached while avoiding
@@ -882,14 +1007,14 @@ public:
     bool SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibilityFilter& eligibility_filter, std::vector<OutputGroup> groups,
         std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const;
 
-    bool IsSpent(interfaces::Chain::Lock& locked_chain, const uint256& hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool IsSpent(interfaces::Chain::Lock& locked_chain, const OutputIndex& idx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     std::vector<OutputGroup> GroupOutputs(const std::vector<COutputCoin>& outputs, bool single_coin) const;
 
-    bool IsLockedCoin(uint256 hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void LockCoin(const COutPoint& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void UnlockCoin(const COutPoint& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool IsLockedCoin(const OutputIndex& output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void LockCoin(const OutputIndex& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void UnlockCoin(const OutputIndex& output) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void UnlockAllCoins() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void ListLockedCoins(std::vector<COutPoint>& vOutpts) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void ListLockedCoins(std::vector<OutputIndex>& vOutpts) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /*
      * Rescan abort properties
@@ -1010,8 +1135,8 @@ public:
      * @note passing nChangePosInOut as -1 will result in setting a random position
      */
     bool CreateTransaction(interfaces::Chain::Lock& locked_chain, const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosInOut,
-                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true, const CMWTx& mwtx = CMWTx());
-    bool CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, CReserveKey& reservekey, CConnman* connman, CValidationState& state);
+                           std::string& strFailReason, const CCoinControl& coin_control, bool sign = true);
+    bool CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, const std::vector<CReserveKey*>& reservekeys, CConnman* connman, CValidationState& state);
 
     bool DummySignTx(CMutableTransaction &txNew, const std::set<CTxOut> &txouts, bool use_max_sig = false) const
     {
@@ -1062,6 +1187,7 @@ public:
     void KeepKey(int64_t nIndex);
     void ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey);
     bool GetKeyFromPool(CPubKey &key, bool internal = false);
+    bool GenerateMWEBAddress(MWEB::StealthAddress& address);
     int64_t GetOldestKeyPoolTime();
     /**
      * Marks all keys in the keypool up to and including reserve_key as used.
@@ -1074,17 +1200,18 @@ public:
 
     std::set<CTxDestination> GetLabelAddresses(const std::string& label) const;
 
-    isminetype IsMine(const CTxIn& txin) const;
+    isminetype IsMine(const CTxInput& input) const;
     /**
      * Returns amount of debit if the input matches the
      * filter, otherwise returns 0
      */
-    CAmount GetDebit(const CTxIn& txin, const isminefilter& filter) const;
-    isminetype IsMine(const CTxOut& txout) const;
-    CAmount GetCredit(const CTxOut& txout, const isminefilter& filter) const;
-    bool IsChange(const CTxOut& txout) const;
+    CAmount GetDebit(const CTxInput& txin, const isminefilter& filter) const;
+    isminetype IsMine(const CTxOutput& output) const;
+    CAmount GetCredit(const CTxOutput& output, const isminefilter& filter) const;
+    bool IsChange(const CTxOutput& output) const;
+    bool IsChange(const CTxDestination& dest) const;
     bool IsChange(const CScript& script) const;
-    CAmount GetChange(const CTxOut& txout) const;
+    CAmount GetChange(const CTxOutput& output) const;
     bool IsMine(const CTransaction& tx) const;
     /** should probably be renamed to IsRelevantToMe */
     bool IsFromMe(const CTransaction& tx) const;
@@ -1265,8 +1392,16 @@ public:
     /** Add a KeyOriginInfo to the wallet */
     bool AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info);
 
-    libmw::IWallet::Ptr GetMWWallet();
-    libmw::IChain::Ptr GetMWChain();
+    bool GetCoin(const Commitment& output_commit, libmw::Coin& coin) const;
+
+    CAmount GetAmount(const CTxOutput& output) const;
+    bool ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const;
+
+    const CWalletTx* FindWalletTx(const OutputIndex& output) const;
+    const CWalletTx* FindPrevTx(const CTxInput& input) const;
+    CWalletTx* FindPrevTx(const CTxInput& input);
+
+    const std::shared_ptr<MWEB::Wallet>& GetMWWallet() const noexcept { return mweb_wallet; }
 };
 
 /** A key allocated from the key pool. */

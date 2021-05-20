@@ -29,7 +29,7 @@
 #include <util/system.h>
 #include <util/moneystr.h>
 #include <util/strencodings.h>
-#include <mimblewimble/mwstate.h>
+#include <mweb/mweb_state.h>
 
 #include <memory>
 
@@ -102,7 +102,7 @@ namespace {
     int nSyncStarted GUARDED_BY(cs_main) = 0;
 
     /** Number of nodes from which the mimblewimble txhashset has been requested. */
-    //int nMWStateRequested GUARDED_BY(cs_main) = 0;
+    //int nMWEBStateRequested GUARDED_BY(cs_main) = 0; // MW: TODO - Implement
 
     /**
      * Sources of received blocks, saved to be able to send them reject
@@ -397,7 +397,7 @@ static bool MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const CBlock
 
     // Make sure it's not listed somewhere already.
     MarkBlockAsReceived(hash);
-    CMWBlock mweb_block;
+    MWEB::Block mweb_block;
     if (pit && (*pit)) {
         mweb_block = (*(*pit))->partialBlock->mweb_block;
     }
@@ -583,7 +583,7 @@ static void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vec
                 return;
             }
             if (!State(nodeid)->fHaveMW && IsMimblewimbleEnabled(pindex->pprev, consensusParams)) {
-                // MW: Can't download this block from this peer.
+                // MWEB: Can't download this block from this peer.
                 return;
             }
             if (pindex->nStatus & BLOCK_HAVE_DATA || chainActive.Contains(pindex)) {
@@ -1395,7 +1395,8 @@ inline void static SendBlockTransactions(const CBlock& block, const BlockTransac
     LOCK(cs_main);
     const CNetMsgMaker msgMaker(pfrom->GetSendVersion());
     int nSendFlags = State(pfrom->GetId())->fWantsCmpctWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
-    // MW: Determine when to set SERIALIZE_NO_MIMBLEWIMBLE
+    nSendFlags |= State(pfrom->GetId())->fWantsCmpctMW ? 0 : SERIALIZE_NO_MIMBLEWIMBLE;
+
     connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::BLOCKTXN, resp));
 }
 
@@ -2311,13 +2312,13 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
-    if (strCommand == NetMsgType::GETMWSTATE)
+    if (strCommand == NetMsgType::GETMWEBSTATE)
     {
-        // MW: Implement
+        // MW: TODO - Implement
 
     }
 
-    // MW: Handle NetMsgType::MWTX
+    // MWEB: Handle NetMsgType::MWTX
     if (strCommand == NetMsgType::TX) {
         // Stop processing the transaction early if
         // We are in blocks only mode and peer is either not whitelisted or whitelistrelay is off
@@ -2474,7 +2475,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             CBlockIndex* pTip = chainActive.Tip();
             assert(pTip);
             if (IsMimblewimbleEnabled(pTip->pprev, chainparams.GetConsensus()) && !State(pfrom->GetId())->fWantsCmpctMW) {
-                vRecv.SetVersion(vRecv.GetVersion() | SERIALIZE_NO_MIMBLEWIMBLE); // MW: TODO - This may be already set
+                vRecv.SetVersion(vRecv.GetVersion() | SERIALIZE_NO_MIMBLEWIMBLE); // MWEB: This may already be set.
             }
         }
 
@@ -2615,7 +2616,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                         req.indexes.push_back(i);
                 }
                 if (req.indexes.empty()) {
-                    return ProcessMessage(pfrom, NetMsgType::BLOCKTXN, blockTxnMsg, nTimeReceived, chainparams, connman, interruptMsgProc, enable_bip61);
                     // Dirty hack to jump to BLOCKTXN code (TODO: move message handling into their own functions)
                     BlockTransactions txn;
                     txn.blockhash = cmpctblock.header.GetHash();
@@ -2836,16 +2836,16 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
-    if (strCommand == NetMsgType::MWSTATE)
+    if (strCommand == NetMsgType::MWEBSTATE)
     {
-        // MW: Implement
-        MWState mw_state;
+        // MW: TODO - Implement
+        MWEB::State mw_state;
         vRecv >> mw_state;
 
         LogPrint(BCLog::NET, "received mw_state from peer=%d\n", pfrom->GetId());
 
-        // MW: Check that it was actually requested
-        // MW: Call Node::ApplyState
+        // MW: TODO - Check that it was actually requested
+        // MW: TODO - Call Node::ApplyState
 
         return true;
     }
@@ -3109,7 +3109,7 @@ bool PeerLogicValidation::ProcessMessages(CNode* pfrom, std::atomic<bool>& inter
         LOCK2(cs_main, g_cs_orphans);
         ProcessOrphanTx(connman, pfrom->orphan_work_set, removed_txn);
         for (const CTransactionRef& removedTx : removed_txn) {
-            AddToCompactExtraTransactions(removedTx); // MW: Investigate this
+            AddToCompactExtraTransactions(removedTx); // MW: TODO - Investigate this
         }
     }
 
@@ -3655,7 +3655,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                     CInv inv(MSG_TX, hash);
                     pto->setInventoryTxToSend.erase(hash);
                     if (filterrate) {
-                        if (txinfo.feeRate.GetFeePerK() < filterrate)
+                        if (!txinfo.feeRate.MeetsFeePerK(filterrate))
                             continue;
                     }
                     if (pto->pfilter) {
@@ -3709,7 +3709,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                     if (!txinfo.tx) {
                         continue;
                     }
-                    if (filterrate && txinfo.feeRate.GetFeePerK() < filterrate) {
+                    if (filterrate && !txinfo.feeRate.MeetsFeePerK(filterrate)) {
                         continue;
                     }
                     if (pto->pfilter && !pto->pfilter->IsRelevantAndUpdate(*txinfo.tx)) continue;

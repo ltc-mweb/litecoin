@@ -80,8 +80,9 @@ void BlockAssembler::resetBlock()
     inBlock.clear();
 
     // Reserve space for coinbase tx
-    nBlockWeight = 4000;
+    nBlockWeight = 4000; // MW: TODO - Reserve extra weight for HogEx transaction
     nBlockSigOpsCost = 400;
+    nBlockMWEBWeight = 0;
     fIncludeWitness = false;
     fIncludeMWEB = false;
 
@@ -92,6 +93,7 @@ void BlockAssembler::resetBlock()
 
 Optional<int64_t> BlockAssembler::m_last_block_num_txs{nullopt};
 Optional<int64_t> BlockAssembler::m_last_block_weight{nullopt};
+Optional<int64_t> BlockAssembler::m_last_block_mweb_weight{nullopt};
 
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn)
 {
@@ -141,11 +143,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     fIncludeMWEB = IsMimblewimbleEnabled(pindexPrev, chainparams.GetConsensus());
     if (fIncludeMWEB) {
-        mweb_builder = libmw::miner::NewBuilder(nHeight, pcoinsTip->GetMWView());
-        mweb_fees = 0;
-        mweb_amount_change = 0;
-        hogex_inputs.clear();
-        hogex_outputs.clear();
+        mweb_miner.NewBlock(nHeight);
     }
 
     int nPackagesSelected = 0;
@@ -153,13 +151,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     addPackageTxs(nPackagesSelected, nDescendantsUpdated);
 
     if (fIncludeMWEB) {
-        AddHogExTransaction(pindexPrev);
+        mweb_miner.AddHogExTransaction(pindexPrev, pblock, pblocktemplate.get(), nFees);
     }
 
     int64_t nTime1 = GetTimeMicros();
 
     m_last_block_num_txs = nBlockTx;
     m_last_block_weight = nBlockWeight;
+    m_last_block_mweb_weight = nBlockMWEBWeight;
 
     // Create coinbase transaction.
     CMutableTransaction coinbaseTx;
@@ -173,7 +172,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
     pblocktemplate->vTxFees[0] = -nFees;
 
-    LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
+    LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops: %d MWEB weight: %u\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost, nBlockMWEBWeight);
 
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
@@ -206,14 +205,14 @@ void BlockAssembler::onlyUnconfirmed(CTxMemPool::setEntries& testSet)
     }
 }
 
-bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost) const
+bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost, int64_t packageMWEBWeight) const
 {
-    // MW: TODO - Check MW tx weights
-
     // TODO: switch to weight-based accounting for packages instead of vsize-based accounting.
     if (nBlockWeight + WITNESS_SCALE_FACTOR * packageSize >= nBlockMaxWeight)
         return false;
     if (nBlockSigOpsCost + packageSigOpsCost >= MAX_BLOCK_SIGOPS_COST)
+        return false;
+    if (nBlockMWEBWeight + packageMWEBWeight >= libmw::MAX_BLOCK_WEIGHT)
         return false;
     return true;
 }
@@ -240,7 +239,7 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
     CTransactionRef pTx = iter->GetSharedTx();
     if (pTx->HasMWData()) {
-        if (!AddMWEBTransaction(iter)) {
+        if (!mweb_miner.AddMWEBTransaction(iter)) {
             return;
         }
 
@@ -257,16 +256,17 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
     pblock->vtx.emplace_back(pTx);
     pblocktemplate->vTxFees.push_back(iter->GetFee());
     pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
-    nBlockWeight += iter->GetTxWeight();
+    nBlockWeight += iter->GetTxWeight(); // MW: TODO - Include peg-in inputs & peg-out outputs.
     ++nBlockTx;
     nBlockSigOpsCost += iter->GetSigOpCost();
+    nBlockMWEBWeight += iter->GetMWEBWeight();
     nFees += iter->GetFee();
     inBlock.insert(iter);
 
     bool fPrintPriority = gArgs.GetBoolArg("-printpriority", DEFAULT_PRINTPRIORITY);
     if (fPrintPriority) {
         LogPrintf("fee %s txid %s\n",
-                  CFeeRate(iter->GetModifiedFee(), iter->GetTxSize()).ToString(),
+                  CFeeRate(iter->GetModifiedFee(), iter->GetTxSize(), iter->GetMWEBWeight()).ToString(),
                   iter->GetTx().GetHash().ToString());
     }
 }
@@ -289,6 +289,7 @@ int BlockAssembler::UpdatePackagesForAdded(const CTxMemPool::setEntries& already
                 modEntry.nSizeWithAncestors -= it->GetTxSize();
                 modEntry.nModFeesWithAncestors -= it->GetModifiedFee();
                 modEntry.nSigOpCostWithAncestors -= it->GetSigOpCost();
+                modEntry.nMWEBWeightWithAncestors -= it->GetMWEBWeight();
                 mapModifiedTx.insert(modEntry);
             } else {
                 mapModifiedTx.modify(mit, update_for_parent_inclusion(it));
@@ -397,18 +398,20 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
         uint64_t packageSize = iter->GetSizeWithAncestors();
         CAmount packageFees = iter->GetModFeesWithAncestors();
         int64_t packageSigOpsCost = iter->GetSigOpCostWithAncestors();
+        int64_t packageMWEBWeight = iter->GetMWEBWeightWithAncestors();
         if (fUsingModified) {
             packageSize = modit->nSizeWithAncestors;
             packageFees = modit->nModFeesWithAncestors;
             packageSigOpsCost = modit->nSigOpCostWithAncestors;
+            packageMWEBWeight = modit->nMWEBWeightWithAncestors;
         }
 
-        if (packageFees < blockMinFeeRate.GetFee(packageSize)) {
+        if (packageFees < blockMinFeeRate.GetTotalFee(packageSize, packageMWEBWeight)) {
             // Everything else we might consider has a lower fee rate
             return;
         }
 
-        if (!TestPackage(packageSize, packageSigOpsCost)) {
+        if (!TestPackage(packageSize, packageSigOpsCost, packageMWEBWeight)) {
             if (fUsingModified) {
                 // Since we always look at the best entry in mapModifiedTx,
                 // we must erase failed entries so that we can consider the
@@ -481,132 +484,4 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
     pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
-}
-
-bool BlockAssembler::AddMWEBTransaction(CTxMemPool::txiter iter)
-{
-    CTransactionRef pTx = iter->GetSharedTx();
-    libmw::TxRef mw_tx = pTx->m_mwtx.m_transaction;
-
-    //
-    // Pegin
-    //
-    std::vector<CTxIn> vin;
-    uint64_t pegin_amount = 0;
-    std::vector<libmw::PegIn> pegins;
-
-    for (size_t nOut = 0; nOut < pTx->vout.size(); nOut++) {
-        const auto& output = pTx->vout[nOut];
-        int version;
-        std::vector<uint8_t> program;
-        if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-            if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MW_PEGIN_SIZE) {
-                vin.push_back(CTxIn{pTx->GetHash(), (uint32_t)nOut});
-                pegin_amount += output.nValue;
-
-                libmw::PegIn pegin;
-                pegin.amount = output.nValue;
-                std::copy_n(std::make_move_iterator(program.begin()), WITNESS_MW_PEGIN_SIZE, pegin.commitment.begin());
-                pegins.push_back(std::move(pegin));
-            }
-        }
-    }
-
-    //
-    // Pegout
-    //
-    std::vector<CTxOut> vout;
-    uint64_t pegout_amount = 0;
-    std::vector<libmw::PegOut> pegouts = mw_tx.GetPegouts();
-
-    for (const libmw::PegOut& pegout : pegouts) {
-        CTxDestination destination = DecodeDestination(pegout.address);
-        if (!IsValidDestination(destination)) {
-            LogPrintf("Invalid pegout destination\n");
-            return false;
-        }
-
-        CScript scriptPubKey = GetScriptForDestination(destination);
-        vout.push_back(CTxOut{CAmount(pegout.amount), scriptPubKey});
-        pegout_amount += pegout.amount;
-    }
-
-    // Validate amount ranges
-    if (!MoneyRange(pegin_amount) || !MoneyRange(pegout_amount)) {
-        LogPrintf("Invalid pegin/pegout amount\n");
-        return false;
-    }
-
-    //
-    // Add transaction to MWEB
-    //
-    if (libmw::miner::AddTransaction(mweb_builder, pTx->m_mwtx.m_transaction, pegins) != 0) {
-        LogPrintf("Failed to add MWEB transaction\n");
-        return false;
-    }
-
-    hogex_inputs.insert(hogex_inputs.end(), vin.cbegin(), vin.cend());
-    hogex_outputs.insert(hogex_outputs.end(), vout.cbegin(), vout.cend());
-    const uint64_t tx_fee = mw_tx.GetTotalFee();
-    mweb_fees += tx_fee;
-    mweb_amount_change += (CAmount(pegin_amount) - CAmount(pegout_amount + tx_fee));
-
-    return true;
-}
-
-// MW: Generate and add HogEx transaction
-void BlockAssembler::AddHogExTransaction(const CBlockIndex* pIndexPrev)
-{
-    CMutableTransaction hogExTransaction;
-    hogExTransaction.m_hogEx = true;
-
-
-    CBlock prevBlock;
-    assert(ReadBlockFromDisk(prevBlock, pIndexPrev, Params().GetConsensus()));
-
-    CAmount previous_amount = 0;
-
-    //
-    // Add previous HogAddr as new HogEx input
-    //
-    if (prevBlock.vtx.size() >= 2 && prevBlock.vtx.back()->IsHogEx()) {
-        assert(!prevBlock.vtx.back()->vout.empty());
-        previous_amount = prevBlock.vtx.back()->vout[0].nValue;
-
-        CTxIn prevHogExIn(prevBlock.vtx.back()->GetHash(), 0);
-        hogExTransaction.vin.push_back(std::move(prevHogExIn));
-    }
-
-    //
-    // Add Peg-in inputs
-    //
-    hogExTransaction.vin.insert(hogExTransaction.vin.end(), hogex_inputs.cbegin(), hogex_inputs.cend());
-
-    //
-    // Add New HogAddr
-    //
-    libmw::BlockRef mw_block = libmw::miner::BuildBlock(mweb_builder);
-    libmw::BlockHash mweb_hash = mw_block.GetHash();
-
-    CTxOut hogAddr;
-    hogAddr.scriptPubKey = CScript() << OP_9 << std::vector<uint8_t>(mweb_hash.begin(), mweb_hash.end());
-    hogAddr.nValue = previous_amount + mweb_amount_change;
-    assert(MoneyRange(hogAddr.nValue));
-    hogExTransaction.vout.push_back(std::move(hogAddr));
-
-    LogPrintf("MWEB Supply: %ld\n", hogAddr.nValue);
-
-    //
-    // Add Peg-out outputs
-    //
-    hogExTransaction.vout.insert(hogExTransaction.vout.end(), hogex_outputs.cbegin(), hogex_outputs.cend());
-
-    //
-    // Update block & template
-    //
-    nFees += mweb_fees;
-    pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
-    pblock->mwBlock = CMWBlock(mw_block);
-    pblocktemplate->vTxFees.push_back(mweb_fees);
-    pblocktemplate->vTxSigOpsCost.push_back(WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx.back())); // MWEB: TODO - Account for these when choosing transactions
 }

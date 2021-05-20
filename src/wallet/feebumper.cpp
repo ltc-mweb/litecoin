@@ -95,20 +95,27 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
 
     // figure out which output was change
     // if there was no change output or multiple change outputs, fail
-    int nOutput = -1;
-    for (size_t i = 0; i < wtx.tx->vout.size(); ++i) {
-        if (wallet->IsChange(wtx.tx->vout[i])) {
-            if (nOutput != -1) {
+    boost::optional<OutputIndex> change_output = boost::none;
+    for (const CTxOutput& output : wtx.GetOutputs()) {
+        if (wallet->IsChange(output)) {
+            if (change_output) {
                 errors.push_back("Transaction has multiple change outputs");
                 return Result::WALLET_ERROR;
             }
-            nOutput = i;
+            change_output = output.GetIndex();
         }
     }
-    if (nOutput == -1) {
+    if (!change_output) {
         errors.push_back("Transaction does not have a change output");
         return Result::WALLET_ERROR;
     }
+
+    if (change_output->type() == typeid(Commitment)) {
+        errors.push_back("Bumping fee with MWEB change output is not yet supported.");
+        return Result::WALLET_ERROR;
+    }
+
+    int nOutput = boost::get<COutPoint>(*change_output).n;
 
     // Calculate the expected size of the new transaction.
     int64_t txSize = GetVirtualTransactionSize(*(wtx.tx));
@@ -118,9 +125,11 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
         return Result::INVALID_ADDRESS_OR_KEY;
     }
 
+    uint64_t mweb_weight = wtx.tx->m_mwtx.GetMWEBWeight();
+
     // calculate the old fee and fee-rate
     old_fee = wtx.GetDebit(ISMINE_SPENDABLE) - wtx.tx->GetValueOut();
-    CFeeRate nOldFeeRate(old_fee, txSize);
+    CFeeRate nOldFeeRate(old_fee, txSize, mweb_weight);
     CFeeRate nNewFeeRate;
     // The wallet uses a conservative WALLET_INCREMENTAL_RELAY_FEE value to
     // future proof against changes to network wide policy for incremental relay
@@ -131,23 +140,23 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
     }
 
     if (total_fee > 0) {
-        CAmount minTotalFee = nOldFeeRate.GetFee(maxNewTxSize) + ::incrementalRelayFee.GetFee(maxNewTxSize);
+        CAmount minTotalFee = nOldFeeRate.GetTotalFee(maxNewTxSize, mweb_weight) + ::incrementalRelayFee.GetFee(maxNewTxSize);
         if (total_fee < minTotalFee) {
             errors.push_back(strprintf("Insufficient totalFee, must be at least %s (oldFee %s + incrementalFee %s)",
-                                                                FormatMoney(minTotalFee), FormatMoney(nOldFeeRate.GetFee(maxNewTxSize)), FormatMoney(::incrementalRelayFee.GetFee(maxNewTxSize))));
+                                                                FormatMoney(minTotalFee), FormatMoney(nOldFeeRate.GetTotalFee(maxNewTxSize, mweb_weight)), FormatMoney(::incrementalRelayFee.GetFee(maxNewTxSize))));
             return Result::INVALID_PARAMETER;
         }
-        CAmount requiredFee = GetRequiredFee(*wallet, maxNewTxSize);
+        CAmount requiredFee = GetRequiredFee(*wallet, maxNewTxSize, mweb_weight);
         if (total_fee < requiredFee) {
             errors.push_back(strprintf("Insufficient totalFee (cannot be less than required fee %s)",
                                                                 FormatMoney(requiredFee)));
             return Result::INVALID_PARAMETER;
         }
         new_fee = total_fee;
-        nNewFeeRate = CFeeRate(total_fee, maxNewTxSize);
+        nNewFeeRate = CFeeRate(total_fee, maxNewTxSize, mweb_weight);
     } else {
-        new_fee = GetMinimumFee(*wallet, maxNewTxSize, coin_control, mempool, ::feeEstimator, nullptr /* FeeCalculation */);
-        nNewFeeRate = CFeeRate(new_fee, maxNewTxSize);
+        new_fee = GetMinimumFee(*wallet, maxNewTxSize, mweb_weight, coin_control, mempool, ::feeEstimator, nullptr /* FeeCalculation */);
+        nNewFeeRate = CFeeRate(new_fee, maxNewTxSize, mweb_weight);
 
         // New fee rate must be at least old rate + minimum incremental relay rate
         // walletIncrementalRelayFee.GetFeePerK() should be exact, because it's initialized
@@ -156,7 +165,7 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
         // add 1 satoshi to the result, because it may have been rounded down.
         if (nNewFeeRate.GetFeePerK() < nOldFeeRate.GetFeePerK() + 1 + walletIncrementalRelayFee.GetFeePerK()) {
             nNewFeeRate = CFeeRate(nOldFeeRate.GetFeePerK() + 1 + walletIncrementalRelayFee.GetFeePerK());
-            new_fee = nNewFeeRate.GetFee(maxNewTxSize);
+            new_fee = nNewFeeRate.GetTotalFee(maxNewTxSize, mweb_weight);
         }
     }
 
@@ -179,7 +188,7 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
             "the totalFee value should be at least %s or the settxfee value should be at least %s to add transaction",
             FormatMoney(nNewFeeRate.GetFeePerK()),
             FormatMoney(minMempoolFeeRate.GetFeePerK()),
-            FormatMoney(minMempoolFeeRate.GetFee(maxNewTxSize)),
+            FormatMoney(minMempoolFeeRate.GetTotalFee(maxNewTxSize, mweb_weight)),
             FormatMoney(minMempoolFeeRate.GetFeePerK())));
         return Result::WALLET_ERROR;
     }
@@ -247,7 +256,7 @@ Result CommitTransaction(CWallet* wallet, const uint256& txid, CMutableTransacti
 
     CReserveKey reservekey(wallet);
     CValidationState state;
-    if (!wallet->CommitTransaction(tx, std::move(mapValue), oldWtx.vOrderForm, reservekey, g_connman.get(), state)) {
+    if (!wallet->CommitTransaction(tx, std::move(mapValue), oldWtx.vOrderForm, {&reservekey}, g_connman.get(), state)) {
         // NOTE: CommitTransaction never returns false, so this should never happen.
         errors.push_back(strprintf("The transaction was rejected: %s", FormatStateMessage(state)));
         return Result::WALLET_ERROR;

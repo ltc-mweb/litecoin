@@ -34,7 +34,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
     CAmount nCredit = wtx.credit;
     CAmount nDebit = wtx.debit;
     CAmount nNet = nCredit - nDebit;
-    uint256 hash = wtx.tx->GetHash();
+    uint256 hash = wtx.wtx_hash;
     std::map<std::string, std::string> mapValue = wtx.value_map;
 
     if (nNet > 0 || wtx.is_coinbase)
@@ -42,16 +42,15 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         //
         // Credit
         //
-        for(unsigned int i = 0; i < wtx.tx->vout.size(); i++)
+        for (unsigned int i = 0; i < wtx.txout_is_mine.size(); i++)
         {
-            const CTxOut& txout = wtx.tx->vout[i];
             isminetype mine = wtx.txout_is_mine[i];
             if(mine)
             {
                 TransactionRecord sub(hash, nTime);
                 CTxDestination address;
                 sub.idx = i; // vout index
-                sub.credit = txout.nValue;
+                sub.credit = wtx.txout_amount[i];
                 sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
                 if (wtx.txout_address_is_mine[i])
                 {
@@ -110,11 +109,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             //
             // Debit
             //
-            CAmount nTxFee = nDebit - wtx.tx->GetValueOut();
+            CAmount nTxFee = wtx.fee;
 
-            for (unsigned int nOut = 0; nOut < wtx.tx->vout.size(); nOut++)
+            for (unsigned int nOut = 0; nOut < wtx.txout_is_mine.size(); nOut++)
             {
-                const CTxOut& txout = wtx.tx->vout[nOut];
                 TransactionRecord sub(hash, nTime);
                 sub.idx = nOut;
                 sub.involvesWatchAddress = involvesWatchAddress;
@@ -126,13 +124,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                     continue;
                 }
 
-                if (mapValue.find("commitment") != mapValue.end())
-                {
-                    // MWEB Peg-In
-                    sub.type = TransactionRecord::MWEBPegIn;
-                    sub.address = mapValue["mweb_recipient"];
-                }
-                else if (!boost::get<CNoDestination>(&wtx.txout_address[nOut]))
+                if (!boost::get<CNoDestination>(&wtx.txout_address[nOut]))
                 {
                     // Sent to Bitcoin Address
                     sub.type = TransactionRecord::SendToAddress;
@@ -145,7 +137,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                     sub.address = mapValue["to"];
                 }
 
-                CAmount nValue = txout.nValue;
+                CAmount nValue = wtx.txout_amount[nOut];
                 /* Add fee to first output */
                 if (nTxFee > 0)
                 {
@@ -164,27 +156,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             //
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
             parts.last().involvesWatchAddress = involvesWatchAddress;
-        }
-
-        CAmount mwebDebit = 0, mwebCredit = 0;
-        if (mapValue.find("mweb_debit") != mapValue.end())
-            mwebDebit = std::stoll(mapValue["mweb_debit"]);
-        if (mapValue.find("mweb_credit") != mapValue.end())
-            mwebCredit = std::stoll(mapValue["mweb_credit"]);
-
-        // MWEB Peg-Out
-        if (mapValue.find("mweb_pegout") != mapValue.end())
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::MWEBPegOut,
-                         mapValue["mweb_pegout"], -mwebDebit, mwebCredit));
-
-        // MWEB Send/Receive
-        if (mapValue.find("mweb_recipient") != mapValue.end())
-        {
-            TransactionRecord rec(hash, nTime, TransactionRecord::MWEBSend,
-                                  mapValue["mweb_recipient"], -mwebDebit, mwebCredit);
-            if (mwebCredit >= mwebDebit)
-                rec.type = TransactionRecord::MWEBReceive;
-            parts.append(rec);
         }
     }
 

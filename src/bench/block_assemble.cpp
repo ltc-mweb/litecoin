@@ -9,6 +9,7 @@
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
 #include <miner.h>
+#include <mweb/mweb_db.h>
 #include <policy/policy.h>
 #include <pow.h>
 #include <scheduler.h>
@@ -76,6 +77,14 @@ static void AssembleBlock(benchmark::State& state)
         LOCK(cs_main);
         ::pblocktree.reset(new CBlockTreeDB(1 << 20, true));
         ::pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
+
+        libmw::CoinsViewRef mweb_dbview = libmw::node::Initialize(
+            libmw::ChainParams{GetDataDir().string()},
+            mw::Header::CPtr{nullptr},
+            std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),
+            [](const std::string& logstr) { LogPrintf(logstr.c_str()); });
+        pcoinsdbview->SetMWView(mweb_dbview);
+
         ::pcoinsTip.reset(new CCoinsViewCache(pcoinsdbview.get()));
     }
     {

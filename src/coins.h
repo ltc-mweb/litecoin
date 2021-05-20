@@ -21,8 +21,6 @@
 
 #include <unordered_map>
 
-typedef boost::variant<COutPoint, libmw::Commitment> OutputIndex;
-
 /**
  * A UTXO entry.
  *
@@ -156,7 +154,7 @@ public:
     virtual bool GetCoin(const COutPoint &outpoint, Coin &coin) const;
 
     //! Just check whether a given outpoint is unspent.
-    virtual bool HaveCoin(const COutPoint &outpoint) const;
+    virtual bool HaveCoin(const OutputIndex& index) const;
 
     //! Retrieve the block hash whose state this CCoinsView currently represents
     virtual uint256 GetBestBlock() const;
@@ -192,7 +190,7 @@ protected:
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
-    bool HaveCoin(const COutPoint &outpoint) const override;
+    bool HaveCoin(const OutputIndex& index) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
@@ -229,7 +227,7 @@ public:
 
     // Standard CCoinsView methods
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
-    bool HaveCoin(const COutPoint &outpoint) const override;
+    bool HaveCoin(const OutputIndex& outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256& hashBlock);
     void SetBackend(CCoinsView& viewIn);
@@ -245,7 +243,7 @@ public:
      * The semantics are the same as HaveCoin(), but no calls to
      * the backing CCoinsView are made.
      */
-    bool HaveCoinInCache(const COutPoint &outpoint) const;
+    bool HaveCoinInCache(const OutputIndex& outpoint) const;
 
     /**
      * Return a reference to Coin in the cache, or a pruned one if not found. This is

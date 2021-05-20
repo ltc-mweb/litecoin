@@ -121,5 +121,10 @@ std::string CTransaction::ToString() const
         str += "    " + tx_in.scriptWitness.ToString() + "\n";
     for (const auto& tx_out : vout)
         str += "    " + tx_out.ToString() + "\n";
+
+    if (!m_mwtx.IsNull()) {
+        str += "    " + m_mwtx.ToString() + "\n";
+    }
+
     return str;
 }

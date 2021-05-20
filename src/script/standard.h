@@ -6,7 +6,9 @@
 #ifndef BITCOIN_SCRIPT_STANDARD_H
 #define BITCOIN_SCRIPT_STANDARD_H
 
+#include <mweb/mweb_address.h>
 #include <script/interpreter.h>
+#include <pubkey.h>
 #include <uint256.h>
 
 #include <boost/variant.hpp>
@@ -64,8 +66,7 @@ enum txnouttype
     TX_NULL_DATA, //!< unspendable OP_RETURN script that carries data
     TX_WITNESS_V0_SCRIPTHASH,
     TX_WITNESS_V0_KEYHASH,
-    TX_WITNESS_MW_HEADERHASH, //!< Used by HogEx to represent the hash of the extension block header
-    TX_WITNESS_MW_PEGIN, //!< Commitment value of the peg-in kernel
+    TX_WITNESS_MWEB_PEGIN, //!< Commitment value of the peg-in kernel
     TX_WITNESS_UNKNOWN, //!< Only for Witness versions not already defined above
 };
 
@@ -120,9 +121,10 @@ struct WitnessUnknown
  *  * WitnessV0ScriptHash: TX_WITNESS_V0_SCRIPTHASH destination (P2WSH)
  *  * WitnessV0KeyHash: TX_WITNESS_V0_KEYHASH destination (P2WPKH)
  *  * WitnessUnknown: TX_WITNESS_UNKNOWN destination (P2W???)
+ *  * MWEB::StealthAddress: MWEB address destination
  *  A CTxDestination is the internal data type encoded in a bitcoin address
  */
-typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown> CTxDestination;
+typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown, MWEB::StealthAddress> CTxDestination;
 
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);
@@ -169,13 +171,15 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::
  * script for a CKeyID destination, a P2SH script for a CScriptID, and an empty
  * script for CNoDestination.
  */
-CScript GetScriptForDestination(const CTxDestination& dest);
+CScript GetScriptForDestination(const CTxDestination& dest); // MW: TODO - Check all consumers of this. Many should switch to DestinationScript
 
 /** Generate a P2PK script for the given pubkey. */
 CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 
 /** Generate a multisig script. */
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
+
+bool IsPegInOutput(const CTxOutput& output);
 
 /**
  * Generate a pay-to-witness script for the given redeem script. If the redeem
@@ -186,5 +190,33 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
  * the various witness-specific CTxDestination subtypes.
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
+
+class DestinationScript
+{
+public:
+    DestinationScript() = default;
+    DestinationScript(CScript script)
+        : m_script(std::move(script)) { }
+    DestinationScript(MWEB::StealthAddress address)
+        : m_script(std::move(address)) { }
+    DestinationScript(const CTxDestination& dest);
+
+    bool IsMWEB() const noexcept { return m_script.which() == 1; }
+
+    const CScript& GetScript() const noexcept
+    {
+        assert(m_script.which() == 0);
+        return boost::get<CScript>(m_script);
+    }
+
+    const MWEB::StealthAddress& GetMWEBAddress() const noexcept
+    {
+        assert(m_script.which() == 1);
+        return boost::get<MWEB::StealthAddress>(m_script);
+    }
+
+private:
+    boost::variant<CScript, MWEB::StealthAddress> m_script;
+};
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

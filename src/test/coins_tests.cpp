@@ -41,9 +41,11 @@ public:
     CCoinsViewTest()
     {
         mw_view_ = libmw::node::Initialize(
-            libmw::ChainParams{GetDataDir().string(), "thrp"},
-            {nullptr}, // MW: Load this first
-            nullptr);
+            libmw::ChainParams{GetDataDir().string()},
+            {nullptr}, // MW: TODO - Load this first
+            nullptr,
+            {}
+        );
     }
 
     NODISCARD bool GetCoin(const COutPoint& outpoint, Coin& coin) const override
@@ -622,9 +624,11 @@ public:
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
         libmw::CoinsViewRef mw_view = libmw::node::Initialize(
-            libmw::ChainParams{GetDataDir().string(), "thrp"},
-            {nullptr}, // MW: Load this first
-            nullptr);
+            libmw::ChainParams{GetDataDir().string()},
+            {nullptr}, // MW: TODO - Load this first
+            nullptr,
+            {}
+        );
         root->SetMWView(mw_view);
         return root;
     }

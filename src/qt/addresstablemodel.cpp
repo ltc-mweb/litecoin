@@ -53,6 +53,7 @@ struct AddressTableEntryLessThan
 /* Determine address type from address purpose */
 static AddressTableEntry::Type translateTransactionType(const QString &strPurpose, bool isMine)
 {
+    // MW: TODO - Support "pegin" and "pegout"
     AddressTableEntry::Type addressType = AddressTableEntry::Hidden;
     // "refund" addresses aren't shown, and change addresses aren't in mapAddressBook at all.
     if (strPurpose == "send")
@@ -336,7 +337,7 @@ void AddressTableModel::updateEntry(const QString &address,
     priv->updateEntry(address, label, isMine, purpose, status);
 }
 
-QString AddressTableModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type, bool mweb)
+QString AddressTableModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type)
 {
     std::string strLabel = label.toStdString();
     std::string strAddress = address.toStdString();
@@ -360,9 +361,15 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
             }
         }
     }
-    else if(type == Receive && mweb)
+    else if(type == Receive && address_type == OutputType::MWEB)
     {
-        strAddress = libmw::wallet::GetAddress(walletModel->wallet().GetMWWallet());
+        MWEB::StealthAddress mweb_address;
+        if (!walletModel->wallet().generateMWEBAddress(mweb_address)) {
+            editStatus = KEY_GENERATION_FAILURE;
+            return QString();
+        }
+
+        strAddress = EncodeDestination(mweb_address);
     }
     else if(type == Receive)
     {

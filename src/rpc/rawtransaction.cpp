@@ -1783,7 +1783,7 @@ UniValue utxoupdatepsbt(const JSONRPCRequest& request)
 
         std::vector<std::vector<unsigned char>> solutions_data;
         txnouttype which_type = Solver(coin.out.scriptPubKey, solutions_data);
-        if (which_type == TX_WITNESS_V0_SCRIPTHASH || which_type == TX_WITNESS_V0_KEYHASH || which_type == TX_WITNESS_UNKNOWN) { // MW: Determine what to do with TX_WITNESS_MW_HEADERHASH and TX_WITNESS_MW_PEGIN
+        if (which_type == TX_WITNESS_V0_SCRIPTHASH || which_type == TX_WITNESS_V0_KEYHASH || which_type == TX_WITNESS_UNKNOWN) {
             input.witness_utxo = coin.out;
         }
     }
@@ -2062,8 +2062,15 @@ UniValue analyzepsbt(const JSONRPCRequest& request)
             CTransaction ctx = CTransaction(mtx);
             size_t size = GetVirtualTransactionSize(ctx, GetTransactionSigOpCost(ctx, view, STANDARD_SCRIPT_VERIFY_FLAGS));
             result.pushKV("estimated_vsize", (int)size);
+
+            uint64_t mweb_weight = 0;
+            if (!ctx.m_mwtx.IsNull()) {
+                mweb_weight = ctx.m_mwtx.GetMWEBWeight();
+                result.pushKV("mweb_weight", (int)mweb_weight);
+            }
+
             // Estimate fee rate
-            CFeeRate feerate(fee, size);
+            CFeeRate feerate(fee, size, mweb_weight);
             result.pushKV("estimated_feerate", ValueFromAmount(feerate.GetFeePerK()));
         }
         result.pushKV("fee", ValueFromAmount(fee));

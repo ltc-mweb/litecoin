@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 /** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
-static const unsigned int MAX_BLOCK_SERIALIZED_SIZE = 4000000;
+static const unsigned int MAX_BLOCK_SERIALIZED_SIZE = 4000000; // MW: TODO - Need to increase this to account for MWEB
 /** The maximum allowed weight for a block, see BIP 141 (network rule) */
 static const unsigned int MAX_BLOCK_WEIGHT = 4000000;
 /** The maximum allowed number of signature check operations in a block (network rule) */
@@ -29,7 +29,7 @@ static constexpr unsigned int LOCKTIME_VERIFY_SEQUENCE = (1 << 0);
 /** Use GetMedianTimePast() instead of nTime for end point timestamp. */
 static constexpr unsigned int LOCKTIME_MEDIAN_TIME_PAST = (1 << 1);
 
-/** The maximum size (in bytes) of a mimblewimble extension block */
-static const unsigned int MAX_MW_EB_SIZE = 4000000; // MW: Determine this
+/** Peg-In transaction outputs can only be spent after this number of new blocks */
+static const unsigned int PEGIN_MATURITY = 20;
 
 #endif // BITCOIN_CONSENSUS_CONSENSUS_H

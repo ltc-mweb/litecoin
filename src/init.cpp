@@ -25,7 +25,7 @@
 #include <key.h>
 #include <validation.h>
 #include <miner.h>
-#include <mimblewimble/db.h>
+#include <mweb/mweb_db.h>
 #include <libmw/libmw.h>
 #include <netbase.h>
 #include <net.h>
@@ -88,7 +88,6 @@ static constexpr int DUMP_BANS_INTERVAL = 60 * 15;
 std::unique_ptr<CConnman> g_connman;
 std::unique_ptr<PeerLogicValidation> peerLogic;
 std::unique_ptr<BanMan> g_banman;
-libmw::CoinsViewRef g_dbview;
 
 #ifdef WIN32
 // Win32 LevelDB doesn't use filedescriptors, and the ones used for
@@ -1136,7 +1135,7 @@ bool AppInitParameterInteraction()
         if (nMaxFee > HIGH_MAX_TX_FEE)
             InitWarning(_("-maxtxfee is set very high! Fees this large could be paid on a single transaction."));
         maxTxFee = nMaxFee;
-        if (CFeeRate(maxTxFee, 1000) < ::minRelayTxFee)
+        if (CFeeRate(maxTxFee, 1000, 0) < ::minRelayTxFee)
         {
             return InitError(strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)"),
                                        gArgs.GetArg("-maxtxfee", ""), ::minRelayTxFee.ToString()));
@@ -1547,12 +1546,14 @@ bool AppInitMain(InitInterfaces& interfaces)
                     }
                 }
 
-                g_dbview = libmw::node::Initialize(
-                    libmw::ChainParams{GetDataDir().string(), chainparams.Bech32HRP()},
-                    block.mwBlock.m_block.GetHeader(),
-                    std::make_shared<MWDBWrapper>(pcoinsdbview->GetDB())
+                // MWEB: Initialize MWEB node APIs
+                libmw::CoinsViewRef mweb_dbview = libmw::node::Initialize(
+                    libmw::ChainParams{GetDataDir().string()},
+                    block.mwBlock.GetMWEBHeader(),
+                    std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),
+                    [](const std::string& logstr) { LogPrintf(logstr.c_str()); }
                 );
-                pcoinsdbview->SetMWView(g_dbview);
+                pcoinsdbview->SetMWView(mweb_dbview);
 
                 // If necessary, upgrade from older database format.
                 // This is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate

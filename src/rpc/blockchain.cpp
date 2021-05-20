@@ -436,15 +436,66 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
             setDepends.insert(txin.prevout.hash.ToString());
     }
 
-    std::set<libmw::Commitment> input_commits = tx.m_mwtx.GetInputCommits();
+    std::set<Commitment> input_commits = tx.m_mwtx.GetInputCommits();
     uint256 created_tx_hash;
-    for (const libmw::Commitment& input_commit : input_commits) {
+    for (const Commitment& input_commit : input_commits) {
         if (mempool.GetCreatedTx(input_commit, created_tx_hash)) {
             setDepends.insert(created_tx_hash.ToString());
         }
     }
 
-    info.pushKV("mweb", tx.HasMWData());
+    if (tx.HasMWData()) {
+        UniValue mweb_info(UniValue::VOBJ);
+
+        UniValue mweb_weight(UniValue::VOBJ);
+        mweb_weight.pushKV("base", (int)e.GetMWEBWeight());
+        mweb_weight.pushKV("ancestor", (int)e.GetMWEBWeightWithAncestors());
+        mweb_weight.pushKV("descendant", (int)e.GetMWEBWeightWithDescendants());
+        mweb_info.pushKV("weight", mweb_weight);
+
+        mweb_info.pushKV("fee", ValueFromAmount(tx.m_mwtx.GetFee()));
+        mweb_info.pushKV("lock_height", (int)tx.m_mwtx.GetLockHeight());
+
+        // Pegins
+        UniValue pegins(UniValue::VARR);
+        for (const libmw::PegIn& pegin : tx.m_mwtx.GetPegIns()) {
+            UniValue pegin_uni(UniValue::VOBJ);
+            pegin_uni.pushKV("amount", pegin.amount);
+            pegin_uni.pushKV("commitment", pegin.commitment.ToHex());
+            pegins.push_back(pegin_uni);
+        }
+
+        mweb_info.pushKV("pegins", pegins);
+
+        // Pegouts
+        UniValue pegouts(UniValue::VARR);
+        for (const libmw::PegOut& pegout : tx.m_mwtx.GetPegOuts()) {
+            UniValue pegout_uni(UniValue::VOBJ);
+            pegout_uni.pushKV("amount", pegout.amount);
+            pegout_uni.pushKV("scriptpubkey", HexStr(pegout.scriptPubKey));
+            pegouts.push_back(pegout_uni);
+        }
+
+        mweb_info.pushKV("pegouts", pegouts);
+
+        // Inputs
+        UniValue input_commits(UniValue::VARR);
+        for (const Commitment& input_commit : tx.m_mwtx.GetInputCommits()) {
+            input_commits.push_back(input_commit.ToHex());
+        }
+
+        mweb_info.pushKV("inputs", input_commits);
+
+        // Outputs
+        UniValue output_commits(UniValue::VARR);
+        for (const Commitment& output_commit : tx.m_mwtx.GetOutputCommits()) {
+            output_commits.push_back(output_commit.ToHex());
+        }
+
+        mweb_info.pushKV("outputs", output_commits);
+
+        info.pushKV("mweb", mweb_info);
+    }
 
     UniValue depends(UniValue::VARR);
     for (const std::string& dep : setDepends)
@@ -964,13 +1015,7 @@ static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
         LOCK(cs_main);
         auto pBlockIndex = LookupBlockIndex(stats.hashBlock);
         stats.nHeight = pBlockIndex->nHeight;
-
-        CBlock block;
-        assert(ReadBlockFromDisk(block, pBlockIndex, Params().GetConsensus()));
-
-        if (block.HasHogEx()) {
-            stats.mwebTotal = block.vtx.back()->vout[0].nValue;
-        }
+        stats.mwebTotal = pBlockIndex->mweb_amount;
     }
     ss << stats.hashBlock;
     uint256 prevkey;
@@ -1104,6 +1149,7 @@ static UniValue gettxoutsetinfo(const JSONRPCRequest& request)
     return ret;
 }
 
+// MW: TODO - Include MWEB UTXOs
 UniValue gettxout(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)

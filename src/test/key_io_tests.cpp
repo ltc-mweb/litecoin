@@ -35,13 +35,14 @@ BOOST_AUTO_TEST_CASE(key_io_valid_parse)
             continue;
         }
         std::string exp_base58string = test[0].get_str();
-        std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
         const UniValue &metadata = test[2].get_obj();
         bool isPrivkey = find_value(metadata, "isPrivkey").get_bool();
         SelectParams(find_value(metadata, "chain").get_str());
         bool try_case_flip = find_value(metadata, "tryCaseFlip").isNull() ? false : find_value(metadata, "tryCaseFlip").get_bool();
+        bool is_mweb = find_value(metadata, "isMWEB").isNull() ? false : find_value(metadata, "isMWEB").get_bool();
         if (isPrivkey) {
             bool isCompressed = find_value(metadata, "isCompressed").get_bool();
+            std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
             // Must be valid private key
             privkey = DecodeSecret(exp_base58string);
             BOOST_CHECK_MESSAGE(privkey.IsValid(), "!IsValid:" + strTest);
@@ -51,7 +52,19 @@ BOOST_AUTO_TEST_CASE(key_io_valid_parse)
             // Private key must be invalid public key
             destination = DecodeDestination(exp_base58string);
             BOOST_CHECK_MESSAGE(!IsValidDestination(destination), "IsValid privkey as pubkey:" + strTest);
+        } else if (is_mweb) {
+            std::vector<unsigned char> scan_payload = ParseHex(test[1][0].get_str());
+            std::vector<unsigned char> spend_payload = ParseHex(test[1][1].get_str());
+            // Must be valid public key
+            destination = DecodeDestination(exp_base58string);
+            BOOST_CHECK_MESSAGE(IsValidDestination(destination), "!IsValid:" + strTest);
+            BOOST_CHECK_MESSAGE(destination.type() == typeid(MWEB::StealthAddress), "!MWEB::StealthAddress:" + strTest);
+
+            const MWEB::StealthAddress& mweb_dest = boost::get<MWEB::StealthAddress>(destination);
+            BOOST_CHECK_EQUAL(HexStr(mweb_dest.scan_pubkey), HexStr(scan_payload));
+            BOOST_CHECK_EQUAL(HexStr(mweb_dest.spend_pubkey), HexStr(spend_payload));
         } else {
+            std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
             // Must be valid public key
             destination = DecodeDestination(exp_base58string);
             CScript script = GetScriptForDestination(destination);
@@ -94,17 +107,28 @@ BOOST_AUTO_TEST_CASE(key_io_valid_gen)
             continue;
         }
         std::string exp_base58string = test[0].get_str();
-        std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
         const UniValue &metadata = test[2].get_obj();
         bool isPrivkey = find_value(metadata, "isPrivkey").get_bool();
+        bool is_mweb = find_value(metadata, "isMWEB").isNull() ? false : find_value(metadata, "isMWEB").get_bool();
         SelectParams(find_value(metadata, "chain").get_str());
         if (isPrivkey) {
+            std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
             bool isCompressed = find_value(metadata, "isCompressed").get_bool();
             CKey key;
             key.Set(exp_payload.begin(), exp_payload.end(), isCompressed);
             assert(key.IsValid());
             BOOST_CHECK_MESSAGE(EncodeSecret(key) == exp_base58string, "result mismatch: " + strTest);
+        } else if (is_mweb) {
+            std::vector<unsigned char> scan_payload = ParseHex(test[1][0].get_str());
+            std::vector<unsigned char> spend_payload = ParseHex(test[1][1].get_str());
+            MWEB::StealthAddress dest;
+            dest.scan_pubkey = CPubKey(scan_payload);
+            dest.spend_pubkey = CPubKey(spend_payload);
+            std::string address = EncodeDestination(dest);
+
+            BOOST_CHECK_EQUAL(address, exp_base58string);
         } else {
+            std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
             CTxDestination dest;
             CScript exp_script(exp_payload.begin(), exp_payload.end());
             BOOST_CHECK(ExtractDestination(exp_script, dest));

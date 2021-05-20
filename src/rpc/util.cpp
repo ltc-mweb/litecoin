@@ -96,6 +96,7 @@ public:
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("isscript", false);
         obj.pushKV("iswitness", false);
+        obj.pushKV("ismweb", false);
         return obj;
     }
 
@@ -104,6 +105,7 @@ public:
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("isscript", true);
         obj.pushKV("iswitness", false);
+        obj.pushKV("ismweb", false);
         return obj;
     }
 
@@ -114,6 +116,7 @@ public:
         obj.pushKV("iswitness", true);
         obj.pushKV("witness_version", 0);
         obj.pushKV("witness_program", HexStr(id.begin(), id.end()));
+        obj.pushKV("ismweb", false);
         return obj;
     }
 
@@ -124,6 +127,7 @@ public:
         obj.pushKV("iswitness", true);
         obj.pushKV("witness_version", 0);
         obj.pushKV("witness_program", HexStr(id.begin(), id.end()));
+        obj.pushKV("ismweb", false);
         return obj;
     }
 
@@ -133,6 +137,16 @@ public:
         obj.pushKV("iswitness", true);
         obj.pushKV("witness_version", (int)id.version);
         obj.pushKV("witness_program", HexStr(id.program, id.program + id.length));
+        obj.pushKV("ismweb", false);
+        return obj;
+    }
+
+    UniValue operator()(const MWEB::StealthAddress& id) const
+    {
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("isscript", false);
+        obj.pushKV("iswitness", false);
+        obj.pushKV("ismweb", true);
         return obj;
     }
 };

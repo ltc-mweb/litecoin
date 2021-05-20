@@ -41,6 +41,7 @@ class CKeyID;
 class COutPoint;
 class COutput;
 class CPubKey;
+class CReserveKey;
 class uint256;
 
 namespace interfaces {
@@ -88,6 +89,7 @@ public:
     QString authenticatedMerchant;
 
     bool fSubtractFeeFromAmount; // memory only
+    CReserveKey* reserved_key; // memory only
 
     static const int CURRENT_VERSION = 1;
     int nVersion;

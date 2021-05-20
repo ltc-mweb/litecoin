@@ -52,16 +52,16 @@ std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
 
     std::vector<libmw::PegIn> pegins;
 
-    // MW: Alternatively, we could just loop through the inputs on the HogEx transaction
+    // MW: TODO - Alternatively, we could just loop through the inputs on the HogEx transaction
     for (const CTransactionRef& pTx : vtx) {
         for (const CTxOut& output : pTx->vout) {
             int version;
             std::vector<uint8_t> program;
             if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-                if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MW_PEGIN_SIZE) {
+                if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                     libmw::PegIn pegin;
                     pegin.amount = output.nValue;
-                    std::move(program.begin(), program.begin() + WITNESS_MW_PEGIN_SIZE, pegin.commitment.begin());
+                    pegin.commitment = Commitment{std::move(program)};
                     pegins.push_back(std::move(pegin));
                 }
             }
@@ -80,21 +80,11 @@ std::vector<libmw::PegOut> CBlock::GetPegOutCoins() const noexcept
     std::vector<libmw::PegOut> pegouts;
 
     const CTransactionRef& pHogEx = vtx.back();
-    for (const CTxOut& output : pHogEx->vout) {
-        int version;
-        std::vector<uint8_t> program;
-        if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-            if (version == 0 && program.size() == WITNESS_V0_KEYHASH_SIZE) {
-                std::vector<uint8_t> data = {0};
-                data.reserve(33);
-                ConvertBits<8, 5, true>([&](uint8_t c) { data.push_back(c); }, program.begin(), program.end());
-
-                libmw::PegOut pegout;
-                pegout.address = bech32::Encode(Params().Bech32HRP(), data);
-                pegout.amount = output.nValue;
-                pegouts.push_back(std::move(pegout));
-            }
-        }
+    for (size_t i = 1; i < pHogEx->vout.size(); i++) {
+        libmw::PegOut pegout;
+        pegout.scriptPubKey = {pHogEx->vout[i].scriptPubKey.begin(), pHogEx->vout[i].scriptPubKey.end()};
+        pegout.amount = pHogEx->vout[i].nValue;
+        pegouts.push_back(std::move(pegout));
     }
 
     return pegouts;

@@ -12,7 +12,8 @@
 #include <serialize.h>
 #include <uint256.h>
 #include <consensus/params.h>
-#include <mimblewimble/models.h>
+#include <mweb/mweb_models.h>
+#include <boost/variant.hpp>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 static const int SERIALIZE_NO_MIMBLEWIMBLE = 0x20000000;
@@ -130,6 +131,38 @@ public:
     std::string ToString() const;
 };
 
+typedef boost::variant<COutPoint, Commitment> OutputIndex;
+
+class CTxInput
+{
+public:
+    CTxInput(Commitment commitment)
+        : m_input(std::move(commitment)) {}
+    CTxInput(CTxIn txin)
+        : m_input(std::move(txin)) {}
+
+    bool IsMWEB() const noexcept { return m_input.type() == typeid(Commitment); }
+    OutputIndex GetIndex() const noexcept
+    {
+        return IsMWEB() ? OutputIndex{GetCommitment()} : OutputIndex{GetTxIn().prevout};
+    }
+
+    const Commitment& GetCommitment() const noexcept
+    {
+        assert(IsMWEB());
+        return boost::get<Commitment>(m_input);
+    }
+
+    const CTxIn& GetTxIn() const noexcept
+    {
+        assert(!IsMWEB());
+        return boost::get<CTxIn>(m_input);
+    }
+
+private:
+    boost::variant<CTxIn, Commitment> m_input;
+};
+
 /** An output of a transaction.  It contains the public key that the next input
  * must be able to sign with to claim it.
  */
@@ -179,6 +212,45 @@ public:
     std::string ToString() const;
 };
 
+class CTransaction;
+
+class CTxOutput
+{
+public:
+    CTxOutput() = default;
+    CTxOutput(const CTransaction* pTx, Commitment commitment)
+        : m_tx(pTx), m_idx(commitment), m_output(std::move(commitment)) {}
+    CTxOutput(const CTransaction* pTx, OutputIndex idx, CTxOut txout)
+        : m_tx(pTx), m_idx(std::move(idx)), m_output(std::move(txout)) {}
+
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(Commitment); }
+
+    const OutputIndex& GetIndex() const noexcept { return m_idx; }
+    
+    const Commitment& GetCommitment() const noexcept
+    {
+        assert(IsMWEB());
+        return boost::get<Commitment>(m_output);
+    }
+
+    const CTxOut& GetTxOut() const noexcept
+    {
+        assert(!IsMWEB());
+        return boost::get<CTxOut>(m_output);
+    }
+
+    const CScript& GetScriptPubKey() const noexcept
+    {
+        assert(!IsMWEB());
+        return GetTxOut().scriptPubKey;
+    }
+
+private:
+    const CTransaction* m_tx;
+    OutputIndex m_idx;
+    boost::variant<CTxOut, Commitment> m_output;
+};
+
 struct CMutableTransaction;
 
 /**
@@ -197,7 +269,7 @@ struct CMutableTransaction;
  * - if (flags & 1):
  *   - CTxWitness wit;
  * - if (flags & 8):
- *   - CMWTx m_mwtx
+ *   - MWEB::Tx m_mwtx
  * - uint32_t nLockTime
  */
 template<typename Stream, typename TxType>
@@ -314,7 +386,7 @@ public:
     const std::vector<CTxOut> vout;
     const int32_t nVersion;
     const uint32_t nLockTime;
-    const CMWTx m_mwtx;
+    const MWEB::Tx m_mwtx;
     
     /** Memory only. */
     const bool m_hogEx;
@@ -394,7 +466,7 @@ public:
     bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
     bool IsHogEx() const noexcept { return m_hogEx; }
 
-    uint256 GetMWEBHash() const noexcept
+    uint256 GetMWEBHash() const noexcept // MW: TODO - Doesn't belong here
     {
         if (m_hogEx && !vout.empty()) {
             int version;
@@ -408,6 +480,54 @@ public:
 
         return uint256();
     }
+
+    std::vector<CTxInput> GetInputs() const noexcept
+    {
+        std::vector<CTxInput> inputs;
+
+        for (const CTxIn& txin : vin) {
+            inputs.push_back(txin);
+        }
+
+        for (Commitment commit : m_mwtx.GetInputCommits()) {
+            inputs.push_back(std::move(commit));
+        }
+
+        return inputs;
+    }
+
+    CTxOutput GetOutput(const size_t index) const noexcept
+    {
+        assert(vout.size() > index);
+        return CTxOutput{this, COutPoint(GetHash(), index), vout[index]};
+    }
+
+    CTxOutput GetOutput(const OutputIndex& idx) const noexcept
+    {
+        if (idx.type() == typeid(Commitment)) {
+            // MW: TODO - Assert output with commit exists
+            return CTxOutput{this, boost::get<Commitment>(idx)};
+        } else {
+            const COutPoint& outpoint = boost::get<COutPoint>(idx);
+            assert(vout.size() > outpoint.n);
+            return CTxOutput{this, outpoint, vout[outpoint.n]};
+        }
+    }
+
+    std::vector<CTxOutput> GetOutputs() const noexcept
+    {
+        std::vector<CTxOutput> outputs;
+
+        for (size_t n = 0; n < vout.size(); n++) {
+            outputs.push_back(CTxOutput{this, COutPoint(GetHash(), n), vout[n]});
+        }
+
+        for (Commitment commit : m_mwtx.GetOutputCommits()) {
+            outputs.push_back(CTxOutput{this, std::move(commit)});
+        }
+
+        return outputs;
+    }
 };
 
 /** A mutable version of CTransaction. */
@@ -417,7 +537,7 @@ struct CMutableTransaction
     std::vector<CTxOut> vout;
     int32_t nVersion;
     uint32_t nLockTime;
-    CMWTx m_mwtx;
+    MWEB::Tx m_mwtx;
 
     /** Memory only. */
     bool m_hogEx = false;

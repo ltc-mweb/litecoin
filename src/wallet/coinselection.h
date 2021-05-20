@@ -6,6 +6,7 @@
 #define BITCOIN_WALLET_COINSELECTION_H
 
 #include <amount.h>
+#include <policy/feerate.h>
 #include <primitives/transaction.h>
 #include <random.h>
 
@@ -23,10 +24,8 @@ public:
         if (i >= tx->vout.size())
             throw std::out_of_range("The output index is out of range");
 
-        outpoint = COutPoint(tx->GetHash(), i);
-        txout = tx->vout[i];
-        effective_value = txout.nValue;
-        mwCoin = nullptr;
+        m_index = COutPoint(tx->GetHash(), i);
+        m_output = tx->vout[i];
     }
 
     CInputCoin(const CTransactionRef& tx, unsigned int i, int input_bytes) : CInputCoin(tx, i)
@@ -34,34 +33,51 @@ public:
         m_input_bytes = input_bytes;
     }
 
+    CInputCoin(const uint256& tx_hash, uint32_t i, const CAmount& nValue, const CScript& scriptPubKey)
+        : m_output(CTxOut(nValue, scriptPubKey)), m_index(COutPoint(tx_hash, i)) {}
+
     CInputCoin(const libmw::Coin& coin)
+        : m_output(coin), m_index(coin.commitment), m_input_bytes(0) { }
+
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(libmw::Coin); }
+    CScript GetScriptPubKey() const noexcept { return IsMWEB() ? CScript() : boost::get<CTxOut>(m_output).scriptPubKey; }
+    CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<libmw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
+    const OutputIndex& GetIndex() const noexcept { return m_index; }
+
+    libmw::Coin GetMWEBCoin() const noexcept
     {
-        mwCoin = &coin;
-        txout.nValue = effective_value = coin.amount;
-        m_input_bytes = sizeof(libmw::Commitment);
+        assert(IsMWEB());
+        return boost::get<libmw::Coin>(m_output);
     }
 
-    COutPoint outpoint;
-    CTxOut txout;
-    CAmount effective_value;
+    CAmount CalculateFee(const CFeeRate& feerate) const noexcept
+    {
+        if (IsMWEB()) {
+            return 0;
+        }
 
-    const libmw::Coin *mwCoin;
-
-    /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
-    int m_input_bytes{-1};
+        return m_input_bytes < 0 ? 0 : feerate.GetFee(m_input_bytes);
+    }
 
     bool operator<(const CInputCoin& rhs) const {
-        if (outpoint == rhs.outpoint) return mwCoin < rhs.mwCoin;
-        return outpoint < rhs.outpoint;
+        return m_index < rhs.m_index;
     }
 
     bool operator!=(const CInputCoin& rhs) const {
-        return outpoint != rhs.outpoint || mwCoin != rhs.mwCoin;
+        return m_index != rhs.m_index;
     }
 
     bool operator==(const CInputCoin& rhs) const {
-        return outpoint == rhs.outpoint && mwCoin == rhs.mwCoin;
+        return m_index == rhs.m_index;
     }
+
+private:
+    boost::variant<CTxOut, libmw::Coin> m_output;
+
+    OutputIndex m_index;
+
+    /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
+    int m_input_bytes{-1};
 };
 
 struct CoinEligibilityFilter
@@ -73,6 +89,17 @@ struct CoinEligibilityFilter
 
     CoinEligibilityFilter(int conf_mine, int conf_theirs, uint64_t max_ancestors) : conf_mine(conf_mine), conf_theirs(conf_theirs), max_ancestors(max_ancestors), max_descendants(max_ancestors) {}
     CoinEligibilityFilter(int conf_mine, int conf_theirs, uint64_t max_ancestors, uint64_t max_descendants) : conf_mine(conf_mine), conf_theirs(conf_theirs), max_ancestors(max_ancestors), max_descendants(max_descendants) {}
+};
+
+enum class InputPreference {
+    // Use MWEB inputs first (used during typicaly send to MWEB address)
+    PREFER_MWEB,
+    // Use canonical inputs first (used during typical send to LTC address)
+    PREFER_LTC,
+    // Only use MWEB inputs (used when explicitly pegging-out)
+    MWEB_ONLY,
+    // Only use canonical inputs (used when explicitly pegging-in)
+    LTC_ONLY
 };
 
 struct OutputGroup
@@ -101,7 +128,11 @@ struct OutputGroup
     }
     void Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants);
     std::vector<CInputCoin>::iterator Discard(const CInputCoin& output);
-    bool EligibleForSpending(const CoinEligibilityFilter& eligibility_filter) const;
+    bool EligibleForSpending(const CoinEligibilityFilter& eligibility_filter, const InputPreference& input_preference) const;
+    bool IsMWEB() const noexcept
+    {
+        return !m_outputs.empty() && m_outputs.front().IsMWEB();
+    }
 };
 
 bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_value, const CAmount& cost_of_change, std::set<CInputCoin>& out_set, CAmount& value_ret, CAmount not_input_fees);

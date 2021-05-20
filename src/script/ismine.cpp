@@ -68,10 +68,8 @@ IsMineResult IsMineInner(const CKeyStore& keystore, const CScript& scriptPubKey,
     case TX_NONSTANDARD:
     case TX_NULL_DATA:
     case TX_WITNESS_UNKNOWN:
-    case TX_WITNESS_MW_HEADERHASH:
+    case TX_WITNESS_MWEB_PEGIN:
         break;
-    case TX_WITNESS_MW_PEGIN:
-        break; // MW: This will be tricky to implement
     case TX_PUBKEY:
         keyID = CPubKey(vSolutions[0]).GetID();
         if (!PermitsUncompressed(sigversion) && vSolutions[0].size() != 33) {
@@ -191,6 +189,11 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey)
 
 isminetype IsMine(const CKeyStore& keystore, const CTxDestination& dest)
 {
-    CScript script = GetScriptForDestination(dest);
-    return IsMine(keystore, script);
+    if (dest.type() == typeid(MWEB::StealthAddress)) {
+        // MW: TODO - Check MWEB address
+        return ISMINE_SPENDABLE;
+    } else {
+        CScript script = GetScriptForDestination(dest);
+        return IsMine(keystore, script);
+    }
 }

@@ -9,7 +9,7 @@
 #include <primitives/transaction.h>
 #include <serialize.h>
 #include <uint256.h>
-#include <mimblewimble/models.h>
+#include <mweb/mweb_models.h>
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -81,7 +81,7 @@ public:
     // memory only
     mutable bool fChecked;
 
-    CMWBlock mwBlock;
+    MWEB::Block mwBlock;
 
     CBlock()
     {
@@ -141,6 +141,25 @@ public:
         }
 
         return vtx.back()->GetMWEBHash();
+    }
+
+    uint256 GetHogExHash() const noexcept
+    {
+        if (!HasHogEx()) {
+            return uint256();
+        }
+
+        return vtx.back()->GetHash();
+    }
+
+    // The amount of the first output in the HogEx transaction.
+    CAmount GetMWEBAmount() const noexcept
+    {
+        if (!HasHogEx() || vtx.back()->vout.empty()) {
+            return 0;
+        }
+
+        return vtx.back()->vout[0].nValue;
     }
 
     std::vector<libmw::PegIn> GetPegInCoins() const noexcept;

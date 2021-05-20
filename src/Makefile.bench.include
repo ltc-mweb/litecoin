@@ -48,7 +48,7 @@ bench_bench_litecoin_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1) \
   $(LIBUNIVALUE) \
-  $(MW_LIBS)
+  $(LIBMW)
 
 if ENABLE_ZMQ
 bench_bench_litecoin_LDADD += $(LIBBITCOIN_ZMQ) $(ZMQ_LIBS)
@@ -58,7 +58,7 @@ if ENABLE_WALLET
 bench_bench_litecoin_SOURCES += bench/coin_selection.cpp
 endif
 
-bench_bench_litecoin_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
+bench_bench_litecoin_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(MW_LIBS)
 bench_bench_litecoin_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 CLEAN_BITCOIN_BENCH = bench/*.gcda bench/*.gcno $(GENERATED_BENCH_FILES)

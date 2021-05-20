@@ -13,7 +13,7 @@
 #include <tinyformat.h>
 #include <util/system.h>
 #include <util/strencodings.h>
-
+#include <libmw/libmw.h>
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 {
@@ -256,4 +256,9 @@ int64_t GetVirtualTransactionSize(const CTransaction& tx, int64_t nSigOpCost)
 int64_t GetVirtualTransactionInputSize(const CTxIn& txin, int64_t nSigOpCost)
 {
     return GetVirtualTransactionSize(GetTransactionInputWeight(txin), nSigOpCost);
+}
+
+int64_t GetMWEBWeight(size_t nOutputs, size_t nKernels, size_t nOwnerSigs)
+{
+    return (int64_t)Weight::Calculate(nKernels, nOwnerSigs, nOutputs);
 }

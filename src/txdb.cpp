@@ -13,7 +13,7 @@
 #include <uint256.h>
 #include <util/system.h>
 #include <ui_interface.h>
-#include <mimblewimble/db.h>
+#include <mweb/mweb_db.h>
 
 #include <stdint.h>
 
@@ -62,8 +62,12 @@ bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return db.Read(CoinEntry(&outpoint), coin);
 }
 
-bool CCoinsViewDB::HaveCoin(const COutPoint &outpoint) const {
-    return db.Exists(CoinEntry(&outpoint));
+bool CCoinsViewDB::HaveCoin(const OutputIndex& index) const {
+    if (index.type() == typeid(Commitment)) {
+        return libmw::node::HasCoin(GetMWView(), boost::get<Commitment>(index));
+    } else {
+        return db.Exists(CoinEntry(boost::get<COutPoint>(&index)));
+    }
 }
 
 uint256 CCoinsViewDB::GetBestBlock() const {
@@ -132,8 +136,8 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, lib
         }
     }
 
-    // MW: Flushes mimblewimble coins & MMRs
-    libmw::node::FlushCache(derivedView, std::make_unique<MWDBBatch>(&db, batch));
+    // MWEB: Flushes mimblewimble coins & MMRs
+    libmw::node::FlushCache(derivedView, std::make_unique<MWEB::DBBatch>(&db, batch));
 
     // In the last batch, mark the database as consistent with hashBlock again.
     batch->Erase(DB_HEAD_BLOCKS);
@@ -277,6 +281,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
+                pindexNew->mweb_hash      = diskindex.mweb_hash;
+                pindexNew->mweb_amount    = diskindex.mweb_amount;
+                pindexNew->hogex_hash     = diskindex.hogex_hash;
 
                 // Litecoin: Disable PoW Sanity check while loading block index from disk.
                 // We use the sha256 hash for the block index for performance reasons, which is recorded for later use.
