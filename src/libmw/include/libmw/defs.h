@@ -154,7 +154,7 @@ struct Coin : public Traits::ISerializable
 
     Serializer& Serialize(Serializer& serializer) const noexcept final
     {
-        return Serializer()
+        return serializer
             .Append<uint8_t>(features)
             .Append<uint32_t>(address_index)
             .Append(key)
