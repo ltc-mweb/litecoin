@@ -30,7 +30,7 @@ jobs:
             - name: Install dependencies
               run: |
                 sudo apt-get -y update --fix-missing
-                sudo apt-get -y install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 g++-mingw-w64-x86-64
+                sudo apt-get -y install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 g++-mingw-w64-x86-64 cmake nsis
             - name: Windows build
               run: |
                 sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
