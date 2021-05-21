@@ -41,12 +41,12 @@ jobs:
                 cd ..
                 ./autogen.sh
                 CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
-                make dist
+                make -j8
+                make deploy
             - name: Upload artifact
               uses: actions/upload-artifact@v2
               env:
                     GITHUB_RUN_ID: ${{ github.run_id }}    
               with:
                     name: litecoin_${{ runner.os }}_${{ env.GITHUB_RUN_ID }}
-                    path: |
-                        ${{ github.workspace }}/litecoin/litecoin-0.18.1-win64-setup.exe
+                    path: ${{ github.workspace }}/litecoin/litecoin-0.18.1-win64-setup.exe
