@@ -11,7 +11,6 @@ jobs:
                 include:
                     - name: ubuntu
                       os: ubuntu-18.04
-                      vcpkg_triplet: x64-linux
         steps:
             - name: Checkout litecoin
               uses: actions/checkout@v2
