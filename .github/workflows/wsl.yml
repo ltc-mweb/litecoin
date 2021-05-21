@@ -1,0 +1,52 @@
+name: ci
+on: [push, pull_request]
+jobs:
+    windows-wsl-ubuntu-18_04:
+        # with the help of https://github.com/marketplace/actions/setup-wsl
+        name: WSL [Ubuntu 18.04]
+        runs-on: windows-2019
+        defaults:
+          run:
+            shell: wsl-bash {0} # https://github.com/marketplace/actions/setup-wsl#default-shell
+        steps:
+            - uses: Vampire/setup-wsl@v1
+              with:
+                # other WSL container choices at: https://github.com/marketplace/actions/setup-wsl#distribution
+                distribution: Ubuntu-18.04
+            - name: Use unix line endings
+              shell: bash
+              run: |
+                # Github's actions/checkout@v2 when run on Windows mangles the line-endings to DOS-style
+                # but we're running Linux *on top* of Windows, so we need to not mangle them!
+                # https://github.com/actions/checkout/issues/135#issuecomment-602171132
+                # https://github.com/actions/virtual-environments/issues/50#issuecomment-663920265
+                git config --global core.autocrlf false
+                git config --global core.eol lf
+            - name: Checkout litecoin
+              uses: actions/checkout@v2
+              with:
+                  path: litecoin
+                  repository: ltc-mweb/litecoin
+            - name: Install dependencies
+              run: |
+                sudo apt-get -y update --fix-missing
+                sudo apt-get -y install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 g++-mingw-w64-x86-64 cmake nsis
+            - name: Windows build
+              run: |
+                sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+                cd litecoin
+                PATH=$(echo "$PATH" | sed -e 's/:\/mnt.*//g') # strip out problematic Windows %PATH% imported var
+                cd depends
+                make HOST=x86_64-w64-mingw32
+                cd ..
+                ./autogen.sh
+                CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
+                make -j8
+                make deploy
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
+              env:
+                    GITHUB_RUN_ID: ${{ github.run_id }}    
+              with:
+                    name: litecoin_${{ runner.os }}_${{ env.GITHUB_RUN_ID }}
+                    path: ${{ github.workspace }}/litecoin/litecoin-0.18.1-win64-setup.exe
