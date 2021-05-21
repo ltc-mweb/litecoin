@@ -167,7 +167,7 @@ struct Tx {
         std::vector<PegInCoin> pegins;
         for (const Kernel& kernel : m_transaction->GetKernels()) {
             if (kernel.HasPegIn()) {
-                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetCommitment().array()});
+                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetCommitment()});
             }
         }
 
@@ -183,8 +183,7 @@ struct Tx {
         std::vector<PegOutCoin> pegouts;
         for (const Kernel& kernel : m_transaction->GetKernels()) {
             if (kernel.HasPegOut()) {
-                const PegOutCoin& pegout = kernel.GetPegOut().value();
-                pegouts.emplace_back(PegOutCoin{ pegout.GetAmount(), pegout.GetScriptPubKey() });
+                pegouts.emplace_back(kernel.GetPegOut().value());
             }
         }
 
