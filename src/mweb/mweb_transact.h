@@ -37,7 +37,7 @@ private:
     static CAmount GetMWEBInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetLTCInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBRecipientAmount(const std::vector<CRecipient>& recipients);
-    static bool UpdatePegInOutput(CMutableTransaction& transaction, const libmw::PegIn& pegin);
+    static bool UpdatePegInOutput(CMutableTransaction& transaction, const PegInCoin& pegin);
 };
 
 }

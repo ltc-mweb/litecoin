@@ -44,13 +44,13 @@ std::string CBlock::ToString() const
     return s.str();
 }
 
-std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
+std::vector<PegInCoin> CBlock::GetPegInCoins() const noexcept
 {
     if (!HasHogEx()) {
         return {};
     }
 
-    std::vector<libmw::PegIn> pegins;
+    std::vector<PegInCoin> pegins;
 
     // MW: TODO - Alternatively, we could just loop through the inputs on the HogEx transaction
     for (const CTransactionRef& pTx : vtx) {
@@ -59,10 +59,7 @@ std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
             std::vector<uint8_t> program;
             if (output.scriptPubKey.IsWitnessProgram(version, program)) {
                 if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-                    libmw::PegIn pegin;
-                    pegin.amount = output.nValue;
-                    pegin.commitment = Commitment{std::move(program)};
-                    pegins.push_back(std::move(pegin));
+                    pegins.push_back(PegInCoin(output.nValue, Commitment{std::move(program)}));
                 }
             }
         }
@@ -71,20 +68,18 @@ std::vector<libmw::PegIn> CBlock::GetPegInCoins() const noexcept
     return pegins;
 }
 
-std::vector<libmw::PegOut> CBlock::GetPegOutCoins() const noexcept
+std::vector<PegOutCoin> CBlock::GetPegOutCoins() const noexcept
 {
     if (!HasHogEx()) {
         return {};
     }
 
-    std::vector<libmw::PegOut> pegouts;
+    std::vector<PegOutCoin> pegouts;
 
     const CTransactionRef& pHogEx = vtx.back();
     for (size_t i = 1; i < pHogEx->vout.size(); i++) {
-        libmw::PegOut pegout;
-        pegout.scriptPubKey = {pHogEx->vout[i].scriptPubKey.begin(), pHogEx->vout[i].scriptPubKey.end()};
-        pegout.amount = pHogEx->vout[i].nValue;
-        pegouts.push_back(std::move(pegout));
+        const CScript& pubkey = pHogEx->vout[i].scriptPubKey;
+        pegouts.push_back(PegOutCoin(pHogEx->vout[i].nValue, {pubkey.begin(), pubkey.end()}));
     }
 
     return pegouts;

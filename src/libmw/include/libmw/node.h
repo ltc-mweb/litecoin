@@ -59,8 +59,8 @@ libmw::CoinsViewRef ApplyState(
 bool CheckBlock(
     const mw::Block::CPtr& block,
     const mw::Hash& hash,
-    const std::vector<libmw::PegIn>& pegInCoins,
-    const std::vector<libmw::PegOut>& pegOutCoins
+    const std::vector<PegInCoin>& pegInCoins,
+    const std::vector<PegOutCoin>& pegOutCoins
 );
 
 /// <summary>

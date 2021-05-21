@@ -19,7 +19,7 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
 
     // MW: TODO - Check HogEx transaction (pegins must match block's transactions)
 
-    std::vector<libmw::PegIn> pegins;
+    std::vector<PegInCoin> pegins;
     std::vector<CTxIn> expected_inputs;
 
     for (const CTransactionRef& pTx : block.vtx) {
@@ -28,18 +28,14 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
             std::vector<uint8_t> program;
             if (pTx->vout[nOut].scriptPubKey.IsWitnessProgram(version, program)) {
                 if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-                    libmw::PegIn pegin;
-                    pegin.amount = pTx->vout[nOut].nValue;
-                    pegin.commitment = Commitment{std::move(program)};
-                    pegins.push_back(std::move(pegin));
-
+                    pegins.push_back(PegInCoin(pTx->vout[nOut].nValue, Commitment{std::move(program)}));
                     expected_inputs.push_back(CTxIn(pTx->GetHash(), nOut));
                 }
             }
         }
     }
 
-    //std::vector<libmw::PegIn> pegins = block.GetPegInCoins();
+    //std::vector<PegInCoin> pegins = block.GetPegInCoins();
     //if (pegins.size() == block.vtx.back()->vin.size()) {
     //    // MW: TODO - First MWEB's HogEx
     //} else if (pegins.size() + 1 == block.vtx.back()->vin.size()) {

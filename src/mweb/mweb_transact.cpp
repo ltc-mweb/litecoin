@@ -137,14 +137,14 @@ CAmount Transact::GetMWEBRecipientAmount(const std::vector<CRecipient>& recipien
         [](CAmount amt, const CRecipient& recipient) { return amt + (recipient.IsMWEB() ? recipient.nAmount : 0); });
 }
 
-bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const libmw::PegIn& pegin)
+bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const PegInCoin& pegin)
 {
     for (size_t i = 0; i < transaction.vout.size(); i++) {
         if (IsPegInOutput(CTransaction(transaction).GetOutput(i))) {
             CScript pegin_script;
             pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
-            pegin_script << pegin.commitment.vec();
-            transaction.vout[i].nValue = pegin.amount;
+            pegin_script << pegin.GetCommitment().vec();
+            transaction.vout[i].nValue = pegin.GetAmount();
             transaction.vout[i].scriptPubKey = pegin_script;
             return true;
         }

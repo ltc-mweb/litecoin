@@ -19,7 +19,7 @@ std::shared_ptr<mw::BlockBuilder> NewBuilder(const uint64_t height, const libmw:
 bool AddTransaction(
     const std::shared_ptr<mw::BlockBuilder>& builder,
     const mw::Transaction::CPtr& transaction,
-    const std::vector<libmw::PegIn>& pegins
+    const std::vector<PegInCoin>& pegins
 );
 
 mw::Block::Ptr BuildBlock(const std::shared_ptr<mw::BlockBuilder>& builder);

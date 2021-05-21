@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
         std::shared_ptr<mw::BlockBuilder> block_builder = libmw::miner::NewBuilder(152, cached_view);
 
         test::Tx builder_tx1 = test::Tx::CreatePegIn(150);
-        libmw::PegIn builder_tx1_pegin{ 150, builder_tx1.GetKernels().front().GetCommitment().array() };
+        PegInCoin builder_tx1_pegin{ 150, builder_tx1.GetKernels().front().GetCommitment() };
         bool tx1_status = libmw::miner::AddTransaction(
             block_builder,
             builder_tx1.GetTransaction(),

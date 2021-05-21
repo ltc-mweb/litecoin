@@ -158,33 +158,33 @@ struct Tx {
         return output_commits;
     }
 
-    std::vector<libmw::PegIn> GetPegIns() const noexcept
+    std::vector<PegInCoin> GetPegIns() const noexcept
     {
         if (IsNull()) {
-            return std::vector<libmw::PegIn>{};
+            return std::vector<PegInCoin>{};
         }
 
-        std::vector<libmw::PegIn> pegins;
+        std::vector<PegInCoin> pegins;
         for (const Kernel& kernel : m_transaction->GetKernels()) {
             if (kernel.HasPegIn()) {
-                pegins.emplace_back(libmw::PegIn{kernel.GetPegIn(), kernel.GetCommitment().array()});
+                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetCommitment().array()});
             }
         }
 
         return pegins;
     }
 
-    std::vector<libmw::PegOut> GetPegOuts() const noexcept
+    std::vector<PegOutCoin> GetPegOuts() const noexcept
     {
         if (IsNull()) {
-            return std::vector<libmw::PegOut>{};
+            return std::vector<PegOutCoin>{};
         }
 
-        std::vector<libmw::PegOut> pegouts;
+        std::vector<PegOutCoin> pegouts;
         for (const Kernel& kernel : m_transaction->GetKernels()) {
             if (kernel.HasPegOut()) {
                 const PegOutCoin& pegout = kernel.GetPegOut().value();
-                pegouts.emplace_back(libmw::PegOut{ pegout.GetAmount(), pegout.GetScriptPubKey() });
+                pegouts.emplace_back(PegOutCoin{ pegout.GetAmount(), pegout.GetScriptPubKey() });
             }
         }
 

@@ -16,7 +16,7 @@ public:
     void AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, CBlockTemplate* pblocktemplate, CAmount& nFees);
 
 private:
-    bool ValidatePegIns(const CTransactionRef& pTx, const std::vector<libmw::PegIn>& pegins) const;
+    bool ValidatePegIns(const CTransactionRef& pTx, const std::vector<PegInCoin>& pegins) const;
 
     // MWEB Attributes
     std::shared_ptr<mw::BlockBuilder> mweb_builder;

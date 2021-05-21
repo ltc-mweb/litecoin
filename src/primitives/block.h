@@ -162,8 +162,8 @@ public:
         return vtx.back()->vout[0].nValue;
     }
 
-    std::vector<libmw::PegIn> GetPegInCoins() const noexcept;
-    std::vector<libmw::PegOut> GetPegOutCoins() const noexcept;
+    std::vector<PegInCoin> GetPegInCoins() const noexcept;
+    std::vector<PegOutCoin> GetPegOutCoins() const noexcept;
 };
 
 /** Describes a place in the block chain to another node such that if the

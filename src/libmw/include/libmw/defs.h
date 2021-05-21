@@ -67,26 +67,6 @@ static constexpr uint32_t CHANGE_INDEX{ 0 };
 /// </summary>
 static constexpr uint32_t PEGIN_INDEX{ 1 };
 
-struct PegIn
-{
-    uint64_t amount;
-    Commitment commitment;
-
-    bool operator==(const PegIn& rhs) const {
-        return amount == rhs.amount && commitment == rhs.commitment;
-    }
-
-    bool operator!=(const PegIn& rhs) const {
-        return !(*this == rhs);
-    }
-};
-
-struct PegOut
-{
-    uint64_t amount;
-    std::vector<uint8_t> scriptPubKey;
-};
-
 /// <summary>
 /// A wrapper around an internal pointer to a coin view.
 /// This can either be a CoinsViewDB, which represents the flushed view, or a CoinsViewCache.

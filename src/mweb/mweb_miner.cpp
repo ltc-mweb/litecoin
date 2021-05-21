@@ -28,7 +28,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     std::vector<CTxIn> vin;
     CAmount pegin_amount = 0;
-    std::vector<libmw::PegIn> pegins = pTx->m_mwtx.GetPegIns();
+    std::vector<PegInCoin> pegins = pTx->m_mwtx.GetPegIns();
 
     if (!ValidatePegIns(pTx, pegins)) {
         LogPrintf("Peg-in Mismatch\n");
@@ -54,13 +54,13 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     std::vector<CTxOut> vout;
     CAmount pegout_amount = 0;
-    std::vector<libmw::PegOut> pegouts = pTx->m_mwtx.GetPegOuts();
+    std::vector<PegOutCoin> pegouts = pTx->m_mwtx.GetPegOuts();
 
-    for (const libmw::PegOut& pegout : pegouts) {
-        CAmount amount(pegout.amount);
+    for (const PegOutCoin& pegout : pegouts) {
+        CAmount amount(pegout.GetAmount());
         assert(MoneyRange(amount));
 
-        CScript scriptPubKey(pegout.scriptPubKey.begin(), pegout.scriptPubKey.end());
+        CScript scriptPubKey(pegout.GetScriptPubKey().begin(), pegout.GetScriptPubKey().end());
         vout.push_back(CTxOut{amount, std::move(scriptPubKey)});
 
         pegout_amount += amount;
@@ -95,26 +95,24 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
 
 namespace std {
 template <>
-struct hash<libmw::PegIn> {
-    size_t operator()(const libmw::PegIn& pegin) const
+struct hash<PegInCoin> {
+    size_t operator()(const PegInCoin& pegin) const
     {
-        return boost::hash_value(pegin.commitment.vec()) + boost::hash_value(pegin.amount);
+        return boost::hash_value(pegin.GetCommitment().vec()) + boost::hash_value(pegin.GetAmount());
     }
 };
 } // namespace std
 
-bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<libmw::PegIn>& pegins) const
+bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<PegInCoin>& pegins) const
 {
-    std::unordered_set<libmw::PegIn> pegin_set(pegins.cbegin(), pegins.cend());
+    std::unordered_set<PegInCoin> pegin_set(pegins.cbegin(), pegins.cend());
 
     for (const CTxOut& output : pTx->vout) {
         int version;
         std::vector<uint8_t> program;
         if (output.scriptPubKey.IsWitnessProgram(version, program)) {
             if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-                libmw::PegIn pegin;
-                pegin.amount = output.nValue;
-                pegin.commitment = Commitment{std::move(program)};
+                PegInCoin pegin(output.nValue, Commitment{std::move(program)});
                 if (pegin_set.erase(pegin) != 1) {
                     return false;
                 }

@@ -1,7 +1,5 @@
 #include <libmw/node.h>
 
-#include "Transformers.h"
-
 #include <mw/node/BlockBuilder.h>
 #include <mw/common/Logger.h>
 
@@ -16,13 +14,13 @@ std::shared_ptr<mw::BlockBuilder> NewBuilder(const uint64_t height, const libmw:
 bool AddTransaction(
     const std::shared_ptr<mw::BlockBuilder>& builder,
     const mw::Transaction::CPtr& transaction,
-    const std::vector<libmw::PegIn>& pegins)
+    const std::vector<PegInCoin>& pegins)
 {
     assert(builder != nullptr);
     assert(transaction != nullptr);
 
     try {
-        return builder->AddTransaction(transaction, Transform::PegIns(pegins));
+        return builder->AddTransaction(transaction, pegins);
     } catch (std::exception& e) {
         LOG_DEBUG_F("Failed to add transaction {}. Error: {}", transaction, e.what());
     }

@@ -458,10 +458,10 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
 
         // Pegins
         UniValue pegins(UniValue::VARR);
-        for (const libmw::PegIn& pegin : tx.m_mwtx.GetPegIns()) {
+        for (const PegInCoin& pegin : tx.m_mwtx.GetPegIns()) {
             UniValue pegin_uni(UniValue::VOBJ);
-            pegin_uni.pushKV("amount", pegin.amount);
-            pegin_uni.pushKV("commitment", pegin.commitment.ToHex());
+            pegin_uni.pushKV("amount", pegin.GetAmount());
+            pegin_uni.pushKV("commitment", pegin.GetCommitment().ToHex());
             pegins.push_back(pegin_uni);
         }
 
@@ -469,10 +469,10 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
 
         // Pegouts
         UniValue pegouts(UniValue::VARR);
-        for (const libmw::PegOut& pegout : tx.m_mwtx.GetPegOuts()) {
+        for (const PegOutCoin& pegout : tx.m_mwtx.GetPegOuts()) {
             UniValue pegout_uni(UniValue::VOBJ);
-            pegout_uni.pushKV("amount", pegout.amount);
-            pegout_uni.pushKV("scriptpubkey", HexStr(pegout.scriptPubKey));
+            pegout_uni.pushKV("amount", pegout.GetAmount());
+            pegout_uni.pushKV("scriptpubkey", HexStr(pegout.GetScriptPubKey()));
             pegouts.push_back(pegout_uni);
         }
 

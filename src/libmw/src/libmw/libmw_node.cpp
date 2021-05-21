@@ -1,7 +1,5 @@
 #include <libmw/node.h>
 
-#include "Transformers.h"
-
 #include <mw/common/Logger.h>
 #include <mw/exceptions/ValidationException.h>
 #include <mw/models/block/Block.h>
@@ -58,15 +56,13 @@ libmw::CoinsViewRef ApplyState(
 bool CheckBlock(
     const mw::Block::CPtr& block,
     const mw::Hash& hash,
-    const std::vector<libmw::PegIn>& pegInCoins,
-    const std::vector<libmw::PegOut>& pegOutCoins)
+    const std::vector<PegInCoin>& pegInCoins,
+    const std::vector<PegOutCoin>& pegOutCoins)
 {
     assert(block != nullptr);
 
     try {
-        auto pegins = Transform::PegIns(pegInCoins);
-        auto pegouts = Transform::PegOuts(pegOutCoins);
-        NODE->ValidateBlock(block, hash, pegins, pegouts);
+        NODE->ValidateBlock(block, hash, pegInCoins, pegOutCoins);
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR_F("Failed to validate {}. Error: {}", *block, e);
