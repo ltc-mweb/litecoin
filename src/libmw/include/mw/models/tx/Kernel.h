@@ -233,13 +233,13 @@ public:
         if (features_byte & FEE_FEATURE_BIT) {
             uint64_t fee;
             s >> fee;
-            m_fee = boost::make_optional<uint64_t>(fee);
+            m_fee = fee;
         }
 
         if (features_byte & PEGIN_FEATURE_BIT) {
             uint64_t pegin;
             s >> pegin;
-            m_pegin = boost::make_optional<uint64_t>(pegin);
+            m_pegin = pegin;
         }
 
         if (features_byte & PEGOUT_FEATURE_BIT) {
@@ -252,7 +252,7 @@ public:
         if (features_byte & HEIGHT_LOCK_FEATURE_BIT) {
             uint64_t lock_height;
             s >> lock_height;
-            m_lockHeight = boost::make_optional<uint64_t>(lock_height);
+            m_lockHeight = lock_height;
         }
 
         if (features_byte & EXTRA_DATA_FEATURE_BIT) {
