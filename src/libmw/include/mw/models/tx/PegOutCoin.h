@@ -9,6 +9,7 @@
 class PegOutCoin : public Traits::ISerializable, public Traits::IPrintable
 {
 public:
+    PegOutCoin() = default;
     PegOutCoin(const uint64_t amount, const std::vector<uint8_t>& scriptPubKey)
         : m_amount(amount), m_scriptPubKey(scriptPubKey) { }
     PegOutCoin(const uint64_t amount, std::vector<uint8_t>&& scriptPubKey)
@@ -40,6 +41,15 @@ public:
         std::vector<uint8_t> scriptPubKey = deserializer.ReadVector(num_bytes);
 
         return PegOutCoin(amount, std::move(scriptPubKey));
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_amount);
+        READWRITE(m_scriptPubKey);
     }
 
     std::string Format() const noexcept final

@@ -103,6 +103,21 @@ public:
         );
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_commitment);
+        READWRITE(m_features);
+        READWRITE(m_receiverPubKey);
+        READWRITE(m_keyExchangePubKey);
+        READWRITE(m_viewTag);
+        READWRITE(m_maskedValue);
+        READWRITE(m_maskedNonce);
+        READWRITE(m_senderPubKey);
+    }
+
     //
     // Traits
     //

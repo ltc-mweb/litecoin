@@ -130,6 +130,16 @@ public:
         return Transaction(std::move(kernel_offset), std::move(owner_offset), std::move(body));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_kernelOffset);
+        READWRITE(m_ownerOffset);
+        READWRITE(m_body);
+    }
+
     //
     // Traits
     //

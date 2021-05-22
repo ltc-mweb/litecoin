@@ -68,6 +68,14 @@ public:
         return RangeProof(deserializer.ReadVector(proofSize));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_bytes);
+    }
+
     //
     // Traits
     //

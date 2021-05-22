@@ -43,6 +43,22 @@ public:
         return UTXO(blockHeight, mmr::LeafIndex::At(leafIdx), std::move(output));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_blockHeight);
+
+        uint64_t idx = m_leafIdx.Get();
+        READWRITE(idx);
+        if (ser_action.ForRead()) {
+            m_leafIdx = mmr::LeafIndex::At(idx);
+        }
+
+        READWRITE(m_output);
+    }
+
 private:
     uint64_t m_blockHeight;
     mmr::LeafIndex m_leafIdx;

@@ -76,6 +76,14 @@ public:
         return Commitment(BigInt<SIZE>::Deserialize(deserializer));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_bytes);
+    }
+
     std::string ToHex() const { return m_bytes.ToHex(); }
     static Commitment FromHex(const std::string& hex) { return Commitment(BigInt<SIZE>::FromHex(hex)); }
 

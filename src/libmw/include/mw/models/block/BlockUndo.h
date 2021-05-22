@@ -62,6 +62,24 @@ public:
         return BlockUndo{ pPrevHeader, std::move(coinsSpent), std::move(coinsAdded) };
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        bool has_prev = (m_pPrevHeader != nullptr); 
+        if (ser_action.ForRead()) {
+            READWRITE(has_prev);
+        }
+
+        if (has_prev) {
+            READWRITE(m_pPrevHeader);
+        }
+
+        READWRITE(m_coinsSpent);
+        READWRITE(m_coinsAdded);
+    }
+
 private:
     mw::Header::CPtr m_pPrevHeader;
     std::vector<UTXO> m_coinsSpent;

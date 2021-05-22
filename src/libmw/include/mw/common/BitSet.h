@@ -3,6 +3,7 @@
 #include <mw/traits/Serializable.h>
 #include <mw/serialization/Serializer.h>
 #include <boost/dynamic_bitset.hpp>
+#include <serialize.h>
 #include <vector>
 
 struct BitSet : public Traits::ISerializable
@@ -97,5 +98,20 @@ struct BitSet : public Traits::ISerializable
     {
         uint64_t num_bytes = deserializer.Read<uint64_t>();
         return BitSet::From(deserializer.ReadVector(num_bytes));
+    }
+
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        std::vector<uint8_t> vec = bytes();
+        ::Serialize(s, vec);
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        std::vector<uint8_t> vec;
+        ::Unserialize(s, vec);
+        *this = BitSet::From(vec);
     }
 };

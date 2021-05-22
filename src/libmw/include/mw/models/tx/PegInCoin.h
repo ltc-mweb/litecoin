@@ -41,6 +41,15 @@ public:
         return PegInCoin(amount, std::move(commitment));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_amount);
+        READWRITE(m_commitment);
+    }
+
     std::string Format() const noexcept final
     {
         return std::string("PegInCoin(commitment: ") + m_commitment.Format() + ", amount: " + std::to_string(m_amount) + ")";

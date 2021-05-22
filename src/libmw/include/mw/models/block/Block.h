@@ -9,6 +9,7 @@
 #include <mw/traits/Hashable.h>
 #include <mw/traits/Serializable.h>
 #include <mw/traits/Printable.h>
+#include <serialize.h>
 #include <algorithm>
 
 MW_NAMESPACE
@@ -73,6 +74,15 @@ public:
         mw::Header::CPtr pHeader = std::make_shared<mw::Header>(mw::Header::Deserialize(deserializer));
         TxBody body = TxBody::Deserialize(deserializer);
         return Block{ pHeader, std::move(body) };
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(*m_pHeader);
+        READWRITE(m_body);
     }
 
     //

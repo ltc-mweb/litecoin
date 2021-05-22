@@ -11,6 +11,7 @@
 #include <string>
 #include <cstdint>
 #include <mw/exceptions/DeserializationException.h>
+#include <serialize.h>
 
 // TODO: Not needed if we decide not to require peg-in outputs to mature.
 enum EOutputFeatures : uint8_t
@@ -34,6 +35,14 @@ public:
 
     bool IsSet(const uint8_t feature) const noexcept { return (m_features & feature) == feature; }
     uint8_t Get() const noexcept { return m_features; }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_features);
+    }
 
 private:
     uint8_t m_features;

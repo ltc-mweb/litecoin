@@ -17,6 +17,18 @@ public:
         return SerializableVec(deserializer.ReadVector(deserializer.GetRemainingSize()));
     }
 
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        s.write(m_bytes.data(), m_bytes.size());
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        s.read(m_bytes.data(), s.size());
+    }
+
 private:
     std::vector<uint8_t> m_bytes;
 };

@@ -190,6 +190,78 @@ public:
         };
     }
 
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        uint8_t features_byte =
+            (m_fee ? FEE_FEATURE_BIT : 0) |
+            (m_pegin ? PEGIN_FEATURE_BIT : 0) |
+            (m_pegout ? PEGOUT_FEATURE_BIT : 0) |
+            (m_lockHeight ? HEIGHT_LOCK_FEATURE_BIT : 0) |
+            (m_extraData.size() > 0 ? EXTRA_DATA_FEATURE_BIT : 0);
+        s << features_byte;
+
+        if (m_fee) {
+            s << m_fee.value();
+        }
+
+        if (m_pegin) {
+            s << m_pegin.value();
+        }
+
+        if (m_pegout) {
+            s << m_pegout.value();
+        }
+
+        if (m_lockHeight) {
+            s << m_lockHeight.value();
+        }
+
+        if (!m_extraData.empty()) {
+            s << m_extraData;
+        }
+
+        s << m_excess << m_signature;
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        uint8_t features_byte;
+        s >> features_byte;
+
+        if (features_byte & FEE_FEATURE_BIT) {
+            uint64_t fee;
+            s >> fee;
+            m_fee = boost::make_optional<uint64_t>(fee);
+        }
+
+        if (features_byte & PEGIN_FEATURE_BIT) {
+            uint64_t pegin;
+            s >> pegin;
+            m_pegin = boost::make_optional<uint64_t>(pegin);
+        }
+
+        if (features_byte & PEGOUT_FEATURE_BIT) {
+            PegOutCoin pegout;
+            s >> pegout;
+
+            m_pegout = boost::make_optional(std::move(pegout));
+        }
+
+        if (features_byte & HEIGHT_LOCK_FEATURE_BIT) {
+            uint64_t lock_height;
+            s >> lock_height;
+            m_lockHeight = boost::make_optional<uint64_t>(lock_height);
+        }
+
+        if (features_byte & EXTRA_DATA_FEATURE_BIT) {
+            s >> m_extraData;
+        }
+
+        s >> m_excess >> m_signature;
+    }
+
     //
     // Traits
     //

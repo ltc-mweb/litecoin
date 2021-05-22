@@ -40,6 +40,15 @@ public:
         return StealthAddress(std::move(scan), std::move(spend));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_scan);
+        READWRITE(m_spend);
+    }
+
 private:
     PublicKey m_scan;
     PublicKey m_spend;

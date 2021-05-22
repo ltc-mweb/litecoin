@@ -61,6 +61,14 @@ public:
         return Signature(BigInt<SIZE>::Deserialize(deserializer));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_bytes);
+    }
+
     std::string ToHex() const { return m_bytes.ToHex(); }
     static Signature FromHex(const std::string& hex) { return Signature(BigInt<SIZE>::FromHex(hex)); }
 

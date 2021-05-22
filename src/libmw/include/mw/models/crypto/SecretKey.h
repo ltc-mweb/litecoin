@@ -58,6 +58,14 @@ public:
         return secret_key_t<NUM_BYTES>(BigInt<NUM_BYTES>::Deserialize(deserializer));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_value);
+    }
+
 private:
     BigInt<NUM_BYTES> m_value;
 };

@@ -61,6 +61,14 @@ public:
     Serializer& Serialize(Serializer& serializer) const noexcept final { return m_compressed.Serialize(serializer); }
     static PublicKey Deserialize(Deserializer& deserializer) { return BigInt<33>::Deserialize(deserializer); }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_compressed);
+    }
+
     std::string Format() const final { return m_compressed.ToHex(); }
 
 private:

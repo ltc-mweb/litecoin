@@ -56,6 +56,14 @@ public:
         return BlindingFactor(BigInt<32>::Deserialize(deserializer));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_value);
+    }
+
     std::string ToHex() const { return m_value.ToHex(); }
     static BlindingFactor FromHex(const std::string& hex) { return BlindingFactor(BigInt<32>::FromHex(hex)); }
 

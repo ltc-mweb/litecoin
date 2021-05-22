@@ -99,6 +99,17 @@ public:
         return TxBody(std::move(inputs), std::move(outputs), std::move(kernels), std::move(owner_sigs));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_inputs);
+        READWRITE(m_outputs);
+        READWRITE(m_kernels);
+        READWRITE(m_ownerSigs);
+    }
+
     void Validate() const;
 
 private:

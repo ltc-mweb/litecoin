@@ -7,6 +7,7 @@
 #include <mw/util/HexUtil.h>
 #include <mw/traits/Printable.h>
 #include <mw/serialization/Serializer.h>
+#include <serialize.h>
 
 #include <cassert>
 #include <cstdint>
@@ -185,6 +186,18 @@ public:
     static BigInt<NUM_BYTES, ALLOC> Deserialize(Deserializer& deserializer)
     {
         return BigInt<NUM_BYTES, ALLOC>(deserializer.ReadVector(NUM_BYTES));
+    }
+
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        s.write(m_bytes.data(), NUM_BYTES);
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        s.read(m_bytes.data(), NUM_BYTES);
     }
 
 private:

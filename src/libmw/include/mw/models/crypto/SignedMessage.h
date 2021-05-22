@@ -60,6 +60,16 @@ public:
         return SignedMessage{ std::move(message_hash), std::move(public_key), std::move(signature) };
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_messageHash);
+        READWRITE(m_publicKey);
+        READWRITE(m_signature);
+    }
+
     mw::Hash GetHash() const noexcept final
     {
         return Hashed(Serialized());

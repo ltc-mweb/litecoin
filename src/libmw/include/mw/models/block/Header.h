@@ -120,6 +120,21 @@ public:
         };
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_height);
+        READWRITE(m_outputRoot);
+        READWRITE(m_kernelRoot);
+        READWRITE(m_leafsetRoot);
+        READWRITE(m_kernelOffset);
+        READWRITE(m_ownerOffset);
+        READWRITE(m_outputMMRSize);
+        READWRITE(m_kernelMMRSize);
+    }
+
 private:
     mutable boost::optional<mw::Hash> m_hash;
     uint64_t m_height;

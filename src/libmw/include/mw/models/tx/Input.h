@@ -74,6 +74,16 @@ public:
         return Input(std::move(commitment), std::move(pubkey), std::move(signature));
     }
 
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_commitment);
+        READWRITE(m_pubkey);
+        READWRITE(m_signature);
+    }
+
     //
     // Traits
     //
