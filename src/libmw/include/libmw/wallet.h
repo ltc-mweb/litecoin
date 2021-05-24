@@ -5,6 +5,7 @@
 #include <boost/variant.hpp>
 #include <mw/models/block/Block.h>
 #include <mw/models/tx/Transaction.h>
+#include <mw/models/wallet/StealthAddress.h>
 
 LIBMW_NAMESPACE
 
@@ -21,13 +22,13 @@ struct PegOutRecipient
 struct MWEBRecipient
 {
     uint64_t amount;
-    libmw::MWEBAddress address;
+    StealthAddress address;
 };
 
 struct PegInRecipient
 {
     uint64_t amount;
-    libmw::MWEBAddress address;
+    StealthAddress address;
 };
 
 typedef boost::variant<MWEBRecipient, PegInRecipient, PegOutRecipient> Recipient;
@@ -41,7 +42,7 @@ struct KeychainRef
     /// </summary>
     /// <param name="index">The index of the address keypair to use.</param>
     /// <returns>The generated stealth address.</returns>
-    MWEBAddress GetAddress(const uint32_t index);
+    StealthAddress GetAddress(const uint32_t index);
 };
 
 WALLET_NAMESPACE

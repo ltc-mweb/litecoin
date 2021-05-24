@@ -7,6 +7,7 @@
 class StealthAddress : public Traits::ISerializable
 {
 public:
+    StealthAddress() = default;
     StealthAddress(PublicKey&& scan, PublicKey&& spend)
         : m_scan(std::move(scan)), m_spend(std::move(spend)) { }
     StealthAddress(const PublicKey& scan, const PublicKey& spend)

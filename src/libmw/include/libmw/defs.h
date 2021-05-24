@@ -44,7 +44,6 @@ LIBMW_NAMESPACE
 typedef std::array<uint8_t, 32> Offset;
 typedef std::array<uint8_t, 32> PrivateKey;
 typedef std::array<uint8_t, 33> PubKey;
-typedef std::pair<PubKey, PubKey> MWEBAddress;
 
 static const uint8_t NORMAL_OUTPUT = 0;
 static const uint8_t PEGIN_OUTPUT = 1;

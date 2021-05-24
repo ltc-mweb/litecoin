@@ -15,25 +15,23 @@
 
 namespace MWEB {
 
+// MW: TODO: Remove this struct and just use ::StealthAddress directly
 struct StealthAddress {
     CPubKey scan_pubkey;
     CPubKey spend_pubkey;
 
     CKeyID GetID() const { return spend_pubkey.GetID(); }
 
-    static StealthAddress From(const libmw::MWEBAddress& address)
+    static StealthAddress From(const ::StealthAddress& address)
     {
         return StealthAddress{
-            CPubKey(address.first.begin(), address.first.end()),
-            CPubKey(address.second.begin(), address.second.end())};
+            CPubKey(address.GetScanPubKey().vec()),
+            CPubKey(address.GetSpendPubKey().vec())};
     }
 
-    libmw::MWEBAddress to_libmw() const noexcept
+    ::StealthAddress to_libmw() const noexcept
     {
-        libmw::MWEBAddress address;
-        std::copy(scan_pubkey.begin(), scan_pubkey.end(), address.first.begin());
-        std::copy(spend_pubkey.begin(), spend_pubkey.end(), address.second.begin());
-        return address;
+        return ::StealthAddress(BigInt<33>(scan_pubkey.data()), BigInt<33>(spend_pubkey.data()));
     }
 
     friend bool operator==(const StealthAddress& a1, const StealthAddress& a2)
