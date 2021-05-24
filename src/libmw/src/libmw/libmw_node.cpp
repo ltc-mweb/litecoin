@@ -141,11 +141,12 @@ bool HasCoin(const mw::ICoinsView::Ptr& view, const Commitment& commitment)
     return !view->GetUTXOs(commitment).empty();
 }
 
-bool HasCoinInCache(const mw::CoinsViewCache::Ptr& view, const Commitment& commitment)
+bool HasCoinInCache(const mw::ICoinsView::Ptr& view, const Commitment& commitment)
 {
-    assert(view != nullptr);
+    auto pViewCache = dynamic_cast<mw::CoinsViewCache*>(view.get());
+    assert(pViewCache != nullptr);
 
-    return view->HasCoinInCache(commitment);
+    return pViewCache->HasCoinInCache(commitment);
 }
 
 END_NAMESPACE // node

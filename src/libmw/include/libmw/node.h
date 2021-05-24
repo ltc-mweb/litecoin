@@ -131,7 +131,7 @@ bool HasCoin(const mw::ICoinsView::Ptr& view, const Commitment& commitment);
 /// <param name="view">The coins view to check.</param>
 /// <param name="commitment">The commitment to look for.</param>
 /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
-bool HasCoinInCache(const mw::CoinsViewCache::Ptr& view, const Commitment& commitment);
+bool HasCoinInCache(const mw::ICoinsView::Ptr& view, const Commitment& commitment);
 
 END_NAMESPACE // node
 END_NAMESPACE // libmw
