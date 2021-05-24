@@ -55,8 +55,8 @@ WALLET_NAMESPACE
 /// <param name="address_index_counter">The highest index known to be used by the wallet.</param>
 /// <returns>The loaded keychain</returns>
 KeychainRef LoadKeychain(
-    const libmw::PrivateKey& scan_key,
-    const libmw::PrivateKey& spend_key,
+    const SecretKey& scan_key,
+    const SecretKey& spend_key,
     const uint32_t address_index_counter
 );
 

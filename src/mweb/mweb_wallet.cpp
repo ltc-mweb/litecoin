@@ -107,14 +107,10 @@ libmw::KeychainRef Wallet::GetKeychain()
 {
     if (!m_keychain.pKeychain) {
         // Scan secret key
-        libmw::PrivateKey scan_secret;
-        CKey scan_key = GetHDKey("m/1/0/100'").key;
-        std::copy(scan_key.begin(), scan_key.end(), scan_secret.data());
+        SecretKey scan_secret(GetHDKey("m/1/0/100'").key.begin());
 
         // Spend secret key
-        libmw::PrivateKey spend_secret;
-        CKey spend_key = GetHDKey("m/1/0/101'").key;
-        std::copy(spend_key.begin(), spend_key.end(), spend_secret.data());
+        SecretKey spend_secret(GetHDKey("m/1/0/101'").key.begin());
 
         m_keychain = libmw::wallet::LoadKeychain(scan_secret, spend_secret, m_pWallet->GetHDChain().nMWEBIndexCounter);
     }

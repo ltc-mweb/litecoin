@@ -17,8 +17,8 @@ StealthAddress KeychainRef::GetAddress(const uint32_t index)
 WALLET_NAMESPACE
 
 libmw::KeychainRef LoadKeychain(
-    const libmw::PrivateKey& scan_key,
-    const libmw::PrivateKey& spend_key,
+    const SecretKey& scan_key,
+    const SecretKey& spend_key,
     const uint32_t address_index_counter)
 {
     auto pKeychain = std::make_shared<mw::Keychain>(

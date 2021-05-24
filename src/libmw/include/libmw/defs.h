@@ -42,7 +42,6 @@ namespace mw
 LIBMW_NAMESPACE
 
 typedef std::array<uint8_t, 32> Offset;
-typedef std::array<uint8_t, 32> PrivateKey;
 typedef std::array<uint8_t, 33> PubKey;
 
 static const uint8_t NORMAL_OUTPUT = 0;
