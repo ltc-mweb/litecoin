@@ -64,23 +64,6 @@ static constexpr uint32_t CHANGE_INDEX{ 0 };
 /// </summary>
 static constexpr uint32_t PEGIN_INDEX{ 1 };
 
-/// <summary>
-/// A wrapper around an internal pointer to a coin view.
-/// This can either be a CoinsViewDB, which represents the flushed view, or a CoinsViewCache.
-/// When the node is instantiated, a single CoinsViewDB is created.
-/// Every other CoinView is a cache built directly on top of that, or on top of other caches.
-/// </summary>
-struct CoinsViewRef
-{
-    /// <summary>
-    /// Creates a new CoinsViewCache on top of this CoinsView.
-    /// </summary>
-    /// <returns>A wrapper around the newly created CoinsViewCache, or null if the current view is null.</returns>
-    CoinsViewRef CreateCache() const;
-
-    std::shared_ptr<mw::ICoinsView> pCoinsView;
-};
-
 struct ChainParams
 {
     boost::filesystem::path dataDirectory;

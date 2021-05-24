@@ -1547,7 +1547,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                 }
 
                 // MWEB: Initialize MWEB node APIs
-                libmw::CoinsViewRef mweb_dbview = libmw::node::Initialize(
+                mw::ICoinsView::Ptr mweb_dbview = libmw::node::Initialize(
                     libmw::ChainParams{GetDataDir().string()},
                     block.mwBlock.GetMWEBHeader(),
                     std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),

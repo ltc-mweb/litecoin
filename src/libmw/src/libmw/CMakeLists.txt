@@ -1,4 +1,4 @@
-add_library(libmw SHARED "libmw.cpp"  "Transformers.h" "libmw_node.cpp" "libmw_wallet.cpp" "defs.cpp" "libmw_miner.cpp")
+add_library(libmw SHARED "libmw.cpp"  "Transformers.h" "libmw_node.cpp" "libmw_wallet.cpp" "libmw_miner.cpp")
 
 target_link_libraries(libmw PRIVATE MW)
 target_compile_definitions(libmw PRIVATE LIBMW)

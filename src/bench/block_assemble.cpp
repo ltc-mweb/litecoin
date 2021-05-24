@@ -78,7 +78,7 @@ static void AssembleBlock(benchmark::State& state)
         ::pblocktree.reset(new CBlockTreeDB(1 << 20, true));
         ::pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
 
-        libmw::CoinsViewRef mweb_dbview = libmw::node::Initialize(
+        mw::ICoinsView::Ptr mweb_dbview = libmw::node::Initialize(
             libmw::ChainParams{GetDataDir().string()},
             mw::Header::CPtr{nullptr},
             std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),

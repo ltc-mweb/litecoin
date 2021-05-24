@@ -6,9 +6,9 @@
 LIBMW_NAMESPACE
 MINER_NAMESPACE
 
-std::shared_ptr<mw::BlockBuilder> NewBuilder(const uint64_t height, const libmw::CoinsViewRef& view)
+std::shared_ptr<mw::BlockBuilder> NewBuilder(const uint64_t height, const mw::ICoinsView::Ptr& view)
 {
-    return std::make_shared<mw::BlockBuilder>(height, view.pCoinsView);
+    return std::make_shared<mw::BlockBuilder>(height, view);
 }
 
 bool AddTransaction(

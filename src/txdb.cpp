@@ -85,7 +85,7 @@ std::vector<uint256> CCoinsViewDB::GetHeadBlocks() const {
     return vhashHeadBlocks;
 }
 
-bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, libmw::CoinsViewRef& derivedView) {
+bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const mw::ICoinsView::Ptr& derivedView) {
     std::shared_ptr<CDBBatch> batch = std::make_shared<CDBBatch>(db);
     size_t count = 0;
     size_t changed = 0;

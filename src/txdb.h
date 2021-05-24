@@ -46,7 +46,7 @@ class CCoinsViewDB final : public CCoinsView
 {
 protected:
     CDBWrapper db;
-    libmw::CoinsViewRef mw_view;
+    mw::ICoinsView::Ptr mw_view;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
@@ -55,11 +55,11 @@ public:
     bool HaveCoin(const OutputIndex& index) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& derivedView) override;
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     CDBWrapper* GetDB() noexcept { return &db; }
-    void SetMWView(const libmw::CoinsViewRef& view) { mw_view = view; }
-    libmw::CoinsViewRef GetMWView() const final { return mw_view; }
+    void SetMWView(const mw::ICoinsView::Ptr& view) { mw_view = view; }
+    mw::ICoinsView::Ptr GetMWView() const final { return mw_view; }
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();

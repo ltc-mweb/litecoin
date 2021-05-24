@@ -7,6 +7,7 @@
 #include <mw/models/block/Block.h>
 #include <mw/models/block/BlockUndo.h>
 #include <mw/models/tx/Transaction.h>
+#include <mw/node/CoinsView.h>
 
 LIBMW_NAMESPACE
 NODE_NAMESPACE
@@ -19,7 +20,7 @@ NODE_NAMESPACE
 /// <param name="pDBWrapper">A wrapper around the node database. Must not be null.</param>
 /// <param name="log_callback">A callback to the logger print function.</param>
 /// <returns>The CoinsViewDB which represents the state of the flushed chain.</returns>
-libmw::CoinsViewRef Initialize(
+mw::ICoinsView::Ptr Initialize(
     const libmw::ChainParams& chainParams,
     const mw::Header::CPtr& header,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
@@ -40,7 +41,7 @@ void Shutdown();
 /// <param name="stateHeader">The MWEB header at the chain tip.</param>
 /// <param name="state">The chainstate to validate and apply. Must not be null.</param>
 /// <returns>The CoinsViewDB which represents the state of the flushed chain.</returns>
-libmw::CoinsViewRef ApplyState(
+mw::ICoinsView::Ptr ApplyState(
     const libmw::IChain::Ptr& pChain,
     const mw::Header::CPtr& stateHeader,
     const libmw::IDBWrapper::Ptr& pCoinsDB,
@@ -70,14 +71,14 @@ bool CheckBlock(
 /// <param name="block">The block to connect. Must not be null.</param>
 /// <param name="view">The CoinsView to connect the block to. Must not be null.</param>
 /// <throws>ValidationException if consensus rules are not met.</throws>
-mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const libmw::CoinsViewRef& view);
+mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const mw::ICoinsView::Ptr& view);
 
 /// <summary>
 /// Removes a MW ext block from the end of the chain in the given CoinsView.
 /// </summary>
 /// <param name="undoData">The MW ext block undo data to apply. Must not be null.</param>
 /// <param name="view">The CoinsView to disconnect the block from. Must not be null.</param>
-void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const libmw::CoinsViewRef& view);
+void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const mw::ICoinsView::Ptr& view);
 
 /// <summary>
 /// Commits the changes from the cached CoinsView to the base CoinsView.
@@ -86,7 +87,7 @@ void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const libmw::CoinsView
 /// <param name="view">The CoinsView cache whose changes will be committed. Must not be null.</param>
 /// <param name="pBatch">The optional DB batch. This must be non-null when the base CoinsView is a DB view.</param>
 void FlushCache(
-    const libmw::CoinsViewRef& view,
+    const mw::CoinsViewCache::Ptr& view,
     const std::unique_ptr<libmw::IDBBatch>& pBatch = nullptr
 );
 
@@ -95,7 +96,7 @@ void FlushCache(
 /// </summary>
 /// <param name="view">The CoinsView containing the chainstate to snapshot. Must not be null.</param>
 /// <returns>A non-null snapshot of the chainstate.</returns>
-std::unique_ptr<mw::State> SnapshotState(const libmw::CoinsViewRef& view);
+std::unique_ptr<mw::State> SnapshotState(const mw::ICoinsView::Ptr& view);
 
 /// <summary>
 /// Context-free validation of the MWEB transaction.
@@ -113,7 +114,7 @@ bool CheckTransaction(const mw::Transaction::CPtr& transaction);
 /// <param name="transaction">The MWEB transaction to validate. Must not be null.</param>
 /// <param name="nSpendHeight">The height at which the transaction is included.</param>
 /// <returns>True if the inputs are unspent.</returns>
-bool CheckTxInputs(const libmw::CoinsViewRef& view, const mw::Transaction::CPtr& transaction, uint64_t nSpendHeight);
+bool CheckTxInputs(const mw::ICoinsView::Ptr& view, const mw::Transaction::CPtr& transaction, uint64_t nSpendHeight);
 
 /// <summary>
 /// Checks if there's a unspent coin in the view with a matching commitment.
@@ -121,7 +122,7 @@ bool CheckTxInputs(const libmw::CoinsViewRef& view, const mw::Transaction::CPtr&
 /// <param name="view">The coins view to check.</param>
 /// <param name="commitment">The commitment to look for.</param>
 /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
-bool HasCoin(const libmw::CoinsViewRef& view, const Commitment& commitment);
+bool HasCoin(const mw::ICoinsView::Ptr& view, const Commitment& commitment);
 
 /// <summary>
 /// Checks if there's a unspent coin with a matching commitment in the view that has not been flushed to the parent.
@@ -130,7 +131,7 @@ bool HasCoin(const libmw::CoinsViewRef& view, const Commitment& commitment);
 /// <param name="view">The coins view to check.</param>
 /// <param name="commitment">The commitment to look for.</param>
 /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
-bool HasCoinInCache(const libmw::CoinsViewRef& view, const Commitment& commitment);
+bool HasCoinInCache(const mw::CoinsViewCache::Ptr& view, const Commitment& commitment);
 
 END_NAMESPACE // node
 END_NAMESPACE // libmw

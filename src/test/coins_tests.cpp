@@ -35,7 +35,7 @@ class CCoinsViewTest : public CCoinsView
 {
     uint256 hashBestBlock_;
     std::map<COutPoint, Coin> map_;
-    libmw::CoinsViewRef mw_view_;
+    mw::ICoinsView::Ptr mw_view_;
 
 public:
     CCoinsViewTest()
@@ -64,7 +64,7 @@ public:
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }
 
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, libmw::CoinsViewRef& mwView) override
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& mwView) override
     {
         for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); ) {
             if (it->second.flags & CCoinsCacheEntry::DIRTY) {
@@ -82,7 +82,7 @@ public:
         return true;
     }
     
-    libmw::CoinsViewRef GetMWView() const override
+    mw::ICoinsView::Ptr GetMWView() const override
     {
         return mw_view_;
     }
@@ -603,7 +603,7 @@ void GetCoinsMapEntry(const CCoinsMap& map, CAmount& value, char& flags)
     }
 }
 
-void WriteCoinsViewEntry(CCoinsView& view, libmw::CoinsViewRef mw_view, CAmount value, char flags)
+void WriteCoinsViewEntry(CCoinsView& view, const mw::ICoinsView::Ptr& mw_view, CAmount value, char flags)
 {
     CCoinsMap map;
     InsertCoinsMapEntry(map, value, flags);
@@ -623,7 +623,7 @@ public:
     static std::unique_ptr<CCoinsViewDB> GetCoinsViewDB()
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
-        libmw::CoinsViewRef mw_view = libmw::node::Initialize(
+        mw::ICoinsView::Ptr mw_view = libmw::node::Initialize(
             libmw::ChainParams{GetDataDir().string()},
             {nullptr}, // MW: TODO - Load this first
             nullptr,
@@ -811,7 +811,7 @@ void CheckWriteCoins(CAmount parent_value, CAmount child_value, CAmount expected
     CAmount result_value;
     char result_flags;
     try {
-        WriteCoinsViewEntry(test.cache, test.cache.GetMWView().CreateCache(), child_value, child_flags);
+        WriteCoinsViewEntry(test.cache, test.cache.GetMWView() ? std::make_shared<mw::CoinsViewCache>(test.cache.GetMWView()) : nullptr, child_value, child_flags);
         test.cache.SelfTest();
         GetCoinsMapEntry(test.cache.map(), result_value, result_flags);
     } catch (std::logic_error&) {

@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     BOOST_REQUIRE(pNode != nullptr);
 
     auto pDBView = pNode->GetDBView();
-    auto pCachedView = libmw::CoinsViewRef{ std::make_shared<mw::CoinsViewCache>(pDBView) };
+    auto pCachedView = std::make_shared<mw::CoinsViewCache>(pDBView);
 
     test::Miner miner;
     uint64_t height = 100;

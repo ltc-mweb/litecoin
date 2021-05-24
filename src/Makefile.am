@@ -23,6 +23,8 @@ BITCOIN_INCLUDES=-I$(builddir) $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFL
 
 BITCOIN_INCLUDES += -I$(srcdir)/secp256k1-zkp/include
 BITCOIN_INCLUDES += -I$(srcdir)/libmw/include
+BITCOIN_INCLUDES += -I$(srcdir)/libmw/deps/ghc/include
+BITCOIN_INCLUDES += -I$(srcdir)/libmw/deps/mio/include
 BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
 
 LIBBITCOIN_SERVER=libbitcoin_server.a
@@ -100,7 +102,7 @@ if BUILD_BITCOIN_WALLET
 endif
 endif
 
-LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/caches/include -I$(srcdir)/libmw/deps/crypto/include -I$(srcdir)/libmw/deps/ghc/include  -I$(srcdir)/libmw/deps/mio/include
+LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/caches/include -I$(srcdir)/libmw/deps/crypto/include
 libmw_libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
 libmw_libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libmw_libmw_a_SOURCES = \
@@ -117,7 +119,6 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/db/LeafDB.cpp \
 	libmw/src/db/MMRInfoDB.cpp \
 	libmw/src/file/File.cpp \
-	libmw/src/libmw/defs.cpp \
 	libmw/src/libmw/libmw_miner.cpp \
 	libmw/src/libmw/libmw_node.cpp \
 	libmw/src/libmw/libmw_wallet.cpp \

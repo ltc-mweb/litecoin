@@ -17,7 +17,7 @@ static mw::INode::Ptr NODE = nullptr;
 LIBMW_NAMESPACE
 NODE_NAMESPACE
 
-libmw::CoinsViewRef Initialize(
+mw::ICoinsView::Ptr Initialize(
     const libmw::ChainParams& chainParams,
     const mw::Header::CPtr& header,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
@@ -26,7 +26,7 @@ libmw::CoinsViewRef Initialize(
     LoggerAPI::Initialize(log_callback);
     NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, header, pDBWrapper);
 
-    return libmw::CoinsViewRef{ NODE->GetDBView() };
+    return NODE->GetDBView();
 }
 
 void Shutdown()
@@ -34,13 +34,13 @@ void Shutdown()
     NODE.reset();
 }
 
-libmw::CoinsViewRef ApplyState(
+mw::ICoinsView::Ptr ApplyState(
     const libmw::IChain::Ptr& pChain,
     const libmw::IDBWrapper::Ptr& pCoinsDB,
     const mw::Header::CPtr& stateHeader,
     const mw::State& state)
 {
-    auto pCoinsViewDB = NODE->ApplyState(
+    return NODE->ApplyState(
         pCoinsDB,
         pChain,
         stateHeader,
@@ -49,8 +49,6 @@ libmw::CoinsViewRef ApplyState(
         state.leafset,
         state.pruned_parent_hashes
     );
-
-    return libmw::CoinsViewRef{ pCoinsViewDB };
 }
 
 bool CheckBlock(
@@ -71,30 +69,29 @@ bool CheckBlock(
     return false;
 }
 
-mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const CoinsViewRef& view)
+mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const mw::ICoinsView::Ptr& view)
 {
-    return NODE->ConnectBlock(block, view.pCoinsView);
+    return NODE->ConnectBlock(block, view);
 }
 
-void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const CoinsViewRef& view)
+void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const mw::ICoinsView::Ptr& view)
 {
-    NODE->DisconnectBlock(undoData, view.pCoinsView);
+    NODE->DisconnectBlock(undoData, view);
 }
 
-void FlushCache(const libmw::CoinsViewRef& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)
+void FlushCache(const mw::CoinsViewCache::Ptr& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)
 {
     LOG_TRACE("Flushing cache");
-    auto pViewCache = dynamic_cast<mw::CoinsViewCache*>(view.pCoinsView.get());
-    assert(pViewCache != nullptr);
+    assert(view != nullptr);
 
-    pViewCache->Flush(pBatch);
+    view->Flush(pBatch);
     LOG_TRACE("Cache flushed");
 }
 
-std::unique_ptr<mw::State> SnapshotState(const libmw::CoinsViewRef& view)
+std::unique_ptr<mw::State> SnapshotState(const mw::ICoinsView::Ptr& view)
 {
-    assert(view.pCoinsView != nullptr);
-    return { std::make_unique<mw::State>(mw::Snapshot::Build(view.pCoinsView)) };
+    assert(view != nullptr);
+    return { std::make_unique<mw::State>(mw::Snapshot::Build(view)) };
 }
 
 bool CheckTransaction(const mw::Transaction::CPtr& transaction)
@@ -111,14 +108,14 @@ bool CheckTransaction(const mw::Transaction::CPtr& transaction)
     return false;
 }
 
-bool CheckTxInputs(const libmw::CoinsViewRef& view, const mw::Transaction::CPtr& transaction, uint64_t nSpendHeight)
+bool CheckTxInputs(const mw::ICoinsView::Ptr& view, const mw::Transaction::CPtr& transaction, uint64_t nSpendHeight)
 {
-    assert(view.pCoinsView != nullptr);
+    assert(view != nullptr);
     assert(transaction != nullptr);
 
     try {
         for (const Input& input : transaction->GetInputs()) {
-            auto utxos = view.pCoinsView->GetUTXOs(input.GetCommitment());
+            auto utxos = view->GetUTXOs(input.GetCommitment());
             if (utxos.empty()) {
                 ThrowValidation(EConsensusError::UTXO_MISSING);
             }
@@ -136,21 +133,18 @@ bool CheckTxInputs(const libmw::CoinsViewRef& view, const mw::Transaction::CPtr&
     return false;
 }
 
-bool HasCoin(const libmw::CoinsViewRef& view, const Commitment& commitment)
+bool HasCoin(const mw::ICoinsView::Ptr& view, const Commitment& commitment)
 {
-    assert(view.pCoinsView != nullptr);
+    assert(view != nullptr);
 
-    return !view.pCoinsView->GetUTXOs(commitment).empty();
+    return !view->GetUTXOs(commitment).empty();
 }
 
-bool HasCoinInCache(const libmw::CoinsViewRef& view, const Commitment& commitment)
+bool HasCoinInCache(const mw::CoinsViewCache::Ptr& view, const Commitment& commitment)
 {
-    assert(view.pCoinsView != nullptr);
+    assert(view != nullptr);
 
-    auto pCoinsView = std::dynamic_pointer_cast<mw::CoinsViewCache>(view.pCoinsView);
-    assert(pCoinsView != nullptr);
-
-    return pCoinsView->HasCoinInCache(commitment);
+    return view->HasCoinInCache(commitment);
 }
 
 END_NAMESPACE // node

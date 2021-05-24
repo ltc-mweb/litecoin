@@ -82,7 +82,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         pblocktree.reset(new CBlockTreeDB(1 << 20, true));
         pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
 
-        libmw::CoinsViewRef mw_view = libmw::node::Initialize(
+        mw::ICoinsView::Ptr mw_view = libmw::node::Initialize(
             libmw::ChainParams{GetDataDir().string()},
             {nullptr}, // MW: TODO - Load this first
             std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),

@@ -4,6 +4,7 @@
 
 #include <mw/models/block/Block.h>
 #include <mw/models/tx/Transaction.h>
+#include <mw/node/CoinsView.h>
 
 LIBMW_NAMESPACE
 MINER_NAMESPACE
@@ -14,7 +15,7 @@ MINER_NAMESPACE
 /// <param name="height">The height of the block being built.</param>
 /// <param name="view">The CoinsView representing the latest state of the active chain. Must not be null.</param>
 /// <returns>A non-null BlockBuilder</returns>
-std::shared_ptr<mw::BlockBuilder> NewBuilder(const uint64_t height, const libmw::CoinsViewRef& view);
+std::shared_ptr<mw::BlockBuilder> NewBuilder(const uint64_t height, const mw::ICoinsView::Ptr& view);
 
 bool AddTransaction(
     const std::shared_ptr<mw::BlockBuilder>& builder,

@@ -23,8 +23,8 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
     {
         auto pDatabase = std::make_shared<TestDBWrapper>();
         libmw::ChainParams params{ datadir.u8string() };
-        libmw::CoinsViewRef db_view = libmw::node::Initialize(params, mw::Header::CPtr{nullptr}, pDatabase, {});
-        libmw::CoinsViewRef cached_view = db_view.CreateCache();
+        mw::ICoinsView::Ptr db_view = libmw::node::Initialize(params, mw::Header::CPtr{nullptr}, pDatabase, {});
+        mw::ICoinsView::Ptr cached_view = std::make_shared<mw::CoinsViewCache>(db_view);
 
         test::Miner miner;
 
