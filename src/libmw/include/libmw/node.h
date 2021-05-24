@@ -87,7 +87,7 @@ void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const mw::ICoinsView::
 /// <param name="view">The CoinsView cache whose changes will be committed. Must not be null.</param>
 /// <param name="pBatch">The optional DB batch. This must be non-null when the base CoinsView is a DB view.</param>
 void FlushCache(
-    const mw::CoinsViewCache::Ptr& view,
+    const mw::ICoinsView::Ptr& view,
     const std::unique_ptr<libmw::IDBBatch>& pBatch = nullptr
 );
 

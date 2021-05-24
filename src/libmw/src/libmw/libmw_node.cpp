@@ -79,12 +79,13 @@ void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const mw::ICoinsView::
     NODE->DisconnectBlock(undoData, view);
 }
 
-void FlushCache(const mw::CoinsViewCache::Ptr& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)
+void FlushCache(const mw::ICoinsView::Ptr& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)
 {
     LOG_TRACE("Flushing cache");
-    assert(view != nullptr);
+    auto pViewCache = dynamic_cast<mw::CoinsViewCache*>(view.get());
+    assert(pViewCache != nullptr);
 
-    view->Flush(pBatch);
+    pViewCache->Flush(pBatch);
     LOG_TRACE("Cache flushed");
 }
 
