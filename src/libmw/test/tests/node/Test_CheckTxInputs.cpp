@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     test::Tx tx1 = test::Tx::CreatePegIn(1000);
     auto block = miner.MineBlock(height, { tx1 });
     pNode->ValidateBlock(block.GetBlock(), block.GetHash(), { tx1.GetPegInCoin() }, {});
-    pNode->ConnectBlock(block.GetBlock(), pCachedView.pCoinsView);
+    pNode->ConnectBlock(block.GetBlock(), pCachedView);
     height += libmw::PEGIN_MATURITY;
 
     // Try to spend the pegin output
