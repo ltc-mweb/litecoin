@@ -6,6 +6,7 @@
 #include <mw/models/block/Block.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/models/wallet/StealthAddress.h>
+#include <mw/wallet/Keychain.h>
 
 LIBMW_NAMESPACE
 
@@ -33,32 +34,7 @@ struct PegInRecipient
 
 typedef boost::variant<MWEBRecipient, PegInRecipient, PegOutRecipient> Recipient;
 
-struct KeychainRef
-{
-    std::shared_ptr<mw::Keychain> pKeychain;
-
-    /// <summary>
-    /// Computes the MWEB wallet address with the given index.
-    /// </summary>
-    /// <param name="index">The index of the address keypair to use.</param>
-    /// <returns>The generated stealth address.</returns>
-    StealthAddress GetAddress(const uint32_t index);
-};
-
 WALLET_NAMESPACE
-
-/// <summary>
-/// Loads the wallet's keychain.
-/// </summary>
-/// <param name="scan_key">Scan private key generated with path m/1/0/100'</param>
-/// <param name="spend_key">Spend private key generated with path m/1/0/101'</param>
-/// <param name="address_index_counter">The highest index known to be used by the wallet.</param>
-/// <returns>The loaded keychain</returns>
-KeychainRef LoadKeychain(
-    const SecretKey& scan_key,
-    const SecretKey& spend_key,
-    const uint32_t address_index_counter
-);
 
 mw::Transaction::CPtr CreateTx(
     const std::vector<libmw::Coin>& input_coins,
@@ -68,14 +44,14 @@ mw::Transaction::CPtr CreateTx(
 );
 
 bool RewindBlockOutput(
-    const libmw::KeychainRef& keychain,
+    const mw::Keychain::Ptr& keychain,
     const mw::Block::CPtr& block,
     const Commitment& output_commit,
     libmw::Coin& coin_out
 );
 
 bool RewindTxOutput(
-    const libmw::KeychainRef& keychain,
+    const mw::Keychain::Ptr& keychain,
     const mw::Transaction::CPtr& tx,
     const Commitment& output_commit,
     libmw::Coin& coin_out

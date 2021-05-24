@@ -36,10 +36,10 @@ public:
     void DeleteCoins(const std::vector<libmw::Coin>& coins);
 
 private:
-    libmw::KeychainRef GetKeychain();
+    const mw::Keychain::Ptr& GetKeychain();
 
     CWallet* m_pWallet;
-    libmw::KeychainRef m_keychain;
+    mw::Keychain::Ptr m_keychain;
     std::map<Commitment, libmw::Coin> m_coins;
 };
 

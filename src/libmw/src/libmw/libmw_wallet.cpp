@@ -6,28 +6,7 @@
 #include <mw/wallet/Wallet.h>
 
 LIBMW_NAMESPACE
-
-StealthAddress KeychainRef::GetAddress(const uint32_t index)
-{
-    assert(pKeychain != nullptr);
-
-    return pKeychain->GetStealthAddress(index);
-}
-
 WALLET_NAMESPACE
-
-libmw::KeychainRef LoadKeychain(
-    const SecretKey& scan_key,
-    const SecretKey& spend_key,
-    const uint32_t address_index_counter)
-{
-    auto pKeychain = std::make_shared<mw::Keychain>(
-        scan_key,
-        spend_key,
-        address_index_counter
-    );
-    return libmw::KeychainRef{ pKeychain };
-}
 
 mw::Transaction::CPtr CreateTx(
     const std::vector<libmw::Coin>& input_coins,
@@ -55,15 +34,15 @@ mw::Transaction::CPtr CreateTx(
 }
 
 bool RewindBlockOutput(
-    const libmw::KeychainRef& keychain,
+    const mw::Keychain::Ptr& keychain,
     const mw::Block::CPtr& block,
     const Commitment& output_commit,
     libmw::Coin& coin_out)
 {
-    assert(keychain.pKeychain != nullptr);
+    assert(keychain != nullptr);
     assert(block != nullptr);
 
-    Wallet wallet(keychain.pKeychain);
+    Wallet wallet(keychain);
 
     for (const Output& output : block->GetOutputs()) {
         if (output.GetCommitment() == output_commit) {
@@ -75,15 +54,15 @@ bool RewindBlockOutput(
 }
 
 bool RewindTxOutput(
-    const libmw::KeychainRef& keychain,
+    const mw::Keychain::Ptr& keychain,
     const mw::Transaction::CPtr& tx,
     const Commitment& output_commit,
     libmw::Coin& coin_out)
 {
-    assert(keychain.pKeychain != nullptr);
+    assert(keychain != nullptr);
     assert(tx != nullptr);
 
-    Wallet wallet(keychain.pKeychain);
+    Wallet wallet(keychain);
 
     for (const Output& output : tx->GetOutputs()) {
         if (output.GetCommitment() == output_commit) {

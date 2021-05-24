@@ -36,7 +36,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
 
 MWEB::StealthAddress Wallet::GetStealthAddress(const uint32_t index)
 {
-    return MWEB::StealthAddress::From(GetKeychain().GetAddress(index));
+    return MWEB::StealthAddress::From(GetKeychain()->GetStealthAddress(index));
 }
 
 MWEB::StealthAddress Wallet::GenerateNewAddress()
@@ -103,16 +103,20 @@ void Wallet::DeleteCoins(const std::vector<libmw::Coin>& coins)
     }
 }
 
-libmw::KeychainRef Wallet::GetKeychain()
+const mw::Keychain::Ptr& Wallet::GetKeychain()
 {
-    if (!m_keychain.pKeychain) {
+    if (!m_keychain) {
         // Scan secret key
         SecretKey scan_secret(GetHDKey("m/1/0/100'").key.begin());
 
         // Spend secret key
         SecretKey spend_secret(GetHDKey("m/1/0/101'").key.begin());
 
-        m_keychain = libmw::wallet::LoadKeychain(scan_secret, spend_secret, m_pWallet->GetHDChain().nMWEBIndexCounter);
+        m_keychain = std::make_shared<mw::Keychain>(
+            std::move(scan_secret),
+            std::move(spend_secret),
+            m_pWallet->GetHDChain().nMWEBIndexCounter
+        );
     }
 
     return m_keychain;
