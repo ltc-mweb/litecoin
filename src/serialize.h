@@ -23,6 +23,7 @@
 
 #include <prevector.h>
 #include <span.h>
+#include <boost/optional.hpp>
 
 static const unsigned int MAX_SIZE = 0x02000000;
 
@@ -583,8 +584,14 @@ template<typename Stream, typename T> void Unserialize(Stream& os, std::unique_p
 /**
  * array
  */
-template <typename Stream, typename T, size_t S> void Serialize(Stream& os, const std::array<T, S>& item);
-template <typename Stream, typename T, size_t S> void Unserialize(Stream& is, std::array<T, S>& item);
+template<typename Stream, typename T, size_t S> void Serialize(Stream& os, const std::array<T, S>& item);
+template<typename Stream, typename T, size_t S> void Unserialize(Stream& is, std::array<T, S>& item);
+
+/**
+ * optional
+ */
+template<typename Stream, typename T> void Serialize(Stream& os, const boost::optional<T>& item);
+template<typename Stream, typename T> void Unserialize(Stream& is, boost::optional<T>& item);
 
 
 /**
@@ -886,6 +893,36 @@ void Unserialize(Stream& is, std::array<T, S>& p)
 {
     for (size_t i = 0; i < S; i++) {
         Unserialize(is, p[i]);
+    }
+}
+
+
+
+/**
+ * optional
+ */
+template <typename Stream, typename T>
+void Serialize(Stream& os, const boost::optional<T>& p)
+{
+    uint8_t is_set = !!p ? 1 : 0;
+    Serialize<Stream, uint8_t>(is_set);
+
+    if (is_set == 1) {
+        Serialize<Stream, T>(os, (*p));
+    }
+}
+
+template <typename Stream, typename T>
+void Unserialize(Stream& is, boost::optional<T>& p)
+{
+    uint8_t is_set = 0;
+    Unserialize<Stream, uint8_t>(is_set);
+
+    if (is_set == 1) {
+        T val;
+        Unserialize<Stream, T>(is, val);
+
+        p = boost::make_optional(std::move(val));
     }
 }
 

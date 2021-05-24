@@ -36,7 +36,6 @@ namespace mw
     class ICoinsView;
     class BlockBuilder;
     struct State;
-    class Keychain;
 }
 
 LIBMW_NAMESPACE
@@ -138,6 +137,19 @@ struct Coin : public Traits::ISerializable
         coin.amount = deserializer.Read<uint64_t>();
         coin.commitment = deserializer.Read<Commitment>();
         return coin;
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(features);
+        READWRITE(address_index);
+        READWRITE(key);
+        READWRITE(blind);
+        READWRITE(amount);
+        READWRITE(commitment);
     }
 };
 
