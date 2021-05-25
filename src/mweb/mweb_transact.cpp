@@ -45,16 +45,16 @@ bool Transact::CreateTx(
     }
 
     // Add recipients
-    std::vector<libmw::Recipient> mweb_recipients;
+    std::vector<mw::Recipient> mweb_recipients;
     for (const CRecipient& recipient : recipients) {
         if (recipient.IsMWEB()) {
-            libmw::MWEBRecipient mweb_recipient{
+            mw::MWEBRecipient mweb_recipient{
                 (uint64_t)recipient.nAmount,
                 recipient.GetMWEBAddress().to_libmw()};
 
             mweb_recipients.push_back(std::move(mweb_recipient));
         } else {
-            libmw::PegOutRecipient pegout_recipient{
+            mw::PegOutRecipient pegout_recipient{
                 (uint64_t)recipient.nAmount,
                 std::vector<uint8_t>(recipient.receiver.GetScript().begin(), recipient.receiver.GetScript().end())
             };
@@ -84,7 +84,7 @@ bool Transact::CreateTx(
             return false;
         }
         MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
-        mweb_recipients.push_back(libmw::MWEBRecipient{(uint64_t)change_amount, change_address.to_libmw()});
+        mweb_recipients.push_back(mw::MWEBRecipient{(uint64_t)change_amount, change_address.to_libmw()});
     }
 
     // Create transaction

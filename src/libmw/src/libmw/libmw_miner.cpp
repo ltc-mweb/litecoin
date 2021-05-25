@@ -1,4 +1,4 @@
-#include <libmw/node.h>
+#include <libmw/libmw.h>
 
 #include <mw/node/BlockBuilder.h>
 #include <mw/common/Logger.h>

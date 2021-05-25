@@ -5,9 +5,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <libmw/defs.h>
-
 #include <mw/models/block/Block.h>
+
+#define LIBMW_NAMESPACE namespace libmw {
+#define END_NAMESPACE }
 
 LIBMW_NAMESPACE
 

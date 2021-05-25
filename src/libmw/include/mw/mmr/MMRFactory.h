@@ -6,7 +6,7 @@
 #include <mw/mmr/MMRInfo.h>
 #include <mw/mmr/PruneList.h>
 #include <mw/models/crypto/Hash.h>
-#include <libmw/libmw.h>
+#include <libmw/interfaces/db_interface.h>
 
 MMR_NAMESPACE
 

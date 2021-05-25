@@ -1,4 +1,4 @@
-#include <libmw/node.h>
+#include <libmw/libmw.h>
 
 #include <mw/common/Logger.h>
 #include <mw/consensus/Params.h>
