@@ -212,7 +212,7 @@ bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost
         return false;
     if (nBlockSigOpsCost + packageSigOpsCost >= MAX_BLOCK_SIGOPS_COST)
         return false;
-    if (nBlockMWEBWeight + packageMWEBWeight >= libmw::MAX_BLOCK_WEIGHT)
+    if (nBlockMWEBWeight + packageMWEBWeight >= mw::MAX_BLOCK_WEIGHT)
         return false;
     return true;
 }

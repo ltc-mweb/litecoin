@@ -1,6 +1,7 @@
 #include <libmw/node.h>
 
 #include <mw/common/Logger.h>
+#include <mw/consensus/Params.h>
 #include <mw/exceptions/ValidationException.h>
 #include <mw/models/block/Block.h>
 #include <mw/models/block/BlockUndo.h>
@@ -18,13 +19,13 @@ LIBMW_NAMESPACE
 NODE_NAMESPACE
 
 mw::ICoinsView::Ptr Initialize(
-    const libmw::ChainParams& chainParams,
+    const boost::filesystem::path& data_dir,
     const mw::Header::CPtr& header,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
     const std::function<void(const std::string&)>& log_callback)
 {
     LoggerAPI::Initialize(log_callback);
-    NODE = mw::InitializeNode(FilePath{ chainParams.dataDirectory.native() }, header, pDBWrapper);
+    NODE = mw::InitializeNode(FilePath{ data_dir.native() }, header, pDBWrapper);
 
     return NODE->GetDBView();
 }
@@ -121,7 +122,7 @@ bool CheckTxInputs(const mw::ICoinsView::Ptr& view, const mw::Transaction::CPtr&
                 ThrowValidation(EConsensusError::UTXO_MISSING);
             }
 
-            if (utxos.back()->IsPeggedIn() && nSpendHeight < utxos.back()->GetBlockHeight() + libmw::PEGIN_MATURITY) {
+            if (utxos.back()->IsPeggedIn() && nSpendHeight < utxos.back()->GetBlockHeight() + mw::PEGIN_MATURITY) {
                 ThrowValidation(EConsensusError::PEGIN_MATURITY);
             }
         }

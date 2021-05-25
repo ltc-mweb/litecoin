@@ -156,7 +156,7 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     //
     // Add New HogAddr
     //
-    mw::Block::Ptr mw_block = libmw::miner::BuildBlock(mweb_builder);
+    mw::Block::Ptr mw_block = mweb_builder->BuildBlock();
 
     CTxOut hogAddr;
     hogAddr.scriptPubKey = CScript() << OP_9 << mw_block->GetHash().vec();

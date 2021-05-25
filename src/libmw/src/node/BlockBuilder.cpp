@@ -1,6 +1,7 @@
 #include <mw/node/BlockBuilder.h>
-#include <mw/consensus/KernelSumValidator.h>
 #include <mw/consensus/Aggregation.h>
+#include <mw/consensus/KernelSumValidator.h>
+#include <mw/consensus/Params.h>
 #include <mw/consensus/Weight.h>
 
 #include <unordered_set>
@@ -12,7 +13,7 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
 {
     // Check weight
     uint64_t weight = Weight::Calculate(pTransaction->GetBody());
-    if ((weight + m_weight) > libmw::MAX_BLOCK_WEIGHT) {
+    if ((weight + m_weight) > mw::MAX_BLOCK_WEIGHT) {
         LOG_ERROR("Exceeds max block weight");
         return false;
     }

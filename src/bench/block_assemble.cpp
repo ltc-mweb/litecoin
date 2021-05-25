@@ -79,7 +79,7 @@ static void AssembleBlock(benchmark::State& state)
         ::pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
 
         mw::ICoinsView::Ptr mweb_dbview = libmw::node::Initialize(
-            libmw::ChainParams{GetDataDir().string()},
+            GetDataDir(),
             mw::Header::CPtr{nullptr},
             std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB()),
             [](const std::string& logstr) { LogPrintf(logstr.c_str()); });

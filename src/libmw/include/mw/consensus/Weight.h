@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mw/consensus/Params.h>
 #include <mw/models/tx/TxBody.h>
 #include <libmw/defs.h>
 
@@ -40,6 +41,6 @@ public:
 
     static bool ExceedsMaximum(const TxBody& tx_body)
     {
-        return Calculate(tx_body) > libmw::MAX_BLOCK_WEIGHT;
+        return Calculate(tx_body) > mw::MAX_BLOCK_WEIGHT;
     }
 };

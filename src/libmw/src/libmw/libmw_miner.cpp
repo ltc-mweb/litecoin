@@ -28,11 +28,5 @@ bool AddTransaction(
     return false;
 }
 
-mw::Block::Ptr BuildBlock(const std::shared_ptr<mw::BlockBuilder>& builder)
-{
-    assert(builder != nullptr);
-    return builder->BuildBlock();
-}
-
 END_NAMESPACE // miner
 END_NAMESPACE // libmw

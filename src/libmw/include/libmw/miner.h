@@ -23,7 +23,5 @@ bool AddTransaction(
     const std::vector<PegInCoin>& pegins
 );
 
-mw::Block::Ptr BuildBlock(const std::shared_ptr<mw::BlockBuilder>& builder);
-
 END_NAMESPACE // miner
 END_NAMESPACE // libmw

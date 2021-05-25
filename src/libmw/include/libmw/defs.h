@@ -16,7 +16,6 @@
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
 
-#include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 
 #define LIBMW_NAMESPACE namespace libmw {
@@ -40,20 +39,6 @@ namespace mw
 
 LIBMW_NAMESPACE
 
-typedef std::array<uint8_t, 32> Offset;
-typedef std::array<uint8_t, 33> PubKey;
-
-static const uint8_t NORMAL_OUTPUT = 0;
-static const uint8_t PEGIN_OUTPUT = 1;
-
-/// <summary>
-/// Consensus parameters
-/// Any change to these will cause a hardfork!
-/// </summary>
-static constexpr size_t MAX_BLOCK_WEIGHT = 21'000;
-static constexpr uint16_t PEGIN_MATURITY = 20;
-static constexpr uint8_t MAX_KERNEL_EXTRADATA_SIZE = 33;
-
 /// <summary>
 /// Change outputs will use the stealth address generated using index 2,000,000.
 /// </summary>
@@ -63,11 +48,6 @@ static constexpr uint32_t CHANGE_INDEX{ 0 };
 /// Peg-in outputs will use the stealth address generated using index 2,000,000.
 /// </summary>
 static constexpr uint32_t PEGIN_INDEX{ 1 };
-
-struct ChainParams
-{
-    boost::filesystem::path dataDirectory;
-};
 
 /// <summary>
 /// Represents an output owned by the wallet, and the keys necessary to spend it.

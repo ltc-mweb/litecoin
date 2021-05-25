@@ -9,19 +9,21 @@
 #include <mw/models/tx/Transaction.h>
 #include <mw/node/CoinsView.h>
 
+#include <boost/filesystem.hpp>
+
 LIBMW_NAMESPACE
 NODE_NAMESPACE
 
 /// <summary>
 /// Loads the state (MMRs mostly) into memory, and validates the current UTXO set.
 /// </summary>
-/// <param name="chainParams">The chain parameters to use.</param>
+/// <param name="data_dir">The data directory.</param>
 /// <param name="header">The possibly-null chain tip.</param>
 /// <param name="pDBWrapper">A wrapper around the node database. Must not be null.</param>
 /// <param name="log_callback">A callback to the logger print function.</param>
 /// <returns>The CoinsViewDB which represents the state of the flushed chain.</returns>
 mw::ICoinsView::Ptr Initialize(
-    const libmw::ChainParams& chainParams,
+    const boost::filesystem::path& data_dir,
     const mw::Header::CPtr& header,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
     const std::function<void(const std::string&)>& log_callback

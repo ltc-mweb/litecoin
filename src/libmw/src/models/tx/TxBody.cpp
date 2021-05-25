@@ -1,5 +1,6 @@
 #include <mw/models/tx/TxBody.h>
 #include <mw/exceptions/ValidationException.h>
+#include <mw/consensus/Params.h>
 #include <mw/consensus/Weight.h>
 
 #include <unordered_set>
@@ -84,7 +85,7 @@ void TxBody::Validate() const
         m_kernels.cbegin(), m_kernels.cend(),
         [](const Kernel& kernel) {
             size_t pubkeySize = kernel.GetPegOut() ? kernel.GetPegOut().value().GetScriptPubKey().size() : 4;
-            return pubkeySize > 42 || pubkeySize < 4 || kernel.GetExtraData().size() > libmw::MAX_KERNEL_EXTRADATA_SIZE;
+            return pubkeySize > 42 || pubkeySize < 4 || kernel.GetExtraData().size() > mw::MAX_KERNEL_EXTRADATA_SIZE;
         }
     );
     if (extra_data_exceeds_max) {

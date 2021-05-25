@@ -22,8 +22,8 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
 
     {
         auto pDatabase = std::make_shared<TestDBWrapper>();
-        libmw::ChainParams params{ datadir.u8string() };
-        mw::ICoinsView::Ptr db_view = libmw::node::Initialize(params, mw::Header::CPtr{nullptr}, pDatabase, {});
+        boost::filesystem::path data_dir{ datadir.u8string() };
+        mw::ICoinsView::Ptr db_view = libmw::node::Initialize(data_dir, mw::Header::CPtr{nullptr}, pDatabase, {});
         mw::CoinsViewCache::Ptr cached_view = std::make_shared<mw::CoinsViewCache>(db_view);
 
         test::Miner miner;
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
         );
         BOOST_REQUIRE(tx1_status);
 
-        mw::Block::Ptr built_block = libmw::miner::BuildBlock(block_builder);
+        mw::Block::Ptr built_block = block_builder->BuildBlock();
         BOOST_REQUIRE(built_block->GetKernels().front() == builder_tx1.GetKernels().front());
         BlockValidator().Validate(built_block, built_block->GetHash(), { builder_tx1.GetPegInCoin() }, {});
 
