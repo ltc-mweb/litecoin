@@ -10,6 +10,7 @@
 #include <consensus/params.h>
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
+#include <mw/node/Node.h>
 #include <mweb/mweb_db.h>
 #include <miner.h>
 #include <net_processing.h>

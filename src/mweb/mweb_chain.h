@@ -1,10 +1,10 @@
 #pragma once
 
 #include <interfaces/chain.h>
+#include <libmw/interfaces/chain_interface.h>
 #include <primitives/block.h>
 #include <util/memory.h>
 
-#include <libmw/libmw.h>
 #include <stdexcept>
 
 namespace MWEB {

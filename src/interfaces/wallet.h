@@ -6,6 +6,7 @@
 #define BITCOIN_INTERFACES_WALLET_H
 
 #include <amount.h>                    // For CAmount
+#include <mw/models/wallet/Coin.h>     // For mw::Coin
 #include <pubkey.h>                    // For CKeyID and CScriptID (definitions needed in CTxDestination instantiation)
 #include <script/ismine.h>             // For isminefilter, isminetype
 #include <script/standard.h>           // For CTxDestination

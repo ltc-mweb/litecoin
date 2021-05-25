@@ -1,7 +1,7 @@
 #pragma once
 
-#include <libmw/libmw.h>
 #include <dbwrapper.h>
+#include <libmw/interfaces/db_interface.h>
 
 namespace MWEB {
 

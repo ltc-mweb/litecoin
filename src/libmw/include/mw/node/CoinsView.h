@@ -155,6 +155,12 @@ public:
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) final;
+
+    /// <summary>
+    /// Commits the changes from the cached CoinsView to the base CoinsView.
+    /// Adds the cached updates to the database if the base CoinsView is a DB view.
+    /// </summary>
+    /// <param name="pBatch">The optional DB batch. This must be non-null when the base CoinsView is a DB view.</param>
     void Flush(const libmw::IDBBatch::UPtr& pBatch = nullptr);
     mw::Block::Ptr BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions);
 

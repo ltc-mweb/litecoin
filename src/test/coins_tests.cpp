@@ -5,6 +5,7 @@
 #include <attributes.h>
 #include <coins.h>
 #include <consensus/validation.h>
+#include <mw/node/Node.h>
 #include <script/standard.h>
 #include <test/test_bitcoin.h>
 #include <uint256.h>

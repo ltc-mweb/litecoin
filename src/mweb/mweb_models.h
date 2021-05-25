@@ -6,8 +6,9 @@
 #define LITECOIN_MWEB_MODELS_H
 
 #include <amount.h>
+#include <mw/models/block/Block.h>
+#include <mw/models/tx/Transaction.h>
 #include <serialize.h>
-#include <libmw/libmw.h>
 #include <tinyformat.h>
 #include <vector>
 #include <memory>

@@ -9,6 +9,7 @@
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
 #include <miner.h>
+#include <mw/node/Node.h>
 #include <mweb/mweb_db.h>
 #include <policy/policy.h>
 #include <pow.h>

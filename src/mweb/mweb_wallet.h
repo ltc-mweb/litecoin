@@ -2,7 +2,10 @@
 
 #include <amount.h>
 #include <key.h>
-#include <libmw/libmw.h>
+#include <mw/models/block/Block.h>
+#include <mw/models/tx/Transaction.h>
+#include <mw/models/wallet/Coin.h>
+#include <mw/wallet/Keychain.h>
 #include <mweb/mweb_address.h>
 #include <streams.h>
 #include <util/strencodings.h>

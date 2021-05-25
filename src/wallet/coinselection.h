@@ -6,6 +6,7 @@
 #define BITCOIN_WALLET_COINSELECTION_H
 
 #include <amount.h>
+#include <mw/models/wallet/Coin.h>
 #include <policy/feerate.h>
 #include <primitives/transaction.h>
 #include <random.h>

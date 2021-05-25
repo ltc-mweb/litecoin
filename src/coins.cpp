@@ -218,7 +218,8 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
     }
 
     // MWEB: Flushes mw coins
-    libmw::node::FlushCache(derivedView, nullptr);
+    auto mweb_cache_view = dynamic_cast<mw::CoinsViewCache*>(derivedView.get());
+    mweb_cache_view->Flush(nullptr);
 
     hashBlock = hashBlockIn;
     return true;

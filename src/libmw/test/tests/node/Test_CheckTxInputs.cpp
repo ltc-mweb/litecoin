@@ -6,6 +6,7 @@
 #include <test/test_bitcoin.h>
 
 #include <libmw/libmw.h>
+#include <mw/node/Node.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/mmr/backends/FileBackend.h>

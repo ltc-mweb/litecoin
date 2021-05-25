@@ -5,23 +5,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include "interfaces/chain_interface.h"
 #include "interfaces/db_interface.h"
 
-#include <mw/consensus/Params.h>
-#include <mw/models/block/Block.h>
-#include <mw/models/block/BlockUndo.h>
 #include <mw/models/tx/Transaction.h>
-#include <mw/models/wallet/Coin.h>
-#include <mw/models/wallet/Recipient.h>
-#include <mw/node/BlockBuilder.h>
 #include <mw/node/CoinsView.h>
-#include <mw/node/Node.h>
 #include <mw/node/State.h>
-#include <mw/wallet/Keychain.h>
-
-#include <boost/filesystem.hpp>
-#include <boost/optional.hpp>
 
 #define LIBMW_NAMESPACE namespace libmw {
 #define NODE_NAMESPACE namespace node {
@@ -30,16 +18,6 @@
 LIBMW_NAMESPACE
 
 NODE_NAMESPACE
-
-/// <summary>
-/// Commits the changes from the cached CoinsView to the base CoinsView.
-/// Adds the cached updates to the database if the base CoinsView is a DB view.
-/// </summary>
-/// <param name="view">The CoinsView cache whose changes will be committed. Must not be null.</param>
-/// <param name="pBatch">The optional DB batch. This must be non-null when the base CoinsView is a DB view.</param>
-void FlushCache(
-    const mw::ICoinsView::Ptr& view,
-    const std::unique_ptr<libmw::IDBBatch>& pBatch = nullptr);
 
 /// <summary>
 /// Creates an in-memory snapshot of the chainstate in the given CoinsView.

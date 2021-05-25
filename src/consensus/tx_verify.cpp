@@ -5,6 +5,7 @@
 #include <consensus/tx_verify.h>
 
 #include <consensus/consensus.h>
+#include <libmw/libmw.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <consensus/validation.h>

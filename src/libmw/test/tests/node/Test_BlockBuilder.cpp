@@ -5,7 +5,8 @@
 #include <boost/test/unit_test.hpp>
 #include <test/test_bitcoin.h>
 
-#include <libmw/libmw.h>
+#include <mw/node/BlockBuilder.h>
+#include <mw/node/Node.h>
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/node/validation/BlockValidator.h>
 
@@ -45,7 +46,7 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
         // Flush View
         ///////////////////////
         auto pBatch = pDatabase->CreateBatch();
-        libmw::node::FlushCache(cached_view, pBatch);
+        cached_view->Flush(pBatch);
         pBatch->Commit();
 
         ///////////////////////

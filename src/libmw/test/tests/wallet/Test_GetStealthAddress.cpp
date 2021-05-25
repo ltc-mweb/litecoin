@@ -6,7 +6,6 @@
 #include <test/test_bitcoin.h>
 
 #include <mw/wallet/Keychain.h>
-#include <libmw/libmw.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestGetStealthAddress, BasicTestingSetup)
 

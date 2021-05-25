@@ -6,7 +6,7 @@
 #define LITECOIN_MWEB_ADDRESS_H
 
 #include <amount.h>
-#include <libmw/libmw.h>
+#include <mw/models/wallet/StealthAddress.h>
 #include <pubkey.h>
 #include <serialize.h>
 

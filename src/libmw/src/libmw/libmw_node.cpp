@@ -15,16 +15,6 @@
 LIBMW_NAMESPACE
 NODE_NAMESPACE
 
-void FlushCache(const mw::ICoinsView::Ptr& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)
-{
-    LOG_TRACE("Flushing cache");
-    auto pViewCache = dynamic_cast<mw::CoinsViewCache*>(view.get());
-    assert(pViewCache != nullptr);
-
-    pViewCache->Flush(pBatch);
-    LOG_TRACE("Cache flushed");
-}
-
 std::unique_ptr<mw::State> SnapshotState(const mw::ICoinsView::Ptr& view)
 {
     assert(view != nullptr);

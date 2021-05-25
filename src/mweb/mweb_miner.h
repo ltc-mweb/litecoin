@@ -1,7 +1,7 @@
 #pragma once
 
+#include <mw/node/BlockBuilder.h>
 #include <txmempool.h>
-#include <libmw/libmw.h>
 
 // Forward Declarations
 class CBlockTemplate;
@@ -19,7 +19,7 @@ private:
     bool ValidatePegIns(const CTransactionRef& pTx, const std::vector<PegInCoin>& pegins) const;
 
     // MWEB Attributes
-    std::shared_ptr<mw::BlockBuilder> mweb_builder;
+    mw::BlockBuilder::Ptr mweb_builder;
     CAmount mweb_amount_change;
     CAmount mweb_fees;
     std::vector<CTxIn> hogex_inputs;
