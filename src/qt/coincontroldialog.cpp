@@ -387,7 +387,7 @@ CInputCoin CoinControlDialog::BuildInputCoin(QTreeWidgetItem* item)
     if (IsMWEB(item)) {
         Commitment output_commit = Commitment::FromHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
         
-        libmw::Coin coin;
+        mw::Coin coin;
         bool found = model->wallet().findCoin(output_commit, coin);
         assert(found);
         return coin;

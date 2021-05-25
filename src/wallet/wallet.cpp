@@ -179,7 +179,7 @@ std::string COutput::ToString() const
 std::vector<CKeyID> GetAffectedKeys(const CTxOutput& output, const CWallet& wallet)
 {
     if (output.IsMWEB()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         if (wallet.GetCoin(output.GetCommitment(), coin)) {
             // MW: TODO - Return output key index as a CKeyID
         }
@@ -1084,7 +1084,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const uint256
             }
         }
         
-        libmw::Coin mweb_coin;
+        mw::Coin mweb_coin;
         for (const CTxOutput& txout : tx.GetOutputs()) {
             if (txout.IsMWEB()) {
                 mweb_wallet->RewindOutput(tx.m_mwtx.m_transaction, txout.GetCommitment(), mweb_coin);
@@ -1304,7 +1304,7 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
     }
 
     if (!pblock->mwBlock.IsNull()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         for (const Commitment& input_commit : pblock->mwBlock.GetInputCommits()) {
             if (GetCoin(input_commit, coin) && !IsSpent(*locked_chain, input_commit)) {
                 // MW: TODO - Create spend
@@ -1312,7 +1312,7 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
             }
         }
 
-        libmw::Coin mweb_coin;
+        mw::Coin mweb_coin;
         for (const Commitment& output_commit : pblock->mwBlock.GetOutputCommits()) {
             if (mweb_wallet->RewindOutput(pblock->mwBlock.m_block, output_commit, mweb_coin)) {
                 auto wtx = FindWalletTx(output_commit);
@@ -1341,7 +1341,7 @@ void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock) {
     }
 
     if (!pblock->mwBlock.IsNull()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         for (const Commitment& input_commit : pblock->mwBlock.GetInputCommits()) {
             
             if (GetCoin(input_commit, coin)) {
@@ -1396,7 +1396,7 @@ isminetype CWallet::IsMine(const CTxInput& input) const
     {
         LOCK(cs_wallet);
         if (input.IsMWEB()) {
-            libmw::Coin coin;
+            mw::Coin coin;
             return GetCoin(input.GetCommitment(), coin) ? ISMINE_SPENDABLE : ISMINE_NO;
         }
 
@@ -1419,7 +1419,7 @@ CAmount CWallet::GetDebit(const CTxInput& input, const isminefilter& filter) con
         LOCK(cs_wallet);
 
         if (input.IsMWEB()) {
-            libmw::Coin coin;
+            mw::Coin coin;
             if ((filter & ISMINE_SPENDABLE) && GetCoin(input.GetCommitment(), coin)) {
                 return coin.amount;
             }
@@ -1442,7 +1442,7 @@ CAmount CWallet::GetDebit(const CTxInput& input, const isminefilter& filter) con
 isminetype CWallet::IsMine(const CTxOutput& output) const
 {
     if (output.IsMWEB()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         return GetCoin(output.GetCommitment(), coin) ? ISMINE_SPENDABLE : ISMINE_NO;
     }
 
@@ -1460,9 +1460,9 @@ CAmount CWallet::GetCredit(const CTxOutput& output, const isminefilter& filter) 
 bool CWallet::IsChange(const CTxOutput& output) const
 {
     if (output.IsMWEB()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         if (GetCoin(output.GetCommitment(), coin)) {
-            return coin.address_index == libmw::CHANGE_INDEX;
+            return coin.address_index == mw::CHANGE_INDEX;
         }
 
         return false;
@@ -1475,7 +1475,7 @@ bool CWallet::IsChange(const CTxOutput& output) const
 bool CWallet::IsChange(const CTxDestination& dest) const
 {
     if (dest.type() == typeid(MWEB::StealthAddress)) {
-        return boost::get<MWEB::StealthAddress>(dest) == mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
+        return boost::get<MWEB::StealthAddress>(dest) == mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
     } else {
         CScript scriptPubKey = GetScriptForDestination(dest);
         return IsChange(scriptPubKey);
@@ -1507,9 +1507,9 @@ bool CWallet::IsChange(const CScript& script) const
 CAmount CWallet::GetChange(const CTxOutput& output) const
 {
     if (output.IsMWEB()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         if (GetCoin(output.GetCommitment(), coin)) {
-            if (coin.address_index == libmw::CHANGE_INDEX) {
+            if (coin.address_index == mw::CHANGE_INDEX) {
                 return coin.amount;
             }
         }
@@ -1557,7 +1557,7 @@ bool CWallet::IsAllFromMe(const CTransaction& tx, const isminefilter& filter) co
     for (const CTxInput& input : tx.GetInputs())
     {
         if (input.IsMWEB()) {
-            libmw::Coin coin;
+            mw::Coin coin;
             if (GetCoin(input.GetCommitment(), coin)) {
                 continue;
             }
@@ -1982,7 +1982,7 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                         }
                     }
 
-                    libmw::Coin mweb_coin;
+                    mw::Coin mweb_coin;
                     for (const Commitment& output_commit : block.mwBlock.GetOutputCommits()) {
                         if (mweb_wallet->RewindOutput(block.mwBlock.m_block, output_commit, mweb_coin)) {
                             // MW: TODO - Check for zapped transactions with matching output commits
@@ -2293,7 +2293,7 @@ bool CWalletTx::IsTrusted(interfaces::Chain::Lock& locked_chain) const
     for (const CTxInput& input : tx->GetInputs())
     {
         if (input.IsMWEB()) {
-            libmw::Coin coin;
+            mw::Coin coin;
             if (pwallet->GetCoin(input.GetCommitment(), coin)) {
                 continue;
             }
@@ -2614,7 +2614,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
             if (output.IsMWEB()) {
                 // MW: TODO - Ensure MWEB has been activated
 
-                libmw::Coin coin;
+                mw::Coin coin;
                 if (!GetCoin(output.GetCommitment(), coin)) {
                     continue;
                 }
@@ -2677,7 +2677,7 @@ std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins(interfaces
                 CTxDestination address;
                 if (ExtractOutputDestination(FindNonChangeParentOutput(*wtx->tx, output_idx), address)) {
                     if (output_idx.type() == typeid(Commitment)) {
-                        libmw::Coin coin;
+                        mw::Coin coin;
                         if (GetCoin(boost::get<Commitment>(output_idx), coin)) {
                             result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEB::StealthAddress>(address)});
                         }
@@ -2812,7 +2812,7 @@ bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const
             } else
                 return false; // TODO: Allow non-wallet inputs
         } else {
-            libmw::Coin coin;
+            mw::Coin coin;
             if (GetCoin(boost::get<Commitment>(output), coin)) {
                 nValueFromPresetInputs += coin.amount;
                 setPresetCoins.insert(CInputCoin(coin));
@@ -2999,7 +2999,7 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
                 reservekey->KeepKey();
             }
 
-            libmw::Coin mweb_coin;
+            mw::Coin mweb_coin;
             for (const CTxOutput& txout : wtxNew.GetOutputs()) {
                 if (txout.IsMWEB()) {
                     if (mweb_wallet->RewindOutput(wtxNew.tx->m_mwtx.m_transaction, txout.GetCommitment(), mweb_coin)) {
@@ -4336,10 +4336,10 @@ int CMerkleTx::GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const
     if (!tx->m_mwtx.GetPegIns().empty()) {
         int chain_depth = GetDepthInMainChain(locked_chain);
         if (chain_depth < 0) {
-            return PEGIN_MATURITY + 1;
+            return mw::PEGIN_MATURITY + 1;
         }
 
-        return std::max(0, (int)(PEGIN_MATURITY + 1) - chain_depth);
+        return std::max(0, (int)(mw::PEGIN_MATURITY + 1) - chain_depth);
     }
 
     return 0;
@@ -4444,7 +4444,7 @@ bool CWallet::AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info)
     return WriteKeyMetadata(mapKeyMetadata[pubkey.GetID()], pubkey, true);
 }
 
-bool CWallet::GetCoin(const Commitment& output_commit, libmw::Coin& coin) const
+bool CWallet::GetCoin(const Commitment& output_commit, mw::Coin& coin) const
 {
     return mweb_wallet->GetCoin(output_commit, coin);
 }
@@ -4452,7 +4452,7 @@ bool CWallet::GetCoin(const Commitment& output_commit, libmw::Coin& coin) const
 CAmount CWallet::GetAmount(const CTxOutput& output) const
 {
     if (output.IsMWEB()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         if (GetCoin(output.GetCommitment(), coin)) { // MW: TODO - Need to find a place to store amounts for commitments sent to other wallets.
             return coin.amount;
         }
@@ -4466,7 +4466,7 @@ CAmount CWallet::GetAmount(const CTxOutput& output) const
 bool CWallet::ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const
 {
     if (output.IsMWEB()) {
-        libmw::Coin coin;
+        mw::Coin coin;
         if (!GetCoin(output.GetCommitment(), coin)) {
             return false;
         }

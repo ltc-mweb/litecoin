@@ -2,7 +2,6 @@
 
 #include <mw/consensus/Params.h>
 #include <mw/models/tx/TxBody.h>
-#include <libmw/defs.h>
 
 class Weight
 {

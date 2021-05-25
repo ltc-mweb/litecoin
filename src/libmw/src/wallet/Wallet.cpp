@@ -1,7 +1,7 @@
 #include <mw/wallet/Wallet.h>
 #include <mw/crypto/Keys.h>
 
-bool Wallet::RewindOutput(const Output& output, libmw::Coin& coin) const
+bool Wallet::RewindOutput(const Output& output, mw::Coin& coin) const
 {
     SecretKey t = Hashed(EHashTag::DERIVE, output.Ke().Mul(m_pKeychain->GetScanSecret()));
     if (t[0] != output.GetViewTag()) {

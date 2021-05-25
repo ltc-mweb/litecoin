@@ -12,6 +12,7 @@
 #include "interfaces/chain_interface.h"
 #include "interfaces/db_interface.h"
 
+#include <mw/models/wallet/Coin.h>
 #include <mw/consensus/Params.h>
 #include <mw/models/block/Block.h>
 #include <mw/models/block/BlockUndo.h>

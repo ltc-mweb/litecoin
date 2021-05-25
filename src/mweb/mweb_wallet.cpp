@@ -6,7 +6,7 @@
 using namespace MWEB;
 
 bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
-        const Commitment& output_commit, libmw::Coin& coin)
+        const Commitment& output_commit, mw::Coin& coin)
 {
     if (GetCoin(output_commit, coin)) {
         return true;
@@ -80,12 +80,12 @@ CExtKey Wallet::GetHDKey(const std::string& bip32Path) const
     return extKey;
 }
 
-void Wallet::LoadToWallet(const libmw::Coin& coin)
+void Wallet::LoadToWallet(const mw::Coin& coin)
 {
     m_coins[coin.commitment] = coin;
 }
 
-bool Wallet::GetCoin(const Commitment& output_commit, libmw::Coin& coin) const
+bool Wallet::GetCoin(const Commitment& output_commit, mw::Coin& coin) const
 {
     auto iter = m_coins.find(output_commit);
     if (iter != m_coins.end()) {
@@ -96,7 +96,7 @@ bool Wallet::GetCoin(const Commitment& output_commit, libmw::Coin& coin) const
     return false;
 }
 
-void Wallet::DeleteCoins(const std::vector<libmw::Coin>& coins)
+void Wallet::DeleteCoins(const std::vector<mw::Coin>& coins)
 {
     for (const auto& coin : coins) {
         m_coins.erase(coin.commitment);

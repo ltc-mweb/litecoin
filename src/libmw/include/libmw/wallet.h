@@ -5,8 +5,11 @@
 #include <boost/variant.hpp>
 #include <mw/models/block/Block.h>
 #include <mw/models/tx/Transaction.h>
+#include <mw/models/wallet/Coin.h>
 #include <mw/models/wallet/StealthAddress.h>
 #include <mw/wallet/Keychain.h>
+
+#include <boost/optional.hpp>
 
 LIBMW_NAMESPACE
 
@@ -37,7 +40,7 @@ typedef boost::variant<MWEBRecipient, PegInRecipient, PegOutRecipient> Recipient
 WALLET_NAMESPACE
 
 mw::Transaction::CPtr CreateTx(
-    const std::vector<libmw::Coin>& input_coins,
+    const std::vector<mw::Coin>& input_coins,
     const std::vector<libmw::Recipient>& recipients,
     const boost::optional<uint64_t>& pegin_amount,
     const uint64_t fee
@@ -47,14 +50,14 @@ bool RewindBlockOutput(
     const mw::Keychain::Ptr& keychain,
     const mw::Block::CPtr& block,
     const Commitment& output_commit,
-    libmw::Coin& coin_out
+    mw::Coin& coin_out
 );
 
 bool RewindTxOutput(
     const mw::Keychain::Ptr& keychain,
     const mw::Transaction::CPtr& tx,
     const Commitment& output_commit,
-    libmw::Coin& coin_out
+    mw::Coin& coin_out
 );
 
 END_NAMESPACE // wallet

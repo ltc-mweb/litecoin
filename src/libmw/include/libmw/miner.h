@@ -4,6 +4,7 @@
 
 #include <mw/models/block/Block.h>
 #include <mw/models/tx/Transaction.h>
+#include <mw/node/BlockBuilder.h>
 #include <mw/node/CoinsView.h>
 
 LIBMW_NAMESPACE

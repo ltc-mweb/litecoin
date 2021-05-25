@@ -8,7 +8,7 @@
 #include <numeric>
 
 mw::Transaction::CPtr Transact::CreateTx(
-    const std::vector<libmw::Coin>& input_coins,
+    const std::vector<mw::Coin>& input_coins,
     const std::vector<std::pair<uint64_t, StealthAddress>>& recipients,
     const std::vector<PegOutCoin>& pegouts,
     const boost::optional<uint64_t>& pegin_amount,

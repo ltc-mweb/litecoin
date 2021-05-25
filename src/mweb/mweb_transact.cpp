@@ -83,12 +83,12 @@ bool Transact::CreateTx(
         if (change_amount <= 0) {
             return false;
         }
-        MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(libmw::CHANGE_INDEX);
+        MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
         mweb_recipients.push_back(libmw::MWEBRecipient{(uint64_t)change_amount, change_address.to_libmw()});
     }
 
     // Create transaction
-    std::vector<libmw::Coin> input_coins = GetInputCoins(selected_coins);
+    std::vector<mw::Coin> input_coins = GetInputCoins(selected_coins);
     transaction.m_mwtx = libmw::wallet::CreateTx(
         input_coins,
         mweb_recipients,
@@ -104,9 +104,9 @@ bool Transact::CreateTx(
     return true;
 }
 
-std::vector<libmw::Coin> Transact::GetInputCoins(const std::vector<CInputCoin>& inputs)
+std::vector<mw::Coin> Transact::GetInputCoins(const std::vector<CInputCoin>& inputs)
 {
-    std::vector<libmw::Coin> input_coins;
+    std::vector<mw::Coin> input_coins;
     for (const auto& coin : inputs) {
         if (coin.IsMWEB()) {
             input_coins.push_back(coin.GetMWEBCoin());

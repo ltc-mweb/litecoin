@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libmw/defs.h>
+#include <mw/models/wallet/Coin.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/tx/Input.h>
 #include <mw/crypto/Crypto.h>
@@ -10,14 +10,14 @@
 class WalletUtil
 {
 public:
-    static std::vector<BlindingFactor> GetBlindingFactors(const std::vector<libmw::Coin>& coins)
+    static std::vector<BlindingFactor> GetBlindingFactors(const std::vector<mw::Coin>& coins)
     {
         std::vector<BlindingFactor> blinds;
 
         std::transform(
             coins.cbegin(), coins.cend(),
             std::back_inserter(blinds),
-            [](const libmw::Coin& coin) {
+            [](const mw::Coin& coin) {
                 assert(!!coin.blind);
                 return BlindingFactor{ Crypto::BlindSwitch(coin.blind.value(), coin.amount) };
             }
@@ -26,14 +26,14 @@ public:
         return blinds;
     }
 
-    static std::vector<BlindingFactor> GetKeys(const std::vector<libmw::Coin>& coins)
+    static std::vector<BlindingFactor> GetKeys(const std::vector<mw::Coin>& coins)
     {
         std::vector<BlindingFactor> keys;
 
         std::transform(
             coins.cbegin(), coins.cend(),
             std::back_inserter(keys),
-            [](const libmw::Coin& coin) {
+            [](const mw::Coin& coin) {
                 assert(!!coin.key);
                 return BlindingFactor(coin.key.value());
             }
@@ -42,21 +42,21 @@ public:
         return keys;
     }
     
-    static uint64_t TotalAmount(const std::vector<libmw::Coin>& coins)
+    static uint64_t TotalAmount(const std::vector<mw::Coin>& coins)
     {
         return std::accumulate(
             coins.cbegin(), coins.cend(), (uint64_t)0,
-            [](uint64_t total, const libmw::Coin& coin) { return total + coin.amount; }
+            [](uint64_t total, const mw::Coin& coin) { return total + coin.amount; }
         );
     }
 
-    static std::vector<Input> SignInputs(const std::vector<libmw::Coin>& input_coins)
+    static std::vector<Input> SignInputs(const std::vector<mw::Coin>& input_coins)
     {
         std::vector<Input> inputs;
         std::transform(
             input_coins.cbegin(), input_coins.cend(),
             std::back_inserter(inputs),
-            [](const libmw::Coin& input_coin) {
+            [](const mw::Coin& input_coin) {
                 assert(!!input_coin.key);
 
                 PublicKey pubkey = Crypto::CalculatePublicKey(input_coin.key.value().GetBigInt());

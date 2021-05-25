@@ -1,10 +1,10 @@
 #pragma once
 
 #include <mw/models/tx/Transaction.h>
-#include <mw/models/wallet/StealthAddress.h>
 #include <mw/models/tx/PegInCoin.h>
 #include <mw/models/tx/PegOutCoin.h>
-#include <libmw/defs.h>
+#include <mw/models/wallet/Coin.h>
+#include <mw/models/wallet/StealthAddress.h>
 
 class Transact
 {
@@ -17,7 +17,7 @@ class Transact
 
 public:
     static mw::Transaction::CPtr CreateTx(
-        const std::vector<libmw::Coin>& input_coins,
+        const std::vector<mw::Coin>& input_coins,
         const std::vector<std::pair<uint64_t, StealthAddress>>& recipients,
         const std::vector<PegOutCoin>& pegouts,
         const boost::optional<uint64_t>& pegin_amount,

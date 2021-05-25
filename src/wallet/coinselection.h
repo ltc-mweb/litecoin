@@ -36,18 +36,18 @@ public:
     CInputCoin(const uint256& tx_hash, uint32_t i, const CAmount& nValue, const CScript& scriptPubKey)
         : m_output(CTxOut(nValue, scriptPubKey)), m_index(COutPoint(tx_hash, i)) {}
 
-    CInputCoin(const libmw::Coin& coin)
+    CInputCoin(const mw::Coin& coin)
         : m_output(coin), m_index(coin.commitment), m_input_bytes(0) { }
 
-    bool IsMWEB() const noexcept { return m_output.type() == typeid(libmw::Coin); }
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(mw::Coin); }
     CScript GetScriptPubKey() const noexcept { return IsMWEB() ? CScript() : boost::get<CTxOut>(m_output).scriptPubKey; }
-    CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<libmw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
+    CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<mw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
     const OutputIndex& GetIndex() const noexcept { return m_index; }
 
-    libmw::Coin GetMWEBCoin() const noexcept
+    mw::Coin GetMWEBCoin() const noexcept
     {
         assert(IsMWEB());
-        return boost::get<libmw::Coin>(m_output);
+        return boost::get<mw::Coin>(m_output);
     }
 
     CAmount CalculateFee(const CFeeRate& feerate) const noexcept
@@ -72,7 +72,7 @@ public:
     }
 
 private:
-    boost::variant<CTxOut, libmw::Coin> m_output;
+    boost::variant<CTxOut, mw::Coin> m_output;
 
     OutputIndex m_index;
 

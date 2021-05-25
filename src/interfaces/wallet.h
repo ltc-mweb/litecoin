@@ -125,7 +125,7 @@ public:
     //! Get dest values with prefix.
     virtual std::vector<std::string> getDestValues(const std::string& prefix) = 0;
 
-    virtual bool findCoin(const Commitment& output_commit, libmw::Coin& coin) = 0;
+    virtual bool findCoin(const Commitment& output_commit, mw::Coin& coin) = 0;
 
     //! Lock coin.
     virtual void lockCoin(const OutputIndex& output) = 0;

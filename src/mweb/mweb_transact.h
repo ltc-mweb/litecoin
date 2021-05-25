@@ -33,7 +33,7 @@ public:
     );
 
 private:
-    static std::vector<libmw::Coin> GetInputCoins(const std::vector<CInputCoin>& inputs);
+    static std::vector<mw::Coin> GetInputCoins(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetLTCInputAmount(const std::vector<CInputCoin>& inputs);
     static CAmount GetMWEBRecipientAmount(const std::vector<CRecipient>& recipients);

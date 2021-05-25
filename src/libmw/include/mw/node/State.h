@@ -1,6 +1,5 @@
 #pragma once
 
-#include <libmw/libmw.h>
 #include <mw/common/BitSet.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/tx/Kernel.h>

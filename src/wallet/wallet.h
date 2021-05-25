@@ -669,7 +669,7 @@ public:
 
 struct MWOutput
 {
-    libmw::Coin coin;
+    mw::Coin coin;
     int nDepth;
     int64_t nTime;
     MWEB::StealthAddress address;
@@ -1392,7 +1392,7 @@ public:
     /** Add a KeyOriginInfo to the wallet */
     bool AddKeyOrigin(const CPubKey& pubkey, const KeyOriginInfo& info);
 
-    bool GetCoin(const Commitment& output_commit, libmw::Coin& coin) const;
+    bool GetCoin(const Commitment& output_commit, mw::Coin& coin) const;
 
     CAmount GetAmount(const CTxOutput& output) const;
     bool ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const;

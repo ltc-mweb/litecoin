@@ -8,6 +8,7 @@
 #include <mw/models/block/BlockUndo.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/node/CoinsView.h>
+#include <mw/node/State.h>
 
 #include <boost/filesystem.hpp>
 
