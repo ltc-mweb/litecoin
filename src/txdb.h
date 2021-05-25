@@ -9,8 +9,8 @@
 #include <coins.h>
 #include <dbwrapper.h>
 #include <chain.h>
+#include <mw/node/CoinsView.h>
 #include <primitives/block.h>
-#include <libmw/libmw.h>
 
 #include <map>
 #include <memory>

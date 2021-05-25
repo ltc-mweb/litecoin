@@ -5,8 +5,8 @@
 #ifndef LITECOIN_MIMBLEWIMBLE_MWEB_STATE_H
 #define LITECOIN_MIMBLEWIMBLE_MWEB_STATE_H
 
+#include <mw/node/State.h>
 #include <serialize.h>
-#include <libmw/libmw.h>
 #include <uint256.h>
 
 namespace MWEB {

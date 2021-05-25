@@ -1,8 +1,8 @@
 #include <mweb/mweb_node.h>
 #include <consensus/validation.h>
+#include <mw/node/Node.h>
 #include <primitives/block.h>
 #include <script/interpreter.h>
-#include <libmw/libmw.h>
 
 using namespace MWEB;
 

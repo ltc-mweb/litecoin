@@ -26,7 +26,7 @@
 #include <validation.h>
 #include <miner.h>
 #include <mweb/mweb_db.h>
-#include <libmw/libmw.h>
+#include <mw/node/Node.h>
 #include <netbase.h>
 #include <net.h>
 #include <net_processing.h>

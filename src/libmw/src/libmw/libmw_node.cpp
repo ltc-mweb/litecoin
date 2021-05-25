@@ -70,20 +70,5 @@ bool CheckTxInputs(const mw::ICoinsView::Ptr& view, const mw::Transaction::CPtr&
     return false;
 }
 
-bool HasCoin(const mw::ICoinsView::Ptr& view, const Commitment& commitment)
-{
-    assert(view != nullptr);
-
-    return !view->GetUTXOs(commitment).empty();
-}
-
-bool HasCoinInCache(const mw::ICoinsView::Ptr& view, const Commitment& commitment)
-{
-    auto pViewCache = dynamic_cast<mw::CoinsViewCache*>(view.get());
-    assert(pViewCache != nullptr);
-
-    return pViewCache->HasCoinInCache(commitment);
-}
-
 END_NAMESPACE // node
 END_NAMESPACE // libmw

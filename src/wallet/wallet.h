@@ -23,7 +23,7 @@
 #include <wallet/coinselection.h>
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
-#include <libmw/libmw.h>
+#include <mw/models/wallet/Coin.h>
 #include <mweb/mweb_wallet.h>
 
 #include <algorithm>

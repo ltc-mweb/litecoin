@@ -11,9 +11,9 @@
 #include <core_memusage.h>
 #include <crypto/siphash.h>
 #include <memusage.h>
+#include <mw/node/CoinsView.h>
 #include <serialize.h>
 #include <uint256.h>
-#include <libmw/libmw.h>
 
 #include <boost/variant.hpp>
 #include <assert.h>

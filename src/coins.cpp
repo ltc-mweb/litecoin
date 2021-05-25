@@ -17,7 +17,7 @@ CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 bool CCoinsView::HaveCoin(const OutputIndex& index) const
 {
     if (index.type() == typeid(Commitment)) {
-        return libmw::node::HasCoin(GetMWView(), boost::get<Commitment>(index));
+        return GetMWView()->HasCoin(boost::get<Commitment>(index));
     } else {
         Coin coin;
         return GetCoin(boost::get<COutPoint>(index), coin);
@@ -130,7 +130,7 @@ const Coin& CCoinsViewCache::AccessCoin(const COutPoint &outpoint) const {
 
 bool CCoinsViewCache::HaveCoin(const OutputIndex& index) const {
     if (index.type() == typeid(Commitment)) {
-        return libmw::node::HasCoin(GetMWView(), boost::get<Commitment>(index));
+        return GetMWView()->HasCoin(boost::get<Commitment>(index));
     } else {
         CCoinsMap::const_iterator it = FetchCoin(boost::get<COutPoint>(index));
         return (it != cacheCoins.end() && !it->second.coin.IsSpent());
@@ -139,7 +139,7 @@ bool CCoinsViewCache::HaveCoin(const OutputIndex& index) const {
 
 bool CCoinsViewCache::HaveCoinInCache(const OutputIndex& index) const {
     if (index.type() == typeid(Commitment)) {
-        return libmw::node::HasCoinInCache(GetMWView(), boost::get<Commitment>(index));
+        return GetMWView()->HasCoinInCache(boost::get<Commitment>(index));
     } else {
         CCoinsMap::const_iterator it = cacheCoins.find(boost::get<COutPoint>(index));
         return (it != cacheCoins.end() && !it->second.coin.IsSpent());

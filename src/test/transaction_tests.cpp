@@ -13,7 +13,6 @@
 #include <core_io.h>
 #include <key.h>
 #include <keystore.h>
-#include <libmw/libmw.h>
 #include <validation.h>
 #include <policy/policy.h>
 #include <random.h>

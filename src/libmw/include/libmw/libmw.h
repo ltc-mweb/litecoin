@@ -67,23 +67,6 @@ bool CheckTransaction(const mw::Transaction::CPtr& transaction);
 /// <returns>True if the inputs are unspent.</returns>
 bool CheckTxInputs(const mw::ICoinsView::Ptr& view, const mw::Transaction::CPtr& transaction, uint64_t nSpendHeight);
 
-/// <summary>
-/// Checks if there's a unspent coin in the view with a matching commitment.
-/// </summary>
-/// <param name="view">The coins view to check.</param>
-/// <param name="commitment">The commitment to look for.</param>
-/// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
-bool HasCoin(const mw::ICoinsView::Ptr& view, const Commitment& commitment);
-
-/// <summary>
-/// Checks if there's a unspent coin with a matching commitment in the view that has not been flushed to the parent.
-/// This is useful for checking if a coin is in the mempool but not yet on chain.
-/// </summary>
-/// <param name="view">The coins view to check.</param>
-/// <param name="commitment">The commitment to look for.</param>
-/// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
-bool HasCoinInCache(const mw::ICoinsView::Ptr& view, const Commitment& commitment);
-
 END_NAMESPACE // node
 
 WALLET_NAMESPACE

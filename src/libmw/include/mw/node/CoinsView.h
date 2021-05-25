@@ -107,6 +107,21 @@ public:
     virtual mmr::ILeafSet::Ptr GetLeafSet() const noexcept = 0;
     virtual mmr::IMMR::Ptr GetKernelMMR() const noexcept = 0;
     virtual mmr::IMMR::Ptr GetOutputPMMR() const noexcept = 0;
+
+    /// <summary>
+    /// Checks if there's a unspent coin in the view with a matching commitment.
+    /// </summary>
+    /// <param name="commitment">The commitment to look for.</param>
+    /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
+    bool HasCoin(const Commitment& commitment) const noexcept { return !GetUTXOs(commitment).empty(); }
+
+    /// <summary>
+    /// Checks if there's a unspent coin with a matching commitment in the view that has not been flushed to the parent.
+    /// This is useful for checking if a coin is in the mempool but not yet on chain.
+    /// </summary>
+    /// <param name="commitment">The commitment to look for.</param>
+    /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
+    virtual bool HasCoinInCache(const Commitment& commitment) const noexcept = 0;
     
 protected:
     void ValidateMMRs(const mw::Header::CPtr& pHeader) const;
@@ -145,7 +160,7 @@ public:
 
     void ValidateState() const;
 
-    bool HasCoinInCache(const Commitment& commitment) const noexcept;
+    bool HasCoinInCache(const Commitment& commitment) const noexcept final;
 
     mmr::ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
     mmr::IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
@@ -190,6 +205,8 @@ public:
     mmr::ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
     mmr::IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
     mmr::IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
+
+    bool HasCoinInCache(const Commitment& commitment) const noexcept final { return false; }
 
 private:
     void AddUTXO(CoinDB& coinDB, const Output& output);

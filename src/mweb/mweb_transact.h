@@ -1,6 +1,5 @@
 #pragma once
 
-#include <libmw/libmw.h>
 #include <mweb/mweb_models.h>
 #include <mweb/mweb_wallet.h>
 #include <wallet/coinselection.h>
