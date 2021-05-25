@@ -7,78 +7,13 @@
 #include <mw/models/block/BlockUndo.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/models/tx/UTXO.h>
-#include <mw/node/INode.h>
+#include <mw/node/Node.h>
 #include <mw/node/Snapshot.h>
 #include <mw/node/State.h>
-#include <mw/wallet/Wallet.h>
 #include <numeric>
-
-static mw::INode::Ptr NODE = nullptr;
 
 LIBMW_NAMESPACE
 NODE_NAMESPACE
-
-mw::ICoinsView::Ptr Initialize(
-    const boost::filesystem::path& data_dir,
-    const mw::Header::CPtr& header,
-    const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-    const std::function<void(const std::string&)>& log_callback)
-{
-    LoggerAPI::Initialize(log_callback);
-    NODE = mw::InitializeNode(FilePath{ data_dir.native() }, header, pDBWrapper);
-
-    return NODE->GetDBView();
-}
-
-void Shutdown()
-{
-    NODE.reset();
-}
-
-mw::ICoinsView::Ptr ApplyState(
-    const libmw::IChain::Ptr& pChain,
-    const libmw::IDBWrapper::Ptr& pCoinsDB,
-    const mw::Header::CPtr& stateHeader,
-    const mw::State& state)
-{
-    return NODE->ApplyState(
-        pCoinsDB,
-        pChain,
-        stateHeader,
-        state.utxos,
-        state.kernels,
-        state.leafset,
-        state.pruned_parent_hashes
-    );
-}
-
-bool CheckBlock(
-    const mw::Block::CPtr& block,
-    const mw::Hash& hash,
-    const std::vector<PegInCoin>& pegInCoins,
-    const std::vector<PegOutCoin>& pegOutCoins)
-{
-    assert(block != nullptr);
-
-    try {
-        NODE->ValidateBlock(block, hash, pegInCoins, pegOutCoins);
-        return true;
-    } catch (const std::exception& e) {
-        LOG_ERROR_F("Failed to validate {}. Error: {}", *block, e);
-    }
-
-    return false;
-}
-
-mw::BlockUndo::CPtr ConnectBlock(const mw::Block::CPtr& block, const mw::ICoinsView::Ptr& view)
-{
-    return NODE->ConnectBlock(block, view);
-}
-
-void DisconnectBlock(const mw::BlockUndo::CPtr& undoData, const mw::ICoinsView::Ptr& view)
-{
-    NODE->DisconnectBlock(undoData, view);
-}
 
 void FlushCache(const mw::ICoinsView::Ptr& view, const std::unique_ptr<libmw::IDBBatch>& pBatch)
 {

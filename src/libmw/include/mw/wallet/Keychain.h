@@ -1,6 +1,8 @@
 #pragma once
 
 #include <mw/models/crypto/SecretKey.h>
+#include <mw/models/tx/Output.h>
+#include <mw/models/wallet/Coin.h>
 #include <mw/models/wallet/StealthAddress.h>
 #include <unordered_map>
 #include <climits>
@@ -17,6 +19,8 @@ public:
         : m_scanSecret(std::move(scan_secret)),
         m_spendSecret(std::move(spend_secret)),
         m_addressIndexCounter(address_index_counter) { }
+
+    bool RewindOutput(const Output& output, mw::Coin& coin) const;
 
     StealthAddress GetStealthAddress(const uint32_t index) const;
     SecretKey GetSpendKey(const uint32_t index) const;

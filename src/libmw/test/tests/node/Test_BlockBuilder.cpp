@@ -22,8 +22,7 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
 
     {
         auto pDatabase = std::make_shared<TestDBWrapper>();
-        boost::filesystem::path data_dir{ datadir.u8string() };
-        mw::ICoinsView::Ptr db_view = libmw::node::Initialize(data_dir, mw::Header::CPtr{nullptr}, pDatabase, {});
+        mw::CoinsViewDB::Ptr db_view = mw::Node::Init(datadir, mw::Header::CPtr{nullptr}, pDatabase);
         mw::CoinsViewCache::Ptr cached_view = std::make_shared<mw::CoinsViewCache>(db_view);
 
         test::Miner miner;
@@ -33,14 +32,14 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
         ///////////////////////
         test::Tx block1_tx1 = test::Tx::CreatePegIn(1000);
         auto block1 = miner.MineBlock(150, { block1_tx1 });
-        libmw::node::ConnectBlock(block1.GetBlock(), cached_view);
+        mw::Node::ConnectBlock(block1.GetBlock(), cached_view);
 
         ///////////////////////
         // Mine Block 2
         ///////////////////////
         test::Tx block2_tx1 = test::Tx::CreatePegIn(500);
         auto block2 = miner.MineBlock(151, { block2_tx1 });
-        libmw::node::ConnectBlock(block2.GetBlock(), cached_view);
+        mw::Node::ConnectBlock(block2.GetBlock(), cached_view);
 
         ///////////////////////
         // Flush View
@@ -52,12 +51,11 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
         ///////////////////////
         // BlockBuilder
         ///////////////////////
-        std::shared_ptr<mw::BlockBuilder> block_builder = libmw::miner::NewBuilder(152, cached_view);
+        auto block_builder = std::make_shared<mw::BlockBuilder>(152, cached_view);
 
         test::Tx builder_tx1 = test::Tx::CreatePegIn(150);
         PegInCoin builder_tx1_pegin{ 150, builder_tx1.GetKernels().front().GetCommitment() };
-        bool tx1_status = libmw::miner::AddTransaction(
-            block_builder,
+        bool tx1_status = block_builder->AddTransaction(
             builder_tx1.GetTransaction(),
             { builder_tx1_pegin }
         );
@@ -66,8 +64,6 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
         mw::Block::Ptr built_block = block_builder->BuildBlock();
         BOOST_REQUIRE(built_block->GetKernels().front() == builder_tx1.GetKernels().front());
         BlockValidator().Validate(built_block, built_block->GetHash(), { builder_tx1.GetPegInCoin() }, {});
-
-        libmw::node::Shutdown();
     }
 }
 

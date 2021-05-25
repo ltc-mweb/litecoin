@@ -1648,7 +1648,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     }
 
     if (blockUndo.mwundo != nullptr) {
-        libmw::node::DisconnectBlock(blockUndo.mwundo, view.GetMWView());
+        mw::Node::DisconnectBlock(blockUndo.mwundo, view.GetMWView());
     }
 
     // move best block pointer to prevout block
@@ -2102,7 +2102,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         }
 
         try {
-            blockundo.mwundo = libmw::node::ConnectBlock(block.mwBlock.m_block, view.GetMWView());
+            blockundo.mwundo = mw::Node::ConnectBlock(block.mwBlock.m_block, view.GetMWView());
         } catch (const std::exception& e) {
             return state.DoS(100, error("ConnectBlock(): Failed to connect mw block: %s", e.what()),
                 REJECT_INVALID, "mw-connect-failed");

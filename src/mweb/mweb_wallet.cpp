@@ -15,10 +15,21 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     bool rewound = false;
     if (parent.type() == typeid(mw::Block::CPtr)) {
         const mw::Block::CPtr& block = boost::get<mw::Block::CPtr>(parent);
-        rewound = libmw::wallet::RewindBlockOutput(GetKeychain(), block, output_commit, coin);
+
+        for (const Output& output : block->GetOutputs()) {
+            if (output.GetCommitment() == output_commit) {
+                rewound = GetKeychain()->RewindOutput(output, coin);
+                break;
+            }
+        }
     } else {
         const mw::Transaction::CPtr& tx = boost::get<mw::Transaction::CPtr>(parent);
-        rewound = libmw::wallet::RewindTxOutput(GetKeychain(), tx, output_commit, coin);
+        for (const Output& output : tx->GetOutputs()) {
+            if (output.GetCommitment() == output_commit) {
+                rewound = GetKeychain()->RewindOutput(output, coin);
+                break;
+            }
+        }
     }
 
     if (rewound) {

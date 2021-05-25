@@ -10,7 +10,6 @@
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/mmr/backends/FileBackend.h>
 #include <mw/node/CoinsView.h>
-#include <mw/node/INode.h>
 
 #include <test_framework/DBWrapper.h>
 #include <test_framework/Miner.h>
@@ -25,10 +24,9 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     ScopedFileRemover remover(datadir);
 
     auto pDatabase = std::make_shared<TestDBWrapper>();
-    auto pNode = mw::InitializeNode(datadir, nullptr, pDatabase);
-    BOOST_REQUIRE(pNode != nullptr);
+    auto pDBView = mw::Node::Init(datadir, nullptr, pDatabase);
+    BOOST_REQUIRE(pDBView != nullptr);
 
-    auto pDBView = pNode->GetDBView();
     auto pCachedView = std::make_shared<mw::CoinsViewCache>(pDBView);
 
     test::Miner miner;
@@ -37,8 +35,8 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     // Mine pegin tx
     test::Tx tx1 = test::Tx::CreatePegIn(1000);
     auto block = miner.MineBlock(height, { tx1 });
-    pNode->ValidateBlock(block.GetBlock(), block.GetHash(), { tx1.GetPegInCoin() }, {});
-    pNode->ConnectBlock(block.GetBlock(), pCachedView);
+    BOOST_REQUIRE(mw::Node::ValidateBlock(block.GetBlock(), block.GetHash(), { tx1.GetPegInCoin() }, {}));
+    mw::Node::ConnectBlock(block.GetBlock(), pCachedView);
     height += mw::PEGIN_MATURITY;
 
     // Try to spend the pegin output
@@ -58,7 +56,7 @@ BOOST_AUTO_TEST_CASE(CheckTxInputs)
     BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height - 1));
     BOOST_REQUIRE(!libmw::node::CheckTxInputs(pCachedView, transaction, height));
 
-    pNode.reset();
+    pDBView.reset();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

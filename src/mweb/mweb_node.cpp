@@ -45,8 +45,8 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
     //    }
     //}
 
-    if (!libmw::node::CheckBlock(block.mwBlock.m_block, mw::Hash(mweb256.begin()), pegins, block.GetPegOutCoins())) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "libmw::node::CheckBlock failed");
+    if (!mw::Node::ValidateBlock(block.mwBlock.m_block, mw::Hash(mweb256.begin()), pegins, block.GetPegOutCoins())) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "mw::Node::ValidateBlock failed");
     }
 
     return true;

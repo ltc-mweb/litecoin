@@ -40,11 +40,10 @@ class CCoinsViewTest : public CCoinsView
 public:
     CCoinsViewTest()
     {
-        mw_view_ = libmw::node::Initialize(
-            GetDataDir(),
+        mw_view_ = mw::Node::Init(
+            FilePath{GetDataDir().native()},
             {nullptr}, // MW: TODO - Load this first
-            nullptr,
-            {}
+            nullptr
         );
     }
 
@@ -623,11 +622,10 @@ public:
     static std::unique_ptr<CCoinsViewDB> GetCoinsViewDB()
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
-        mw::ICoinsView::Ptr mw_view = libmw::node::Initialize(
-            GetDataDir(),
+        mw::ICoinsView::Ptr mw_view = mw::Node::Init(
+            FilePath{GetDataDir().native()},
             {nullptr}, // MW: TODO - Load this first
-            nullptr,
-            {}
+            nullptr
         );
         root->SetMWView(mw_view);
         return root;

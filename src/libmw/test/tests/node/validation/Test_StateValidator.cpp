@@ -7,7 +7,6 @@
 
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/node/CoinsView.h>
-#include <mw/node/INode.h>
 
 #include <test_framework/models/Tx.h>
 #include <test_framework/DBWrapper.h>
@@ -24,10 +23,9 @@ BOOST_AUTO_TEST_CASE(ValidateState)
 
     {
         auto pDatabase = std::make_shared<TestDBWrapper>();
-        auto pNode = mw::InitializeNode(datadir, nullptr, pDatabase);
-        BOOST_REQUIRE(pNode != nullptr);
+        auto pDBView = mw::Node::Init(datadir, nullptr, pDatabase);
+        BOOST_REQUIRE(pDBView != nullptr);
 
-        auto pDBView = pNode->GetDBView();
         auto pCachedView = std::make_shared<mw::CoinsViewCache>(pDBView);
 
         test::Miner miner;
@@ -43,8 +41,8 @@ BOOST_AUTO_TEST_CASE(ValidateState)
         std::vector<PegInCoin> pegInCoins = tx1.GetTransaction()->GetPegIns();
 
         auto block1 = miner.MineBlock(150, { tx1 });
-        pNode->ValidateBlock(block1.GetBlock(), block1.GetHash(), pegInCoins, {});
-        pNode->ConnectBlock(block1.GetBlock(), pCachedView);
+        BOOST_REQUIRE(mw::Node::ValidateBlock(block1.GetBlock(), block1.GetHash(), pegInCoins, {}));
+        mw::Node::ConnectBlock(block1.GetBlock(), pCachedView);
         pCachedView->ValidateState();
 
         // Block containing peg-outs and regular sends only
@@ -58,11 +56,11 @@ BOOST_AUTO_TEST_CASE(ValidateState)
         std::vector<PegOutCoin> pegOutCoins = tx2.GetTransaction()->GetPegOuts();
 
         auto block2 = miner.MineBlock(151, { tx2 });
-        pNode->ValidateBlock(block2.GetBlock(), block2.GetHash(), {}, pegOutCoins);
-        pNode->ConnectBlock(block2.GetBlock(), pCachedView);
+        BOOST_REQUIRE(mw::Node::ValidateBlock(block2.GetBlock(), block2.GetHash(), {}, pegOutCoins));
+        mw::Node::ConnectBlock(block2.GetBlock(), pCachedView);
         pCachedView->ValidateState();
 
-        pNode.reset();
+        pDBView.reset();
     }
 }
 

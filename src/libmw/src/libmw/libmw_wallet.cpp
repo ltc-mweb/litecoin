@@ -3,7 +3,6 @@
 #include <mw/models/tx/Transaction.h>
 #include <mw/wallet/Keychain.h>
 #include <mw/wallet/Transact.h>
-#include <mw/wallet/Wallet.h>
 
 LIBMW_NAMESPACE
 WALLET_NAMESPACE
@@ -31,46 +30,6 @@ mw::Transaction::CPtr CreateTx(
     }
 
     return Transact::CreateTx(input_coins, receivers, pegouts, pegin_amount, fee);
-}
-
-bool RewindBlockOutput(
-    const mw::Keychain::Ptr& keychain,
-    const mw::Block::CPtr& block,
-    const Commitment& output_commit,
-    mw::Coin& coin_out)
-{
-    assert(keychain != nullptr);
-    assert(block != nullptr);
-
-    Wallet wallet(keychain);
-
-    for (const Output& output : block->GetOutputs()) {
-        if (output.GetCommitment() == output_commit) {
-            return wallet.RewindOutput(output, coin_out);
-        }
-    }
-
-    return false;
-}
-
-bool RewindTxOutput(
-    const mw::Keychain::Ptr& keychain,
-    const mw::Transaction::CPtr& tx,
-    const Commitment& output_commit,
-    mw::Coin& coin_out)
-{
-    assert(keychain != nullptr);
-    assert(tx != nullptr);
-
-    Wallet wallet(keychain);
-
-    for (const Output& output : tx->GetOutputs()) {
-        if (output.GetCommitment() == output_commit) {
-            return wallet.RewindOutput(output, coin_out);
-        }
-    }
-
-    return false;
 }
 
 END_NAMESPACE // wallet

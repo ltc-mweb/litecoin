@@ -10,7 +10,6 @@
 #include <mw/crypto/Random.h>
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/node/CoinsView.h>
-#include <mw/node/INode.h>
 
 #include <test_framework/models/Tx.h>
 #include <test_framework/DBWrapper.h>

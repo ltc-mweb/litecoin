@@ -5,10 +5,9 @@
 #include <boost/test/unit_test.hpp>
 #include <test/test_bitcoin.h>
 
-#include <mw/node/INode.h>
+#include <mw/node/Node.h>
 #include <mw/file/ScopedFileRemover.h>
 #include <test_framework/Miner.h>
-#include <test_framework/TestNode.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestBlockValidator, BasicTestingSetup)
 
@@ -31,10 +30,8 @@ BOOST_AUTO_TEST_CASE(BlockValidator)
         std::vector<PegOutCoin> pegOutCoins;
         test::MinedBlock block_10 = miner.MineBlock(10, block_10_txs);
 
-        mw::INode::Ptr pNode = test::CreateNode(datadir);
-
         BOOST_REQUIRE(!block_10.GetBlock()->WasValidated());
-        pNode->ValidateBlock(block_10.GetBlock(), block_10.GetHash(), pegInCoins, pegOutCoins);
+        BOOST_REQUIRE(mw::Node::ValidateBlock(block_10.GetBlock(), block_10.GetHash(), pegInCoins, pegOutCoins));
         BOOST_REQUIRE(block_10.GetBlock()->WasValidated());
     }
 }

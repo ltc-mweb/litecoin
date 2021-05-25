@@ -54,7 +54,11 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
     }
 
     // Validate transaction
-    pTransaction->Validate();
+    try {
+        pTransaction->Validate();
+    } catch (std::exception& e) {
+        LOG_DEBUG_F("Failed to add transaction {}. Error: {}", pTransaction, e.what());
+    }
 
     // Make sure all inputs are available.
     for (const Input& input : pTransaction->GetInputs()) {

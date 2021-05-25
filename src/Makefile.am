@@ -119,7 +119,6 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/db/LeafDB.cpp \
 	libmw/src/db/MMRInfoDB.cpp \
 	libmw/src/file/File.cpp \
-	libmw/src/libmw/libmw_miner.cpp \
 	libmw/src/libmw/libmw_node.cpp \
 	libmw/src/libmw/libmw_wallet.cpp \
 	libmw/src/mmr/backends/FileBackend.cpp \
@@ -150,8 +149,7 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/node/Snapshot.cpp \
 	libmw/src/traits/Serializable.cpp \
 	libmw/src/wallet/Keychain.cpp \
-	libmw/src/wallet/Transact.cpp \
-	libmw/src/wallet/Wallet.cpp
+	libmw/src/wallet/Transact.cpp
 
 .PHONY: FORCE check-symbols check-security
 # bitcoin core #

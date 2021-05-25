@@ -1,4 +1,4 @@
-#include "Node.h"
+#include <mw/node/Node.h>
 #include "CoinsViewFactory.h"
 
 #include <mw/db/MMRInfoDB.h>
@@ -9,7 +9,9 @@
 #include <mw/mmr/backends/FileBackend.h>
 #include <unordered_map>
 
-mw::INode::Ptr mw::InitializeNode(
+using namespace mw;
+
+mw::CoinsViewDB::Ptr Node::Init(
     const FilePath& datadir,
     const mw::Header::CPtr& pBestHeader,
     const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper)
@@ -27,33 +29,32 @@ mw::INode::Ptr mw::InitializeNode(
     auto pOutputBackend = mmr::FileBackend::Open('O', datadir, file_index, pDBWrapper, pPruneList);
     mmr::MMR::Ptr pOutputMMR = std::make_shared<mmr::MMR>(pOutputBackend);
 
-    mw::CoinsViewDB::Ptr pDBView = std::make_shared<mw::CoinsViewDB>(
+    return std::make_shared<mw::CoinsViewDB>(
         pBestHeader,
         pDBWrapper,
         pLeafSet,
         pKernelsMMR,
         pOutputMMR
     );
-
-    return std::shared_ptr<mw::INode>(new Node(datadir, pDBView));
 }
 
-Node::~Node()
-{
-
-}
-
-void Node::ValidateBlock(
+bool Node::ValidateBlock(
     const mw::Block::CPtr& pBlock,
     const mw::Hash& mweb_hash,
     const std::vector<PegInCoin>& pegInCoins,
-    const std::vector<PegOutCoin>& pegOutCoins) const
+    const std::vector<PegOutCoin>& pegOutCoins) noexcept
 {
     assert(pBlock != nullptr);
 
-    LOG_TRACE_F("Validating block {}", pBlock);
-    BlockValidator().Validate(pBlock, mweb_hash, pegInCoins, pegOutCoins);
-    LOG_TRACE_F("Block {} validated", pBlock);
+    try {
+        BlockValidator().Validate(pBlock, mweb_hash, pegInCoins, pegOutCoins);
+        LOG_TRACE_F("Block {} validated", pBlock);
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR_F("Failed to validate {}. Error: {}", *pBlock, e);
+    }
+
+    return false;
 }
 
 mw::BlockUndo::CPtr Node::ConnectBlock(const mw::Block::CPtr& pBlock, const mw::ICoinsView::Ptr& pView)
@@ -87,22 +88,20 @@ void Node::DisconnectBlock(const mw::BlockUndo::CPtr& pUndoData, const mw::ICoin
 }
 
 mw::ICoinsView::Ptr Node::ApplyState(
-    const libmw::IDBWrapper::Ptr& pDBWrapper,
+    const FilePath& datadir,
     const libmw::IChain::Ptr& pChain,
+    const libmw::IDBWrapper::Ptr& pDBWrapper,
     const mw::Header::CPtr& pStateHeader,
-    const std::vector<UTXO::CPtr>& utxos,
-    const std::vector<Kernel>& kernels,
-    const BitSet& leafset,
-    const std::vector<mw::Hash>& pruned_parent_hashes)
+    const mw::State& state)
 {
     return CoinsViewFactory::CreateDBView(
         pDBWrapper,
         pChain,
-        m_datadir,
+        datadir,
         pStateHeader,
-        utxos,
-        kernels,
-        leafset,
-        pruned_parent_hashes
+        state.utxos,
+        state.kernels,
+        state.leafset,
+        state.pruned_parent_hashes
     );
 }

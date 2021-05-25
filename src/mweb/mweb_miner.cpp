@@ -12,7 +12,7 @@ using namespace MWEB;
 
 void Miner::NewBlock(const uint64_t nHeight)
 {
-    mweb_builder = libmw::miner::NewBuilder(nHeight, pcoinsTip->GetMWView());
+    mweb_builder = std::make_shared<mw::BlockBuilder>(nHeight, pcoinsTip->GetMWView());
     mweb_fees = 0;
     mweb_amount_change = 0;
     hogex_inputs.clear();
@@ -80,7 +80,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     // Add transaction to MWEB
     //
-    if (!libmw::miner::AddTransaction(mweb_builder, pTx->m_mwtx.m_transaction, pegins)) {
+    if (!mweb_builder->AddTransaction(pTx->m_mwtx.m_transaction, pegins)) {
         LogPrintf("Failed to add MWEB transaction\n");
         return false;
     }
