@@ -25,7 +25,6 @@
 
 #define LIBMW_NAMESPACE namespace libmw {
 #define NODE_NAMESPACE namespace node {
-#define WALLET_NAMESPACE namespace wallet {
 #define END_NAMESPACE }
 
 LIBMW_NAMESPACE
@@ -69,14 +68,4 @@ bool CheckTxInputs(const mw::ICoinsView::Ptr& view, const mw::Transaction::CPtr&
 
 END_NAMESPACE // node
 
-WALLET_NAMESPACE
-
-mw::Transaction::CPtr CreateTx(
-    const std::vector<mw::Coin>& input_coins,
-    const std::vector<mw::Recipient>& recipients,
-    const boost::optional<uint64_t>& pegin_amount,
-    const uint64_t fee
-);
-
-END_NAMESPACE     // wallet
 END_NAMESPACE // libmw

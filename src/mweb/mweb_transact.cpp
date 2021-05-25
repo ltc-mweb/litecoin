@@ -1,6 +1,9 @@
 #include <mweb/mweb_transact.h>
 #include <key_io.h>
 
+#include <mw/models/tx/PegOutCoin.h>
+#include <mw/wallet/TxBuilder.h>
+
 using namespace MWEB;
 
 TxType MWEB::GetTxType(const std::vector<CRecipient>& recipients, const std::vector<CInputCoin>& input_coins)
@@ -45,20 +48,17 @@ bool Transact::CreateTx(
     }
 
     // Add recipients
-    std::vector<mw::Recipient> mweb_recipients;
+    std::vector<mw::Recipient> receivers;
+    std::vector<PegOutCoin> pegouts;
     for (const CRecipient& recipient : recipients) {
         if (recipient.IsMWEB()) {
-            mw::MWEBRecipient mweb_recipient{
-                (uint64_t)recipient.nAmount,
-                recipient.GetMWEBAddress().to_libmw()};
-
-            mweb_recipients.push_back(std::move(mweb_recipient));
+            receivers.push_back(mw::Recipient{(uint64_t)recipient.nAmount, recipient.GetMWEBAddress().to_libmw()});
         } else {
-            mw::PegOutRecipient pegout_recipient{
+            PegOutCoin pegout_recipient(
                 (uint64_t)recipient.nAmount,
                 std::vector<uint8_t>(recipient.receiver.GetScript().begin(), recipient.receiver.GetScript().end())
-            };
-            mweb_recipients.push_back(std::move(pegout_recipient));
+            );
+            pegouts.push_back(std::move(pegout_recipient));
         }
     }
 
@@ -84,14 +84,15 @@ bool Transact::CreateTx(
             return false;
         }
         MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
-        mweb_recipients.push_back(mw::MWEBRecipient{(uint64_t)change_amount, change_address.to_libmw()});
+        receivers.push_back(mw::Recipient{(uint64_t)change_amount, change_address.to_libmw()});
     }
 
     // Create transaction
     std::vector<mw::Coin> input_coins = GetInputCoins(selected_coins);
-    transaction.m_mwtx = libmw::wallet::CreateTx(
+    transaction.m_mwtx = TxBuilder::BuildTx(
         input_coins,
-        mweb_recipients,
+        receivers,
+        pegouts,
         pegin_amount,
         (uint64_t)mweb_fee);
 

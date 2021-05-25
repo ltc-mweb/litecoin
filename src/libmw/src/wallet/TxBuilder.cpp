@@ -1,4 +1,4 @@
-#include <mw/wallet/Transact.h>
+#include <mw/wallet/TxBuilder.h>
 #include "WalletUtil.h"
 
 #include <mw/consensus/Weight.h>
@@ -6,9 +6,9 @@
 #include <mw/exceptions/InsufficientFundsException.h>
 #include <numeric>
 
-mw::Transaction::CPtr Transact::CreateTx(
+mw::Transaction::CPtr TxBuilder::BuildTx(
     const std::vector<mw::Coin>& input_coins,
-    const std::vector<std::pair<uint64_t, StealthAddress>>& recipients,
+    const std::vector<mw::Recipient>& recipients,
     const std::vector<PegOutCoin>& pegouts,
     const boost::optional<uint64_t>& pegin_amount,
     const uint64_t fee)
@@ -24,7 +24,7 @@ mw::Transaction::CPtr Transact::CreateTx(
 
     uint64_t recipient_total = std::accumulate(
         recipients.cbegin(), recipients.cend(), (uint64_t)0,
-        [](uint64_t sum, const std::pair<uint64_t, StealthAddress>& recipient) { return sum + recipient.first; }
+        [](uint64_t sum, const mw::Recipient& recipient) { return sum + recipient.amount; }
     );
 
     // Get input coins
@@ -44,7 +44,7 @@ mw::Transaction::CPtr Transact::CreateTx(
     std::vector<Input> inputs = WalletUtil::SignInputs(input_coins);
 
     // Create outputs
-    Transact::Outputs outputs = CreateOutputs(recipients);
+    TxBuilder::Outputs outputs = CreateOutputs(recipients);
 
     // Total kernel offset is split between raw kernel_offset and the kernel's blinding factor.
     // sum(output.blind) - sum(input.blind) = kernel_offset + sum(kernel.blind)
@@ -89,7 +89,7 @@ mw::Transaction::CPtr Transact::CreateTx(
     );
 }
 
-Transact::Outputs Transact::CreateOutputs(const std::vector<std::pair<uint64_t, StealthAddress>>& recipients)
+TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& recipients)
 {
     Blinds output_blinds;
     Blinds output_keys;
@@ -97,15 +97,15 @@ Transact::Outputs Transact::CreateOutputs(const std::vector<std::pair<uint64_t, 
     std::transform(
         recipients.cbegin(), recipients.cend(),
         std::back_inserter(outputs),
-        [&output_blinds, &output_keys](const std::pair<uint64_t, StealthAddress>& recipient) {
+        [&output_blinds, &output_keys](const mw::Recipient& recipient) {
             BlindingFactor blind;
             SecretKey ephemeral_key = Random::CSPRNG<32>();
             Output output = Output::Create(
                 blind,
                 EOutputFeatures::DEFAULT_OUTPUT,
                 ephemeral_key,
-                recipient.second,
-                recipient.first
+                recipient.address,
+                recipient.amount
             );
 
             output_blinds.Add(blind);
@@ -114,7 +114,7 @@ Transact::Outputs Transact::CreateOutputs(const std::vector<std::pair<uint64_t, 
         }
     );
 
-    return Transact::Outputs{
+    return TxBuilder::Outputs{
         output_blinds.Total(),
         output_keys.Total(),
         std::move(outputs)
