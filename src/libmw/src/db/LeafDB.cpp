@@ -2,7 +2,7 @@
 #include "common/Database.h"
 #include "common/SerializableVec.h"
 
-LeafDB::LeafDB(const char prefix, libmw::IDBWrapper* pDBWrapper, libmw::IDBBatch* pBatch)
+LeafDB::LeafDB(const char prefix, mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch)
     : m_prefix(prefix), m_pDatabase(std::make_unique<Database>(pDBWrapper, pBatch))
 {
 }

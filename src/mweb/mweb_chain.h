@@ -1,7 +1,7 @@
 #pragma once
 
 #include <interfaces/chain.h>
-#include <libmw/interfaces/chain_interface.h>
+#include <mw/interfaces/chain_interface.h>
 #include <primitives/block.h>
 #include <util/memory.h>
 
@@ -9,7 +9,7 @@
 
 namespace MWEB {
 
-class ChainIterator : public libmw::IChainIterator
+class ChainIterator : public mw::IChainIterator
 {
 public:
     ChainIterator(interfaces::Chain& chain)
@@ -58,13 +58,13 @@ private:
     int m_height;
 };
 
-class Chain : public libmw::IChain
+class Chain : public mw::IChain
 {
 public:
     Chain(interfaces::Chain& chain)
         : m_chain(chain) {}
 
-    std::unique_ptr<libmw::IChainIterator> NewIterator() final
+    std::unique_ptr<mw::IChainIterator> NewIterator() final
     {
         auto pIter = MakeUnique<MWEB::ChainIterator>(m_chain);
         pIter->SeekToFirstMWEB();

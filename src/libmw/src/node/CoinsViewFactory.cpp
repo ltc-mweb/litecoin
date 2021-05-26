@@ -15,8 +15,8 @@ static const size_t KERNEL_BATCH_SIZE = 512;
 static const size_t PROOF_BATCH_SIZE = 512;
 
 mw::CoinsViewDB::Ptr CoinsViewFactory::CreateDBView(
-	const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-	const libmw::IChain::Ptr& pChain,
+	const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+	const mw::IChain::Ptr& pChain,
     const FilePath& chainDir,
 	const mw::Header::CPtr& pStateHeader,
     const std::vector<UTXO::CPtr>& utxos,
@@ -120,10 +120,10 @@ mw::CoinsViewDB::Ptr CoinsViewFactory::CreateDBView(
 // TODO: Do we also want to validate peg-in/peg-out transactions beyond the horizon?
 // This will require us to save the hogex txs to disk, and never prune them.
 mmr::MMR::Ptr CoinsViewFactory::BuildAndValidateKernelMMR(
-    const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-	const std::unique_ptr<libmw::IDBBatch>& pBatch,
+    const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+	const std::unique_ptr<mw::IDBBatch>& pBatch,
 	const MMRInfo& mmr_info,
-	const libmw::IChain::Ptr& pChain,
+	const mw::IChain::Ptr& pChain,
     const FilePath& chainDir,
     const mw::Header::CPtr& pStateHeader,
     const std::vector<Kernel>& kernels)
@@ -194,8 +194,8 @@ mmr::MMR::Ptr CoinsViewFactory::BuildAndValidateKernelMMR(
 }
 
 mmr::MMR::Ptr CoinsViewFactory::BuildAndValidateOutputMMR(
-    const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-	const std::unique_ptr<libmw::IDBBatch>& pBatch,
+    const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+	const std::unique_ptr<mw::IDBBatch>& pBatch,
 	const MMRInfo& mmr_info,
     const FilePath& chainDir,
     const mw::Header::CPtr& pStateHeader,

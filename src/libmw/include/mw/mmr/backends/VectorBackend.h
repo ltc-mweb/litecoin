@@ -50,7 +50,7 @@ public:
     Leaf GetLeaf(const LeafIndex& idx) const final { return m_leaves[idx.Get()]; }
 
     // Not supported yet
-    void Commit(const uint32_t index, const std::unique_ptr<libmw::IDBBatch>& pBatch) final { }
+    void Commit(const uint32_t index, const std::unique_ptr<mw::IDBBatch>& pBatch) final {}
 
 private:
     std::vector<Leaf> m_leaves;

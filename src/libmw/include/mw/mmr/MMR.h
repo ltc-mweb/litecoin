@@ -12,7 +12,7 @@
 #include <mw/mmr/LeafIndex.h>
 #include <mw/mmr/Leaf.h>
 #include <mw/mmr/Node.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 
 MMR_NAMESPACE
 
@@ -94,7 +94,7 @@ public:
         const uint32_t file_index,
         const LeafIndex& firstLeafIdx,
         const std::vector<Leaf>& leaves,
-        const std::unique_ptr<libmw::IDBBatch>& pBatch
+        const std::unique_ptr<mw::IDBBatch>& pBatch
     ) = 0;
 };
 
@@ -119,7 +119,7 @@ public:
         const uint32_t file_index,
         const LeafIndex& firstLeafIdx,
         const std::vector<Leaf>& leaves,
-        const std::unique_ptr<libmw::IDBBatch>& pBatch
+        const std::unique_ptr<mw::IDBBatch>& pBatch
     ) final;
 
 private:
@@ -146,10 +146,10 @@ public:
         const uint32_t file_index,
         const LeafIndex& firstLeafIdx,
         const std::vector<Leaf>& leaves,
-        const std::unique_ptr<libmw::IDBBatch>& pBatch
+        const std::unique_ptr<mw::IDBBatch>& pBatch
     ) final;
 
-    void Flush(const uint32_t index, const std::unique_ptr<libmw::IDBBatch>& pBatch);
+    void Flush(const uint32_t index, const std::unique_ptr<mw::IDBBatch>& pBatch);
 
 private:
     IMMR::Ptr m_pBase;

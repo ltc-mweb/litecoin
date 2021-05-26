@@ -5,7 +5,7 @@
 #include <consensus/tx_verify.h>
 
 #include <consensus/consensus.h>
-#include <libmw/libmw.h>
+#include <mweb/mweb_node.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <consensus/validation.h>
@@ -167,18 +167,9 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
 {
     // Basic checks that don't depend on any context
 
-    // HasMWData() is true only when mweb txs being shared outside of a block (for use by mempools).
-    // Blocks themselves do not store mweb txs like normal txs.
-    // They are instead stored and processed separately in the mweb block.
-    if (fFromBlock && tx.HasMWData()) {
-        return state.DoS(10, false, REJECT_INVALID, "bad-txns-mwdata-in-block");
-    }
-
-    // MWEB: CheckTransaction
-    if (tx.HasMWData()) {
-        if (!libmw::node::CheckTransaction(tx.m_mwtx.m_transaction)) {
-            return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
-        }
+    // MWEB: Check MWEB tx
+    if (!MWEB::Node::CheckTransaction(tx, state, fFromBlock)) {
+        return false;
     }
 
     if (tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
@@ -270,10 +261,19 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-fee-outofrange");
     }
 
+    // MWEB
     if (tx.HasMWData()) {
-        if (!libmw::node::CheckTxInputs(inputs.GetMWView(), tx.m_mwtx.m_transaction, nSpendHeight)) {
-            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-mweb", false,
-                             strprintf("%s: MWEB inputs missing/immature", __func__));
+        for (const Input& input : tx.m_mwtx.m_transaction->GetInputs()) {
+            auto utxos = inputs.GetMWView()->GetUTXOs(input.GetCommitment());
+            if (utxos.empty()) {
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-missing", false,
+                    strprintf("%s: MWEB inputs missing", __func__));
+            }
+
+            if (utxos.back()->IsPeggedIn() && nSpendHeight < (int)utxos.back()->GetBlockHeight() + mw::PEGIN_MATURITY) {
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-immature", false,
+                    strprintf("%s: MWEB inputs immature", __func__));
+            }
         }
 
         CAmount mweb_fee = tx.m_mwtx.GetFee();

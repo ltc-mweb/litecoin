@@ -9,7 +9,7 @@
 #include <mw/mmr/Index.h>
 #include <mw/mmr/LeafIndex.h>
 #include <mw/mmr/Leaf.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 #include <boost/dynamic_bitset.hpp>
 #include <memory>
 
@@ -43,7 +43,7 @@ public:
 
     virtual LeafIndex GetNextLeaf() const noexcept { return LeafIndex::At(GetNumLeaves()); }
 
-    virtual void Commit(const uint32_t file_index, const std::unique_ptr<libmw::IDBBatch>& pBatch) = 0;
+    virtual void Commit(const uint32_t file_index, const std::unique_ptr<mw::IDBBatch>& pBatch) = 0;
 };
 
 END_NAMESPACE

@@ -8,16 +8,16 @@
 #include <mw/models/block/Header.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/node/CoinsView.h>
-#include <libmw/interfaces/chain_interface.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/chain_interface.h>
+#include <mw/interfaces/db_interface.h>
 #include <functional>
 
 class CoinsViewFactory
 {
 public:
     static mw::CoinsViewDB::Ptr CreateDBView(
-        const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-        const libmw::IChain::Ptr& pChain,
+        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+        const mw::IChain::Ptr& pChain,
         const FilePath& chainDir,
         const mw::Header::CPtr& pStateHeader,
         const std::vector<UTXO::CPtr>& utxos,
@@ -28,18 +28,18 @@ public:
 
 private:
     static mmr::MMR::Ptr BuildAndValidateKernelMMR(
-        const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-        const std::unique_ptr<libmw::IDBBatch>& pBatch,
+        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+        const std::unique_ptr<mw::IDBBatch>& pBatch,
         const MMRInfo& mmr_info,
-        const libmw::IChain::Ptr& pChain,
+        const mw::IChain::Ptr& pChain,
         const FilePath& chainDir,
         const mw::Header::CPtr& pStateHeader,
         const std::vector<Kernel>& kernels
     );
 
     static mmr::MMR::Ptr BuildAndValidateOutputMMR(
-        const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-        const std::unique_ptr<libmw::IDBBatch>& pBatch,
+        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+        const std::unique_ptr<mw::IDBBatch>& pBatch,
         const MMRInfo& mmr_info,
         const FilePath& chainDir,
         const mw::Header::CPtr& pStateHeader,

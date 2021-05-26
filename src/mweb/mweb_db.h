@@ -1,11 +1,11 @@
 #pragma once
 
 #include <dbwrapper.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 
 namespace MWEB {
 
-class DBBatch : public libmw::IDBBatch
+class DBBatch : public mw::IDBBatch
 {
 public:
     DBBatch(CDBWrapper* pDB, const std::shared_ptr<CDBBatch>& pBatch)
@@ -31,7 +31,7 @@ private:
     std::shared_ptr<CDBBatch> m_pBatch;
 };
 
-class DBIterator : public libmw::IDBIterator
+class DBIterator : public mw::IDBIterator
 {
 public:
     DBIterator(CDBIterator* pIterator)
@@ -61,7 +61,7 @@ private:
     std::unique_ptr<CDBIterator> m_pIterator;
 };
 
-class DBWrapper : public libmw::IDBWrapper
+class DBWrapper : public mw::IDBWrapper
 {
 public:
     DBWrapper(CDBWrapper* pDB) : m_pDB(pDB) {}
@@ -71,14 +71,14 @@ public:
         return m_pDB->Read(key, value);
     }
 
-    std::unique_ptr<libmw::IDBIterator> NewIterator() final
+    std::unique_ptr<mw::IDBIterator> NewIterator() final
     {
-        return std::unique_ptr<libmw::IDBIterator>(new MWEB::DBIterator(m_pDB->NewIterator()));
+        return std::unique_ptr<mw::IDBIterator>(new MWEB::DBIterator(m_pDB->NewIterator()));
     }
 
-    std::unique_ptr<libmw::IDBBatch> CreateBatch() final
+    std::unique_ptr<mw::IDBBatch> CreateBatch() final
     {
-        return std::unique_ptr<libmw::IDBBatch>(new MWEB::DBBatch(m_pDB, std::make_shared<CDBBatch>(*m_pDB)));
+        return std::unique_ptr<mw::IDBBatch>(new MWEB::DBBatch(m_pDB, std::make_shared<CDBBatch>(*m_pDB)));
     }
 
 private:

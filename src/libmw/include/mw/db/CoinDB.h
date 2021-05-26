@@ -2,7 +2,7 @@
 
 #include <mw/models/crypto/Commitment.h>
 #include <mw/models/tx/UTXO.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 #include <unordered_map>
 
 // Forward Declarations
@@ -13,7 +13,7 @@ class CoinDB
 public:
 	using UPtr = std::unique_ptr<CoinDB>;
 
-	CoinDB(libmw::IDBWrapper* pDBWrapper, libmw::IDBBatch* pBatch = nullptr);
+	CoinDB(mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch = nullptr);
 	~CoinDB();
 
 	//

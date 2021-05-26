@@ -6,7 +6,7 @@
 
 #include <mw/file/FilePath.h>
 
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 #include <vector>
 #include <cassert>
 #include <memory>
@@ -16,7 +16,7 @@ class Database
 public:
     using Ptr = std::shared_ptr<Database>;
 
-    Database(libmw::IDBWrapper* pDatabase, libmw::IDBBatch* pBatch = nullptr)
+    Database(mw::IDBWrapper* pDatabase, mw::IDBBatch* pBatch = nullptr)
         : m_pDB(pDatabase), m_pTx(nullptr)
     {
         if (pBatch != nullptr) {
@@ -101,6 +101,6 @@ public:
     }
 
 private:
-    libmw::IDBWrapper* m_pDB;
+    mw::IDBWrapper* m_pDB;
     DBTransaction::UPtr m_pTx;
 };

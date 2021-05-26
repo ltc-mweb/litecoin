@@ -35,7 +35,7 @@ void MMR::BatchWrite(
     const uint32_t file_index,
     const LeafIndex& firstLeafIdx,
     const std::vector<Leaf>& leaves,
-    const std::unique_ptr<libmw::IDBBatch>& pBatch)
+    const std::unique_ptr<mw::IDBBatch>& pBatch)
 {
     LOG_TRACE_F("MMR: Writing batch {} with first leaf {}", file_index, firstLeafIdx.Get());
 

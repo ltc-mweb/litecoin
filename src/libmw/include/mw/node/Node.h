@@ -11,8 +11,8 @@
 #include <mw/models/tx/PegInCoin.h>
 #include <mw/models/tx/PegOutCoin.h>
 #include <mw/models/tx/UTXO.h>
-#include <libmw/interfaces/chain_interface.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/chain_interface.h>
+#include <mw/interfaces/db_interface.h>
 #include <functional>
 #include <vector>
 
@@ -31,7 +31,7 @@ public:
     static mw::CoinsViewDB::Ptr Init(
         const FilePath& datadir,
         const mw::Header::CPtr& pBestHeader,
-        const libmw::IDBWrapper::Ptr& pDBWrapper
+        const mw::IDBWrapper::Ptr& pDBWrapper
     );
 
     /// <summary>
@@ -85,8 +85,8 @@ public:
     /// <returns>The CoinsViewDB which represents the state of the flushed chain.</returns>
     static mw::ICoinsView::Ptr ApplyState(
         const FilePath& data_dir,
-        const libmw::IChain::Ptr& pChain,
-        const libmw::IDBWrapper::Ptr& pCoinsDB,
+        const mw::IChain::Ptr& pChain,
+        const mw::IDBWrapper::Ptr& pCoinsDB,
         const mw::Header::CPtr& pStateHeader,
         const mw::State& state
     );

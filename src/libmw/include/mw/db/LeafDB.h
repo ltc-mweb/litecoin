@@ -2,7 +2,7 @@
 
 #include <mw/mmr/Leaf.h>
 #include <mw/models/crypto/Hash.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 
 // Forward Declarations
 class Database;
@@ -10,7 +10,7 @@ class Database;
 class LeafDB
 {
 public:
-    LeafDB(const char prefix, libmw::IDBWrapper* pDBWrapper, libmw::IDBBatch* pBatch = nullptr);
+    LeafDB(const char prefix, mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch = nullptr);
     ~LeafDB();
 
     std::unique_ptr<mmr::Leaf> Get(const mmr::LeafIndex& idx) const;

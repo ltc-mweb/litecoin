@@ -5,20 +5,18 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Macros.h>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
-#define LIBMW_NAMESPACE namespace libmw {
-#define END_NAMESPACE }
-
-LIBMW_NAMESPACE
+MW_NAMESPACE
 
 class IDBBatch
 {
 public:
-    using UPtr = std::unique_ptr<libmw::IDBBatch>;
+    using UPtr = std::unique_ptr<mw::IDBBatch>;
     virtual ~IDBBatch() = default;
 
     virtual void Write(const std::string& key, const std::vector<uint8_t>& value) = 0;
@@ -42,7 +40,7 @@ public:
 class IDBWrapper
 {
 public:
-    using Ptr = std::shared_ptr<libmw::IDBWrapper>;
+    using Ptr = std::shared_ptr<mw::IDBWrapper>;
 
     virtual ~IDBWrapper() = default;
 
@@ -51,4 +49,4 @@ public:
     virtual std::unique_ptr<IDBBatch> CreateBatch() = 0;
 };
 
-END_NAMESPACE // libmw
+END_NAMESPACE // mw

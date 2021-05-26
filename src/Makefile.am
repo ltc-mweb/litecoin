@@ -119,7 +119,6 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/db/LeafDB.cpp \
 	libmw/src/db/MMRInfoDB.cpp \
 	libmw/src/file/File.cpp \
-	libmw/src/libmw/libmw_node.cpp \
 	libmw/src/mmr/backends/FileBackend.cpp \
 	libmw/src/mmr/ILeafSet.cpp \
 	libmw/src/mmr/IMMR.cpp \

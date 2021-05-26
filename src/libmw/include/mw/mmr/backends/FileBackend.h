@@ -10,7 +10,7 @@
 #include <mw/mmr/PruneList.h>
 #include <mw/file/FilePath.h>
 #include <mw/file/AppendOnlyFile.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 
 MMR_NAMESPACE
 
@@ -21,7 +21,7 @@ public:
         const char dbPrefix,
         const FilePath& mmr_dir,
         const uint32_t file_index,
-        const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
+        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
         const mmr::PruneList::CPtr& pPruneList
     );
 
@@ -29,7 +29,7 @@ public:
         const char dbPrefix,
         const FilePath& mmr_dir,
         const AppendOnlyFile::Ptr& pHashFile,
-        const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
+        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
         const mmr::PruneList::CPtr& pPruneList
     );
 
@@ -45,7 +45,7 @@ public:
     mw::Hash GetHash(const Index& idx) const final;
     Leaf GetLeaf(const LeafIndex& idx) const final;
 
-    void Commit(const uint32_t file_index, const std::unique_ptr<libmw::IDBBatch>& pBatch) final;
+    void Commit(const uint32_t file_index, const std::unique_ptr<mw::IDBBatch>& pBatch) final;
 
 private:
     char m_dbPrefix;
@@ -53,7 +53,7 @@ private:
     AppendOnlyFile::Ptr m_pHashFile;
     std::vector<Leaf> m_leaves;
     std::map<mmr::LeafIndex, size_t> m_leafMap;
-    std::shared_ptr<libmw::IDBWrapper> m_pDatabase;
+    std::shared_ptr<mw::IDBWrapper> m_pDatabase;
     PruneList::CPtr m_pPruneList;
 };
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 #include <mw/exceptions/NotFoundException.h>
 #include <map>
 
-class TestDBBatch : public libmw::IDBBatch
+class TestDBBatch : public mw::IDBBatch
 {
     struct Action
     {
@@ -53,7 +53,7 @@ private:
     std::vector<Action> m_actions;
 };
 
-class TestDBIterator : public libmw::IDBIterator
+class TestDBIterator : public mw::IDBIterator
 {
 public:
     TestDBIterator(const std::map<std::string, std::vector<uint8_t>>& kvp)
@@ -96,7 +96,7 @@ private:
     std::map<std::string, std::vector<uint8_t>>::const_iterator m_iter;
 };
 
-class TestDBWrapper : public libmw::IDBWrapper
+class TestDBWrapper : public mw::IDBWrapper
 {
 public:
     TestDBWrapper() = default;
@@ -128,14 +128,14 @@ public:
         ThrowNotFound_F("Key {} not found", key);
     }
 
-    std::unique_ptr<libmw::IDBIterator> NewIterator() final
+    std::unique_ptr<mw::IDBIterator> NewIterator() final
     {
-        return std::unique_ptr<libmw::IDBIterator>(new TestDBIterator(m_kvp));
+        return std::unique_ptr<mw::IDBIterator>(new TestDBIterator(m_kvp));
     }
 
-    std::unique_ptr<libmw::IDBBatch> CreateBatch() final
+    std::unique_ptr<mw::IDBBatch> CreateBatch() final
     {
-        return std::unique_ptr<libmw::IDBBatch>(new TestDBBatch(m_kvp));
+        return std::unique_ptr<mw::IDBBatch>(new TestDBBatch(m_kvp));
     }
 
 private:

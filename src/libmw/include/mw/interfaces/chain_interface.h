@@ -5,12 +5,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Macros.h>
 #include <mw/models/block/Block.h>
 
-#define LIBMW_NAMESPACE namespace libmw {
-#define END_NAMESPACE }
 
-LIBMW_NAMESPACE
+MW_NAMESPACE
 
 /// <summary>
 /// Interface for iterating sequentially blocks in the chain.
@@ -34,11 +33,11 @@ public:
 class IChain
 {
 public:
-    using Ptr = std::shared_ptr<libmw::IChain>;
+    using Ptr = std::shared_ptr<mw::IChain>;
 
     virtual ~IChain() = default;
 
     virtual std::unique_ptr<IChainIterator> NewIterator() = 0;
 };
 
-END_NAMESPACE // libmw
+END_NAMESPACE // mw

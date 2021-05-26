@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mw/mmr/MMRInfo.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 
 // Forward Declarations
 class Database;
@@ -9,7 +9,7 @@ class Database;
 class MMRInfoDB
 {
 public:
-    MMRInfoDB(libmw::IDBWrapper* pDBWrapper, libmw::IDBBatch* pBatch = nullptr);
+    MMRInfoDB(mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch = nullptr);
     ~MMRInfoDB();
 
     /// <summary>

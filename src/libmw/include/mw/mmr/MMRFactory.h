@@ -6,7 +6,7 @@
 #include <mw/mmr/MMRInfo.h>
 #include <mw/mmr/PruneList.h>
 #include <mw/models/crypto/Hash.h>
-#include <libmw/interfaces/db_interface.h>
+#include <mw/interfaces/db_interface.h>
 
 MMR_NAMESPACE
 
@@ -15,8 +15,8 @@ class MMRFactory
 public:
     static MMR::Ptr Build(
         const char prefix,
-        const std::shared_ptr<libmw::IDBWrapper>& pDBWrapper,
-        const std::unique_ptr<libmw::IDBBatch>& pBatch,
+        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+        const std::unique_ptr<mw::IDBBatch>& pBatch,
         const PruneList::Ptr& pPruneList,
         const MMRInfo& mmr_info,
         const FilePath& data_dir,
