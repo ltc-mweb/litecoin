@@ -68,14 +68,14 @@ public:
         return bech32::Encode(m_params.Bech32HRP(), data);
     }
 
-    std::string operator()(const MWEB::StealthAddress& id) const
+    std::string operator()(const StealthAddress& id) const
     {
         // MW: TODO - Create new bech32 encoder so we don't need to concat these 2.
-        std::vector<uint8_t> scan_data = {id.scan_pubkey[0]};
-        ConvertBits<8, 5, true>([&](unsigned char c) { scan_data.push_back(c); }, id.scan_pubkey.begin() + 1, id.scan_pubkey.end());
+        std::vector<uint8_t> scan_data = {id.GetScanPubKey().vec()[0]};
+        ConvertBits<8, 5, true>([&](unsigned char c) { scan_data.push_back(c); }, id.GetScanPubKey().vec().begin() + 1, id.GetScanPubKey().vec().end());
 
-        std::vector<uint8_t> spend_data = {id.spend_pubkey[0]};
-        ConvertBits<8, 5, true>([&](unsigned char c) { spend_data.push_back(c); }, id.spend_pubkey.begin() + 1, id.spend_pubkey.end());
+        std::vector<uint8_t> spend_data = {id.GetSpendPubKey().vec()[0]};
+        ConvertBits<8, 5, true>([&](unsigned char c) { spend_data.push_back(c); }, id.GetSpendPubKey().vec().begin() + 1, id.GetSpendPubKey().vec().end());
 
         return bech32::Encode("mweb", scan_data) + ":" + bech32::Encode(m_params.Bech32HRP(), spend_data);
     }
@@ -165,10 +165,7 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
                 && ConvertBits<5, 8, false>([&](unsigned char c) { spend_data.push_back(c); }, bech_spend.second.begin() + 1, bech_spend.second.end())) {
 
                 if (scan_data.size() == 33 && spend_data.size() == 33) {
-                    MWEB::StealthAddress mweb_dest;
-                    mweb_dest.scan_pubkey = CPubKey(scan_data);
-                    mweb_dest.spend_pubkey = CPubKey(spend_data);
-                    return mweb_dest;
+                    return StealthAddress(BigInt<33>(scan_data), BigInt<33>(spend_data));
                 }
             }
         }

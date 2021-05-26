@@ -1474,8 +1474,8 @@ bool CWallet::IsChange(const CTxOutput& output) const
 
 bool CWallet::IsChange(const CTxDestination& dest) const
 {
-    if (dest.type() == typeid(MWEB::StealthAddress)) {
-        return boost::get<MWEB::StealthAddress>(dest) == mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
+    if (dest.type() == typeid(StealthAddress)) {
+        return boost::get<StealthAddress>(dest) == mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
     } else {
         CScript scriptPubKey = GetScriptForDestination(dest);
         return IsChange(scriptPubKey);
@@ -2619,7 +2619,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
                     continue;
                 }
                 
-                MWEB::StealthAddress address = mweb_wallet->GetStealthAddress(coin.address_index);
+                StealthAddress address = mweb_wallet->GetStealthAddress(coin.address_index);
                 vCoins.push_back(MWOutput{coin, nDepth, pcoin->GetTxTime(), address});
             } else {
                 size_t i = boost::get<COutPoint>(output.GetIndex()).n;
@@ -2679,7 +2679,7 @@ std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins(interfaces
                     if (output_idx.type() == typeid(Commitment)) {
                         mw::Coin coin;
                         if (GetCoin(boost::get<Commitment>(output_idx), coin)) {
-                            result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<MWEB::StealthAddress>(address)});
+                            result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<StealthAddress>(address)});
                         }
                     } else {
                         result[address].emplace_back(
@@ -3443,7 +3443,7 @@ int64_t CWallet::GetOldestKeyPoolTime()
     return oldestKey;
 }
 
-bool CWallet::GenerateMWEBAddress(MWEB::StealthAddress& address)
+bool CWallet::GenerateMWEBAddress(StealthAddress& address)
 {
     LOCK(cs_wallet);
     if (!CanGenerateKeys()) {

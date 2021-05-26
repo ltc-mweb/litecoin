@@ -45,15 +45,15 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     return rewound;
 }
 
-MWEB::StealthAddress Wallet::GetStealthAddress(const uint32_t index)
+StealthAddress Wallet::GetStealthAddress(const uint32_t index)
 {
-    return MWEB::StealthAddress::From(GetKeychain()->GetStealthAddress(index));
+    return GetKeychain()->GetStealthAddress(index);
 }
 
-MWEB::StealthAddress Wallet::GenerateNewAddress()
+StealthAddress Wallet::GenerateNewAddress()
 {
     CHDChain hdChain = m_pWallet->GetHDChain();
-    MWEB::StealthAddress address = GetStealthAddress(hdChain.nMWEBIndexCounter++);
+    StealthAddress address = GetStealthAddress(hdChain.nMWEBIndexCounter++);
     m_pWallet->SetHDChain(hdChain, false);
 
     return address;

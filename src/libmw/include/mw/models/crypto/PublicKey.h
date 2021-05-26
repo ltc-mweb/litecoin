@@ -69,6 +69,7 @@ public:
         READWRITE(m_compressed);
     }
 
+    std::string ToHex() const { return m_compressed.ToHex(); }
     std::string Format() const final { return m_compressed.ToHex(); }
 
 private:

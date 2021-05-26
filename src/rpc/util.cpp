@@ -141,7 +141,7 @@ public:
         return obj;
     }
 
-    UniValue operator()(const MWEB::StealthAddress& id) const
+    UniValue operator()(const StealthAddress& id) const
     {
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("isscript", false);

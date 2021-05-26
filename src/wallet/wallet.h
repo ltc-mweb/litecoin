@@ -230,7 +230,7 @@ struct CRecipient
         return receiver.IsMWEB();
     }
 
-    const MWEB::StealthAddress& GetMWEBAddress() const noexcept
+    const StealthAddress& GetMWEBAddress() const noexcept
     {
         return receiver.GetMWEBAddress();
     }
@@ -672,7 +672,7 @@ struct MWOutput
     mw::Coin coin;
     int nDepth;
     int64_t nTime;
-    MWEB::StealthAddress address;
+    StealthAddress address;
 };
 
 struct COutputCoin
@@ -699,7 +699,7 @@ struct COutputCoin
         }
     }
 
-    boost::variant<CScript, MWEB::StealthAddress> GetAddress() const
+    boost::variant<CScript, StealthAddress> GetAddress() const
     {
         if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
 
@@ -1187,7 +1187,7 @@ public:
     void KeepKey(int64_t nIndex);
     void ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey);
     bool GetKeyFromPool(CPubKey &key, bool internal = false);
-    bool GenerateMWEBAddress(MWEB::StealthAddress& address);
+    bool GenerateMWEBAddress(StealthAddress& address);
     int64_t GetOldestKeyPoolTime();
     /**
      * Marks all keys in the keypool up to and including reserve_key as used.

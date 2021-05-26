@@ -6,7 +6,7 @@
 #ifndef BITCOIN_SCRIPT_STANDARD_H
 #define BITCOIN_SCRIPT_STANDARD_H
 
-#include <mweb/mweb_address.h>
+#include <mw/models/wallet/StealthAddress.h>
 #include <script/interpreter.h>
 #include <pubkey.h>
 #include <uint256.h>
@@ -121,10 +121,10 @@ struct WitnessUnknown
  *  * WitnessV0ScriptHash: TX_WITNESS_V0_SCRIPTHASH destination (P2WSH)
  *  * WitnessV0KeyHash: TX_WITNESS_V0_KEYHASH destination (P2WPKH)
  *  * WitnessUnknown: TX_WITNESS_UNKNOWN destination (P2W???)
- *  * MWEB::StealthAddress: MWEB address destination
+ *  * StealthAddress: MWEB address destination
  *  A CTxDestination is the internal data type encoded in a bitcoin address
  */
-typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown, MWEB::StealthAddress> CTxDestination;
+typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown, StealthAddress> CTxDestination;
 
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);
@@ -197,7 +197,7 @@ public:
     DestinationScript() = default;
     DestinationScript(CScript script)
         : m_script(std::move(script)) { }
-    DestinationScript(MWEB::StealthAddress address)
+    DestinationScript(StealthAddress address)
         : m_script(std::move(address)) { }
     DestinationScript(const CTxDestination& dest);
 
@@ -209,14 +209,14 @@ public:
         return boost::get<CScript>(m_script);
     }
 
-    const MWEB::StealthAddress& GetMWEBAddress() const noexcept
+    const StealthAddress& GetMWEBAddress() const noexcept
     {
         assert(m_script.which() == 1);
-        return boost::get<MWEB::StealthAddress>(m_script);
+        return boost::get<StealthAddress>(m_script);
     }
 
 private:
-    boost::variant<CScript, MWEB::StealthAddress> m_script;
+    boost::variant<CScript, StealthAddress> m_script;
 };
 
 #endif // BITCOIN_SCRIPT_STANDARD_H

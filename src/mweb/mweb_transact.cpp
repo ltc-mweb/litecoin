@@ -52,7 +52,7 @@ bool Transact::CreateTx(
     std::vector<PegOutCoin> pegouts;
     for (const CRecipient& recipient : recipients) {
         if (recipient.IsMWEB()) {
-            receivers.push_back(mw::Recipient{(uint64_t)recipient.nAmount, recipient.GetMWEBAddress().to_libmw()});
+            receivers.push_back(mw::Recipient{(uint64_t)recipient.nAmount, recipient.GetMWEBAddress()});
         } else {
             PegOutCoin pegout_recipient(
                 (uint64_t)recipient.nAmount,
@@ -83,8 +83,8 @@ bool Transact::CreateTx(
         if (change_amount <= 0) {
             return false;
         }
-        MWEB::StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
-        receivers.push_back(mw::Recipient{(uint64_t)change_amount, change_address.to_libmw()});
+        StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
+        receivers.push_back(mw::Recipient{(uint64_t)change_amount, change_address});
     }
 
     // Create transaction

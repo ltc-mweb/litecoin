@@ -58,11 +58,11 @@ BOOST_AUTO_TEST_CASE(key_io_valid_parse)
             // Must be valid public key
             destination = DecodeDestination(exp_base58string);
             BOOST_CHECK_MESSAGE(IsValidDestination(destination), "!IsValid:" + strTest);
-            BOOST_CHECK_MESSAGE(destination.type() == typeid(MWEB::StealthAddress), "!MWEB::StealthAddress:" + strTest);
+            BOOST_CHECK_MESSAGE(destination.type() == typeid(StealthAddress), "!StealthAddress:" + strTest);
 
-            const MWEB::StealthAddress& mweb_dest = boost::get<MWEB::StealthAddress>(destination);
-            BOOST_CHECK_EQUAL(HexStr(mweb_dest.scan_pubkey), HexStr(scan_payload));
-            BOOST_CHECK_EQUAL(HexStr(mweb_dest.spend_pubkey), HexStr(spend_payload));
+            const StealthAddress& mweb_dest = boost::get<StealthAddress>(destination);
+            BOOST_CHECK_EQUAL(mweb_dest.GetScanPubKey().ToHex(), HexStr(scan_payload));
+            BOOST_CHECK_EQUAL(mweb_dest.GetSpendPubKey().ToHex(), HexStr(spend_payload));
         } else {
             std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
             // Must be valid public key
@@ -121,9 +121,7 @@ BOOST_AUTO_TEST_CASE(key_io_valid_gen)
         } else if (is_mweb) {
             std::vector<unsigned char> scan_payload = ParseHex(test[1][0].get_str());
             std::vector<unsigned char> spend_payload = ParseHex(test[1][1].get_str());
-            MWEB::StealthAddress dest;
-            dest.scan_pubkey = CPubKey(scan_payload);
-            dest.spend_pubkey = CPubKey(spend_payload);
+            StealthAddress dest(BigInt<33>(std::move(scan_payload)), BigInt<33>(std::move(spend_payload)));
             std::string address = EncodeDestination(dest);
 
             BOOST_CHECK_EQUAL(address, exp_base58string);

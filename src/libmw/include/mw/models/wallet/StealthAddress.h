@@ -18,6 +18,13 @@ public:
         return m_scan == rhs.m_scan && m_spend == rhs.m_spend;
     }
 
+    bool operator<(const StealthAddress& rhs) const noexcept
+    {
+        if (m_scan < rhs.m_scan) return true;
+        if (m_scan != rhs.m_scan) return false;
+        return m_spend < rhs.m_spend;
+    }
+
     static StealthAddress Random()
     {
         return StealthAddress(Keys::Random().PubKey(), Keys::Random().PubKey());

@@ -194,7 +194,7 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
     CTxDestination dest;
 
     if (output_type == OutputType::MWEB) {
-        MWEB::StealthAddress address;
+        StealthAddress address;
         if (!pwallet->GenerateMWEBAddress(address)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Error: Failed to generate an MWEB address");
         }
@@ -625,7 +625,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 
     // Bitcoin address
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest) || dest.type() == typeid(MWEB::StealthAddress)) {
+    if (!IsValidDestination(dest) || dest.type() == typeid(StealthAddress)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Litecoin address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
@@ -3653,11 +3653,11 @@ public:
         return obj;
     }
 
-    UniValue operator()(const MWEB::StealthAddress& id) const
+    UniValue operator()(const StealthAddress& id) const
     {
         UniValue obj(UniValue::VOBJ);
-        obj.pushKV("scan_pubkey", HexStr(id.scan_pubkey));
-        obj.pushKV("spend_pubkey", HexStr(id.spend_pubkey));
+        obj.pushKV("scan_pubkey", id.GetScanPubKey().ToHex());
+        obj.pushKV("spend_pubkey", id.GetSpendPubKey().ToHex());
         return obj;
     }
 
@@ -3765,7 +3765,7 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
 
     isminetype mine = IsMine(*pwallet, dest);
     ret.pushKV("ismine", bool(mine & ISMINE_SPENDABLE));
-    bool solvable = dest.type() == typeid(MWEB::StealthAddress) || IsSolvable(*pwallet, scriptPubKey);
+    bool solvable = dest.type() == typeid(StealthAddress) || IsSolvable(*pwallet, scriptPubKey);
     ret.pushKV("solvable", solvable);
     if (solvable) {
        ret.pushKV("desc", InferDescriptor(scriptPubKey, *pwallet)->ToString());

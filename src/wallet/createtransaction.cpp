@@ -227,7 +227,7 @@ static bool IsChangeOnMWEB(const MWEB::TxType& mweb_type, const CCoinControl& co
 
     if (mweb_type == MWEB::TxType::PEGIN) {
         return coin_control.destChange.type() == typeid(CNoDestination)
-            || coin_control.destChange.type() == typeid(MWEB::StealthAddress);
+            || coin_control.destChange.type() == typeid(StealthAddress);
     }
 
     return false;

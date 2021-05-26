@@ -5,8 +5,8 @@
 #include <mw/models/block/Block.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/models/wallet/Coin.h>
+#include <mw/models/wallet/StealthAddress.h>
 #include <mw/wallet/Keychain.h>
-#include <mweb/mweb_address.h>
 #include <streams.h>
 #include <util/strencodings.h>
 #include <boost/optional.hpp>
@@ -32,8 +32,8 @@ public:
         const Commitment& output_commit,
         mw::Coin& coin
     );
-    MWEB::StealthAddress GetStealthAddress(const uint32_t index);
-    MWEB::StealthAddress GenerateNewAddress();
+    StealthAddress GetStealthAddress(const uint32_t index);
+    StealthAddress GenerateNewAddress();
 
     void LoadToWallet(const mw::Coin& coin);
     void DeleteCoins(const std::vector<mw::Coin>& coins);
