@@ -1,8 +1,5 @@
 #include <mw/node/CoinsView.h>
 
-#include "models/CoinKey.h"
-#include "models/CoinEntry.h"
-
 #include <mw/db/CoinDB.h>
 #include <mw/exceptions/ValidationException.h>
 

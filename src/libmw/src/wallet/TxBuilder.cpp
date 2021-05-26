@@ -80,9 +80,9 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
 
     // Build the transaction
     return mw::Transaction::Create(
-        kernel_offset,
-        owner_offset,
-        inputs,
+        std::move(kernel_offset),
+        std::move(owner_offset),
+        std::move(inputs),
         std::move(outputs.outputs),
         std::vector<Kernel>{ std::move(kernel) },
         std::vector<SignedMessage>{ std::move(owner_sig) }
