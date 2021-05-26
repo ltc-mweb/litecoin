@@ -37,7 +37,7 @@ public:
             for (const Commitment& output : block.outputs) {
                 auto iter = unspentLeaves.find(output);
                 if (iter != unspentLeaves.cend()) {
-                    ThrowNotFound_F("Unspent leaf not found with output commitment {}", output);
+                    ThrowNotFound_F("Unspent leaf already exists with commitment {}", output);
                 }
 
                 unspentLeaves.insert({ output, pTestLeafSet->m_nextLeafIdx });

@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
         BOOST_REQUIRE(utxo.GetBlockHeight() == blockHeight);
         BOOST_REQUIRE(utxo.GetLeafIndex() == leafIndex);
         BOOST_REQUIRE(utxo.GetOutput() == output);
-        BOOST_REQUIRE(utxo.GetCommitment() == Crypto::CommitBlinded(amount, blind));
+        BOOST_REQUIRE(utxo.GetCommitment() == commit);
         BOOST_REQUIRE(utxo.GetRangeProof() == output.GetRangeProof());
         BOOST_REQUIRE(utxo.BuildProofData() == output.BuildProofData());
     }

@@ -79,7 +79,7 @@ Output Output::Create(
     );
 
     return Output{
-        Crypto::CommitBlinded(value, blind_out),
+        std::move(output_commit),
         features,
         std::move(Ko),
         std::move(Ke),

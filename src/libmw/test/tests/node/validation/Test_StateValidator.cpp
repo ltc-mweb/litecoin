@@ -7,6 +7,7 @@
 
 #include <mw/file/ScopedFileRemover.h>
 #include <mw/node/CoinsView.h>
+#include <mw/node/Node.h>
 
 #include <test_framework/models/Tx.h>
 #include <test_framework/DBWrapper.h>
@@ -47,7 +48,7 @@ BOOST_AUTO_TEST_CASE(ValidateState)
 
         // Block containing peg-outs and regular sends only
         test::Tx tx2 = test::TxBuilder()
-            .AddInput(50, EOutputFeatures::PEGGED_IN, tx1.GetOutputs().front().GetBlind())
+            .AddInput(tx1.GetOutputs().front())
             .AddPegoutKernel(15, 5)
             .AddPlainKernel(10)
             .AddOutput(20)

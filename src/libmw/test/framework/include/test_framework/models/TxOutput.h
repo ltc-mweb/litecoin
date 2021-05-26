@@ -27,7 +27,6 @@ public:
     }
 
     const BlindingFactor& GetBlind() const noexcept { return m_blindingFactor; }
-    const BlindingFactor& GetBlindingFactor() const noexcept { return m_blindingFactor; }
     uint64_t GetAmount() const noexcept { return m_amount; }
     const Output& GetOutput() const noexcept { return m_output; }
     Features GetFeatures() const noexcept { return m_output.GetFeatures(); }

@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(RangeProofs)
     ProofMessage message = Random::CSPRNG<20>().GetBigInt();
     std::vector<uint8_t> extraData = Random::CSPRNG<100>().vec();
 
-    // Create a RangeProof via Crypto::GenerateRangeProof. Use the same value for privateNonce and rewindNonce.
+    // Create a RangeProof via Bulletproofs::Generate. Use the same value for privateNonce and rewindNonce.
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(
         value,
         SecretKey(blind.vec()),
@@ -38,14 +38,14 @@ BOOST_AUTO_TEST_CASE(RangeProofs)
     std::unique_ptr<RewoundProof> pRewoundProof = Bulletproofs::Rewind(commit, *pRangeProof, extraData, nonce);
     BOOST_REQUIRE(pRewoundProof);
 
-    // Make sure amount, blindingFactor (aka 'key'), and ProofMessage match the values passed to GenerateRangeProof
+    // Make sure amount, blindingFactor (aka 'key'), and ProofMessage match the values passed to Bulletproofs::Generate
     BOOST_REQUIRE(*pRewoundProof == RewoundProof(
         value,
         std::make_unique<SecretKey>(SecretKey(blind.vec())),
         ProofMessage(message)
     ));
 
-    // Make sure BatchVerify returns true. Use an empty vector for the third tuple value.
+    // Make sure BatchVerify returns true.
     std::vector<ProofData> rangeProofs;
     rangeProofs.push_back(ProofData{ commit, pRangeProof, extraData });
     BOOST_REQUIRE(Bulletproofs::BatchVerify(rangeProofs));

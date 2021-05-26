@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(Aggregate)
 
     std::vector<Kernel> kernels = tx1->GetKernels();
     kernels.insert(kernels.end(), tx2->GetKernels().begin(), tx2->GetKernels().end());
-    std::sort(kernels.begin(), kernels.end(), SortByHash);
+    std::sort(kernels.begin(), kernels.end(), KernelSort);
     BOOST_REQUIRE(pAggregated->GetKernels().size() == 2);
     BOOST_REQUIRE(pAggregated->GetKernels() == kernels);
 

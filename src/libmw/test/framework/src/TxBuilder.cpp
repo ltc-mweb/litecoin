@@ -12,7 +12,7 @@ TxBuilder::TxBuilder()
 
 TxBuilder& TxBuilder::AddInput(const TxOutput& input)
 {
-    return AddInput(input.GetAmount(), input.GetFeatures(), input.GetBlindingFactor());
+    return AddInput(input.GetAmount(), input.GetFeatures(), input.GetBlind());
 }
 
 TxBuilder& TxBuilder::AddInput(const uint64_t amount, const Features& features, const BlindingFactor& blind)
@@ -57,20 +57,26 @@ TxBuilder& TxBuilder::AddOutput(
     return *this;
 }
 
+TxBuilder& TxBuilder::AddOwnerSig(const Kernel& kernel)
+{
+    SecretKey offset = Random::CSPRNG<32>();
+    m_ownerOffset.Sub(offset);
+
+    mw::Hash msg_hash = kernel.GetHash();
+    Signature sig = Schnorr::Sign(offset.data(), msg_hash);
+    m_ownerSigs.push_back(SignedMessage{msg_hash, Keys::From(offset).PubKey(), sig});
+    return *this;
+}
+
 TxBuilder& TxBuilder::AddPlainKernel(const uint64_t fee, const bool add_owner_sig)
 {
-    SecretKey kernel_excess = Random::CSPRNG<32>();
+    BlindingFactor kernel_excess = Random::CSPRNG<32>();
     m_kernelOffset.Sub(kernel_excess);
 
     Kernel kernel = Kernel::Create(kernel_excess, fee, boost::none, boost::none, boost::none);
 
     if (add_owner_sig) {
-        SecretKey offset = Random::CSPRNG<32>();
-        m_ownerOffset.Sub(offset);
-
-        mw::Hash msg_hash = kernel.GetHash();
-        Signature sig = Schnorr::Sign(offset.data(), msg_hash);
-        m_ownerSigs.push_back(SignedMessage{ msg_hash,  Keys::From(offset).PubKey(), sig });
+        AddOwnerSig(kernel);
     }
 
     m_kernels.push_back(std::move(kernel));
@@ -80,7 +86,7 @@ TxBuilder& TxBuilder::AddPlainKernel(const uint64_t fee, const bool add_owner_si
 
 TxBuilder& TxBuilder::AddPeginKernel(const uint64_t amount, const boost::optional<uint64_t>& fee, const bool add_owner_sig)
 {
-    SecretKey kernel_excess = Random::CSPRNG<32>();
+    BlindingFactor kernel_excess = Random::CSPRNG<32>();
     m_kernelOffset.Sub(kernel_excess);
 
     Kernel kernel = Kernel::Create(kernel_excess, fee, amount, boost::none, boost::none);
@@ -91,7 +97,7 @@ TxBuilder& TxBuilder::AddPeginKernel(const uint64_t amount, const boost::optiona
 
         mw::Hash msg_hash = kernel.GetHash();
         Signature sig = Schnorr::Sign(offset.data(), msg_hash);
-        m_ownerSigs.push_back(SignedMessage{ msg_hash,  Keys::From(offset).PubKey(), sig });
+        m_ownerSigs.push_back(SignedMessage{ msg_hash, Keys::From(offset).PubKey(), sig });
     }
 
     m_kernels.push_back(std::move(kernel));
@@ -101,7 +107,7 @@ TxBuilder& TxBuilder::AddPeginKernel(const uint64_t amount, const boost::optiona
 
 TxBuilder& TxBuilder::AddPegoutKernel(const uint64_t amount, const uint64_t fee, const bool add_owner_sig)
 {
-    SecretKey kernel_excess = Random::CSPRNG<32>();
+    BlindingFactor kernel_excess = Random::CSPRNG<32>();
     m_kernelOffset.Sub(kernel_excess);
     std::vector<uint8_t> ltc_address = Random::CSPRNG<32>().vec();
 
@@ -113,7 +119,7 @@ TxBuilder& TxBuilder::AddPegoutKernel(const uint64_t amount, const uint64_t fee,
 
         mw::Hash msg_hash = kernel.GetHash();
         Signature sig = Schnorr::Sign(offset.data(), msg_hash);
-        m_ownerSigs.push_back(SignedMessage{ msg_hash,  Keys::From(offset).PubKey(), sig });
+        m_ownerSigs.push_back(SignedMessage{ msg_hash, Keys::From(offset).PubKey(), sig });
     }
 
     m_kernels.push_back(std::move(kernel));

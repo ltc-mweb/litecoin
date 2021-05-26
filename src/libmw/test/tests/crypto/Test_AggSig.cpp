@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(AggSigInteraction)
     BOOST_REQUIRE(aggSigValid == true);
 }
 
-BOOST_AUTO_TEST_CASE(CoinbaseSignature)
+BOOST_AUTO_TEST_CASE(SingleSchnorrSig)
 {
     mw::Hash message = Random::CSPRNG<32>().GetBigInt();
     SecretKey secret_key = Random::CSPRNG<32>();
