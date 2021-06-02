@@ -19,7 +19,6 @@ public:
     uint64_t GetAmount() const noexcept { return m_amount; }
     const std::unique_ptr<SecretKey>& GetBlindingFactor() const noexcept { return m_pBlindingFactor; }
     const ProofMessage& GetProofMessage() const noexcept { return m_proofMessage; }
-    KeyChainPath GetKeyChainPath() const { return m_proofMessage.ToKeyChainPath(); }
 
     bool operator==(const RewoundProof& rhs) const noexcept
     {

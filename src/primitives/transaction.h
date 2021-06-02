@@ -505,7 +505,6 @@ public:
     CTxOutput GetOutput(const OutputIndex& idx) const noexcept
     {
         if (idx.type() == typeid(Commitment)) {
-            // MW: TODO - Assert output with commit exists
             return CTxOutput{this, boost::get<Commitment>(idx)};
         } else {
             const COutPoint& outpoint = boost::get<COutPoint>(idx);
@@ -582,5 +581,11 @@ struct CMutableTransaction
 typedef std::shared_ptr<const CTransaction> CTransactionRef;
 static inline CTransactionRef MakeTransactionRef() { return std::make_shared<const CTransaction>(); }
 template <typename Tx> static inline CTransactionRef MakeTransactionRef(Tx&& txIn) { return std::make_shared<const CTransaction>(std::forward<Tx>(txIn)); }
+
+template <typename Stream>
+void Unserialize(Stream& is, std::shared_ptr<const CTransaction>& p)
+{
+    p = std::make_shared<const CTransaction>(deserialize, is);
+}
 
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

@@ -53,8 +53,10 @@ BOOST_AUTO_TEST_CASE(Header)
     BOOST_REQUIRE(header.GetNumKernels() == kernelMMRSize);
     BOOST_REQUIRE(header.Format() == "56f10c78905687658dff9aadf812498a68d5704932cb59efe95f13552eac73b5");
 
-    Deserializer deserializer = header.Serialized();
-    BOOST_REQUIRE(header == mw::Header::Deserialize(deserializer));
+    std::vector<uint8_t> header_serialized = header.Serialized();
+    mw::Header header3;
+    CDataStream(header_serialized, SER_DISK, 0) >> header3;
+    BOOST_REQUIRE(header == header3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

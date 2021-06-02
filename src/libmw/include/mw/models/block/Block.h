@@ -26,10 +26,8 @@ public:
     //
     // Constructors
     //
-    Block(const mw::Header::CPtr& pHeader, TxBody&& body)
+    Block(const mw::Header::CPtr& pHeader, TxBody body)
         : m_pHeader(pHeader), m_body(std::move(body)), m_validated(false) { }
-    Block(const mw::Header::CPtr& pHeader, const TxBody& body)
-        : m_pHeader(pHeader), m_body(body), m_validated(false) { }
     Block(const Block& other) = default;
     Block(Block&& other) noexcept = default;
     Block() = default;
@@ -63,25 +61,13 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        assert(m_pHeader != nullptr);
-        return serializer.Append(m_pHeader).Append(m_body);
-    }
-
-    static Block Deserialize(Deserializer& deserializer)
-    {
-        mw::Header::CPtr pHeader = std::make_shared<mw::Header>(mw::Header::Deserialize(deserializer));
-        TxBody body = TxBody::Deserialize(deserializer);
-        return Block{ pHeader, std::move(body) };
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        READWRITE(*m_pHeader);
+        READWRITE(m_pHeader);
         READWRITE(m_body);
     }
 

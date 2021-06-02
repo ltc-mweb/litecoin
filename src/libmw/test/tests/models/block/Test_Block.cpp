@@ -45,8 +45,9 @@ BOOST_AUTO_TEST_CASE(Block)
     BOOST_REQUIRE(block.GetPegInAmount() == 30);
     BOOST_REQUIRE(block.GetPegOuts().empty());
 
-    Deserializer deserializer = block.Serialized();
-    mw::Block block2 = mw::Block::Deserialize(deserializer);
+    std::vector<uint8_t> block_serialized = block.Serialized();
+    mw::Block block2;
+    CDataStream(block_serialized, SER_DISK, 0) >> block2;
     BOOST_REQUIRE(*block.GetHeader() == *block2.GetHeader());
     BOOST_REQUIRE(block.GetTxBody() == block2.GetTxBody());
 

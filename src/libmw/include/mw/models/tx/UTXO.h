@@ -4,7 +4,7 @@
 #include <mw/models/tx/Output.h>
 #include <mw/mmr/LeafIndex.h>
 #include <mw/traits/Serializable.h>
-#include <mw/serialization/Serializer.h>
+#include <serialize.h>
 
 class UTXO : public Traits::ISerializable
 {
@@ -27,35 +27,14 @@ public:
     ProofData BuildProofData() const noexcept { return m_output.BuildProofData(); }
     bool IsPeggedIn() const noexcept { return m_output.IsPeggedIn(); }
 
-    Serializer& Serialize(Serializer& serializer) const noexcept
-    {
-        return serializer
-            .Append<uint64_t>(m_blockHeight)
-            .Append<uint64_t>(m_leafIdx.Get())
-            .Append(m_output);
-    }
-
-    static UTXO Deserialize(Deserializer& deserializer)
-    {
-        const uint64_t blockHeight = deserializer.Read<uint64_t>();
-        const uint64_t leafIdx = deserializer.Read<uint64_t>();
-        Output output = Output::Deserialize(deserializer);
-        return UTXO(blockHeight, mmr::LeafIndex::At(leafIdx), std::move(output));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(m_blockHeight);
-
-        uint64_t idx = m_leafIdx.Get();
-        READWRITE(idx);
-        if (ser_action.ForRead()) {
-            m_leafIdx = mmr::LeafIndex::At(idx);
-        }
-
+        READWRITE(m_leafIdx);
         READWRITE(m_output);
     }
 

@@ -699,7 +699,7 @@ public:
         return totalTxSize;
     }
 
-    bool exists(const uint256& hash) const
+    bool exists(const uint256& hash) const // MW: TODO - Is there an efficient way to check if the MWEB tx already exists?
     {
         LOCK(cs);
         return (mapTx.count(hash) != 0);

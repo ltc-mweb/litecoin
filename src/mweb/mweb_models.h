@@ -86,24 +86,7 @@ struct Block {
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        if (ser_action.ForRead()) {
-            // Deserialize
-            std::vector<uint8_t> bytes;
-            READWRITE(bytes);
-
-            if (!bytes.empty()) {
-                Deserializer deserializer{bytes};
-                m_block = std::make_shared<mw::Block>(mw::Block::Deserialize(deserializer));
-            }
-        } else {
-            // Serialize
-            if (!IsNull()) {
-                std::vector<uint8_t> bytes = m_block->Serialized();
-                READWRITE(bytes);
-            } else {
-                READWRITE(std::vector<uint8_t>{});
-            }
-        }
+        READWRITE(WrapOptionalPtr(m_block));
     }
 
     bool IsNull() const noexcept { return m_block == nullptr; }
@@ -211,24 +194,7 @@ struct Tx {
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        if (ser_action.ForRead()) {
-            // Deserialize
-            std::vector<uint8_t> bytes;
-            READWRITE(bytes);
-
-            if (!bytes.empty()) {
-                Deserializer deserializer{bytes};
-                m_transaction = std::make_shared<mw::Transaction>(mw::Transaction::Deserialize(deserializer));
-            }
-        } else {
-            // Serialize
-            if (!IsNull()) {
-                std::vector<uint8_t> bytes = m_transaction->Serialized();
-                READWRITE(bytes);
-            } else {
-                READWRITE(std::vector<uint8_t>{});
-            }
-        }
+        READWRITE(WrapOptionalPtr(m_transaction));
     }
 
     bool IsNull() const noexcept { return m_transaction == nullptr; }

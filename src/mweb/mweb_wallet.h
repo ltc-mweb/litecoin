@@ -85,14 +85,13 @@ struct WalletTxInfo
             READWRITE(received);
 
             if (received) {
-                std::vector<uint8_t> bytes;
-                READWRITE(bytes);
-                Deserializer deserializer(std::move(bytes));
-                received_coin = mw::Coin::Deserialize(deserializer);
+                mw::Coin coin;
+                READWRITE(coin);
+                received_coin = boost::make_optional<mw::Coin>(std::move(coin));
             } else {
-                std::array<uint8_t, 33> input_commit;
-                READWRITE(input_commit); // MW: TODO - Add serialization/deserialization for Commitment objects
-                spent_input = boost::make_optional<Commitment>(Commitment(input_commit));
+                Commitment input_commit;
+                READWRITE(input_commit);
+                spent_input = boost::make_optional<Commitment>(std::move(input_commit));
             }
 
             hash = SerializeHash(*this);
@@ -101,10 +100,9 @@ struct WalletTxInfo
             READWRITE(received);
 
             if (received) {
-                std::vector<uint8_t> bytes = received_coin->Serialized();
-                READWRITE(bytes);
+                READWRITE(*received_coin);
             } else {
-                READWRITE(spent_input->array()); // MW: TODO - Add serialization/deserialization for Commitment objects
+                READWRITE(*spent_input);
             }
         }
     }

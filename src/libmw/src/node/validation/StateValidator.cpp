@@ -1,5 +1,6 @@
 #include <mw/node/validation/StateValidator.h>
 #include <mw/consensus/KernelSumValidator.h>
+#include <mw/serialization/Deserializer.h>
 
 void StateValidator::Validate(const mw::ICoinsView& coins_view)
 {

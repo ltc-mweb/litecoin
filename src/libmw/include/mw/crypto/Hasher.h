@@ -18,27 +18,33 @@ enum class EHashTag : char
 class Hasher
 {
 public:
-    Hasher() = default;
+    Hasher() : m_writer(SER_GETHASH, 0) { }
     Hasher(const EHashTag tag)
+        : m_writer(SER_GETHASH, 0)
     {
-        m_serializer.Append<char>(static_cast<char>(tag));
+        m_writer << static_cast<char>(tag);
     }
 
-    mw::Hash hash() const { return mw::Hash(SerializeHash(m_serializer.vec()).begin()); }
+    mw::Hash hash() { return mw::Hash(m_writer.GetHash().begin()); }
 
     template <class T>
     Hasher& Append(const T& t)
     {
-        m_serializer.Append(t);
+        m_writer << t;
         return *this;
     }
 
 private:
-    Serializer m_serializer;
+    CHashWriter m_writer;
 };
 
 extern mw::Hash Hashed(const std::vector<uint8_t>& serialized);
 extern mw::Hash Hashed(const Traits::ISerializable& serializable);
-extern mw::Hash Hashed(const EHashTag tag, const Traits::ISerializable& serializable);
+
+template<class T>
+mw::Hash Hashed(const EHashTag tag, const T& serializable)
+{
+    return Hasher(tag).Append(serializable).hash();
+}
 extern const mw::Hash& InputMessage();
 extern BigInt<64> Hash512(const Traits::ISerializable& serializable);

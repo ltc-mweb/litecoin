@@ -1,6 +1,7 @@
 #include <mw/wallet/Keychain.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/common/Logger.h>
+#include <mw/serialization/Deserializer.h>
 
 #define RESTORE_WINDOW 100
 

@@ -36,18 +36,7 @@ public:
     const PublicKey& GetScanPubKey() const noexcept { return m_scan; }
     const PublicKey& GetSpendPubKey() const noexcept { return m_spend; }
 
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer.Append(m_scan).Append(m_spend);
-    }
-
-    static StealthAddress Deserialize(Deserializer& deserializer)
-    {
-        PublicKey scan = PublicKey::Deserialize(deserializer);
-        PublicKey spend = PublicKey::Deserialize(deserializer);
-        return StealthAddress(std::move(scan), std::move(spend));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

@@ -24,13 +24,23 @@ BOOST_AUTO_TEST_CASE(PlainTxInput)
     {
         std::vector<uint8_t> serialized = input.Serialized();
 
-        Deserializer deserializer(serialized);
-        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == commit);
-        BOOST_REQUIRE(PublicKey::Deserialize(deserializer) == pubkey);
-        BOOST_REQUIRE(Signature::Deserialize(deserializer) == signature);
+        CDataStream deserializer(serialized, SER_DISK, PROTOCOL_VERSION);
+        Commitment commit2;
+        deserializer >> commit2;
+        BOOST_REQUIRE(commit2 == commit);
 
-        Deserializer deserializer2(serialized);
-        BOOST_REQUIRE(input == Input::Deserialize(deserializer2));
+        PublicKey pubkey2;
+        deserializer >> pubkey2;
+        BOOST_REQUIRE(pubkey2 == pubkey);
+
+        Signature signature2;
+        deserializer >> signature2;
+        BOOST_REQUIRE(signature2 == signature);
+
+        
+        Input input2;
+        CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> input2;
+        BOOST_REQUIRE(input == input2);
 
         BOOST_REQUIRE(input.GetHash() == Hashed(serialized));
     }

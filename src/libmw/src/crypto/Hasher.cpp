@@ -7,15 +7,13 @@ mw::Hash Hashed(const std::vector<uint8_t>& serialized)
 
 mw::Hash Hashed(const Traits::ISerializable& serializable)
 {
-    Serializer serializer;
-    serializable.Serialize(serializer);
-    return mw::Hash(SerializeHash(serializer.vec()).begin());
+    return mw::Hash(SerializeHash(serializable.Serialized()).begin());
 }
 
-mw::Hash Hashed(const EHashTag tag, const Traits::ISerializable& serializable)
-{
-    return Hasher(tag).Append(serializable).hash();
-}
+//mw::Hash Hashed(const EHashTag tag, const Traits::ISerializable& serializable)
+//{
+//    return Hasher(tag).Append(serializable).hash();
+//}
 
 const mw::Hash& InputMessage()
 {

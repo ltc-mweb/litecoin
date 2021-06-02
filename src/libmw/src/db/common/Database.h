@@ -38,12 +38,13 @@ public:
             return m_pTx->Get<T>(table, key);
         }
 
-        std::vector<uint8_t> item;
-        const bool status = m_pDB->Read(table.BuildKey(key), item);
+        std::vector<uint8_t> item_vec;
+        const bool status = m_pDB->Read(table.BuildKey(key), item_vec);
         if (status)
         {
-            Deserializer deserializer(std::move(item));
-            return std::make_unique<DBEntry<T>>(key, T::Deserialize(deserializer));
+            T item;
+            CDataStream(item_vec, SER_DISK, PROTOCOL_VERSION) >> item;
+            return std::make_unique<DBEntry<T>>(key, std::move(item));
         }
 
         return nullptr;

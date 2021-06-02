@@ -10,7 +10,6 @@
 #include <mw/traits/Hashable.h>
 #include <mw/traits/Serializable.h>
 #include <mw/traits/Printable.h>
-#include <mw/serialization/Serializer.h>
 #include <mw/crypto/Hasher.h>
 
 #include <boost/optional.hpp>
@@ -84,42 +83,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append<uint64_t>(m_height)
-            .Append(m_outputRoot)
-            .Append(m_kernelRoot)
-			.Append(m_leafsetRoot)
-            .Append(m_kernelOffset)
-            .Append(m_ownerOffset)
-            .Append<uint64_t>(m_outputMMRSize)
-            .Append<uint64_t>(m_kernelMMRSize);
-    }
-
-    static Header Deserialize(Deserializer& deserializer)
-    {
-        uint64_t height = deserializer.Read<uint64_t>();
-        mw::Hash outputRoot = mw::Hash::Deserialize(deserializer);
-		mw::Hash kernelRoot = mw::Hash::Deserialize(deserializer);
-		mw::Hash leafsetRoot = mw::Hash::Deserialize(deserializer);
-        BlindingFactor kernelOffset = BlindingFactor::Deserialize(deserializer);
-        BlindingFactor ownerOffset = BlindingFactor::Deserialize(deserializer);
-        uint64_t outputMMRSize = deserializer.Read<uint64_t>();
-        uint64_t kernelMMRSize = deserializer.Read<uint64_t>();
-
-        return Header{
-            height,
-            std::move(outputRoot),
-            std::move(kernelRoot),
-			std::move(leafsetRoot),
-            std::move(kernelOffset),
-            std::move(ownerOffset),
-            outputMMRSize,
-            kernelMMRSize
-        };
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

@@ -9,6 +9,7 @@
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/models/wallet/StealthAddress.h>
+#include <mw/serialization/Deserializer.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestUTXO, BasicTestingSetup)
 
@@ -42,7 +43,7 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
         Deserializer deserializer(serialized);
         BOOST_REQUIRE(deserializer.Read<uint64_t>() == blockHeight);
         BOOST_REQUIRE(mmr::LeafIndex::At(deserializer.Read<uint64_t>()) == leafIndex);
-        BOOST_REQUIRE(Output::Deserialize(deserializer) == output);
+        BOOST_REQUIRE(deserializer.Read<Output>() == output);
     }
 
     //

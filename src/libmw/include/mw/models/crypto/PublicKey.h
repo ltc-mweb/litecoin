@@ -58,9 +58,10 @@ public:
     PublicKey Sub(const SecretKey& sub) const;
     PublicKey Sub(const PublicKey& sub) const;
 
-    Serializer& Serialize(Serializer& serializer) const noexcept final { return m_compressed.Serialize(serializer); }
-    static PublicKey Deserialize(Deserializer& deserializer) { return BigInt<33>::Deserialize(deserializer); }
-
+    //
+    // Serialization/Deserialization
+    //
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

@@ -52,8 +52,9 @@ BOOST_AUTO_TEST_CASE(BigIntTest)
     bigInt1 ^= bigInt3;
     BOOST_REQUIRE(bigInt1.ToHex() == "0123456789abcdef");
 
-    Deserializer deserializer = bigInt1.Serialized();
-    BigInt<8> bigInt6 = BigInt<8>::Deserialize(deserializer);
+    std::vector<uint8_t> serialized = bigInt1.Serialized();
+    BigInt<8> bigInt6;
+    CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> bigInt6;
     BOOST_REQUIRE(bigInt1 == bigInt6);
 }
 

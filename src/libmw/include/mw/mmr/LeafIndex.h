@@ -7,6 +7,7 @@
 #include <mw/common/Macros.h>
 #include <mw/mmr/Index.h>
 #include <mw/util/BitUtil.h>
+#include <serialize.h>
 
 MMR_NAMESPACE
 
@@ -41,6 +42,20 @@ public:
     const Index& GetNodeIndex() const noexcept { return m_nodeIndex; }
     uint64_t GetPosition() const noexcept { return m_nodeIndex.GetPosition(); }
     LeafIndex Next() const noexcept { return LeafIndex::At(m_leafIndex + 1); }
+
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        s << m_leafIndex;
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        uint64_t leaf_idx;
+        s >> leaf_idx;
+        *this = LeafIndex::At(leaf_idx);
+    }
 
 private:
     uint64_t m_leafIndex;

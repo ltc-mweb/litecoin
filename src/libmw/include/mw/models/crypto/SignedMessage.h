@@ -41,25 +41,7 @@ public:
     const PublicKey& GetPublicKey() const noexcept { return m_publicKey; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
-    //
-    // Serialization/Deserialization
-    //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_messageHash)
-            .Append(m_publicKey)
-            .Append(m_signature);
-    }
-
-    static SignedMessage Deserialize(Deserializer& deserializer)
-    {
-        mw::Hash message_hash = mw::Hash::Deserialize(deserializer);
-        PublicKey public_key = PublicKey::Deserialize(deserializer);
-        Signature signature = Signature::Deserialize(deserializer);
-        return SignedMessage{ std::move(message_hash), std::move(public_key), std::move(signature) };
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

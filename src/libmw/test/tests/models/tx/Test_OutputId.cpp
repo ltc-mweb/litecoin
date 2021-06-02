@@ -8,6 +8,7 @@
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/OutputId.h>
+#include <mw/serialization/Deserializer.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestOutputId, BasicTestingSetup)
 
@@ -49,8 +50,9 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
         BOOST_REQUIRE(deserializer.Read<BigInt<16>>() == maskedNonce);
         BOOST_REQUIRE(deserializer.Read<PublicKey>() == senderPubKey);
 
-        Deserializer deserializer2(serialized);
-        BOOST_REQUIRE(outputId == OutputId::Deserialize(deserializer2));
+        OutputId outputId2;
+        CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> outputId2;
+        BOOST_REQUIRE(outputId == outputId2);
 
         BOOST_REQUIRE(outputId.GetHash() == Hashed(serialized));
     }

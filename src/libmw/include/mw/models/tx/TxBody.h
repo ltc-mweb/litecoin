@@ -30,10 +30,8 @@ public:
     //
     // Constructors
     //
-    TxBody(std::vector<Input>&& inputs, std::vector<Output>&& outputs, std::vector<Kernel>&& kernels, std::vector<SignedMessage>&& ownerSigs)
+    TxBody(std::vector<Input> inputs, std::vector<Output> outputs, std::vector<Kernel> kernels, std::vector<SignedMessage> ownerSigs)
         : m_inputs(std::move(inputs)), m_outputs(std::move(outputs)), m_kernels(std::move(kernels)), m_ownerSigs(std::move(ownerSigs)) { }
-    TxBody(const std::vector<Input>& inputs, const std::vector<Output>& outputs, const std::vector<Kernel>& kernels, const std::vector<SignedMessage>& ownerSigs)
-        : m_inputs(inputs), m_outputs(outputs), m_kernels(kernels), m_ownerSigs(ownerSigs) { }
     TxBody(const TxBody& other) = default;
     TxBody(TxBody&& other) noexcept = default;
     TxBody() = default;
@@ -81,24 +79,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .AppendVec<Input>(m_inputs)
-            .AppendVec<Output>(m_outputs)
-            .AppendVec<Kernel>(m_kernels)
-            .AppendVec<SignedMessage>(m_ownerSigs);
-    }
-
-    static TxBody Deserialize(Deserializer& deserializer)
-    {
-        std::vector<Input> inputs = deserializer.ReadVec<Input>();
-        std::vector<Output> outputs = deserializer.ReadVec<Output>();
-        std::vector<Kernel> kernels = deserializer.ReadVec<Kernel>();
-        std::vector<SignedMessage> owner_sigs = deserializer.ReadVec<SignedMessage>();
-        return TxBody(std::move(inputs), std::move(outputs), std::move(kernels), std::move(owner_sigs));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

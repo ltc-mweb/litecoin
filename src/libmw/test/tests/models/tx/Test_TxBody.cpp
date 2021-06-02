@@ -26,8 +26,10 @@ BOOST_AUTO_TEST_CASE(TxBodyTest)
     //
     // Serialization
     //
-    Deserializer deserializer(txBody.Serialized());
-    BOOST_REQUIRE(txBody == deserializer.Read<TxBody>());
+    std::vector<uint8_t> serialized = txBody.Serialized();
+    TxBody txBody2;
+    VectorReader(SER_NETWORK, PROTOCOL_VERSION, serialized, 0) >> txBody2;
+    BOOST_REQUIRE(txBody == txBody2);
 
     //
     // Getters

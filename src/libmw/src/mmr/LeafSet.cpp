@@ -1,5 +1,6 @@
 #include <mw/mmr/LeafSet.h>
 #include <mw/crypto/Hasher.h>
+#include <mw/serialization/Serializer.h>
 
 MMR_NAMESPACE
 

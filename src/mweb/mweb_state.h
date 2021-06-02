@@ -31,7 +31,7 @@ class State
 public:
     // An MWEB::State message
     uint256 blockhash;
-    std::unique_ptr<mw::State> state;
+    mw::State state;
 
     ADD_SERIALIZE_METHODS;
 
@@ -39,16 +39,7 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(blockhash);
-
-        if (ser_action.ForRead()) {
-            std::vector<uint8_t> serialized;
-            READWRITE(serialized);
-            Deserializer deserializer(std::move(serialized));
-            state = std::make_unique<mw::State>(mw::State::Deserialize(deserializer));
-        } else {
-            std::vector<uint8_t> serialized = state->Serialized();
-            READWRITE(serialized);
-        }
+        READWRITE(state);
     }
 };
 

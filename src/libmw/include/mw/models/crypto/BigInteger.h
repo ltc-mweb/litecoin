@@ -6,8 +6,7 @@
 
 #include <mw/util/HexUtil.h>
 #include <mw/traits/Printable.h>
-#include <mw/serialization/Serializer.h>
-#include <serialize.h>
+#include <mw/traits/Serializable.h>
 
 #include <cassert>
 #include <cstdint>
@@ -178,26 +177,18 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer.Append(m_bytes);
-    }
-
-    static BigInt<NUM_BYTES, ALLOC> Deserialize(Deserializer& deserializer)
-    {
-        return BigInt<NUM_BYTES, ALLOC>(deserializer.ReadVector(NUM_BYTES));
-    }
+    IMPL_SERIALIZABLE;
 
     template <typename Stream>
     void Serialize(Stream& s) const
     {
-        s.write(m_bytes.data(), NUM_BYTES);
+        s.write((const char*)m_bytes.data(), NUM_BYTES);
     }
 
     template <typename Stream>
     void Unserialize(Stream& s)
     {
-        s.read(m_bytes.data(), NUM_BYTES);
+        s.read((char*)m_bytes.data(), NUM_BYTES);
     }
 
 private:

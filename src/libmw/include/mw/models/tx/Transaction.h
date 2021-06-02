@@ -35,13 +35,11 @@ public:
     //
     // Constructors
     //
-    Transaction(BlindingFactor&& kernel_offset, BlindingFactor&& owner_offset, TxBody&& body)
+    Transaction(BlindingFactor kernel_offset, BlindingFactor owner_offset, TxBody body)
         : m_kernelOffset(std::move(kernel_offset)), m_ownerOffset(std::move(owner_offset)), m_body(std::move(body))
     {
         m_hash = Hashed(*this);
     }
-    Transaction(const BlindingFactor& kernel_offset, const BlindingFactor& owner_offset, const TxBody& body)
-        : Transaction(BlindingFactor(kernel_offset), BlindingFactor(owner_offset), TxBody(body)) { }
     Transaction(const Transaction& transaction) = default;
     Transaction(Transaction&& transaction) noexcept = default;
     Transaction() = default;
@@ -114,22 +112,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_kernelOffset)
-            .Append(m_ownerOffset)
-            .Append(m_body);
-    }
-
-    static Transaction Deserialize(Deserializer& deserializer)
-    {
-        BlindingFactor kernel_offset = BlindingFactor::Deserialize(deserializer);
-        BlindingFactor owner_offset = BlindingFactor::Deserialize(deserializer);
-        TxBody body = TxBody::Deserialize(deserializer);
-        return Transaction(std::move(kernel_offset), std::move(owner_offset), std::move(body));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -138,6 +121,10 @@ public:
         READWRITE(m_kernelOffset);
         READWRITE(m_ownerOffset);
         READWRITE(m_body);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
     }
 
     //

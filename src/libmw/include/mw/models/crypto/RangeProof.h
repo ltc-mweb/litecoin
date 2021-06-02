@@ -6,7 +6,6 @@
 
 #include <mw/traits/Printable.h>
 #include <mw/traits/Serializable.h>
-#include <mw/serialization/Serializer.h>
 #include <mw/util/HexUtil.h>
 
 #include <cassert>
@@ -51,29 +50,18 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
+    IMPL_SERIALIZABLE;
+
+    template <typename Stream>
+    void Serialize(Stream& s) const
     {
-        return serializer
-            .Append<uint16_t>((uint16_t)m_bytes.size())
-            .Append(m_bytes);
+        s.write((const char*)m_bytes.data(), MAX_SIZE);
     }
 
-    static RangeProof Deserialize(Deserializer& deserializer)
+    template <typename Stream>
+    void Unserialize(Stream& s)
     {
-        const uint16_t proofSize = deserializer.Read<uint16_t>();
-        if (proofSize > MAX_SIZE) {
-            ThrowDeserialization("RangeProof is larger than MAX_SIZE");
-        }
-
-        return RangeProof(deserializer.ReadVector(proofSize));
-    }
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action)
-    {
-        READWRITE(m_bytes);
+        s.read((char*)m_bytes.data(), MAX_SIZE);
     }
 
     //

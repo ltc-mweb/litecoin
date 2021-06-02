@@ -1,5 +1,6 @@
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
+#include <mw/serialization/Serializer.h>
 #include <mw/crypto/Random.h>
 #include <mw/crypto/Bulletproofs.h>
 #include <mw/crypto/Schnorr.h>

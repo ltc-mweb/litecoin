@@ -23,13 +23,19 @@ BOOST_AUTO_TEST_CASE(TxPegOutCoin)
     {
         std::vector<uint8_t> serialized = pegOutCoin.Serialized();
 
-        Deserializer deserializer(serialized);
-        BOOST_REQUIRE(deserializer.Read<uint64_t>() == amount);
-        BOOST_REQUIRE(deserializer.Read<uint8_t>() == 32);
-        BOOST_REQUIRE(deserializer.ReadVector(32) == scriptPubKey);
+        CDataStream deserializer(serialized, SER_DISK, PROTOCOL_VERSION);
 
-        Deserializer deserializer2(serialized);
-        BOOST_REQUIRE(pegOutCoin == PegOutCoin::Deserialize(deserializer2));
+        uint64_t amount2;
+        deserializer >> amount2;
+        BOOST_REQUIRE(amount2 == amount);
+
+        std::vector<uint8_t> scriptPubKey2;
+        deserializer >> scriptPubKey2;
+        BOOST_REQUIRE(scriptPubKey == scriptPubKey2);
+
+        PegOutCoin pegOutCoin2;
+        CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> pegOutCoin2;
+        BOOST_REQUIRE(pegOutCoin == pegOutCoin2);
     }
 
     //

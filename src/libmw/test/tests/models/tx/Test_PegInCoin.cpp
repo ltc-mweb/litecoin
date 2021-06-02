@@ -24,12 +24,19 @@ BOOST_AUTO_TEST_CASE(TxPegInCoin)
         std::vector<uint8_t> serialized = pegInCoin.Serialized();
         BOOST_REQUIRE(serialized.size() == 41);
 
-        Deserializer deserializer(serialized);
-        BOOST_REQUIRE(deserializer.Read<uint64_t>() == amount);
-        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == commit);
+        CDataStream deserializer(serialized, SER_DISK, PROTOCOL_VERSION);
 
-        Deserializer deserializer2(serialized);
-        BOOST_REQUIRE(pegInCoin == PegInCoin::Deserialize(deserializer2));
+        uint64_t amount2;
+        deserializer >> amount2;
+        BOOST_REQUIRE(amount2 == amount);
+
+        Commitment commit2;
+        deserializer >> commit2;
+        BOOST_REQUIRE(commit2 == commit);
+
+        PegInCoin pegInCoin2;
+        CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> pegInCoin2;
+        BOOST_REQUIRE(pegInCoin == pegInCoin2);
     }
 
     //

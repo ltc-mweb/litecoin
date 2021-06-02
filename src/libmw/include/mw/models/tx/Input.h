@@ -58,22 +58,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_commitment)
-            .Append(m_pubkey)
-            .Append(m_signature);
-    }
-
-    static Input Deserialize(Deserializer& deserializer)
-    {
-        Commitment commitment = Commitment::Deserialize(deserializer);
-        PublicKey pubkey = PublicKey::Deserialize(deserializer);
-        Signature signature = Signature::Deserialize(deserializer);
-        return Input(std::move(commitment), std::move(pubkey), std::move(signature));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

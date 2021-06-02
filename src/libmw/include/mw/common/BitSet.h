@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mw/traits/Serializable.h>
-#include <mw/serialization/Serializer.h>
 #include <boost/dynamic_bitset.hpp>
 #include <serialize.h>
 #include <vector>
@@ -85,20 +84,8 @@ struct BitSet : public Traits::ISerializable
         }
     }
     void push_back(bool val) noexcept { bitset.push_back(val); }
-
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        std::vector<uint8_t> vec = bytes();
-        return serializer
-            .Append<uint64_t>(vec.size())
-            .Append(vec);
-    }
-
-    static BitSet Deserialize(Deserializer& deserializer)
-    {
-        uint64_t num_bytes = deserializer.Read<uint64_t>();
-        return BitSet::From(deserializer.ReadVector(num_bytes));
-    }
+    
+    IMPL_SERIALIZABLE;
 
     template <typename Stream>
     void Serialize(Stream& s) const

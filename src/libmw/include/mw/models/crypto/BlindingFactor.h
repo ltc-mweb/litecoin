@@ -46,16 +46,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return m_value.Serialize(serializer);
-    }
-
-    static BlindingFactor Deserialize(Deserializer& deserializer)
-    {
-        return BlindingFactor(BigInt<32>::Deserialize(deserializer));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

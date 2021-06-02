@@ -67,42 +67,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_commitment)
-            .Append<uint8_t>((uint8_t)m_features.Get())
-            .Append(m_receiverPubKey)
-            .Append(m_keyExchangePubKey)
-            .Append<uint8_t>(m_viewTag)
-            .Append<uint64_t>(m_maskedValue)
-            .Append(m_maskedNonce)
-            .Append(m_senderPubKey);
-    }
-
-    static OutputId Deserialize(Deserializer& deserializer)
-    {
-        Commitment commitment = deserializer.Read<Commitment>();
-        const Features features = (EOutputFeatures)deserializer.Read<uint8_t>();
-        PublicKey receiverPubKey = deserializer.Read<PublicKey>();
-        PublicKey keyExchangePubKey = deserializer.Read<PublicKey>();
-        uint8_t viewTag = deserializer.Read<uint8_t>();
-        uint64_t maskedValue = deserializer.Read<uint64_t>();
-        BigInt<16> maskedNonce = deserializer.Read<BigInt<16>>();
-        PublicKey senderPubKey = deserializer.Read<PublicKey>();
-
-        return OutputId(
-            std::move(commitment),
-            features,
-            std::move(receiverPubKey),
-            std::move(keyExchangePubKey),
-            viewTag,
-            maskedValue,
-            std::move(maskedNonce),
-            std::move(senderPubKey)
-        );
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

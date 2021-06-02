@@ -5,11 +5,13 @@
 #include <boost/test/unit_test.hpp>
 #include <test/test_bitcoin.h>
 
-#include <mw/crypto/Schnorr.h>
 #include <mw/crypto/Bulletproofs.h>
+#include <mw/crypto/Hasher.h>
 #include <mw/crypto/Random.h>
+#include <mw/crypto/Schnorr.h>
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
+#include <mw/serialization/Deserializer.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestOutput, BasicTestingSetup)
 

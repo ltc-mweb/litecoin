@@ -6,6 +6,7 @@
 #include <test/test_bitcoin.h>
 
 #include <mw/consensus/KernelSumValidator.h>
+#include <mw/serialization/Deserializer.h>
 
 #include <test_framework/TxBuilder.h>
 
@@ -31,12 +32,12 @@ BOOST_AUTO_TEST_CASE(TxTransaction)
         std::vector<uint8_t> serialized = tx->Serialized();
 
         Deserializer deserializer(serialized);
-        BOOST_REQUIRE(BlindingFactor::Deserialize(deserializer) == tx->GetKernelOffset());
-        BOOST_REQUIRE(BlindingFactor::Deserialize(deserializer) == tx->GetOwnerOffset());
-        BOOST_REQUIRE(TxBody::Deserialize(deserializer) == tx->GetBody());
+        BOOST_REQUIRE(deserializer.Read<BlindingFactor>() == tx->GetKernelOffset());
+        BOOST_REQUIRE(deserializer.Read<BlindingFactor>() == tx->GetOwnerOffset());
+        BOOST_REQUIRE(deserializer.Read<TxBody>() == tx->GetBody());
 
         Deserializer deserializer2(serialized);
-        BOOST_REQUIRE(*tx == mw::Transaction::Deserialize(deserializer2));
+        BOOST_REQUIRE(*tx == deserializer2.Read<mw::Transaction>());
     }
 
     //

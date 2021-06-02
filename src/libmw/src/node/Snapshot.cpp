@@ -1,5 +1,6 @@
 #include <mw/node/Snapshot.h>
 #include <mw/mmr/MMRUtil.h>
+#include <mw/serialization/Deserializer.h>
 
 using namespace mw;
 

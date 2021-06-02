@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mw/models/crypto/Hash.h>
+#include <mw/traits/Serializable.h>
 #include <boost/optional.hpp>
 
 /// <summary>
@@ -28,31 +29,17 @@ struct MMRInfo : public Traits::ISerializable
     // Hash of the header this MMR was compacted for.
     // You cannot rewind beyond this point.
     boost::optional<mw::Hash> compacted;
+    
+    IMPL_SERIALIZABLE;
+    ADD_SERIALIZE_METHODS;
 
-    Serializer& Serialize(Serializer& serializer) const noexcept final
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        return serializer
-            .Append<uint8_t>(version)
-            .Append<uint32_t>(index)
-            .Append(pruned)
-            .Append<uint32_t>(compact_index)
-            .Append(compacted.value_or(mw::Hash()));
-    }
-
-    static MMRInfo Deserialize(Deserializer& deserializer)
-    {
-        uint8_t version = deserializer.Read<uint8_t>();
-        uint32_t index = deserializer.Read<uint32_t>();
-        mw::Hash pruned = deserializer.Read<mw::Hash>();
-        uint32_t compact_index = deserializer.Read<uint32_t>();
-        mw::Hash compacted = deserializer.Read<mw::Hash>();
-
-        return MMRInfo{
-            version,
-            index,
-            pruned,
-            compact_index,
-            compacted == mw::Hash() ? boost::none : boost::make_optional<mw::Hash>(std::move(compacted))
-        };
+        READWRITE(version);
+        READWRITE(index);
+        READWRITE(pruned);
+        READWRITE(compact_index);
+        READWRITE(compacted);
     }
 };

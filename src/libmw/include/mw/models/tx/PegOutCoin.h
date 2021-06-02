@@ -2,6 +2,7 @@
 
 #include <mw/traits/Serializable.h>
 #include <mw/traits/Printable.h>
+#include <mw/util/StringUtil.h>
 
 //
 // Represents coins being pegged out, i.e. moved from the extension block to the canonical chain.
@@ -26,23 +27,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_amount)
-            .Append<uint8_t>((uint8_t)m_scriptPubKey.size())
-            .Append(m_scriptPubKey);
-    }
-
-    static PegOutCoin Deserialize(Deserializer& deserializer)
-    {
-        uint64_t amount = deserializer.Read<uint64_t>();
-        uint8_t num_bytes = deserializer.Read<uint8_t>();
-        std::vector<uint8_t> scriptPubKey = deserializer.ReadVector(num_bytes);
-
-        return PegOutCoin(amount, std::move(scriptPubKey));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

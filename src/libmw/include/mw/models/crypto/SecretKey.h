@@ -48,16 +48,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return m_value.Serialize(serializer);
-    }
-
-    static secret_key_t<NUM_BYTES> Deserialize(Deserializer& deserializer)
-    {
-        return secret_key_t<NUM_BYTES>(BigInt<NUM_BYTES>::Deserialize(deserializer));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

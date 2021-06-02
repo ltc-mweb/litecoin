@@ -5,7 +5,6 @@
 #include "OrderedMultimap.h"
 
 #include <mw/exceptions/DatabaseException.h>
-#include <mw/serialization/Serializer.h>
 #include <mw/traits/Serializable.h>
 #include <mw/interfaces/db_interface.h>
 #include <memory>
@@ -29,10 +28,7 @@ public:
         {
             const std::string key = table.BuildKey(entry);
 
-            Serializer serializer;
-            serializer.Append(entry.item);
-
-            m_pBatch->Write(key, serializer.vec());
+            m_pBatch->Write(key, entry.item->Serialized());
             m_added.insert({ key, entry.item });
         }
 
@@ -58,8 +54,9 @@ public:
         const bool status = m_pDB->Read(table_key, entry);
         if (status)
         {
-            Deserializer deserializer(std::move(entry));
-            return std::make_unique<DBEntry<T>>(key, T::Deserialize(deserializer));
+            T item;
+            CDataStream(entry, SER_DISK, PROTOCOL_VERSION) >> item;
+            return std::make_unique<DBEntry<T>>(key, std::move(item));
         }
 
         return nullptr;

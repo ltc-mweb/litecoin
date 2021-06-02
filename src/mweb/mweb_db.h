@@ -66,7 +66,7 @@ class DBWrapper : public mw::IDBWrapper
 public:
     DBWrapper(CDBWrapper* pDB) : m_pDB(pDB) {}
 
-    bool Read(const std::string& key, std::vector<uint8_t>& value) const final
+    bool Read(const std::string& key, std::vector<uint8_t>& value) const final // MW: TODO - Should support serializable object instead of vector?
     {
         return m_pDB->Read(key, value);
     }

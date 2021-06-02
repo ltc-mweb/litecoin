@@ -51,16 +51,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return m_bytes.Serialize(serializer);
-    }
-
-    static Signature Deserialize(Deserializer& deserializer)
-    {
-        return Signature(BigInt<SIZE>::Deserialize(deserializer));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

@@ -48,29 +48,7 @@ struct Coin : public Traits::ISerializable {
     bool IsChange() const noexcept { return address_index == CHANGE_INDEX; }
     bool IsPegIn() const noexcept { return address_index == PEGIN_INDEX; }
 
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append<uint8_t>(features)
-            .Append<uint32_t>(address_index)
-            .Append(key)
-            .Append(blind)
-            .Append<uint64_t>(amount)
-            .Append(commitment);
-    }
-
-    static Coin Deserialize(Deserializer& deserializer)
-    {
-        Coin coin;
-        coin.features = deserializer.Read<uint8_t>();
-        coin.address_index = deserializer.Read<uint32_t>();
-        coin.key = deserializer.ReadOpt<BlindingFactor>();
-        coin.blind = deserializer.ReadOpt<BlindingFactor>();
-        coin.amount = deserializer.Read<uint64_t>();
-        coin.commitment = deserializer.Read<Commitment>();
-        return coin;
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

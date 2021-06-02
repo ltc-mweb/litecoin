@@ -10,6 +10,7 @@
 class PegInCoin : public Traits::ISerializable, public Traits::IPrintable
 {
 public:
+    PegInCoin() = default;
     PegInCoin(const uint64_t amount, const Commitment& commitment)
         : m_amount(amount), m_commitment(commitment) { }
     PegInCoin(const uint64_t amount, Commitment&& commitment)
@@ -26,21 +27,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_amount)
-            .Append(m_commitment);
-    }
-
-    static PegInCoin Deserialize(Deserializer& deserializer)
-    {
-        uint64_t amount = deserializer.Read<uint64_t>();
-        Commitment commitment = Commitment::Deserialize(deserializer);
-
-        return PegInCoin(amount, std::move(commitment));
-    }
-
+    IMPL_SERIALIZABLE;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
