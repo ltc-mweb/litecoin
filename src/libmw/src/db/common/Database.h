@@ -16,7 +16,7 @@ class Database
 public:
     using Ptr = std::shared_ptr<Database>;
 
-    Database(mw::IDBWrapper* pDatabase, mw::IDBBatch* pBatch = nullptr)
+    Database(mw::DBWrapper* pDatabase, mw::DBBatch* pBatch = nullptr)
         : m_pDB(pDatabase), m_pTx(nullptr)
     {
         if (pBatch != nullptr) {
@@ -102,6 +102,6 @@ public:
     }
 
 private:
-    mw::IDBWrapper* m_pDB;
+    mw::DBWrapper* m_pDB;
     DBTransaction::UPtr m_pTx;
 };

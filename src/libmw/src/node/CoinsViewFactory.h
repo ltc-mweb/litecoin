@@ -16,7 +16,7 @@ class CoinsViewFactory
 {
 public:
     static mw::CoinsViewDB::Ptr CreateDBView(
-        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
         const mw::IChain::Ptr& pChain,
         const FilePath& chainDir,
         const mw::Header::CPtr& pStateHeader,
@@ -28,8 +28,8 @@ public:
 
 private:
     static mmr::MMR::Ptr BuildAndValidateKernelMMR(
-        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
-        const std::unique_ptr<mw::IDBBatch>& pBatch,
+        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
+        const std::unique_ptr<mw::DBBatch>& pBatch,
         const MMRInfo& mmr_info,
         const mw::IChain::Ptr& pChain,
         const FilePath& chainDir,
@@ -38,8 +38,8 @@ private:
     );
 
     static mmr::MMR::Ptr BuildAndValidateOutputMMR(
-        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
-        const std::unique_ptr<mw::IDBBatch>& pBatch,
+        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
+        const std::unique_ptr<mw::DBBatch>& pBatch,
         const MMRInfo& mmr_info,
         const FilePath& chainDir,
         const mw::Header::CPtr& pStateHeader,

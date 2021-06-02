@@ -10,11 +10,6 @@ mw::Hash Hashed(const Traits::ISerializable& serializable)
     return mw::Hash(SerializeHash(serializable.Serialized()).begin());
 }
 
-//mw::Hash Hashed(const EHashTag tag, const Traits::ISerializable& serializable)
-//{
-//    return Hasher(tag).Append(serializable).hash();
-//}
-
 const mw::Hash& InputMessage()
 {
     static const mw::Hash mweb_hash = Hashed({'M', 'W', 'E', 'B'});

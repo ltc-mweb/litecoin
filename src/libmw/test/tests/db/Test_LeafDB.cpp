@@ -6,14 +6,21 @@
 #include <test/test_bitcoin.h>
 
 #include <mw/db/LeafDB.h>
+#include <mw/file/ScopedFileRemover.h>
 
 #include <test_framework/DBWrapper.h>
+#include <test_framework/TestUtil.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestLeafDB, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(LeafDBTest)
 {
-    auto pDatabase = std::make_shared<TestDBWrapper>();
+    FilePath datadir = test::TestUtil::GetTempDir();
+    ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
+
+    TestDBWrapper test_wrapper(datadir.GetChild("db"));
+    auto pDatabase = test_wrapper.Get();
+
     LeafDB ldb('L', pDatabase.get());
 
     auto leaf1 = mmr::Leaf::Create(mmr::LeafIndex::At(0), { 0, 1, 2 });

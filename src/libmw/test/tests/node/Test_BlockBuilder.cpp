@@ -22,7 +22,9 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
     ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
 
     {
-        auto pDatabase = std::make_shared<TestDBWrapper>();
+        TestDBWrapper test_wrapper(datadir.GetChild("db"));
+        auto pDatabase = test_wrapper.Get();
+
         mw::CoinsViewDB::Ptr db_view = mw::Node::Init(datadir, mw::Header::CPtr{nullptr}, pDatabase);
         mw::CoinsViewCache::Ptr cached_view = std::make_shared<mw::CoinsViewCache>(db_view);
 

@@ -24,13 +24,11 @@ public:
     //
     // Constructors
     //
-    Input(Commitment&& commitment, PublicKey&& pubkey, Signature&& signature)
+    Input(Commitment commitment, PublicKey pubkey, Signature signature)
         : m_commitment(std::move(commitment)), m_pubkey(std::move(pubkey)), m_signature(std::move(signature))
     {
         m_hash = Hashed(Serialized());
     }
-    Input(const Commitment& commitment, const PublicKey& pubkey, const Signature& signature)
-        : Input(Commitment(commitment), PublicKey(pubkey), Signature(signature)) { }
     Input(const Input& input) = default;
     Input(Input&& input) noexcept = default;
     Input() = default;

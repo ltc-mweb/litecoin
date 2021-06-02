@@ -22,7 +22,9 @@ BOOST_AUTO_TEST_CASE(MineChain)
     ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
 
     {
-        auto pDatabase = std::make_shared<TestDBWrapper>();
+        TestDBWrapper test_wrapper(datadir.GetChild("db"));
+        auto pDatabase = test_wrapper.Get();
+
         auto pDBView = mw::Node::Init(datadir, nullptr, pDatabase);
         BOOST_REQUIRE(pDBView != nullptr);
 

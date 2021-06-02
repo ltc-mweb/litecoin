@@ -85,21 +85,21 @@ public:
     using Ptr = std::shared_ptr<ICoinsView>;
     using CPtr = std::shared_ptr<const ICoinsView>;
 
-    ICoinsView(const mw::Header::CPtr& pHeader, const std::shared_ptr<mw::IDBWrapper>& pDBWrapper)
+    ICoinsView(const mw::Header::CPtr& pHeader, const std::shared_ptr<mw::DBWrapper>& pDBWrapper)
         : m_pHeader(pHeader), m_pDatabase(pDBWrapper) { }
     virtual ~ICoinsView() = default;
 
     void SetBestHeader(const mw::Header::CPtr& pHeader) noexcept { m_pHeader = pHeader; }
     mw::Header::CPtr GetBestHeader() const noexcept { return m_pHeader; }
 
-    const std::shared_ptr<mw::IDBWrapper>& GetDatabase() const noexcept { return m_pDatabase; }
+    const std::shared_ptr<mw::DBWrapper>& GetDatabase() const noexcept { return m_pDatabase; }
 
     virtual bool IsCache() const noexcept = 0;
 
     // Virtual functions
     virtual std::vector<UTXO::CPtr> GetUTXOs(const Commitment& commitment) const = 0;
     virtual void WriteBatch(
-        const mw::IDBBatch::UPtr& pBatch,
+        const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) = 0;
@@ -128,7 +128,7 @@ protected:
 
 private:
     mw::Header::CPtr m_pHeader;
-    std::shared_ptr<mw::IDBWrapper> m_pDatabase;
+    std::shared_ptr<mw::DBWrapper> m_pDatabase;
 };
 
 class CoinsViewCache : public mw::ICoinsView
@@ -151,7 +151,7 @@ public:
     mw::BlockUndo::CPtr ApplyBlock(const mw::Block::CPtr& pBlock);
     void UndoBlock(const mw::BlockUndo::CPtr& pUndo);
     void WriteBatch(
-        const mw::IDBBatch::UPtr& pBatch,
+        const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) final;
@@ -161,7 +161,7 @@ public:
     /// Adds the cached updates to the database if the base CoinsView is a DB view.
     /// </summary>
     /// <param name="pBatch">The optional DB batch. This must be non-null when the base CoinsView is a DB view.</param>
-    void Flush(const mw::IDBBatch::UPtr& pBatch = nullptr);
+    void Flush(const mw::DBBatch::UPtr& pBatch = nullptr);
     mw::Block::Ptr BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions);
 
     void ValidateState() const;
@@ -190,7 +190,7 @@ class CoinsViewDB : public mw::ICoinsView
 public:
     CoinsViewDB(
         const mw::Header::CPtr& pBestHeader,
-        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
         const mmr::LeafSet::Ptr& pLeafSet,
         const mmr::MMR::Ptr& pKernelMMR,
         const mmr::MMR::Ptr& pOutputPMMR
@@ -203,7 +203,7 @@ public:
 
     std::vector<UTXO::CPtr> GetUTXOs(const Commitment& commitment) const final;
     void WriteBatch(
-        const mw::IDBBatch::UPtr& pBatch,
+        const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) final;

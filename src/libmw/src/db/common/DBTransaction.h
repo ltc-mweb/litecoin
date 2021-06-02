@@ -17,7 +17,7 @@ class DBTransaction
 public:
     using UPtr = std::unique_ptr<DBTransaction>;
 
-    DBTransaction(mw::IDBWrapper* pDB, mw::IDBBatch* pBatch)
+    DBTransaction(mw::DBWrapper* pDB, mw::DBBatch* pBatch)
         : m_pDB(pDB), m_pBatch(pBatch) { }
 
     template<typename T,
@@ -70,7 +70,7 @@ public:
     }
 
 private:
-    mw::IDBWrapper* m_pDB;
-    mw::IDBBatch* m_pBatch;
+    mw::DBWrapper* m_pDB;
+    mw::DBBatch* m_pBatch;
     OrderedMultimap<std::string, Traits::ISerializable> m_added;
 };

@@ -43,7 +43,7 @@ public:
 
     virtual LeafIndex GetNextLeaf() const noexcept { return LeafIndex::At(GetNumLeaves()); }
 
-    virtual void Commit(const uint32_t file_index, const std::unique_ptr<mw::IDBBatch>& pBatch) = 0;
+    virtual void Commit(const uint32_t file_index, const std::unique_ptr<mw::DBBatch>& pBatch) = 0;
 };
 
 END_NAMESPACE

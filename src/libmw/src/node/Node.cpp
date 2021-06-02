@@ -14,7 +14,7 @@ using namespace mw;
 mw::CoinsViewDB::Ptr Node::Init(
     const FilePath& datadir,
     const mw::Header::CPtr& pBestHeader,
-    const std::shared_ptr<mw::IDBWrapper>& pDBWrapper)
+    const std::shared_ptr<mw::DBWrapper>& pDBWrapper)
 {
     auto current_mmr_info = MMRInfoDB(pDBWrapper.get(), nullptr).GetLatest();
     uint32_t file_index = current_mmr_info ? current_mmr_info->index : 0;
@@ -90,7 +90,7 @@ void Node::DisconnectBlock(const mw::BlockUndo::CPtr& pUndoData, const mw::ICoin
 mw::ICoinsView::Ptr Node::ApplyState(
     const FilePath& datadir,
     const mw::IChain::Ptr& pChain,
-    const mw::IDBWrapper::Ptr& pDBWrapper,
+    const mw::DBWrapper::Ptr& pDBWrapper,
     const mw::Header::CPtr& pStateHeader,
     const mw::State& state)
 {

@@ -9,7 +9,7 @@ class Database;
 class MMRInfoDB
 {
 public:
-    MMRInfoDB(mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch = nullptr);
+    MMRInfoDB(mw::DBWrapper* pDBWrapper, mw::DBBatch* pBatch = nullptr);
     ~MMRInfoDB();
 
     /// <summary>

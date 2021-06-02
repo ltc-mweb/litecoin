@@ -8,8 +8,8 @@ using namespace mmr;
 
 MMR::Ptr MMRFactory::Build(
     const char prefix,
-    const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
-    const std::unique_ptr<mw::IDBBatch>& pBatch,
+    const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
+    const std::unique_ptr<mw::DBBatch>& pBatch,
     const PruneList::Ptr& pPruneList,
     const MMRInfo& mmr_info,
     const FilePath& data_dir,

@@ -24,7 +24,8 @@ BOOST_AUTO_TEST_CASE(FileBackendTest)
     ScopedFileRemover remover(tempDir);
     
     {
-        auto pDatabase = std::make_shared<TestDBWrapper>();
+        TestDBWrapper test_wrapper(tempDir.GetChild("db"));
+        auto pDatabase = test_wrapper.Get();
 
         {
             auto pBackend = FileBackend::Open('T', tempDir, 0, pDatabase, nullptr);

@@ -7,7 +7,7 @@ std::shared_ptr<mmr::FileBackend> mmr::FileBackend::Open(
     const char dbPrefix,
     const FilePath& mmr_dir,
     const uint32_t file_index,
-    const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+    const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
     const mmr::PruneList::CPtr& pPruneList)
 {
     const FilePath path = GetPath(mmr_dir, dbPrefix, file_index);
@@ -24,7 +24,7 @@ mmr::FileBackend::FileBackend(
     const char dbPrefix,
     const FilePath& mmr_dir,
     const AppendOnlyFile::Ptr& pHashFile,
-    const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
+    const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
     const mmr::PruneList::CPtr& pPruneList)
     : m_dbPrefix(dbPrefix), m_dir(mmr_dir), m_pHashFile(pHashFile), m_pDatabase(pDBWrapper), m_pPruneList(pPruneList)
 {
@@ -119,7 +119,7 @@ mmr::Leaf mmr::FileBackend::GetLeaf(const LeafIndex& idx) const
     return std::move(*pLeaf);
 }
 
-void mmr::FileBackend::Commit(const uint32_t file_index, const std::unique_ptr<mw::IDBBatch>& pBatch)
+void mmr::FileBackend::Commit(const uint32_t file_index, const std::unique_ptr<mw::DBBatch>& pBatch)
 {
     m_pHashFile->Commit(GetPath(m_dir, m_dbPrefix, file_index));
 

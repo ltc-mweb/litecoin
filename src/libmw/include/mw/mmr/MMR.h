@@ -94,7 +94,7 @@ public:
         const uint32_t file_index,
         const LeafIndex& firstLeafIdx,
         const std::vector<Leaf>& leaves,
-        const std::unique_ptr<mw::IDBBatch>& pBatch
+        const std::unique_ptr<mw::DBBatch>& pBatch
     ) = 0;
 };
 
@@ -119,7 +119,7 @@ public:
         const uint32_t file_index,
         const LeafIndex& firstLeafIdx,
         const std::vector<Leaf>& leaves,
-        const std::unique_ptr<mw::IDBBatch>& pBatch
+        const std::unique_ptr<mw::DBBatch>& pBatch
     ) final;
 
 private:
@@ -146,10 +146,10 @@ public:
         const uint32_t file_index,
         const LeafIndex& firstLeafIdx,
         const std::vector<Leaf>& leaves,
-        const std::unique_ptr<mw::IDBBatch>& pBatch
+        const std::unique_ptr<mw::DBBatch>& pBatch
     ) final;
 
-    void Flush(const uint32_t index, const std::unique_ptr<mw::IDBBatch>& pBatch);
+    void Flush(const uint32_t index, const std::unique_ptr<mw::DBBatch>& pBatch);
 
 private:
     IMMR::Ptr m_pBase;

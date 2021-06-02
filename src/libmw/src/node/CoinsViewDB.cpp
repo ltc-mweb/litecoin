@@ -51,7 +51,7 @@ void CoinsViewDB::SpendUTXO(CoinDB& coinDB, const Commitment& commitment)
     coinDB.RemoveUTXOs(std::vector<Commitment>{ commitment });
 }
 
-void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::IDBBatch>& pBatch, const CoinsViewUpdates& updates, const mw::Header::CPtr& pHeader)
+void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::DBBatch>& pBatch, const CoinsViewUpdates& updates, const mw::Header::CPtr& pHeader)
 {
     assert(pBatch != nullptr);
     SetBestHeader(pHeader);

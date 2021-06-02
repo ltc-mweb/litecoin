@@ -185,7 +185,7 @@ UTXO CoinsViewCache::SpendUTXO(const Commitment& commitment)
     return *utxos.back();
 }
 
-void CoinsViewCache::WriteBatch(const std::unique_ptr<mw::IDBBatch>&, const CoinsViewUpdates& updates, const mw::Header::CPtr& pHeader)
+void CoinsViewCache::WriteBatch(const std::unique_ptr<mw::DBBatch>&, const CoinsViewUpdates& updates, const mw::Header::CPtr& pHeader)
 {
     SetBestHeader(pHeader);
 
@@ -201,7 +201,7 @@ void CoinsViewCache::WriteBatch(const std::unique_ptr<mw::IDBBatch>&, const Coin
     }
 }
 
-void CoinsViewCache::Flush(const std::unique_ptr<mw::IDBBatch>& pBatch)
+void CoinsViewCache::Flush(const std::unique_ptr<mw::DBBatch>& pBatch)
 {
     if (GetBestHeader() == nullptr) {
         return;

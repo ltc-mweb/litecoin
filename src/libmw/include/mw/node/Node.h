@@ -31,7 +31,7 @@ public:
     static mw::CoinsViewDB::Ptr Init(
         const FilePath& datadir,
         const mw::Header::CPtr& pBestHeader,
-        const mw::IDBWrapper::Ptr& pDBWrapper
+        const mw::DBWrapper::Ptr& pDBWrapper
     );
 
     /// <summary>
@@ -86,7 +86,7 @@ public:
     static mw::ICoinsView::Ptr ApplyState(
         const FilePath& data_dir,
         const mw::IChain::Ptr& pChain,
-        const mw::IDBWrapper::Ptr& pCoinsDB,
+        const mw::DBWrapper::Ptr& pCoinsDB,
         const mw::Header::CPtr& pStateHeader,
         const mw::State& state
     );

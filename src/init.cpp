@@ -25,7 +25,6 @@
 #include <key.h>
 #include <validation.h>
 #include <miner.h>
-#include <mweb/mweb_db.h>
 #include <mw/node/Node.h>
 #include <netbase.h>
 #include <net.h>
@@ -1551,7 +1550,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                 mw::CoinsViewDB::Ptr mweb_dbview = mw::Node::Init(
                     FilePath{GetDataDir().native()},
                     block.mwBlock.GetMWEBHeader(),
-                    std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
+                    std::make_shared<mw::DBWrapper>(pcoinsdbview->GetDB())
                 );
                 pcoinsdbview->SetMWView(mweb_dbview);
 

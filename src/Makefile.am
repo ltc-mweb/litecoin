@@ -200,7 +200,6 @@ BITCOIN_CORE_H = \
   merkleblock.h \
   miner.h \
   mweb/mweb_chain.h \
-  mweb/mweb_db.h \
   mweb/mweb_miner.h \
   mweb/mweb_models.h \
   mweb/mweb_node.h \
@@ -315,7 +314,6 @@ libbitcoin_server_a_SOURCES = \
   interfaces/handler.cpp \
   interfaces/node.cpp \
   init.cpp \
-  dbwrapper.cpp \
   merkleblock.cpp \
   miner.cpp \
   mweb/mweb_miner.cpp \
@@ -516,6 +514,7 @@ libbitcoin_util_a_SOURCES = \
   support/lockedpool.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
+  dbwrapper.cpp \
   compat/glibc_sanity.cpp \
   compat/glibcxx_sanity.cpp \
   compat/strnlen.cpp \
@@ -615,7 +614,7 @@ litecoin_tx_LDADD = \
   $(LIBSECP256K1) \
   $(LIBMW)
 
-litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS)
+litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS) $(LIBLEVELDB) $(LIBLEVELDB_SSE42) $(LIBMEMENV)
 #
 
 # bitcoin-wallet binary #

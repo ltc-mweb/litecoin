@@ -10,7 +10,6 @@
 #include <crypto/sha256.h>
 #include <miner.h>
 #include <mw/node/Node.h>
-#include <mweb/mweb_db.h>
 #include <policy/policy.h>
 #include <pow.h>
 #include <scheduler.h>
@@ -83,7 +82,7 @@ static void AssembleBlock(benchmark::State& state)
         mw::CoinsViewDB::Ptr mweb_dbview = mw::Node::Init(
             FilePath{GetDataDir().native()},
             mw::Header::CPtr{nullptr},
-            std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
+            std::make_shared<mw::DBWrapper>(pcoinsdbview->GetDB())
         );
         pcoinsdbview->SetMWView(mweb_dbview);
 
