@@ -29,7 +29,7 @@ jobs:
                 make HOST=x86_64-w64-mingw32
                 cd ..
                 ./autogen.sh
-                CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
+                CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --with-utils=no --enable-util-cli=yes --prefix=/
                 make -j8
                 make deploy
             - name: Upload artifact
