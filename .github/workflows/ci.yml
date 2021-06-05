@@ -33,7 +33,7 @@ jobs:
               working-directory: litecoin
               run: |
                 ./autogen.sh
-                ./configure --with-incompatible-bdb LDFLAGS="-static-libstdc++ -static-libgcc"
+                ./configure --with-incompatible-bdb --with-utils=no LDFLAGS="-static-libstdc++ -static-libgcc"
                 make -j8
                 mkdir -p dist
                 cp src/litecoind dist/litecoind

@@ -70,14 +70,12 @@ public:
 
     std::string operator()(const StealthAddress& id) const
     {
-        // MW: TODO - Create new bech32 encoder so we don't need to concat these 2.
-        std::vector<uint8_t> scan_data = {id.GetScanPubKey().vec()[0]};
-        ConvertBits<8, 5, true>([&](unsigned char c) { scan_data.push_back(c); }, id.GetScanPubKey().vec().begin() + 1, id.GetScanPubKey().vec().end());
+        std::vector<uint8_t> serialized = id.Serialized();
 
-        std::vector<uint8_t> spend_data = {id.GetSpendPubKey().vec()[0]};
-        ConvertBits<8, 5, true>([&](unsigned char c) { spend_data.push_back(c); }, id.GetSpendPubKey().vec().begin() + 1, id.GetSpendPubKey().vec().end());
+        std::vector<uint8_t> converted = {0};
+        ConvertBits<8, 5, true>([&](unsigned char c) { converted.push_back(c); }, serialized.begin(), serialized.end());
 
-        return bech32::Encode("mweb", scan_data) + ":" + bech32::Encode(m_params.Bech32HRP(), spend_data);
+        return bech32::Encode(m_params.MWEB_HRP(), converted);
     }
 
     std::string operator()(const CNoDestination& no) const { return {}; }
@@ -147,26 +145,14 @@ CTxDestination DecodeDestination(const std::string& str, const CChainParams& par
         }
     }
 
-    std::vector<std::string> address_parts;
-    boost::split(address_parts, str, boost::is_any_of(":"));
-    if (address_parts.size() == 2) {
-        auto bech_scan = bech32::Decode(address_parts[0]);
-        auto bech_spend = bech32::Decode(address_parts[1]);
-        if (!bech_scan.second.empty() && bech_scan.first == "mweb" && !bech_spend.second.empty() && bech_spend.first == params.Bech32HRP()) {
-            std::vector<uint8_t> scan_data;
-            scan_data.reserve(((bech_scan.second.size() - 1) * 5) / 8);
-            scan_data.push_back(bech_scan.second[0]);
+    auto decoded = bech32::Decode(str, true);
+    if (!decoded.second.empty() && decoded.first == params.MWEB_HRP()) {
+        std::vector<uint8_t> converted;
+        converted.reserve(((decoded.second.size() - 1) * 5) / 8);
 
-            std::vector<uint8_t> spend_data;
-            spend_data.reserve(((bech_spend.second.size() - 1) * 5) / 8);
-            spend_data.push_back(bech_spend.second[0]);
-
-            if (ConvertBits<5, 8, false>([&](unsigned char c) { scan_data.push_back(c); }, bech_scan.second.begin() + 1, bech_scan.second.end())
-                && ConvertBits<5, 8, false>([&](unsigned char c) { spend_data.push_back(c); }, bech_spend.second.begin() + 1, bech_spend.second.end())) {
-
-                if (scan_data.size() == 33 && spend_data.size() == 33) {
-                    return StealthAddress(BigInt<33>(scan_data), BigInt<33>(spend_data));
-                }
+        if (ConvertBits<5, 8, false>([&](unsigned char c) { converted.push_back(c); }, decoded.second.begin() + 1, decoded.second.end())) {
+            if (converted.size() == 66) {
+                return StealthAddress(BigInt<33>(converted.data()), BigInt<33>(converted.data() + 33));
             }
         }
     }

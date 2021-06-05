@@ -100,8 +100,8 @@ RangeProof::CPtr Bulletproofs::Generate(
     auto contextWriter = BP_CONTEXT.Write();
     secp256k1_context* pContext = contextWriter->Randomized();
 
-    std::vector<uint8_t> proofBytes(RangeProof::MAX_SIZE, 0);
-    size_t proofLen = RangeProof::MAX_SIZE;
+    std::vector<uint8_t> proofBytes(RangeProof::SIZE, 0);
+    size_t proofLen = RangeProof::SIZE;
 
     secp256k1_scratch_space* pScratchSpace = secp256k1_scratch_space_create(pContext, SCRATCH_SPACE_SIZE);
 

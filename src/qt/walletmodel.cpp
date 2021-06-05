@@ -193,12 +193,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 receiver = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
                 break;
             }
-            case SendCoinsRecipient::MWEB_SEND: {
-                receiver = boost::get<StealthAddress>(DecodeDestination(rcp.address.toStdString()));
-                break;
-            }
             default:
-                receiver = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
+                receiver = DestinationScript(DecodeDestination(rcp.address.toStdString()));
             }
             CRecipient recipient = {receiver, rcp.amount, rcp.fSubtractFeeFromAmount};
             vecSend.push_back(recipient);

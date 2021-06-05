@@ -81,6 +81,10 @@ public:
         READWRITE(m_maskedValue);
         READWRITE(m_maskedNonce);
         READWRITE(m_senderPubKey);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
     }
 
     //

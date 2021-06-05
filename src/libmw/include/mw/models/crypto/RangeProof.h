@@ -18,13 +18,13 @@ class RangeProof :
 {
 public:
     using CPtr = std::shared_ptr<const RangeProof>;
-    enum { MAX_SIZE = 675 };
+    enum { SIZE = 675 };
 
     //
     // Constructors
     //
-    RangeProof() = default;
-    RangeProof(std::vector<uint8_t>&& bytes) : m_bytes(std::move(bytes)) { assert(m_bytes.size() <= MAX_SIZE); }
+    RangeProof() noexcept : m_bytes(SIZE) {}
+    RangeProof(std::vector<uint8_t>&& bytes) : m_bytes(std::move(bytes)) { assert(m_bytes.size() == SIZE); }
     RangeProof(const RangeProof& other) = default;
     RangeProof(RangeProof&& other) noexcept = default;
 
@@ -55,13 +55,13 @@ public:
     template <typename Stream>
     void Serialize(Stream& s) const
     {
-        s.write((const char*)m_bytes.data(), MAX_SIZE);
+        s.write((const char*)m_bytes.data(), SIZE);
     }
 
     template <typename Stream>
     void Unserialize(Stream& s)
     {
-        s.read((char*)m_bytes.data(), MAX_SIZE);
+        s.read((char*)m_bytes.data(), SIZE);
     }
 
     //

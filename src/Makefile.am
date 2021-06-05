@@ -35,7 +35,7 @@ LIBBITCOIN_UTIL=libbitcoin_util.a
 LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.a
 LIBBITCOINQT=qt/libbitcoinqt.a
 LIBSECP256K1=secp256k1-zkp/libsecp256k1.la
-LIBMW=libmw/libmw.a
+LIBMW=libmw.a
 
 if ENABLE_ZMQ
 LIBBITCOIN_ZMQ=libbitcoin_zmq.a
@@ -103,9 +103,9 @@ endif
 endif
 
 LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/caches/include -I$(srcdir)/libmw/deps/crypto/include
-libmw_libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
-libmw_libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libmw_libmw_a_SOURCES = \
+libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
+libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libmw_a_SOURCES = \
 	libmw/src/common/Logger.cpp \
 	libmw/src/crypto/Bulletproofs.cpp \
 	libmw/src/crypto/ConversionUtil.cpp \
@@ -611,10 +611,13 @@ litecoin_tx_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
+  $(LIBLEVELDB) \
+  $(LIBLEVELDB_SSE42) \
+  $(LIBMEMENV) \
   $(LIBSECP256K1) \
   $(LIBMW)
 
-litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS) $(LIBLEVELDB) $(LIBLEVELDB_SSE42) $(LIBMEMENV)
+litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS)
 #
 
 # bitcoin-wallet binary #

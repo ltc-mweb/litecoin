@@ -139,7 +139,9 @@ public:
         READWRITE(m_signature);
         READWRITE(m_pProof);
 
-        m_hash = Hashed(*this);
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
     }
 
 private:

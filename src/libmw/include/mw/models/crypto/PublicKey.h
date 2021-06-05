@@ -45,6 +45,7 @@ public:
     const BigInt<33>& GetBigInt() const { return m_compressed; }
     std::array<uint8_t, 33> array() const { return m_compressed.ToArray(); }
     const std::vector<uint8_t>& vec() const { return m_compressed.vec(); }
+    const uint8_t& operator[](const size_t x) const { return m_compressed[x]; }
     const uint8_t* data() const { return m_compressed.data(); }
     uint8_t* data() { return m_compressed.data(); }
     size_t size() const { return m_compressed.size(); }
