@@ -190,8 +190,12 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey)
 isminetype IsMine(const CKeyStore& keystore, const CTxDestination& dest)
 {
     if (dest.type() == typeid(StealthAddress)) {
-        // MW: TODO - Check MWEB address
-        return ISMINE_SPENDABLE;
+        auto mweb_keychain = keystore.GetMWEBKeychain();
+        if (mweb_keychain != nullptr) {
+            return mweb_keychain->IsMine(boost::get<StealthAddress>(dest)) ? ISMINE_SPENDABLE : ISMINE_NO;
+        }
+
+        return ISMINE_NO;
     } else {
         CScript script = GetScriptForDestination(dest);
         return IsMine(keystore, script);

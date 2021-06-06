@@ -23,7 +23,9 @@ class Wallet
 public:
     Wallet(CWallet* pWallet)
         : m_pWallet(pWallet) {}
-    
+
+    const mw::Keychain::Ptr& GetKeychain() const;
+
     CExtKey GetHDKey(const std::string& bip32Path) const;
     bool GetCoin(const Commitment& output_commit, mw::Coin& coin) const;
 
@@ -39,10 +41,8 @@ public:
     void DeleteCoins(const std::vector<mw::Coin>& coins);
 
 private:
-    const mw::Keychain::Ptr& GetKeychain();
-
     CWallet* m_pWallet;
-    mw::Keychain::Ptr m_keychain;
+    mutable mw::Keychain::Ptr m_keychain;
     std::map<Commitment, mw::Coin> m_coins;
 };
 

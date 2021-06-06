@@ -207,7 +207,7 @@ static const unsigned int DEFAULT_CHECKLEVEL = 3;
 // full block file chunks, we need the high water mark which triggers the prune to be
 // one 128MB block file + added 15% undo data = 147MB greater for a total of 545MB
 // Setting the target to >= 550 MiB will make it likely we can respect the target.
-static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 550 * 1024 * 1024; // MW: TODO - We need to update this value. Choosing block size could be tricky though, since we don't actually limit the number of MWEB inputs.
+static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = (uint64_t)4 * 550 * 1024 * 1024; // MWEB: 4x the previous size, just to be safe.
 
 /**
  * Process an incoming block. This only returns after the best known valid

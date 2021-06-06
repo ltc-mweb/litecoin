@@ -101,4 +101,14 @@ bool Keychain::IsSpendPubKey(const PublicKey& spend_pubkey, uint32_t& index_out)
     return false;
 }
 
+bool Keychain::IsMine(const StealthAddress& address) const
+{
+    uint32_t index;
+    if (IsSpendPubKey(address.GetSpendPubKey(), index)) {
+        return GetStealthAddress(index) == address;
+    }
+
+    return false;
+}
+
 END_NAMESPACE

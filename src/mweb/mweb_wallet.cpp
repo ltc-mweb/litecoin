@@ -114,7 +114,7 @@ void Wallet::DeleteCoins(const std::vector<mw::Coin>& coins)
     }
 }
 
-const mw::Keychain::Ptr& Wallet::GetKeychain()
+const mw::Keychain::Ptr& Wallet::GetKeychain() const
 {
     if (!m_keychain) {
         // Scan secret key

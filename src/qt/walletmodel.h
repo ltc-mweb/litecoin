@@ -73,8 +73,7 @@ public:
     enum Type {
         REGULAR = 0,
         MWEB_PEGIN = 1,
-        MWEB_PEGOUT = 2,
-        MWEB_SEND = 3,
+        MWEB_PEGOUT = 2
     } type;
 
 #ifdef ENABLE_BIP70
