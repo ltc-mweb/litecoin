@@ -1474,11 +1474,11 @@ bool CWallet::IsChange(const CTxOutput& output) const
 
 bool CWallet::IsChange(const CTxDestination& dest) const
 {
-    if (dest.type() == typeid(StealthAddress)) {
-        return boost::get<StealthAddress>(dest) == mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
+    DestinationScript dest_script(dest);
+    if (dest_script.IsMWEB()) {
+        return dest_script.GetMWEBAddress() == mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
     } else {
-        CScript scriptPubKey = GetScriptForDestination(dest);
-        return IsChange(scriptPubKey);
+        return IsChange(dest_script.GetScript());
     }
 }
 

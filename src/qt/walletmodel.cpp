@@ -190,11 +190,11 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             }
             case SendCoinsRecipient::MWEB_PEGOUT: {
                 coin_control_copy.fPegOut = true;
-                receiver = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
+                receiver = DecodeDestination(rcp.address.toStdString());
                 break;
             }
             default:
-                receiver = DestinationScript(DecodeDestination(rcp.address.toStdString()));
+                receiver = DecodeDestination(rcp.address.toStdString());
             }
             CRecipient recipient = {receiver, rcp.amount, rcp.fSubtractFeeFromAmount};
             vecSend.push_back(recipient);

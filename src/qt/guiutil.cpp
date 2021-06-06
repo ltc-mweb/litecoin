@@ -205,9 +205,12 @@ QString formatBitcoinURI(const SendCoinsRecipient &info)
 
 bool isDust(interfaces::Node& node, const QString& address, const CAmount& amount)
 {
-    CTxDestination dest = DecodeDestination(address.toStdString());
-    CScript script = GetScriptForDestination(dest);
-    CTxOut txOut(amount, script);
+    DestinationScript dest_script = DecodeDestination(address.toStdString());
+    if (dest_script.IsMWEB()) {
+        return false;
+    }
+
+    CTxOut txOut(amount, dest_script.GetScript());
     return IsDust(txOut, node.getDustRelayFee());
 }
 
