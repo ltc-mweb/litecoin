@@ -454,7 +454,7 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
         mweb_info.pushKV("weight", mweb_weight);
 
         mweb_info.pushKV("fee", ValueFromAmount(tx.m_mwtx.GetFee()));
-        mweb_info.pushKV("lock_height", (int)tx.m_mwtx.GetLockHeight());
+        mweb_info.pushKV("lock_height", tx.m_mwtx.GetLockHeight());
 
         // Pegins
         UniValue pegins(UniValue::VARR);

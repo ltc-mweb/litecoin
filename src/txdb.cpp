@@ -7,6 +7,7 @@
 
 #include <chainparams.h>
 #include <hash.h>
+#include <mweb/mweb_db.h>
 #include <random.h>
 #include <pow.h>
 #include <shutdown.h>
@@ -137,7 +138,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, con
 
     // MWEB: Flushes mimblewimble coins & MMRs
     auto mweb_cache_view = dynamic_cast<mw::CoinsViewCache*>(derivedView.get());
-    mweb_cache_view->Flush(std::make_unique<mw::DBBatch>(&db, batch));
+    mweb_cache_view->Flush(std::make_unique<MWEB::DBBatch>(&db, batch));
 
     // In the last batch, mark the database as consistent with hashBlock again.
     batch->Erase(DB_HEAD_BLOCKS);
@@ -281,9 +282,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
-                pindexNew->mweb_hash      = diskindex.mweb_hash;
+                pindexNew->mweb_header    = diskindex.mweb_header;
                 pindexNew->mweb_amount    = diskindex.mweb_amount;
-                pindexNew->hogex_hash     = diskindex.hogex_hash;
 
                 // Litecoin: Disable PoW Sanity check while loading block index from disk.
                 // We use the sha256 hash for the block index for performance reasons, which is recorded for later use.

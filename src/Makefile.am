@@ -611,14 +611,10 @@ litecoin_tx_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
-  $(LIBLEVELDB) \
-  $(LIBLEVELDB_SSE42) \
-  $(LIBMEMENV) \
   $(LIBSECP256K1) \
   $(LIBMW)
 
 litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS)
-#
 
 # bitcoin-wallet binary #
 litecoin_wallet_SOURCES = bitcoin-wallet.cpp

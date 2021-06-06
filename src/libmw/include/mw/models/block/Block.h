@@ -48,7 +48,7 @@ public:
     const std::vector<Output>& GetOutputs() const noexcept { return m_body.GetOutputs(); }
     const std::vector<Kernel>& GetKernels() const noexcept { return m_body.GetKernels(); }
 
-    uint64_t GetHeight() const noexcept { return m_pHeader->GetHeight(); }
+    int32_t GetHeight() const noexcept { return m_pHeader->GetHeight(); }
     const BlindingFactor& GetKernelOffset() const noexcept { return m_pHeader->GetKernelOffset(); }
     const BlindingFactor& GetOwnerOffset() const noexcept { return m_pHeader->GetOwnerOffset(); }
 

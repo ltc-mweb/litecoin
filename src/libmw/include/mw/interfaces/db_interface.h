@@ -6,7 +6,6 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
-#include <dbwrapper.h>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -19,57 +18,20 @@ class DBBatch
 public:
     using UPtr = std::unique_ptr<DBBatch>;
 
-    DBBatch(CDBWrapper* pDB, const std::shared_ptr<CDBBatch>& pBatch)
-        : m_pDB(pDB), m_pBatch(pBatch) {}
-
-    void Write(const std::string& key, const std::vector<uint8_t>& value)
-    {
-        m_pBatch->Write(key, value);
-    }
-
-    void Erase(const std::string& key)
-    {
-        m_pBatch->Erase(key);
-    }
-
-    void Commit()
-    {
-        m_pDB->WriteBatch(*m_pBatch);
-    }
-
-private:
-    CDBWrapper* m_pDB;
-    std::shared_ptr<CDBBatch> m_pBatch;
+    virtual void Write(const std::string& key, const std::vector<uint8_t>& value) = 0;
+    virtual void Erase(const std::string& key) = 0;
+    virtual void Commit() = 0;
 };
 
 class DBIterator
 {
 public:
-    DBIterator(CDBIterator* pIterator)
-        : m_pIterator(std::unique_ptr<CDBIterator>(pIterator)) {}
+    virtual ~DBIterator() = default;
 
-    void Seek(const std::string& key)
-    {
-        m_pIterator->Seek(key);
-    }
-
-    void Next()
-    {
-        m_pIterator->Next();
-    }
-
-    bool GetKey(std::string& key) const
-    {
-        return m_pIterator->GetKey(key);
-    }
-
-    bool Valid() const
-    {
-        return m_pIterator->Valid();
-    }
-
-private:
-    std::unique_ptr<CDBIterator> m_pIterator;
+    virtual void Seek(const std::string& key) = 0;
+    virtual void Next() = 0;
+    virtual bool GetKey(std::string& key) const = 0;
+    virtual bool Valid() const = 0;
 };
 
 class DBWrapper
@@ -77,25 +39,10 @@ class DBWrapper
 public:
     using Ptr = std::shared_ptr<DBWrapper>;
 
-    DBWrapper(CDBWrapper* pDB) : m_pDB(pDB) {}
-
-    bool Read(const std::string& key, std::vector<uint8_t>& value) const // MW: TODO - Should support serializable object instead of vector?
-    {
-        return m_pDB->Read(key, value);
-    }
-
-    std::unique_ptr<DBIterator> NewIterator()
-    {
-        return std::make_unique<DBIterator>(m_pDB->NewIterator());
-    }
-
-    std::unique_ptr<DBBatch> CreateBatch()
-    {
-        return std::make_unique<DBBatch>(m_pDB, std::make_shared<CDBBatch>(*m_pDB));
-    }
-
-private:
-    CDBWrapper* m_pDB;
+    // MW: TODO - Should support serializable object instead of vector?
+    virtual bool Read(const std::string& key, std::vector<uint8_t>& value) const = 0;
+    virtual std::unique_ptr<DBIterator> NewIterator() = 0;
+    virtual std::unique_ptr<DBBatch> CreateBatch() = 0;
 };
 
 END_NAMESPACE // mw

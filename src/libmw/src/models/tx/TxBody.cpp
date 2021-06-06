@@ -65,11 +65,11 @@ int64_t TxBody::GetSupplyChange() const noexcept
     );
 }
 
-uint64_t TxBody::GetLockHeight() const noexcept
+int32_t TxBody::GetLockHeight() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (uint64_t)0,
-        [](const uint64_t lock_height, const auto& kernel) noexcept { return std::max(lock_height, kernel.GetLockHeight()); }
+        m_kernels.cbegin(), m_kernels.cend(), (int32_t)0,
+        [](const int32_t lock_height, const auto& kernel) noexcept { return std::max(lock_height, kernel.GetLockHeight()); }
     );
 }
 

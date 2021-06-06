@@ -27,7 +27,7 @@ public:
     Input(Commitment commitment, PublicKey pubkey, Signature signature)
         : m_commitment(std::move(commitment)), m_pubkey(std::move(pubkey)), m_signature(std::move(signature))
     {
-        m_hash = Hashed(Serialized());
+        m_hash = Hashed(*this);
     }
     Input(const Input& input) = default;
     Input(Input&& input) noexcept = default;
@@ -65,6 +65,10 @@ public:
         READWRITE(m_commitment);
         READWRITE(m_pubkey);
         READWRITE(m_signature);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
     }
 
     //
@@ -81,5 +85,5 @@ private:
 
     Signature m_signature;
 
-    mutable mw::Hash m_hash;
+    mw::Hash m_hash;
 };

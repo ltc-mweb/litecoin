@@ -311,7 +311,12 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 
         s >> tx.m_mwtx;
         if (tx.m_mwtx.IsNull()) {
-            /* If the mw flag is set, but there are no mw txs, assume hogEx txn. */
+            if (tx.vout.empty()) {
+                /* It's illegal to include a HogEx with no outputs. */
+                throw std::ios_base::failure("Missing HogEx output");
+            }
+
+            /* If the mw flag is set, but there are no mw txs, assume HogEx txn. */
             tx.m_hogEx = true;
         }
     }
@@ -465,21 +470,6 @@ public:
 
     bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
     bool IsHogEx() const noexcept { return m_hogEx; }
-
-    uint256 GetMWEBHash() const noexcept // MW: TODO - Doesn't belong here
-    {
-        if (m_hogEx && !vout.empty()) {
-            int version;
-            std::vector<unsigned char> program;
-            if (vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
-                if (program.size() == 32 && version == Consensus::Mimblewimble::WITNESS_VERSION) {
-                    return uint256(program);
-                }
-            }
-        }
-
-        return uint256();
-    }
 
     std::vector<CTxInput> GetInputs() const noexcept
     {

@@ -11,6 +11,7 @@
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
 #include <mw/node/Node.h>
+#include <mweb/mweb_db.h>
 #include <miner.h>
 #include <net_processing.h>
 #include <noui.h>
@@ -85,7 +86,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         mw::ICoinsView::Ptr mw_view = mw::Node::Init(
             FilePath{GetDataDir().native()},
             {nullptr}, // MW: TODO - Load this first
-            std::make_shared<mw::DBWrapper>(pcoinsdbview->GetDB())
+            std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
         );
         pcoinsdbview->SetMWView(mw_view);
 

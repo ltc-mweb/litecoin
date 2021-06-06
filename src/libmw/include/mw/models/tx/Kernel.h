@@ -11,6 +11,7 @@
 #include <mw/models/crypto/Signature.h>
 #include <mw/models/tx/PegOutCoin.h>
 #include <mw/models/tx/KernelType.h>
+#include <amount.h>
 #include <boost/optional.hpp>
 
 class Kernel :
@@ -31,7 +32,7 @@ public:
         boost::optional<uint64_t> fee,
         boost::optional<uint64_t> pegin,
         boost::optional<PegOutCoin> pegout,
-        boost::optional<uint64_t> lockHeight,
+        boost::optional<int32_t> lockHeight,
         std::vector<uint8_t> extraData,
         Commitment&& excess,
         Signature&& signature
@@ -54,7 +55,7 @@ public:
         const boost::optional<uint64_t>& fee,
         const boost::optional<uint64_t>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
-        const boost::optional<uint64_t>& lock_height
+        const boost::optional<int32_t>& lock_height
     );
 
     //
@@ -68,7 +69,7 @@ public:
     // Getters
     //
     uint64_t GetFee() const noexcept { return m_fee.value_or(0); }
-    uint64_t GetLockHeight() const noexcept { return m_lockHeight.value_or(0); }
+    int32_t GetLockHeight() const noexcept { return m_lockHeight.value_or(0); }
     const Commitment& GetExcess() const noexcept { return m_excess; }
     const Signature& GetSignature() const noexcept { return m_signature; }
     const std::vector<uint8_t>& GetExtraData() const noexcept { return m_extraData; }
@@ -78,7 +79,7 @@ public:
         const boost::optional<uint64_t>& fee,
         const boost::optional<uint64_t>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
-        const boost::optional<uint64_t>& lock_height,
+        const boost::optional<int32_t>& lock_height,
         const std::vector<uint8_t>& extra_data
     );
 
@@ -159,7 +160,7 @@ public:
         }
 
         if (features_byte & HEIGHT_LOCK_FEATURE_BIT) {
-            uint64_t lock_height;
+            int32_t lock_height;
             s >> lock_height;
             m_lockHeight = lock_height;
         }
@@ -182,7 +183,7 @@ private:
     boost::optional<uint64_t> m_fee;
     boost::optional<uint64_t> m_pegin;
     boost::optional<PegOutCoin> m_pegout;
-    boost::optional<uint64_t> m_lockHeight;
+    boost::optional<int32_t> m_lockHeight;
     std::vector<uint8_t> m_extraData;
 
     // Remainder of the sum of all transaction commitments. 

@@ -6,7 +6,7 @@ Kernel Kernel::Create(
     const boost::optional<uint64_t>& fee,
     const boost::optional<uint64_t>& pegin_amount,
     const boost::optional<PegOutCoin>& pegout,
-    const boost::optional<uint64_t>& lock_height)
+    const boost::optional<int32_t>& lock_height)
 {
     Commitment excess_commit = Commitment::Blinded(blind, 0);
 
@@ -33,7 +33,7 @@ mw::Hash Kernel::GetSignatureMessage(
     const boost::optional<uint64_t>& fee,
     const boost::optional<uint64_t>& pegin_amount,
     const boost::optional<PegOutCoin>& pegout,
-    const boost::optional<uint64_t>& lock_height,
+    const boost::optional<int32_t>& lock_height,
     const std::vector<uint8_t>& extra_data)
 {
     uint8_t features_byte =
@@ -61,7 +61,7 @@ mw::Hash Kernel::GetSignatureMessage(
     }
 
     if (lock_height) {
-        sig_message_hasher.Append<uint64_t>(lock_height.value());
+        sig_message_hasher.Append<int32_t>(lock_height.value());
     }
 
     if (!extra_data.empty()) {

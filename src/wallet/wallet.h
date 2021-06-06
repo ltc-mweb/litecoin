@@ -699,7 +699,7 @@ struct COutputCoin
         }
     }
 
-    boost::variant<CScript, StealthAddress> GetAddress() const
+    DestinationScript GetAddress() const
     {
         if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
 

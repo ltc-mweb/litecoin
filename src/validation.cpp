@@ -2116,9 +2116,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     if (!block.mwBlock.IsNull()) {
         if ((pindex->nStatus & BLOCK_HAVE_MWEB) == 0) {
             pindex->nStatus |= BLOCK_HAVE_MWEB;
-            pindex->mweb_hash = block.GetMWEBHash();
+            pindex->mweb_header = block.mwBlock.GetMWEBHeader();
             pindex->mweb_amount = block.GetMWEBAmount();
-            pindex->hogex_hash = block.GetHogExHash();
             setDirtyBlockIndex.insert(pindex);
         }
     }

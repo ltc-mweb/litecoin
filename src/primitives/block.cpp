@@ -44,9 +44,42 @@ std::string CBlock::ToString() const
     return s.str();
 }
 
+CTransactionRef CBlock::GetHogEx() const noexcept
+{
+    if (vtx.size() >= 2 && vtx.back()->IsHogEx()) {
+        assert(!vtx.back()->vout.empty());
+        return vtx.back();
+    }
+
+    return nullptr;
+}
+
+uint256 CBlock::GetMWEBHash() const noexcept
+{
+    auto pHogEx = GetHogEx();
+    if (pHogEx != nullptr) {
+        int version;
+        std::vector<unsigned char> program;
+        if (pHogEx->vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
+            if (program.size() == 32 && version == Consensus::Mimblewimble::WITNESS_VERSION) {
+                return uint256(program);
+            }
+        }
+    }
+
+    return uint256();
+}
+
+// The amount of the first output in the HogEx transaction.
+CAmount CBlock::GetMWEBAmount() const noexcept
+{
+    auto pHogEx = GetHogEx();
+    return pHogEx ? pHogEx->vout.front().nValue : 0;
+}
+
 std::vector<PegInCoin> CBlock::GetPegInCoins() const noexcept
 {
-    if (!HasHogEx()) {
+    if (GetHogEx() == nullptr) {
         return {};
     }
 
@@ -70,7 +103,7 @@ std::vector<PegInCoin> CBlock::GetPegInCoins() const noexcept
 
 std::vector<PegOutCoin> CBlock::GetPegOutCoins() const noexcept
 {
-    if (!HasHogEx()) {
+    if (GetHogEx() == nullptr) {
         return {};
     }
 

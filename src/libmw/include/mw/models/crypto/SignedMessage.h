@@ -54,7 +54,7 @@ public:
 
     mw::Hash GetHash() const noexcept final
     {
-        return Hashed(Serialized());
+        return Hashed(*this);
     }
 
 private:

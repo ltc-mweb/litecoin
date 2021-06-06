@@ -12,7 +12,6 @@
 #include <mw/traits/Printable.h>
 #include <mw/crypto/Hasher.h>
 
-#include <boost/optional.hpp>
 #include <cstdint>
 #include <memory>
 
@@ -31,7 +30,7 @@ public:
     //
     Header() = default;
     Header(
-        const uint64_t height,
+        const int32_t height,
         mw::Hash&& outputRoot,
         mw::Hash&& kernelRoot,
 		mw::Hash&& leafsetRoot,
@@ -47,7 +46,10 @@ public:
         m_kernelOffset(std::move(kernelOffset)),
         m_ownerOffset(std::move(ownerOffset)),
         m_outputMMRSize(outputMMRSize),
-        m_kernelMMRSize(kernelMMRSize) { }
+        m_kernelMMRSize(kernelMMRSize)
+    {
+        m_hash = Hashed(*this);
+    }
 
     //
     // Operators
@@ -57,7 +59,7 @@ public:
     //
     // Getters
     //
-    uint64_t GetHeight() const noexcept { return m_height; }
+    int32_t GetHeight() const noexcept { return m_height; }
     const mw::Hash& GetOutputRoot() const noexcept { return m_outputRoot; }
     const mw::Hash& GetKernelRoot() const noexcept { return m_kernelRoot; }
 	const mw::Hash& GetLeafsetRoot() const noexcept { return m_leafsetRoot; }
@@ -69,14 +71,7 @@ public:
     //
     // Traits
     //
-    mw::Hash GetHash() const noexcept final
-    {
-        if (!m_hash) {
-            m_hash = boost::make_optional(Hashed(*this));
-        }
-
-        return m_hash.value();
-    }
+    mw::Hash GetHash() const noexcept final { return m_hash; }
 
     std::string Format() const final { return GetHash().ToHex(); }
 
@@ -97,11 +92,14 @@ public:
         READWRITE(m_ownerOffset);
         READWRITE(m_outputMMRSize);
         READWRITE(m_kernelMMRSize);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
     }
 
 private:
-    mutable boost::optional<mw::Hash> m_hash;
-    uint64_t m_height;
+    int32_t m_height;
     mw::Hash m_outputRoot;
     mw::Hash m_kernelRoot;
 	mw::Hash m_leafsetRoot;
@@ -109,6 +107,8 @@ private:
     BlindingFactor m_ownerOffset;
     uint64_t m_outputMMRSize;
     uint64_t m_kernelMMRSize;
+
+    mw::Hash m_hash;
 };
 
 END_NAMESPACE

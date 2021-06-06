@@ -74,7 +74,7 @@ public:
     std::vector<PegOutCoin> GetPegOuts() const noexcept;
     uint64_t GetTotalFee() const noexcept;
     int64_t GetSupplyChange() const noexcept;
-    uint64_t GetLockHeight() const noexcept;
+    int32_t GetLockHeight() const noexcept;
 
     //
     // Serialization/Deserialization

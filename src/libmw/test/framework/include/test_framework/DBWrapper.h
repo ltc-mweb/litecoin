@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mw/interfaces/db_interface.h>
+#include <mweb/mweb_db.h>
 #include <mw/file/FilePath.h>
 
 class TestDBWrapper
@@ -12,7 +12,7 @@ public:
         
     }
 
-    mw::DBWrapper::Ptr Get() { return std::make_shared<mw::DBWrapper>(&m_wrapper); }
+    mw::DBWrapper::Ptr Get() { return std::make_shared<MWEB::DBWrapper>(&m_wrapper); }
 
 private:
     CDBWrapper m_wrapper;

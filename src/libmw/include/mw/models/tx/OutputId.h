@@ -102,5 +102,5 @@ private:
     BigInt<16> m_maskedNonce;
     PublicKey m_senderPubKey;
 
-    mutable mw::Hash m_hash;
+    mw::Hash m_hash;
 };

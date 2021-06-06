@@ -101,7 +101,7 @@ public:
         READWRITEAS(CBlockHeader, *this);
         READWRITE(vtx);
         if (!(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE)) {
-            if (HasHogEx()) {
+            if (GetHogEx() != nullptr) {
                 READWRITE(mwBlock);
             }
         }
@@ -129,39 +129,9 @@ public:
 
     std::string ToString() const;
 
-    bool HasHogEx() const noexcept
-    {
-        return vtx.size() >= 2 && vtx.back()->IsHogEx();
-    }
-
-    uint256 GetMWEBHash() const noexcept
-    {
-        if (!HasHogEx()) {
-            return uint256();
-        }
-
-        return vtx.back()->GetMWEBHash();
-    }
-
-    uint256 GetHogExHash() const noexcept
-    {
-        if (!HasHogEx()) {
-            return uint256();
-        }
-
-        return vtx.back()->GetHash();
-    }
-
-    // The amount of the first output in the HogEx transaction.
-    CAmount GetMWEBAmount() const noexcept
-    {
-        if (!HasHogEx() || vtx.back()->vout.empty()) {
-            return 0;
-        }
-
-        return vtx.back()->vout[0].nValue;
-    }
-
+    CTransactionRef GetHogEx() const noexcept;
+    uint256 GetMWEBHash() const noexcept;
+    CAmount GetMWEBAmount() const noexcept;
     std::vector<PegInCoin> GetPegInCoins() const noexcept;
     std::vector<PegOutCoin> GetPegOutCoins() const noexcept;
 };

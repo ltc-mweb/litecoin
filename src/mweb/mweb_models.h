@@ -16,8 +16,6 @@
 namespace MWEB {
 
 struct Block {
-    using CPtr = std::shared_ptr<MWEB::Block>;
-
     mw::Block::CPtr m_block;
 
     Block() = default;
@@ -184,7 +182,7 @@ struct Tx {
         return IsNull() ? 0 : CAmount(m_transaction->GetTotalFee());
     }
 
-    uint64_t GetLockHeight() const noexcept
+    int32_t GetLockHeight() const noexcept
     {
         return IsNull() ? 0 : m_transaction->GetLockHeight();
     }
