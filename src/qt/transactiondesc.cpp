@@ -50,7 +50,6 @@ QString TransactionDesc::FormatTxStatus(const interfaces::WalletTx& wtx, const i
     }
 }
 
-// MW: TODO - Figure out which details to include in transaction info dialog
 QString TransactionDesc::toHTML(interfaces::Node& node, interfaces::Wallet& wallet, TransactionRecord *rec, int unit)
 {
     int numBlocks;

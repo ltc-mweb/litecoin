@@ -18,7 +18,8 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
         return state.DoS(100, false, REJECT_INVALID, "bad-hogex", false, "HogEx missing or invalid");
     }
 
-    // MW: TODO - Check HogEx transaction (pegins must match block's transactions)
+    auto pHogEx = block.GetHogEx();
+    assert(pHogEx != nullptr);
 
     std::vector<PegInCoin> pegins;
     std::vector<CTxIn> expected_inputs;
@@ -36,17 +37,25 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
         }
     }
 
-    //std::vector<PegInCoin> pegins = block.GetPegInCoins();
-    //if (pegins.size() == block.vtx.back()->vin.size()) {
-    //    // MW: TODO - First MWEB's HogEx
-    //} else if (pegins.size() + 1 == block.vtx.back()->vin.size()) {
-    //    for (size_t i = 1; i < block.vtx.back()->vin.size(); i++) {
-    //        const CTxIn& pegin_input = block.vtx.back()->vin[i];
-    //        if (pegins[i].commitment != block.)
-    //    }
-    //}
+    uint8_t first_pegin = pegins.size() == pHogEx->vin.size() ? 0 : 1; // MW: TODO - Determine this
 
-    if (!mw::Node::ValidateBlock(block.mwBlock.m_block, mw::Hash(mweb256.begin()), pegins, block.GetPegOutCoins())) {
+    if (pegins.size() + first_pegin == pHogEx->vin.size()) {
+        for (size_t nIn = first_pegin; nIn < pHogEx->vin.size(); nIn++) {
+            if (expected_inputs[nIn - first_pegin] != pHogEx->vin[nIn]) {
+                return state.DoS(100, false, REJECT_INVALID, "pegin-mismatch", false, "HogEx pegins do not match block's pegins");
+            }
+        }
+    } else {
+        return state.DoS(100, false, REJECT_INVALID, "pegin-mismatch", false, "HogEx pegins do not match block's pegins");
+    }
+
+    std::vector<PegOutCoin> pegouts;
+    for (size_t i = 1; i < pHogEx->vout.size(); i++) {
+        const CScript& pubkey = pHogEx->vout[i].scriptPubKey;
+        pegouts.push_back(PegOutCoin(pHogEx->vout[i].nValue, {pubkey.begin(), pubkey.end()}));
+    }
+
+    if (!mw::Node::ValidateBlock(block.mwBlock.m_block, mw::Hash(mweb256.begin()), pegins, pegouts)) {
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "mw::Node::ValidateBlock failed");
     }
 

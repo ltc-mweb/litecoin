@@ -132,8 +132,6 @@ public:
     CTransactionRef GetHogEx() const noexcept;
     uint256 GetMWEBHash() const noexcept;
     CAmount GetMWEBAmount() const noexcept;
-    std::vector<PegInCoin> GetPegInCoins() const noexcept;
-    std::vector<PegOutCoin> GetPegOutCoins() const noexcept;
 };
 
 /** Describes a place in the block chain to another node such that if the

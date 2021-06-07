@@ -176,7 +176,6 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
     out.pushKV("addresses", a);
 }
 
-// MW: TODO - Support MWEB inputs & outputs
 void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry, bool include_hex, int serialize_flags)
 {
     entry.pushKV("txid", tx.GetHash().GetHex());
