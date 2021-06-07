@@ -415,6 +415,8 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
             if (parentIter != mapTxOutputs_MWEB.end()) {
                 setParentTransactions.insert(parentIter->second->GetHash());
             }
+        } else {
+            setParentTransactions.insert(input.GetTxIn().prevout.hash);
         }
     }
 
