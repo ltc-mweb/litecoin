@@ -43,11 +43,13 @@ BOOST_AUTO_TEST_CASE(LeafDBTest)
 
     std::vector<uint8_t> data;
     BOOST_REQUIRE(pDatabase->Read("L" + std::to_string(leaf1.GetLeafIndex().Get()), data));
-    BOOST_REQUIRE(data == leaf1.vec());
+    BOOST_REQUIRE(data == std::vector<uint8_t>({3, 0, 1, 2}));
+
     BOOST_REQUIRE(pDatabase->Read("L" + std::to_string(leaf2.GetLeafIndex().Get()), data));
-    BOOST_REQUIRE(data == leaf2.vec());
+    BOOST_REQUIRE(data == std::vector<uint8_t>({3, 1, 2, 3}));
+
     BOOST_REQUIRE(pDatabase->Read("L" + std::to_string(leaf3.GetLeafIndex().Get()), data));
-    BOOST_REQUIRE(data == leaf3.vec());
+    BOOST_REQUIRE(data == std::vector<uint8_t>({3, 2, 3, 4}));
 
     ldb.Remove({leaf2.GetLeafIndex()});
     BOOST_REQUIRE(ldb.Get(mmr::LeafIndex::At(1)) == nullptr);

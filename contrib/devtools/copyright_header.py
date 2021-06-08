@@ -30,7 +30,7 @@ EXCLUDE_DIRS = [
     # git subtrees
     "src/crypto/ctaes/",
     "src/leveldb/",
-    "src/secp256k1/",
+    "src/secp256k1-zkp/",
     "src/univalue/",
 ]
 

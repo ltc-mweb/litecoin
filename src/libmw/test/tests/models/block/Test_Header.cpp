@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(Header)
         kernelMMRSize
     );
 
-    BOOST_REQUIRE(!(header == header2));
+    BOOST_REQUIRE(header != header2);
     BOOST_REQUIRE(header.GetHeight() == height);
     BOOST_REQUIRE(header.GetOutputRoot() == outputRoot);
     BOOST_REQUIRE(header.GetKernelRoot() == kernelRoot);
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Header)
     BOOST_REQUIRE(header.GetOwnerOffset() == ownerOffset);
     BOOST_REQUIRE(header.GetNumTXOs() == outputMMRSize);
     BOOST_REQUIRE(header.GetNumKernels() == kernelMMRSize);
-    BOOST_REQUIRE(header.Format() == "56f10c78905687658dff9aadf812498a68d5704932cb59efe95f13552eac73b5");
+    BOOST_REQUIRE_EQUAL(header.Format(), "3d3ebb08c2bca28216bf55730b7950b8641e3ec38c9c85a00a54d0c5a16bac69");
 
     std::vector<uint8_t> header_serialized = header.Serialized();
     mw::Header header3;

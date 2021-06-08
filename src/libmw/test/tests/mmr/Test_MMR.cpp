@@ -28,25 +28,25 @@ BOOST_AUTO_TEST_CASE(MMRTest)
     mmr.Add(leaf2);
     mmr.Add(leaf3);
 
-    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(0)) == Leaf::Create(LeafIndex::At(0), std::vector<uint8_t>(leaf0)));
-    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(1)) == Leaf::Create(LeafIndex::At(1), std::vector<uint8_t>(leaf1)));
-    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(2)) == Leaf::Create(LeafIndex::At(2), std::vector<uint8_t>(leaf2)));
-    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(3)) == Leaf::Create(LeafIndex::At(3), std::vector<uint8_t>(leaf3)));
+    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(0)) == Leaf::Create(LeafIndex::At(0), leaf0));
+    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(1)) == Leaf::Create(LeafIndex::At(1), leaf1));
+    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(2)) == Leaf::Create(LeafIndex::At(2), leaf2));
+    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(3)) == Leaf::Create(LeafIndex::At(3), leaf3));
 
     BOOST_REQUIRE(mmr.GetNumLeaves() == 4);
     BOOST_REQUIRE(mmr.GetNumNodes() == 7);
-    BOOST_REQUIRE(mmr.Root() == mw::Hash::FromHex("675996c8bbfce6319dd00588ebd289d555eedfa60aa17a9a83cc7da80888a97e"));
+    BOOST_REQUIRE_EQUAL(mmr.Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
 
     mmr.Add(leaf4);
-    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(4)) == Leaf::Create(LeafIndex::At(4), std::vector<uint8_t>(leaf4)));
+    BOOST_REQUIRE(mmr.GetLeaf(LeafIndex::At(4)) == Leaf::Create(LeafIndex::At(4), leaf4));
     BOOST_REQUIRE(mmr.GetNumLeaves() == 5);
     BOOST_REQUIRE(mmr.GetNumNodes() == 8);
-    BOOST_REQUIRE(mmr.Root() == mw::Hash::FromHex("2657bf9ad4d4269ba1cfa872b325497fcff937c6b96df336e4ba29842a80232d"));
+    BOOST_REQUIRE_EQUAL(mmr.Root().ToHex(), "3b9b05f1c8fd31811131684ead63ca7de8dca35e92ae97ba1ace850a804b1f40");
 
     mmr.Rewind(4);
     BOOST_REQUIRE(mmr.GetNumLeaves() == 4);
     BOOST_REQUIRE(mmr.GetNumNodes() == 7);
-    BOOST_REQUIRE(mmr.Root() == mw::Hash::FromHex("675996c8bbfce6319dd00588ebd289d555eedfa60aa17a9a83cc7da80888a97e"));
+    BOOST_REQUIRE_EQUAL(mmr.Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
 }
 
 BOOST_AUTO_TEST_CASE(MMRCacheTest)
@@ -66,22 +66,22 @@ BOOST_AUTO_TEST_CASE(MMRCacheTest)
     cache.Add(leaf2);
     cache.Add(leaf3);
 
-    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(0)) == Leaf::Create(LeafIndex::At(0), std::vector<uint8_t>(leaf0)));
-    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(1)) == Leaf::Create(LeafIndex::At(1), std::vector<uint8_t>(leaf1)));
-    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(2)) == Leaf::Create(LeafIndex::At(2), std::vector<uint8_t>(leaf2)));
-    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(3)) == Leaf::Create(LeafIndex::At(3), std::vector<uint8_t>(leaf3)));
+    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(0)) == Leaf::Create(LeafIndex::At(0), leaf0));
+    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(1)) == Leaf::Create(LeafIndex::At(1), leaf1));
+    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(2)) == Leaf::Create(LeafIndex::At(2), leaf2));
+    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(3)) == Leaf::Create(LeafIndex::At(3), leaf3));
 
     BOOST_REQUIRE(cache.GetNumLeaves() == 4);
-    BOOST_REQUIRE(cache.Root() == mw::Hash::FromHex("675996c8bbfce6319dd00588ebd289d555eedfa60aa17a9a83cc7da80888a97e"));
+    BOOST_REQUIRE_EQUAL(cache.Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
 
     cache.Add(leaf4);
-    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(4)) == Leaf::Create(LeafIndex::At(4), std::vector<uint8_t>(leaf4)));
+    BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(4)) == Leaf::Create(LeafIndex::At(4), leaf4));
     BOOST_REQUIRE(cache.GetNumLeaves() == 5);
-    BOOST_REQUIRE(cache.Root() == mw::Hash::FromHex("2657bf9ad4d4269ba1cfa872b325497fcff937c6b96df336e4ba29842a80232d"));
+    BOOST_REQUIRE_EQUAL(cache.Root().ToHex(), "3b9b05f1c8fd31811131684ead63ca7de8dca35e92ae97ba1ace850a804b1f40");
 
     cache.Rewind(4);
     BOOST_REQUIRE(cache.GetNumLeaves() == 4);
-    BOOST_REQUIRE(cache.Root() == mw::Hash::FromHex("675996c8bbfce6319dd00588ebd289d555eedfa60aa17a9a83cc7da80888a97e"));
+    BOOST_REQUIRE_EQUAL(cache.Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
 
     cache.Flush(0, nullptr);
 }

@@ -170,6 +170,8 @@ public:
         }
 
         s >> m_excess >> m_signature;
+
+        m_hash = Hashed(*this);
     }
 
     //

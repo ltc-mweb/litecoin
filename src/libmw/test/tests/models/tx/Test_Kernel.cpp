@@ -12,55 +12,50 @@
 
 BOOST_FIXTURE_TEST_SUITE(TestKernel, BasicTestingSetup)
 
-//BOOST_AUTO_TEST_CASE(PlainKernel)
-//{
-//    uint64_t fee = 1000;
-//    BlindingFactor excess_blind(Random::CSPRNG<32>());
-//    Kernel kernel = Kernel::CreatePlain(excess_blind, fee);
-//
-//    //
-//    // Serialization
-//    //
-//    {
-//        std::vector<uint8_t> serialized = kernel.Serialized();
-//
-//        Deserializer deserializer(serialized);
-//        BOOST_REQUIRE(deserializer.Read<uint8_t>() == 0);
-//        BOOST_REQUIRE(deserializer.Read<uint64_t>() == fee);
-//        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == kernel.GetExcess());
-//        BOOST_REQUIRE(Signature::Deserialize(deserializer) == kernel.GetSignature());
-//
-//        Deserializer deserializer2(serialized);
-//        BOOST_REQUIRE(kernel == Kernel::Deserialize(deserializer2));
-//    }
-//
-//    //
-//    // Signature Message
-//    //
-//    {
-//        mw::Hash hashed = kernel.GetSignatureMessage();
-//        mw::Hash message_hash = Hasher()
-//            .Append<uint8_t>(0)
-//            .Append<uint64_t>(fee)
-//            .hash();
-//        BOOST_REQUIRE(hashed == message_hash);
-//    }
-//
-//    //
-//    // Getters
-//    //
-//    {
-//        BOOST_REQUIRE(!kernel.IsPegIn());
-//        BOOST_REQUIRE(!kernel.IsPegOut());
-//        BOOST_REQUIRE(kernel.GetPeggedIn() == 0);
-//        BOOST_REQUIRE(kernel.GetPeggedOut() == 0);
-//        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
-//        BOOST_REQUIRE(kernel.GetFee() == fee);
-//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
-//        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
-//    }
-//}
-//
+BOOST_AUTO_TEST_CASE(PlainKernel)
+{
+    uint64_t fee = 1000;
+    BlindingFactor excess_blind(Random::CSPRNG<32>());
+    Kernel kernel = Kernel::Create(excess_blind, fee, boost::none, boost::none, boost::none);
+
+    //
+    // Serialization
+    //
+    {
+        std::vector<uint8_t> serialized = kernel.Serialized();
+
+        Kernel kernel2;
+        CDataStream(serialized, SER_DISK, 0) >> kernel2;
+        BOOST_REQUIRE(kernel == kernel2);
+    }
+
+    //
+    // Signature Message
+    //
+    {
+        mw::Hash hashed = kernel.GetSignatureMessage();
+        mw::Hash message_hash = Hasher()
+            .Append<uint8_t>(1)
+            .Append<uint64_t>(fee)
+            .hash();
+        BOOST_REQUIRE(hashed == message_hash);
+    }
+
+    //
+    // Getters
+    //
+    {
+        BOOST_REQUIRE(!kernel.HasPegIn());
+        BOOST_REQUIRE(!kernel.HasPegOut());
+        BOOST_REQUIRE(kernel.GetPegIn() == 0);
+        BOOST_REQUIRE(kernel.GetPegOut() == boost::none);
+        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
+        BOOST_REQUIRE(kernel.GetFee() == fee);
+        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
+    }
+}
+
 //BOOST_AUTO_TEST_CASE(PegInKernel)
 //{
 //    uint64_t amount = 50;
