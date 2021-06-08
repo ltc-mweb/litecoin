@@ -1,11 +1,10 @@
 #pragma once
 
+#include <mw/common/Traits.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/models/crypto/Hash.h>
 #include <mw/models/crypto/PublicKey.h>
 #include <mw/models/crypto/Signature.h>
-#include <mw/traits/Hashable.h>
-#include <mw/traits/Serializable.h>
 #include <boost/functional/hash.hpp>
 
 /// <summary>
@@ -18,7 +17,10 @@ public:
     SignedMessage(const SignedMessage&) = default;
     SignedMessage(SignedMessage&&) = default;
     SignedMessage(mw::Hash msgHash, PublicKey publicKey, Signature signature)
-        : m_messageHash(std::move(msgHash)), m_publicKey(std::move(publicKey)), m_signature(std::move(signature)) { }
+        : m_messageHash(std::move(msgHash)), m_publicKey(std::move(publicKey)), m_signature(std::move(signature))
+    {
+        m_hash = Hashed(*this);
+    }
 
     //
     // Operators
@@ -39,7 +41,7 @@ public:
     const PublicKey& GetPublicKey() const noexcept { return m_publicKey; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(SignedMessage);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -48,17 +50,20 @@ public:
         READWRITE(m_messageHash);
         READWRITE(m_publicKey);
         READWRITE(m_signature);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
     }
 
-    mw::Hash GetHash() const noexcept final
-    {
-        return Hashed(*this);
-    }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
 private:
     mw::Hash m_messageHash;
     PublicKey m_publicKey;
     Signature m_signature;
+
+    mw::Hash m_hash;
 };
 
 namespace std

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/models/tx/Output.h>
 #include <mw/mmr/LeafIndex.h>
-#include <mw/traits/Serializable.h>
 #include <serialize.h>
 
 class UTXO : public Traits::ISerializable
@@ -27,7 +27,7 @@ public:
     ProofData BuildProofData() const noexcept { return m_output.BuildProofData(); }
     bool IsPeggedIn() const noexcept { return m_output.IsPeggedIn(); }
 
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(UTXO);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

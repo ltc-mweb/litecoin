@@ -4,13 +4,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
-#include <mw/util/HexUtil.h>
+#include <mw/common/Traits.h>
+#include <util/strencodings.h>
 
 #include <cassert>
-#include <cstdint>
-#include <vector>
 
 class RangeProof :
     public Traits::IPrintable,
@@ -50,7 +47,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(RangeProof);
 
     template <typename Stream>
     void Serialize(Stream& s) const
@@ -67,7 +64,7 @@ public:
     //
     // Traits
     //
-    std::string Format() const final { return HexUtil::ToHex(m_bytes); }
+    std::string Format() const final { return HexStr(m_bytes); }
 
 private:
     // The proof itself, at most 675 bytes long.

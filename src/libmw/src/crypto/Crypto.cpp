@@ -35,22 +35,14 @@ Commitment Crypto::AddCommitments(
 {
     std::vector<Commitment> sanitizedPositive;
     std::copy_if(
-        positive.cbegin(),
-        positive.cend(),
-        std::back_inserter(sanitizedPositive),
-        [](const auto& positiveCommitment) {
-            return !positiveCommitment.IsZero();
-        }
+        positive.cbegin(), positive.cend(), std::back_inserter(sanitizedPositive),
+        [](const auto& positiveCommitment) {  return !positiveCommitment.IsZero(); }
     );
 
     std::vector<Commitment> sanitizedNegative;
     std::copy_if(
-        negative.cbegin(),
-        negative.cend(),
-        std::back_inserter(sanitizedNegative),
-        [](const auto& negativeCommitment) {
-            return !negativeCommitment.IsZero();
-        }
+        negative.cbegin(), negative.cend(), std::back_inserter(sanitizedNegative),
+        [](const auto& negativeCommitment) { return !negativeCommitment.IsZero(); }
     );
 
     if (sanitizedPositive.empty() && sanitizedNegative.empty()) {
@@ -69,20 +61,14 @@ BlindingFactor Crypto::AddBlindingFactors(
 {
     std::vector<BlindingFactor> sanitizedPositive;
     std::copy_if(
-        positive.cbegin(), positive.cend(),
-        std::back_inserter(sanitizedPositive),
-        [](const auto& positiveBlind) {
-            return !positiveBlind.IsZero();
-        }
+        positive.cbegin(), positive.cend(), std::back_inserter(sanitizedPositive),
+        [](const auto& positiveBlind) { return !positiveBlind.IsZero(); }
     );
 
     std::vector<BlindingFactor> sanitizedNegative;
     std::copy_if(
-        negative.cbegin(), negative.cend(),
-        std::back_inserter(sanitizedNegative),
-        [](const auto& negativeBlind) {
-            return !negativeBlind.IsZero();
-        }
+        negative.cbegin(), negative.cend(), std::back_inserter(sanitizedNegative),
+        [](const auto& negativeBlind) { return !negativeBlind.IsZero(); }
     );
 
     if (sanitizedPositive.empty() && sanitizedNegative.empty())

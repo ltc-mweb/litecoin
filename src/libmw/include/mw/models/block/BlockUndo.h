@@ -1,9 +1,9 @@
 #pragma once
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/tx/UTXO.h>
-#include <mw/traits/Serializable.h>
 
 MW_NAMESPACE
 
@@ -37,7 +37,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(BlockUndo);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

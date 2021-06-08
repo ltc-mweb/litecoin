@@ -1,7 +1,7 @@
 #pragma once
 
+#include <mw/common/Traits.h>
 #include <mw/file/FilePath.h>
-#include <mw/traits/Printable.h>
 #include <unordered_map>
 
 class File : public Traits::IPrintable

@@ -1,8 +1,8 @@
 #include <mw/crypto/Bulletproofs.h>
-#include "BulletproofsCache.h"
 #include "Context.h"
 #include "ConversionUtil.h"
 
+#include <caches/Cache.h>
 #include <mw/crypto/Random.h>
 #include <mw/exceptions/CryptoException.h>
 #include <mw/util/VectorUtil.h>
@@ -12,7 +12,7 @@ static constexpr size_t SCRATCH_SPACE_SIZE = 256 * MAX_WIDTH;
 static constexpr size_t PROOF_LEN = 675;
 static constexpr size_t NUM_BITS_PROVEN = 64;
 
-static BulletProofsCache CACHE;
+static Locked<LRUCache<Commitment, ProofData>> CACHE(std::make_shared<LRUCache<Commitment, ProofData>>(3000));
 static Locked<Context> BP_CONTEXT(std::make_shared<Context>());
 
 bool Bulletproofs::BatchVerify(const std::vector<ProofData>& proofs)
@@ -31,7 +31,8 @@ bool Bulletproofs::BatchVerify(const std::vector<ProofData>& proofs)
 
     for (const auto& proof : proofs)
     {
-        if (!CACHE.Contains(proof)) {
+        auto cache_writer = CACHE.Write();
+        if (!cache_writer->Cached(proof.commitment) || proof != cache_writer->Get(proof.commitment)) {
             secpCommitments.push_back(ConversionUtil(BP_CONTEXT).ToSecp256k1(proof.commitment));
             bulletproofPointers.emplace_back(proof.pRangeProof->data());
 
@@ -80,9 +81,10 @@ bool Bulletproofs::BatchVerify(const std::vector<ProofData>& proofs)
     secp256k1_scratch_space_destroy(pScratchSpace);
 
     if (result == 1) {
+        auto cache_writer = CACHE.Write();
         for (const auto& proof : proofs)
         {
-            CACHE.Add(proof);
+            cache_writer->Put(proof.commitment, proof);
         }
     }
 

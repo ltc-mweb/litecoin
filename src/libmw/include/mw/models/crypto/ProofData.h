@@ -18,4 +18,6 @@ struct ProofData
             && *pRangeProof == *rhs.pRangeProof
             && extraData == rhs.extraData;
     }
+
+    inline bool operator!=(const ProofData& rhs) const noexcept { return !(rhs == *this); }
 };

@@ -5,8 +5,7 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Logger.h>
-#include <mw/traits/Serializable.h>
-#include <mw/models/crypto/BigInteger.h>
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/SignedMessage.h>
 #include <mw/models/tx/Input.h>
 #include <mw/models/tx/Output.h>
@@ -79,7 +78,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(TxBody);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

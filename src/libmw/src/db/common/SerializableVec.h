@@ -1,4 +1,6 @@
-#include <mw/traits/Serializable.h>
+#pragma once
+
+#include <mw/common/Traits.h>
 
 class SerializableVec : public Traits::ISerializable
 {
@@ -8,7 +10,7 @@ public:
 
     const std::vector<uint8_t>& Get() const { return m_bytes; }
 
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(SerializableVec);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

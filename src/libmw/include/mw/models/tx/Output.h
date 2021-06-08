@@ -4,6 +4,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Traits.h>
 #include <mw/models/tx/Features.h>
 #include <mw/models/tx/OutputId.h>
 #include <mw/models/crypto/BlindingFactor.h>
@@ -12,8 +13,6 @@
 #include <mw/models/crypto/RangeProof.h>
 #include <mw/models/crypto/SecretKey.h>
 #include <mw/models/crypto/SignedMessage.h>
-#include <mw/traits/Committed.h>
-#include <mw/traits/Serializable.h>
 
 // Forward Declarations
 class StealthAddress;
@@ -122,7 +121,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(Output);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

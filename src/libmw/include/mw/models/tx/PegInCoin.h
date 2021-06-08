@@ -1,8 +1,7 @@
 #pragma once
 
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/Commitment.h>
-#include <mw/traits/Serializable.h>
-#include <mw/traits/Printable.h>
 
 //
 // Represents coins being pegged in, i.e. moved from canonical chain to the extension block.
@@ -27,7 +26,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(PegInCoin);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

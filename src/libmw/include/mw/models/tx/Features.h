@@ -1,16 +1,11 @@
 #pragma once
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4505) // Unreferenced local function has been removed
-#endif
-
 // Copyright (c) 2018-2019 David Burkett
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <string>
 #include <cstdint>
-#include <mw/exceptions/DeserializationException.h>
 #include <serialize.h>
 
 // TODO: Not needed if we decide not to require peg-in outputs to mature.

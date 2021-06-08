@@ -4,12 +4,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Traits.h>
+#include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/PublicKey.h>
 #include <mw/models/tx/Features.h>
 #include <mw/crypto/Hasher.h>
-#include <mw/traits/Committed.h>
-#include <mw/traits/Hashable.h>
-#include <mw/traits/Serializable.h>
 
 ////////////////////////////////////////
 // OUTPUT IDENTIFIER
@@ -67,7 +66,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(OutputId);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -90,7 +89,7 @@ public:
     //
     // Traits
     //
-    mw::Hash GetHash() const noexcept final { return m_hash; }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
 private:
     Commitment m_commitment;

@@ -4,9 +4,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/exceptions/DeserializationException.h>
-#include <mw/traits/Serializable.h>
-#include <compat/byteswap.h>
+#include <mw/common/Traits.h>
 
 #include <algorithm>
 #include <boost/optional.hpp>

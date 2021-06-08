@@ -1,8 +1,8 @@
 #pragma once
 
+#include <mw/common/Traits.h>
 #include <mw/crypto/Keys.h>
 #include <mw/models/crypto/PublicKey.h>
-#include <mw/traits/Serializable.h>
 
 class StealthAddress : public Traits::ISerializable
 {
@@ -36,7 +36,7 @@ public:
     const PublicKey& GetScanPubKey() const noexcept { return m_scan; }
     const PublicKey& GetSpendPubKey() const noexcept { return m_spend; }
 
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(StealthAddress);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

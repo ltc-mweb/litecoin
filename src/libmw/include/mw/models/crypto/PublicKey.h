@@ -1,9 +1,8 @@
 #pragma once
 
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/BigInteger.h>
 #include <mw/models/crypto/SecretKey.h>
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
 #include <boost/functional/hash.hpp>
 
 class PublicKey :
@@ -62,7 +61,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(PublicKey);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

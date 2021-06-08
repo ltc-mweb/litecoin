@@ -2,13 +2,13 @@
 #include "Context.h"
 #include "ConversionUtil.h"
 #include "PublicKeys.h"
-#include "SchnorrCache.h"
 
+#include <caches/Cache.h>
 #include <mw/common/Logger.h>
 #include <mw/exceptions/CryptoException.h>
 #include <mw/util/VectorUtil.h>
 
-static SchnorrCache CACHE;
+static Locked<LRUCache<SignedMessage, bool>> CACHE(std::make_shared<LRUCache<SignedMessage, bool>>(3000));
 static Locked<Context> SCHNORR_CONTEXT(std::make_shared<Context>());
 
 static constexpr uint64_t MAX_WIDTH = 1 << 20;
@@ -51,7 +51,7 @@ bool Schnorr::Verify(
     const mw::Hash& message)
 {
     SignedMessage signed_message(message, sumPubKeys, signature);
-    if (CACHE.Contains(signed_message)) {
+    if (CACHE.Write()->Cached(signed_message)) {
         return true;
     }
 
@@ -69,7 +69,7 @@ bool Schnorr::Verify(
     );
 
     if (verifyResult == 1) {
-        CACHE.Add(signed_message);
+        CACHE.Write()->Put(signed_message, true);
     }
 
     return verifyResult == 1;
@@ -84,7 +84,7 @@ bool Schnorr::BatchVerify(const std::vector<SignedMessage>& signatures)
 
     ConversionUtil converter(SCHNORR_CONTEXT);
     for (const SignedMessage& signed_message : signatures) {
-        if (CACHE.Contains(signed_message)) {
+        if (CACHE.Write()->Cached(signed_message)) {
             continue;
         }
 
@@ -117,7 +117,7 @@ bool Schnorr::BatchVerify(const std::vector<SignedMessage>& signatures)
 
     if (verifyResult == 1) {
         for (const SignedMessage& message : unverified_messages) {
-            CACHE.Add(message);
+            CACHE.Write()->Put(message, true);
         }
     }
 

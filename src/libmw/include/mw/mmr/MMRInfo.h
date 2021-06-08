@@ -1,7 +1,7 @@
 #pragma once
 
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/Hash.h>
-#include <mw/traits/Serializable.h>
 #include <boost/optional.hpp>
 
 /// <summary>
@@ -30,7 +30,7 @@ struct MMRInfo : public Traits::ISerializable
     // You cannot rewind beyond this point.
     boost::optional<mw::Hash> compacted;
     
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(MMRInfo);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

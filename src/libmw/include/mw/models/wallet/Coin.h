@@ -48,7 +48,7 @@ struct Coin : public Traits::ISerializable {
     bool IsChange() const noexcept { return address_index == CHANGE_INDEX; }
     bool IsPegIn() const noexcept { return address_index == PEGIN_INDEX; }
 
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(Coin);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

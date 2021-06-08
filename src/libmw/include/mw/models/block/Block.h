@@ -1,14 +1,12 @@
 #pragma once
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/models/tx/TxBody.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/tx/Kernel.h>
 #include <mw/models/tx/PegInCoin.h>
 #include <mw/models/tx/PegOutCoin.h>
-#include <mw/traits/Hashable.h>
-#include <mw/traits/Serializable.h>
-#include <mw/traits/Printable.h>
 #include <serialize.h>
 #include <algorithm>
 
@@ -61,7 +59,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(Block);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -74,7 +72,7 @@ public:
     //
     // Traits
     //
-    mw::Hash GetHash() const noexcept final { return m_pHeader->GetHash(); }
+    const mw::Hash& GetHash() const noexcept final { return m_pHeader->GetHash(); }
     std::string Format() const final { return "Block(" + GetHash().ToHex() + ")"; }
 
     //

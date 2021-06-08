@@ -5,15 +5,13 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/consensus/Weight.h>
 #include <mw/crypto/Crypto.h>
 #include <mw/models/crypto/Hash.h>
 #include <mw/models/crypto/BigInteger.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/tx/TxBody.h>
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
-#include <mw/traits/Hashable.h>
 
 #include <memory>
 #include <numeric>
@@ -112,7 +110,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(Transaction);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -131,7 +129,7 @@ public:
     // Traits
     //
     std::string Format() const final { return "Tx(" + GetHash().Format() + ")"; }
-    mw::Hash GetHash() const noexcept final { return m_hash; }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
     void Validate() const;
 

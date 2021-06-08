@@ -1,9 +1,10 @@
 #pragma once
 
-#include <hash.h>
-#include <crypto/sha512.h>
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/Hash.h>
-#include <mw/traits/Serializable.h>
+
+#include <crypto/sha512.h>
+#include <hash.h>
 
 enum class EHashTag : char
 {

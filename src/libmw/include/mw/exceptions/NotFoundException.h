@@ -10,7 +10,7 @@ class NotFoundException : public LTCException
 {
 public:
     NotFoundException(const std::string& message, const std::string& function)
-        : LTCException("NetworkException", message, function)
+        : LTCException("NotFoundException", message, function)
     {
 
     }

@@ -6,8 +6,8 @@
 
 #include <mw/common/Macros.h>
 #include <mw/common/Logger.h>
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/Hash.h>
-#include <mw/traits/Serializable.h>
 #include <mw/mmr/Backend.h>
 #include <mw/mmr/LeafIndex.h>
 #include <mw/mmr/Leaf.h>

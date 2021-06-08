@@ -1,11 +1,10 @@
 #pragma once
 
 #include <mw/common/BitSet.h>
+#include <mw/common/Traits.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/tx/Kernel.h>
 #include <mw/models/tx/UTXO.h>
-#include <mw/traits/Serializable.h>
-#include <serialize.h>
 
 MW_NAMESPACE
 

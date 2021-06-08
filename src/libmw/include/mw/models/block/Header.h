@@ -5,12 +5,10 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
+#include <mw/crypto/Hasher.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Hash.h>
-#include <mw/traits/Hashable.h>
-#include <mw/traits/Serializable.h>
-#include <mw/traits/Printable.h>
-#include <mw/crypto/Hasher.h>
 
 #include <cstdint>
 #include <memory>
@@ -72,14 +70,14 @@ public:
     //
     // Traits
     //
-    mw::Hash GetHash() const noexcept final { return m_hash; }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
     std::string Format() const final { return GetHash().ToHex(); }
 
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(Header);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

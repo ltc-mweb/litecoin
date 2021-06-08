@@ -1,8 +1,8 @@
 #pragma once
 
-#include <mw/traits/Serializable.h>
-#include <mw/traits/Printable.h>
+#include <mw/common/Traits.h>
 #include <mw/util/StringUtil.h>
+#include <util/strencodings.h>
 
 //
 // Represents coins being pegged out, i.e. moved from the extension block to the canonical chain.
@@ -27,7 +27,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(PegOutCoin);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -39,7 +39,7 @@ public:
 
     std::string Format() const noexcept final
     {
-        return StringUtil::Format("PegOutCoin(pubkey:{}, amount:{})", HexUtil::ToHex(m_scriptPubKey), m_amount);
+        return StringUtil::Format("PegOutCoin(pubkey:{}, amount:{})", HexStr(m_scriptPubKey), m_amount);
     }
 
 private:

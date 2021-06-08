@@ -4,14 +4,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/util/HexUtil.h>
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
+#include <mw/common/Traits.h>
+#include <util/strencodings.h>
 
 #include <cassert>
-#include <cstdint>
-#include <vector>
-#include <string>
 #include <stdexcept>
 #include <sstream>
 #include <iomanip>
@@ -77,7 +73,7 @@ public:
     static BigInt<NUM_BYTES, ALLOC> FromHex(const std::string& hex)
     {
         assert(hex.length() == NUM_BYTES * 2);
-        std::vector<uint8_t> bytes = HexUtil::FromHex(hex);
+        std::vector<uint8_t> bytes = ParseHex(hex);
         assert(bytes.size() == NUM_BYTES);
         return BigInt<NUM_BYTES, ALLOC>(std::move(bytes));
     }
@@ -100,7 +96,7 @@ public:
         return arr;
     }
 
-    std::string ToHex() const noexcept { return HexUtil::ToHex(m_bytes); }
+    std::string ToHex() const noexcept { return HexStr(m_bytes); }
     std::string Format() const noexcept final { return ToHex(); }
 
     //
@@ -177,7 +173,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(BigInt);
 
     template <typename Stream>
     void Serialize(Stream& s) const

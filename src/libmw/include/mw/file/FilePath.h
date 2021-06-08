@@ -22,8 +22,8 @@
 namespace filesystem = ghc::filesystem;
 using error_code = std::error_code;
 
+#include <mw/common/Traits.h>
 #include <mw/exceptions/FileException.h>
-#include <mw/traits/Printable.h>
 
 #include <fstream>
 

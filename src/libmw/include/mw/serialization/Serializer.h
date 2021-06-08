@@ -4,9 +4,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/traits/Serializable.h>
-#include <support/allocators/secure.h>
-#include <mw/serialization/Deserializer.h>
+#include <streams.h>
+#include <version.h>
 
 #include <boost/optional.hpp>
 #include <cstdint>

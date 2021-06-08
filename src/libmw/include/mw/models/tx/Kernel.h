@@ -1,12 +1,9 @@
 #pragma once
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Hasher.h>
-#include <mw/traits/Committed.h>
-#include <mw/traits/Hashable.h>
-#include <mw/traits/Serializable.h>
-#include <mw/traits/Printable.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Signature.h>
 #include <mw/models/tx/PegOutCoin.h>
@@ -98,7 +95,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(Kernel);
 
     template <typename Stream>
     void Serialize(Stream& s) const
@@ -177,7 +174,7 @@ public:
     //
     // Traits
     //
-    mw::Hash GetHash() const noexcept final { return m_hash; }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
     const Commitment& GetCommitment() const noexcept final { return m_excess; }
 

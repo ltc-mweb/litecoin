@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mw/traits/Serializable.h>
+#include <mw/common/Traits.h>
 #include <boost/dynamic_bitset.hpp>
 #include <serialize.h>
 #include <vector>
@@ -85,7 +85,7 @@ struct BitSet : public Traits::ISerializable
     }
     void push_back(bool val) noexcept { bitset.push_back(val); }
     
-    IMPL_SERIALIZABLE;
+    IMPL_SERIALIZABLE(BitSet);
 
     template <typename Stream>
     void Serialize(Stream& s) const

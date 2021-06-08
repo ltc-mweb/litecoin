@@ -1,6 +1,7 @@
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
 #include <mw/serialization/Serializer.h>
+#include <mw/serialization/Deserializer.h>
 #include <mw/crypto/Random.h>
 #include <mw/crypto/Bulletproofs.h>
 #include <mw/crypto/Schnorr.h>
@@ -13,7 +14,7 @@ Output Output::Create(
     const uint64_t value)
 {
     // Generate 128-bit secret nonce 'n' = Hash128(T_nonce, sender_privkey)
-    secret_key_t<16> n = Hashed(EHashTag::NONCE, sender_privkey).data();
+    BigInt<16> n(Hashed(EHashTag::NONCE, sender_privkey).data());
 
     // Calculate unique sending key 's' = H(T_send, A, B, v, n)
     SecretKey s = Hasher(EHashTag::SEND_KEY)
@@ -38,9 +39,9 @@ Output Output::Create(
     // Feed the shared secret 't' into a stream cipher (in our case, just a hash function)
     // to derive a blinding factor r and two encryption masks mv (masked value) and mn (masked nonce)
     Deserializer hash64(Hash512(t).vec());
-    BlindingFactor r = hash64.Read<SecretKey>();
+    BlindingFactor r = hash64.Read<BlindingFactor>();
     uint64_t mv = hash64.Read<uint64_t>() ^ value;
-    BigInt<16> mn = n.GetBigInt() ^ hash64.ReadVector(16);
+    BigInt<16> mn = n ^ hash64.ReadVector(16);
 
     // Commitment 'C' = r*G + v*H
     blind_out = Crypto::BlindSwitch(r, value);

@@ -4,8 +4,8 @@
 #include "DBEntry.h"
 #include "OrderedMultimap.h"
 
+#include <mw/common/Traits.h>
 #include <mw/exceptions/DatabaseException.h>
-#include <mw/traits/Serializable.h>
 #include <mw/interfaces/db_interface.h>
 #include <memory>
 #include <string>
