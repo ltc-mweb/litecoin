@@ -9,17 +9,12 @@ public:
     const std::vector<uint8_t>& Get() const { return m_bytes; }
 
     IMPL_SERIALIZABLE;
+    ADD_SERIALIZE_METHODS;
 
-    template <typename Stream>
-    void Serialize(Stream& s) const
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        s.write((const char*)m_bytes.data(), m_bytes.size());
-    }
-
-    template <typename Stream>
-    void Unserialize(Stream& s)
-    {
-        s.read((char*)m_bytes.data(), s.size());
+        READWRITE(m_bytes);
     }
 
 private:
