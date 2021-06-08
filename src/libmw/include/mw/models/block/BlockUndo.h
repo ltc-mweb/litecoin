@@ -7,7 +7,7 @@
 
 MW_NAMESPACE
 
-class BlockUndo final : public Traits::ISerializable
+class BlockUndo : public Traits::ISerializable
 {
 public:
     using CPtr = std::shared_ptr<const BlockUndo>;
@@ -44,9 +44,7 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
         bool has_prev = (m_pPrevHeader != nullptr); 
-        if (ser_action.ForRead()) {
-            READWRITE(has_prev);
-        }
+        READWRITE(has_prev);
 
         if (has_prev) {
             READWRITE(m_pPrevHeader);
@@ -57,7 +55,7 @@ public:
     }
 
 private:
-    mw::Header::CPtr m_pPrevHeader;
+    Header::CPtr m_pPrevHeader;
     std::vector<UTXO> m_coinsSpent;
     std::vector<Commitment> m_coinsAdded;
 };
