@@ -15,13 +15,13 @@ TxBuilder& TxBuilder::AddInput(const TxOutput& input)
     return AddInput(input.GetAmount(), input.GetFeatures(), input.GetBlind());
 }
 
-TxBuilder& TxBuilder::AddInput(const uint64_t amount, const Features& features, const BlindingFactor& blind)
+TxBuilder& TxBuilder::AddInput(const CAmount amount, const Features& features, const BlindingFactor& blind)
 {
     return AddInput(amount, Random::CSPRNG<32>(), features, blind);
 }
 
 TxBuilder& TxBuilder::AddInput(
-    const uint64_t amount,
+    const CAmount amount,
     const SecretKey& privkey,
     const Features& features,
     const BlindingFactor& blind)
@@ -37,13 +37,13 @@ TxBuilder& TxBuilder::AddInput(
     return *this;
 }
 
-TxBuilder& TxBuilder::AddOutput(const uint64_t amount, const Features& features)
+TxBuilder& TxBuilder::AddOutput(const CAmount amount, const Features& features)
 {
     return AddOutput(amount, Random::CSPRNG<32>(), StealthAddress::Random(), features);
 }
 
 TxBuilder& TxBuilder::AddOutput(
-    const uint64_t amount,
+    const CAmount amount,
     const SecretKey& sender_privkey,
     const StealthAddress& receiver_addr,
     const Features& features)
@@ -68,7 +68,7 @@ TxBuilder& TxBuilder::AddOwnerSig(const Kernel& kernel)
     return *this;
 }
 
-TxBuilder& TxBuilder::AddPlainKernel(const uint64_t fee, const bool add_owner_sig)
+TxBuilder& TxBuilder::AddPlainKernel(const CAmount fee, const bool add_owner_sig)
 {
     BlindingFactor kernel_excess = Random::CSPRNG<32>();
     m_kernelOffset.Sub(kernel_excess);
@@ -80,11 +80,11 @@ TxBuilder& TxBuilder::AddPlainKernel(const uint64_t fee, const bool add_owner_si
     }
 
     m_kernels.push_back(std::move(kernel));
-    m_amount -= (int64_t)fee;
+    m_amount -= fee;
     return *this;
 }
 
-TxBuilder& TxBuilder::AddPeginKernel(const uint64_t amount, const boost::optional<uint64_t>& fee, const bool add_owner_sig)
+TxBuilder& TxBuilder::AddPeginKernel(const CAmount amount, const boost::optional<CAmount>& fee, const bool add_owner_sig)
 {
     BlindingFactor kernel_excess = Random::CSPRNG<32>();
     m_kernelOffset.Sub(kernel_excess);
@@ -105,7 +105,7 @@ TxBuilder& TxBuilder::AddPeginKernel(const uint64_t amount, const boost::optiona
     return *this;
 }
 
-TxBuilder& TxBuilder::AddPegoutKernel(const uint64_t amount, const uint64_t fee, const bool add_owner_sig)
+TxBuilder& TxBuilder::AddPegoutKernel(const CAmount amount, const CAmount fee, const bool add_owner_sig)
 {
     BlindingFactor kernel_excess = Random::CSPRNG<32>();
     m_kernelOffset.Sub(kernel_excess);

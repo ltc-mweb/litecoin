@@ -30,7 +30,7 @@ void BlockValidator::ValidatePegInCoins(
     const mw::Block::CPtr& pBlock,
     const std::vector<PegInCoin>& pegInCoins)
 {
-    std::unordered_map<Commitment, uint64_t> pegInAmounts;
+    std::unordered_map<Commitment, CAmount> pegInAmounts;
     std::for_each(
         pegInCoins.cbegin(), pegInCoins.cend(),
         [&pegInAmounts](const PegInCoin& coin) {
@@ -67,7 +67,7 @@ void BlockValidator::ValidatePegOutCoins(
     const mw::Block::CPtr& pBlock,
     const std::vector<PegOutCoin>& pegOutCoins)
 {
-    std::unordered_map<std::vector<uint8_t>, uint64_t> pegOutAmounts;
+    std::unordered_map<std::vector<uint8_t>, CAmount> pegOutAmounts;
     std::for_each(
         pegOutCoins.cbegin(), pegOutCoins.cend(),
         [&pegOutAmounts](const PegOutCoin& coin) {

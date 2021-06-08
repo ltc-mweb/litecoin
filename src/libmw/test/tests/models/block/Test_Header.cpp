@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Header)
     BOOST_REQUIRE(header.GetOwnerOffset() == ownerOffset);
     BOOST_REQUIRE(header.GetNumTXOs() == outputMMRSize);
     BOOST_REQUIRE(header.GetNumKernels() == kernelMMRSize);
-    BOOST_REQUIRE_EQUAL(header.Format(), "3d3ebb08c2bca28216bf55730b7950b8641e3ec38c9c85a00a54d0c5a16bac69");
+    BOOST_REQUIRE_EQUAL(header.Format(), "dca737916fc5524bbc481342450dd1e4ee1a5814094cd07dfe9a4ca13c076be8");
 
     std::vector<uint8_t> header_serialized = header.Serialized();
     mw::Header header3;

@@ -30,11 +30,11 @@ std::vector<Output> TxBody::GetPegInOutputs() const noexcept
     return peggedIn;
 }
 
-uint64_t TxBody::GetPegInAmount() const noexcept
+CAmount TxBody::GetPegInAmount() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (uint64_t)0,
-        [](const uint64_t sum, const auto& kernel) noexcept { return sum + kernel.GetPegIn(); }
+        m_kernels.cbegin(), m_kernels.cend(), (CAmount)0,
+        [](const CAmount sum, const auto& kernel) noexcept { return sum + kernel.GetPegIn(); }
     );
 }
 
@@ -49,19 +49,19 @@ std::vector<PegOutCoin> TxBody::GetPegOuts() const noexcept
     return pegouts;
 }
 
-uint64_t TxBody::GetTotalFee() const noexcept
+CAmount TxBody::GetTotalFee() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (uint64_t)0,
-        [](const uint64_t sum, const auto& kernel) noexcept { return sum + kernel.GetFee(); }
+        m_kernels.cbegin(), m_kernels.cend(), (CAmount)0,
+        [](const CAmount sum, const auto& kernel) noexcept { return sum + kernel.GetFee(); }
     );
 }
 
-int64_t TxBody::GetSupplyChange() const noexcept
+CAmount TxBody::GetSupplyChange() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (int64_t)0,
-        [](const int64_t supply_change, const auto& kernel) noexcept { return supply_change + kernel.GetSupplyChange(); }
+        m_kernels.cbegin(), m_kernels.cend(), (CAmount)0,
+        [](const CAmount supply_change, const auto& kernel) noexcept { return supply_change + kernel.GetSupplyChange(); }
     );
 }
 

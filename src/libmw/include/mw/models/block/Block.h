@@ -50,11 +50,11 @@ public:
     const BlindingFactor& GetKernelOffset() const noexcept { return m_pHeader->GetKernelOffset(); }
     const BlindingFactor& GetOwnerOffset() const noexcept { return m_pHeader->GetOwnerOffset(); }
 
-    uint64_t GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
+    CAmount GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
     std::vector<PegInCoin> GetPegIns() const noexcept { return m_body.GetPegIns(); }
-    uint64_t GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
+    CAmount GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
     std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_body.GetPegOuts(); }
-    int64_t GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
+    CAmount GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
 
     //
     // Serialization/Deserialization

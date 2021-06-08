@@ -14,8 +14,8 @@ BOOST_FIXTURE_TEST_SUITE(TestTransaction, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxTransaction)
 {
-    const uint64_t pegInAmount = 123;
-    const uint64_t fee = 5;
+    const CAmount pegInAmount = 123;
+    const CAmount fee = 5;
 
     mw::Transaction::CPtr tx = test::TxBuilder()
         .AddInput(20).AddInput(30, EOutputFeatures::PEGGED_IN)

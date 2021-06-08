@@ -12,12 +12,10 @@ public:
     using CPtr = std::shared_ptr<const UTXO>;
 
     UTXO() : m_blockHeight(0), m_leafIdx(), m_output() { }
-    UTXO(const uint64_t blockHeight, mmr::LeafIndex&& leafIdx, Output&& output)
+    UTXO(const int32_t blockHeight, mmr::LeafIndex leafIdx, Output output)
         : m_blockHeight(blockHeight), m_leafIdx(std::move(leafIdx)), m_output(std::move(output)) { }
-    UTXO(const uint64_t blockHeight, mmr::LeafIndex&& leafIdx, const Output& output)
-        : m_blockHeight(blockHeight), m_leafIdx(std::move(leafIdx)), m_output(output) { }
 
-    uint64_t GetBlockHeight() const noexcept { return m_blockHeight; }
+    int32_t GetBlockHeight() const noexcept { return m_blockHeight; }
     const mmr::LeafIndex& GetLeafIndex() const noexcept { return m_leafIdx; }
     const Output& GetOutput() const noexcept { return m_output; }
     OutputId ToOutputId() const noexcept { return m_output.ToOutputId(); }
@@ -39,7 +37,7 @@ public:
     }
 
 private:
-    uint64_t m_blockHeight;
+    int32_t m_blockHeight;
     mmr::LeafIndex m_leafIdx;
     Output m_output;
 };

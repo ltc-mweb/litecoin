@@ -1,6 +1,6 @@
 #include <test_framework/models/Tx.h>
 
-test::Tx test::Tx::CreatePegIn(const uint64_t amount, const uint64_t fee)
+test::Tx test::Tx::CreatePegIn(const CAmount amount, const CAmount fee)
 {
     BlindingFactor txOffset = Random::CSPRNG<32>();
 

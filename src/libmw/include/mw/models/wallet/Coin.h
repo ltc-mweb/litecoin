@@ -1,10 +1,10 @@
 #pragma once
 
 #include <mw/common/Macros.h>
-
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
 
+#include <amount.h>
 #include <boost/optional.hpp>
 
 MW_NAMESPACE
@@ -40,7 +40,7 @@ struct Coin : public Traits::ISerializable {
 
     // The output amount in litoshis.
     // Typically positive, but could be 0 in the future when we start using decoys to improve privacy.
-    uint64_t amount;
+    CAmount amount;
 
     // The output commitment (v*H + r*G).
     Commitment commitment;
@@ -55,10 +55,10 @@ struct Coin : public Traits::ISerializable {
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(features);
-        READWRITE(address_index);
+        READWRITE(VARINT(address_index));
         READWRITE(key);
         READWRITE(blind);
-        READWRITE(amount);
+        READWRITE(VARINT(amount, VarIntMode::NONNEGATIVE_SIGNED));
         READWRITE(commitment);
     }
 };

@@ -3,8 +3,8 @@
 
 Kernel Kernel::Create(
     const BlindingFactor& blind,
-    const boost::optional<uint64_t>& fee,
-    const boost::optional<uint64_t>& pegin_amount,
+    const boost::optional<CAmount>& fee,
+    const boost::optional<CAmount>& pegin_amount,
     const boost::optional<PegOutCoin>& pegout,
     const boost::optional<int32_t>& lock_height)
 {
@@ -30,8 +30,8 @@ mw::Hash Kernel::GetSignatureMessage() const
 }
 
 mw::Hash Kernel::GetSignatureMessage(
-    const boost::optional<uint64_t>& fee,
-    const boost::optional<uint64_t>& pegin_amount,
+    const boost::optional<CAmount>& fee,
+    const boost::optional<CAmount>& pegin_amount,
     const boost::optional<PegOutCoin>& pegout,
     const boost::optional<int32_t>& lock_height,
     const std::vector<uint8_t>& extra_data)

@@ -14,7 +14,7 @@ BOOST_FIXTURE_TEST_SUITE(TestKernel, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(PlainKernel)
 {
-    uint64_t fee = 1000;
+    CAmount fee = 1000;
     BlindingFactor excess_blind(Random::CSPRNG<32>());
     Kernel kernel = Kernel::Create(excess_blind, fee, boost::none, boost::none, boost::none);
 
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 
 //BOOST_AUTO_TEST_CASE(PegInKernel)
 //{
-//    uint64_t amount = 50;
+//    CAmount amount = 50;
 //    BlindingFactor excess_blind(Random::CSPRNG<32>());
 //    Kernel kernel = Kernel::CreatePegIn(excess_blind, amount);
 //
@@ -107,8 +107,8 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 //
 //BOOST_AUTO_TEST_CASE(PegOutKernel)
 //{
-//    uint64_t amount = 50;
-//    uint64_t fee = 1000;
+//    CAmount amount = 50;
+//    CAmount fee = 1000;
 //    BlindingFactor excess_blind(Random::CSPRNG<32>());
 //    Bech32Address address = Bech32Address::FromString("bc1qc7slrfxkknqcq2jevvvkdgvrt8080852dfjewde450xdlk4ugp7szw5tk9");
 //    Kernel kernel = Kernel::CreatePegOut(excess_blind, amount, fee, address);
@@ -162,8 +162,8 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 //
 //BOOST_AUTO_TEST_CASE(HeightLocked)
 //{
-//    uint64_t fee = 1000;
-//    uint64_t lockHeight = 2500;
+//    CAmount fee = 1000;
+//    int32_t lockHeight = 2500;
 //    BlindingFactor excess_blind(Random::CSPRNG<32>());
 //    Kernel kernel = Kernel::CreateHeightLocked(excess_blind, fee, lockHeight);
 //

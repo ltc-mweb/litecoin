@@ -10,21 +10,21 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     const std::vector<mw::Coin>& input_coins,
     const std::vector<mw::Recipient>& recipients,
     const std::vector<PegOutCoin>& pegouts,
-    const boost::optional<uint64_t>& pegin_amount,
-    const uint64_t fee)
+    const boost::optional<CAmount>& pegin_amount,
+    const CAmount fee)
 {
     if (pegouts.size() > 1) {
         throw std::runtime_error("Only supporting one pegout at this time.");
     }
 
-    uint64_t pegout_total = std::accumulate(
-        pegouts.cbegin(), pegouts.cend(), (uint64_t)0,
-        [](uint64_t sum, const PegOutCoin& pegout) { return sum + pegout.GetAmount(); }
+    CAmount pegout_total = std::accumulate(
+        pegouts.cbegin(), pegouts.cend(), (CAmount)0,
+        [](CAmount sum, const PegOutCoin& pegout) { return sum + pegout.GetAmount(); }
     );
 
-    uint64_t recipient_total = std::accumulate(
-        recipients.cbegin(), recipients.cend(), (uint64_t)0,
-        [](uint64_t sum, const mw::Recipient& recipient) { return sum + recipient.amount; }
+    CAmount recipient_total = std::accumulate(
+        recipients.cbegin(), recipients.cend(), (CAmount)0,
+        [](CAmount sum, const mw::Recipient& recipient) { return sum + recipient.amount; }
     );
 
     // Get input coins

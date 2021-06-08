@@ -94,7 +94,7 @@ public:
     const std::vector<Output>& GetOutputs() const noexcept { return m_body.GetOutputs(); }
     const std::vector<Kernel>& GetKernels() const noexcept { return m_body.GetKernels(); }
     const std::vector<SignedMessage>& GetOwnerSigs() const noexcept { return m_body.GetOwnerSigs(); }
-    uint64_t GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
+    CAmount GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
     int32_t GetLockHeight() const noexcept { return m_body.GetLockHeight(); }
     uint64_t CalcWeight() const noexcept { return (uint64_t)Weight::Calculate(m_body); }
 
@@ -103,9 +103,9 @@ public:
     std::vector<Commitment> GetOutputCommits() const noexcept { return m_body.GetOutputCommits(); }
     std::vector<PegInCoin> GetPegIns() const noexcept { return m_body.GetPegIns(); }
     std::vector<Output> GetPegInOutputs() const noexcept { return m_body.GetPegInOutputs(); }
-    uint64_t GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
+    CAmount GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
     std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_body.GetPegOuts(); }
-    int64_t GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
+    CAmount GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
 
     //
     // Serialization/Deserialization

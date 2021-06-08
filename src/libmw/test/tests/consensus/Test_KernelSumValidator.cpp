@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
         .Total();
 
     // Add kernel
-    const uint64_t fee = 500'000;
+    const CAmount fee = 500'000;
     kernels.push_back(Kernel::Create(excess, fee, boost::none, boost::none, boost::none));
 
     // Create Transaction

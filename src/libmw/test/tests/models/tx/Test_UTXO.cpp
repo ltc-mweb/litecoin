@@ -15,7 +15,7 @@ BOOST_FIXTURE_TEST_SUITE(TestUTXO, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxUTXO)
 {
-    uint64_t amount = 12345;
+    CAmount amount = 12345;
     BlindingFactor blind;
     Output output = Output::Create(
         blind,
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
     );
     Commitment commit = Crypto::CommitBlinded(amount, blind);
 
-    uint64_t blockHeight = 20;
+    int32_t blockHeight = 20;
     mmr::LeafIndex leafIndex = mmr::LeafIndex::At(5);
     UTXO utxo{
         blockHeight,
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
         std::vector<uint8_t> serialized = utxo.Serialized();
 
         Deserializer deserializer(serialized);
-        BOOST_REQUIRE(deserializer.Read<uint64_t>() == blockHeight);
+        BOOST_REQUIRE(deserializer.Read<int32_t>() == blockHeight);
         BOOST_REQUIRE(mmr::LeafIndex::At(deserializer.Read<uint64_t>()) == leafIndex);
         BOOST_REQUIRE(deserializer.Read<Output>() == output);
     }

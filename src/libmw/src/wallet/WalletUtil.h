@@ -5,6 +5,7 @@
 #include <mw/models/tx/Input.h>
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Hasher.h>
+#include <amount.h>
 #include <numeric>
 
 class WalletUtil
@@ -42,11 +43,11 @@ public:
         return keys;
     }
     
-    static uint64_t TotalAmount(const std::vector<mw::Coin>& coins)
+    static CAmount TotalAmount(const std::vector<mw::Coin>& coins)
     {
         return std::accumulate(
-            coins.cbegin(), coins.cend(), (uint64_t)0,
-            [](uint64_t total, const mw::Coin& coin) { return total + coin.amount; }
+            coins.cbegin(), coins.cend(), (CAmount)0,
+            [](CAmount total, const mw::Coin& coin) { return total + coin.amount; }
         );
     }
 

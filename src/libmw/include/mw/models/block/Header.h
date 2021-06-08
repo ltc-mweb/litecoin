@@ -83,14 +83,14 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        READWRITE(m_height);
+        READWRITE(VARINT(m_height, VarIntMode::NONNEGATIVE_SIGNED));
         READWRITE(m_outputRoot);
         READWRITE(m_kernelRoot);
         READWRITE(m_leafsetRoot);
         READWRITE(m_kernelOffset);
         READWRITE(m_ownerOffset);
-        READWRITE(m_outputMMRSize);
-        READWRITE(m_kernelMMRSize);
+        READWRITE(VARINT(m_outputMMRSize));
+        READWRITE(VARINT(m_kernelMMRSize));
 
         if (ser_action.ForRead()) {
             m_hash = Hashed(*this);

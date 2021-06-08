@@ -52,10 +52,10 @@ bool Transact::CreateTx(
     std::vector<PegOutCoin> pegouts;
     for (const CRecipient& recipient : recipients) {
         if (recipient.IsMWEB()) {
-            receivers.push_back(mw::Recipient{(uint64_t)recipient.nAmount, recipient.GetMWEBAddress()});
+            receivers.push_back(mw::Recipient{recipient.nAmount, recipient.GetMWEBAddress()});
         } else {
             PegOutCoin pegout_recipient(
-                (uint64_t)recipient.nAmount,
+                recipient.nAmount,
                 std::vector<uint8_t>(recipient.receiver.GetScript().begin(), recipient.receiver.GetScript().end())
             );
             pegouts.push_back(std::move(pegout_recipient));
@@ -63,11 +63,11 @@ bool Transact::CreateTx(
     }
 
     // Calculate pegin_amount
-    boost::optional<uint64_t> pegin_amount = boost::none;
+    boost::optional<CAmount> pegin_amount = boost::none;
     CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
     if (ltc_input_amount > 0) {
         assert(ltc_fee < ltc_input_amount);
-        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee + mweb_fee); // MW: TODO - There could also be LTC change
+        pegin_amount = (ltc_input_amount - ltc_fee + mweb_fee); // MW: TODO - There could also be LTC change
     }
 
     // Add Change
@@ -84,7 +84,7 @@ bool Transact::CreateTx(
             return false;
         }
         StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
-        receivers.push_back(mw::Recipient{(uint64_t)change_amount, change_address});
+        receivers.push_back(mw::Recipient{change_amount, change_address});
     }
 
     // Create transaction
@@ -94,7 +94,7 @@ bool Transact::CreateTx(
         receivers,
         pegouts,
         pegin_amount,
-        (uint64_t)mweb_fee);
+        mweb_fee);
 
     // Update pegin output
     auto pegins = transaction.m_mwtx.GetPegIns();

@@ -17,7 +17,7 @@ public:
     Tx(const mw::Transaction::CPtr& pTransaction, const std::vector<TxOutput>& outputs)
         : m_pTransaction(pTransaction), m_outputs(outputs) { }
 
-    static Tx CreatePegIn(const uint64_t amount, const uint64_t fee = 0);
+    static Tx CreatePegIn(const CAmount amount, const CAmount fee = 0);
 
     const mw::Transaction::CPtr& GetTransaction() const noexcept { return m_pTransaction; }
     const std::vector<Kernel>& GetKernels() const noexcept { return m_pTransaction->GetKernels(); }

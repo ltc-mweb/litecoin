@@ -26,8 +26,8 @@ class Kernel :
 public:
     Kernel() = default;
     Kernel(
-        boost::optional<uint64_t> fee,
-        boost::optional<uint64_t> pegin,
+        boost::optional<CAmount> fee,
+        boost::optional<CAmount> pegin,
         boost::optional<PegOutCoin> pegout,
         boost::optional<int32_t> lockHeight,
         std::vector<uint8_t> extraData,
@@ -49,8 +49,8 @@ public:
     //
     static Kernel Create(
         const BlindingFactor& blind,
-        const boost::optional<uint64_t>& fee,
-        const boost::optional<uint64_t>& pegin_amount,
+        const boost::optional<CAmount>& fee,
+        const boost::optional<CAmount>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
         const boost::optional<int32_t>& lock_height
     );
@@ -65,7 +65,7 @@ public:
     //
     // Getters
     //
-    uint64_t GetFee() const noexcept { return m_fee.value_or(0); }
+    CAmount GetFee() const noexcept { return m_fee.value_or(0); }
     int32_t GetLockHeight() const noexcept { return m_lockHeight.value_or(0); }
     const Commitment& GetExcess() const noexcept { return m_excess; }
     const Signature& GetSignature() const noexcept { return m_signature; }
@@ -73,8 +73,8 @@ public:
 
     mw::Hash GetSignatureMessage() const;
     static mw::Hash GetSignatureMessage(
-        const boost::optional<uint64_t>& fee,
-        const boost::optional<uint64_t>& pegin_amount,
+        const boost::optional<CAmount>& fee,
+        const boost::optional<CAmount>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
         const boost::optional<int32_t>& lock_height,
         const std::vector<uint8_t>& extra_data
@@ -83,13 +83,13 @@ public:
     bool HasPegIn() const noexcept { return !!m_pegin; }
     bool HasPegOut() const noexcept { return !!m_pegout; }
 
-    uint64_t GetPegIn() const noexcept { return m_pegin.value_or(0); }
+    CAmount GetPegIn() const noexcept { return m_pegin.value_or(0); }
     const boost::optional<PegOutCoin>& GetPegOut() const noexcept { return m_pegout; }
 
-    int64_t GetSupplyChange() const noexcept
+    CAmount GetSupplyChange() const noexcept
     {
-        return ((int64_t)m_pegin.value_or(0) - m_fee.value_or(0)) -
-            (int64_t)(m_pegout ? m_pegout.value().GetAmount() : 0);
+        return (m_pegin.value_or(0) - m_fee.value_or(0)) -
+            (m_pegout ? m_pegout.value().GetAmount() : 0);
     }
 
     //
@@ -109,11 +109,11 @@ public:
         s << features_byte;
 
         if (m_fee) {
-            s << m_fee.value();
+            ::WriteVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, m_fee.value());
         }
 
         if (m_pegin) {
-            s << m_pegin.value();
+            ::WriteVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, m_pegin.value());
         }
 
         if (m_pegout) {
@@ -121,7 +121,7 @@ public:
         }
 
         if (m_lockHeight) {
-            s << m_lockHeight.value();
+            ::WriteVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s, m_lockHeight.value());
         }
 
         if (!m_extraData.empty()) {
@@ -138,28 +138,21 @@ public:
         s >> features_byte;
 
         if (features_byte & FEE_FEATURE_BIT) {
-            uint64_t fee;
-            s >> fee;
-            m_fee = fee;
+            m_fee = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s);
         }
 
         if (features_byte & PEGIN_FEATURE_BIT) {
-            uint64_t pegin;
-            s >> pegin;
-            m_pegin = pegin;
+            m_pegin = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s);
         }
 
         if (features_byte & PEGOUT_FEATURE_BIT) {
             PegOutCoin pegout;
             s >> pegout;
-
             m_pegout = boost::make_optional(std::move(pegout));
         }
 
         if (features_byte & HEIGHT_LOCK_FEATURE_BIT) {
-            int32_t lock_height;
-            s >> lock_height;
-            m_lockHeight = lock_height;
+            m_lockHeight = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s);
         }
 
         if (features_byte & EXTRA_DATA_FEATURE_BIT) {
@@ -179,8 +172,8 @@ public:
     const Commitment& GetCommitment() const noexcept final { return m_excess; }
 
 private:
-    boost::optional<uint64_t> m_fee;
-    boost::optional<uint64_t> m_pegin;
+    boost::optional<CAmount> m_fee;
+    boost::optional<CAmount> m_pegin;
     boost::optional<PegOutCoin> m_pegout;
     boost::optional<int32_t> m_lockHeight;
     std::vector<uint8_t> m_extraData;
@@ -200,8 +193,8 @@ static const struct
 {
     bool operator()(const Kernel& a, const Kernel& b) const
     {
-        int64_t a_pegin = a.GetSupplyChange();
-        int64_t b_pegin = b.GetSupplyChange();
+        CAmount a_pegin = a.GetSupplyChange();
+        CAmount b_pegin = b.GetSupplyChange();
         return (a_pegin > b_pegin) || (a_pegin == b_pegin && a.GetHash() < b.GetHash());
     }
 } KernelSort;
