@@ -43,13 +43,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        bool has_prev = (m_pPrevHeader != nullptr); 
-        READWRITE(has_prev);
-
-        if (has_prev) {
-            READWRITE(m_pPrevHeader);
-        }
-
+        READWRITE(WrapOptionalPtr(m_pPrevHeader));
         READWRITE(m_coinsSpent);
         READWRITE(m_coinsAdded);
     }

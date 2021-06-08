@@ -412,7 +412,6 @@ I ReadVarInt(Stream& is)
 #define VARINT(obj, ...) WrapVarInt<__VA_ARGS__>(REF(obj))
 #define COMPACTSIZE(obj) CCompactSize(REF(obj))
 #define LIMITED_STRING(obj,n) LimitedString< n >(REF(obj))
-#define OPTIONAL_PTR(type, obj) OptionalPtr<type>(REF(obj))
 
 template<VarIntMode Mode, typename I>
 class CVarInt
