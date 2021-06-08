@@ -149,9 +149,7 @@ void TxBody::Validate() const
     std::transform(
         m_inputs.cbegin(), m_inputs.cend(),
         std::back_inserter(signatures),
-        [](const Input& input) {
-            return SignedMessage{ InputMessage(), input.GetPubKey(), input.GetSignature() };
-        }
+        [](const Input& input) { return input.BuildSignedMsg(); }
     );
 
     std::transform(

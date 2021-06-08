@@ -17,9 +17,7 @@ public:
     SignedMessage() = default;
     SignedMessage(const SignedMessage&) = default;
     SignedMessage(SignedMessage&&) = default;
-    SignedMessage(const mw::Hash& msgHash, const PublicKey& publicKey, const Signature& signature)
-        : m_messageHash(msgHash), m_publicKey(publicKey), m_signature(signature) { }
-    SignedMessage(mw::Hash&& msgHash, PublicKey&& publicKey, Signature&& signature)
+    SignedMessage(mw::Hash msgHash, PublicKey publicKey, Signature signature)
         : m_messageHash(std::move(msgHash)), m_publicKey(std::move(publicKey)), m_signature(std::move(signature)) { }
 
     //

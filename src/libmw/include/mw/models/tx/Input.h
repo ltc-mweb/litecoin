@@ -53,6 +53,11 @@ public:
     const PublicKey& GetPubKey() const noexcept { return m_pubkey; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
+    SignedMessage BuildSignedMsg() const noexcept
+    {
+        return SignedMessage{InputMessage(), GetPubKey(), GetSignature()};
+    }
+
     //
     // Serialization/Deserialization
     //
