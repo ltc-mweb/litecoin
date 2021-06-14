@@ -4333,15 +4333,6 @@ int CMerkleTx::GetBlocksToMaturity(interfaces::Chain::Lock& locked_chain) const
         return std::max(0, (COINBASE_MATURITY + 1) - chain_depth);
     }
 
-    if (!tx->m_mwtx.GetPegIns().empty()) {
-        int chain_depth = GetDepthInMainChain(locked_chain);
-        if (chain_depth < 0) {
-            return mw::PEGIN_MATURITY + 1;
-        }
-
-        return std::max(0, (int)(mw::PEGIN_MATURITY + 1) - chain_depth);
-    }
-
     return 0;
 }
 

@@ -18,7 +18,6 @@ enum class EConsensusError
     PEGOUT_MISMATCH,
     MMR_MISMATCH,
     UTXO_MISSING,
-    PEGIN_MATURITY,
     KERNEL_MISSING,
     NOT_SORTED
 };
@@ -64,8 +63,6 @@ private:
                 return "MMR_MISMATCH";
             case EConsensusError::UTXO_MISSING:
                 return "UTXO_MISSING";
-            case EConsensusError::PEGIN_MATURITY:
-                return "PEGIN_MATURITY";
             case EConsensusError::KERNEL_MISSING:
                 return "KERNEL_MISSING";
             case EConsensusError::NOT_SORTED:

@@ -269,11 +269,6 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-missing", false,
                     strprintf("%s: MWEB inputs missing", __func__));
             }
-
-            if (utxos.back()->IsPeggedIn() && nSpendHeight < (int)utxos.back()->GetBlockHeight() + mw::PEGIN_MATURITY) {
-                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-immature", false,
-                    strprintf("%s: MWEB inputs immature", __func__));
-            }
         }
 
         CAmount mweb_fee = tx.m_mwtx.GetFee();
