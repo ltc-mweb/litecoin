@@ -29,7 +29,6 @@
 #include <util/system.h>
 #include <util/moneystr.h>
 #include <util/strencodings.h>
-#include <mweb/mweb_state.h>
 
 #include <memory>
 
@@ -100,9 +99,6 @@ static constexpr unsigned int MAX_FEEFILTER_CHANGE_DELAY = 5 * 60;
 namespace {
     /** Number of nodes with fSyncStarted. */
     int nSyncStarted GUARDED_BY(cs_main) = 0;
-
-    /** Number of nodes from which the MWEB txhashset has been requested. */
-    //int nMWEBStateRequested GUARDED_BY(cs_main) = 0; // MW: TODO - Implement
 
     /**
      * Sources of received blocks, saved to be able to send them reject
@@ -2313,12 +2309,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
-    if (strCommand == NetMsgType::GETMWEBSTATE)
-    {
-        // MW: TODO - Implement
-
-    }
-
     // MWEB: Handle NetMsgType::MWTX
     if (strCommand == NetMsgType::TX) {
         // Stop processing the transaction early if
@@ -2834,20 +2824,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             LOCK(cs_main);
             mapBlockSource.erase(pblock->GetHash());
         }
-        return true;
-    }
-
-    if (strCommand == NetMsgType::MWEBSTATE)
-    {
-        // MW: TODO - Implement
-        MWEB::State mw_state;
-        vRecv >> mw_state;
-
-        LogPrint(BCLog::NET, "received mw_state from peer=%d\n", pfrom->GetId());
-
-        // MW: TODO - Check that it was actually requested
-        // MW: TODO - Call Node::ApplyState
-
         return true;
     }
 

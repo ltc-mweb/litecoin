@@ -202,7 +202,6 @@ BITCOIN_CORE_H = \
   mweb/mweb_miner.h \
   mweb/mweb_models.h \
   mweb/mweb_node.h \
-  mweb/mweb_state.h \
   mweb/mweb_transact.h \
   mweb/mweb_wallet.h \
   net.h \

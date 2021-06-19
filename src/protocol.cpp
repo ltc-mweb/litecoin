@@ -41,8 +41,7 @@ const char *SENDCMPCT="sendcmpct";
 const char *CMPCTBLOCK="cmpctblock";
 const char *GETBLOCKTXN="getblocktxn";
 const char *BLOCKTXN="blocktxn";
-const char *GETMWEBSTATE="getmwebstate";
-const char* MWEBSTATE="mwebstate";
+// MW: TODO - support GETMWEBUTXOS and MWEBUTXOS
 } // namespace NetMsgType
 
 /** All known message types. Keep this in the same order as the list of
@@ -74,9 +73,7 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::SENDCMPCT,
     NetMsgType::CMPCTBLOCK,
     NetMsgType::GETBLOCKTXN,
-    NetMsgType::BLOCKTXN,
-    NetMsgType::GETMWEBSTATE,
-    NetMsgType::MWEBSTATE,
+    NetMsgType::BLOCKTXN
 };
 const static std::vector<std::string> allNetMessageTypesVec(allNetMessageTypes, allNetMessageTypes+ARRAYLEN(allNetMessageTypes));
 
