@@ -46,7 +46,7 @@ class CCoinsViewDB final : public CCoinsView
 {
 protected:
     CDBWrapper db;
-    mw::ICoinsView::Ptr mw_view;
+    mw::ICoinsView::Ptr mweb_view;
 
 public:
     explicit CCoinsViewDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
@@ -58,8 +58,8 @@ public:
     bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     CDBWrapper* GetDB() noexcept { return &db; }
-    void SetMWView(const mw::ICoinsView::Ptr& view) { mw_view = view; }
-    mw::ICoinsView::Ptr GetMWView() const final { return mw_view; }
+    void SetMWView(const mw::ICoinsView::Ptr& view) { mweb_view = view; }
+    mw::ICoinsView::Ptr GetMWView() const final { return mweb_view; }
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();

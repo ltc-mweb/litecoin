@@ -357,9 +357,9 @@ BOOST_AUTO_TEST_CASE(versionbits_computeblockversion_mweb)
     const auto chainParams = CreateChainParams(CBaseChainParams::TESTNET);
     const Consensus::Params& testnetParams = chainParams->GetConsensus();
 
-    int64_t bit = testnetParams.vDeployments[Consensus::DEPLOYMENT_MW].bit;
-    int64_t nStartTime = testnetParams.vDeployments[Consensus::DEPLOYMENT_MW].nStartTime;
-    int64_t nTimeout = testnetParams.vDeployments[Consensus::DEPLOYMENT_MW].nTimeout;
+    int64_t bit = testnetParams.vDeployments[Consensus::DEPLOYMENT_MWEB].bit;
+    int64_t nStartTime = testnetParams.vDeployments[Consensus::DEPLOYMENT_MWEB].nStartTime;
+    int64_t nTimeout = testnetParams.vDeployments[Consensus::DEPLOYMENT_MWEB].nTimeout;
 
     assert(nStartTime < nTimeout);
 

@@ -42,6 +42,6 @@ static const int SHORT_IDS_BLOCKS_VERSION = 70014;
 //! not banning for invalid compact blocks starts with this version
 static const int INVALID_CB_NO_BAN_VERSION = 70015;
 
-static const int MW_PROTOCOL_VERSION = 70016; // MW: TODO - Support this
+static const int MWEB_PROTOCOL_VERSION = 70016; // MW: TODO - Support this
 
 #endif // BITCOIN_VERSION_H

@@ -81,7 +81,7 @@ public:
     // memory only
     mutable bool fChecked;
 
-    MWEB::Block mwBlock;
+    MWEB::Block mweb_block;
 
     CBlock()
     {
@@ -100,9 +100,9 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITEAS(CBlockHeader, *this);
         READWRITE(vtx);
-        if (!(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE)) {
+        if (!(s.GetVersion() & SERIALIZE_NO_MWEB)) {
             if (GetHogEx() != nullptr) {
-                READWRITE(mwBlock);
+                READWRITE(mweb_block);
             }
         }
     }
@@ -112,7 +112,7 @@ public:
         CBlockHeader::SetNull();
         vtx.clear();
         fChecked = false;
-        mwBlock.SetNull();
+        mweb_block.SetNull();
     }
 
     CBlockHeader GetBlockHeader() const

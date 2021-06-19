@@ -15,7 +15,6 @@ enum class EHashTag : char
     NONCE = 'N'
 };
 
-// FUTURE: Incrementally update hash on each Append using CSHA256.write()
 class Hasher
 {
 public:

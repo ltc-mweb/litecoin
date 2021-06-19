@@ -141,7 +141,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // transaction (which in most cases can be a no-op).
     fIncludeWitness = IsWitnessEnabled(pindexPrev, chainparams.GetConsensus());
 
-    fIncludeMWEB = IsMimblewimbleEnabled(pindexPrev, chainparams.GetConsensus());
+    fIncludeMWEB = IsMWEBEnabled(pindexPrev, chainparams.GetConsensus());
     if (fIncludeMWEB) {
         mweb_miner.NewBlock(nHeight);
     }
@@ -228,7 +228,7 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
             return false;
         if (!fIncludeWitness && it->GetTx().HasWitness())
             return false;
-        if (!fIncludeMWEB && it->GetTx().HasMWData()) {
+        if (!fIncludeMWEB && it->GetTx().HasMWEBTx()) {
             return false;
         }
     }
@@ -238,7 +238,7 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
 void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
     CTransactionRef pTx = iter->GetSharedTx();
-    if (pTx->HasMWData()) {
+    if (pTx->HasMWEBTx()) {
         if (!mweb_miner.AddMWEBTransaction(iter)) {
             return;
         }
@@ -249,7 +249,7 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
         }
 
         CMutableTransaction mutable_tx(*pTx);
-        mutable_tx.m_mwtx.SetNull();
+        mutable_tx.mweb_tx.SetNull();
         pTx = MakeTransactionRef(std::move(mutable_tx));
     }
 

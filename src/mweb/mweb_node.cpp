@@ -9,7 +9,7 @@ using namespace MWEB;
 
 bool Node::CheckBlock(const CBlock& block, CValidationState& state)
 {
-    if (block.mwBlock.IsNull()) {
+    if (block.mweb_block.IsNull()) {
         return true;
     }
 
@@ -29,7 +29,7 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
             int version;
             std::vector<uint8_t> program;
             if (pTx->vout[nOut].scriptPubKey.IsWitnessProgram(version, program)) {
-                if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
+                if (version == Consensus::MWEB::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                     pegins.push_back(PegInCoin(pTx->vout[nOut].nValue, Commitment{std::move(program)}));
                     expected_inputs.push_back(CTxIn(pTx->GetHash(), nOut));
                 }
@@ -55,7 +55,7 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
         pegouts.push_back(PegOutCoin(pHogEx->vout[i].nValue, {pubkey.begin(), pubkey.end()}));
     }
 
-    if (!mw::Node::ValidateBlock(block.mwBlock.m_block, mw::Hash(mweb256.begin()), pegins, pegouts)) {
+    if (!mw::Node::ValidateBlock(block.mweb_block.m_block, mw::Hash(mweb256.begin()), pegins, pegouts)) {
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "mw::Node::ValidateBlock failed");
     }
 
@@ -64,17 +64,17 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
 
 bool Node::CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFromBlock)
 {
-    // HasMWData() is true only when mweb txs being shared outside of a block (for use by mempools).
+    // HasMWEBTx() is true only when mweb txs being shared outside of a block (for use by mempools).
     // Blocks themselves do not store mweb txs like normal txs.
     // They are instead stored and processed separately in the mweb block.
-    if (fFromBlock && tx.HasMWData()) {
+    if (fFromBlock && tx.HasMWEBTx()) {
         return state.DoS(10, false, REJECT_INVALID, "bad-txns-mwdata-in-block");
     }
 
     // MWEB: CheckTransaction
-    if (tx.HasMWData()) {
+    if (tx.HasMWEBTx()) {
         try {
-            tx.m_mwtx.m_transaction->Validate();
+            tx.mweb_tx.m_transaction->Validate();
         } catch (const std::exception& e) {
             return state.DoS(10, false, REJECT_INVALID, "bad-mweb-txn");
         }

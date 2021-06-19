@@ -36,12 +36,12 @@ class CCoinsViewTest : public CCoinsView
 {
     uint256 hashBestBlock_;
     std::map<COutPoint, Coin> map_;
-    mw::ICoinsView::Ptr mw_view_;
+    mw::ICoinsView::Ptr mweb_view_;
 
 public:
     CCoinsViewTest()
     {
-        mw_view_ = mw::Node::Init(
+        mweb_view_ = mw::Node::Init(
             FilePath{GetDataDir().native()},
             {nullptr}, // MW: TODO - Load this first
             nullptr
@@ -84,7 +84,7 @@ public:
     
     mw::ICoinsView::Ptr GetMWView() const override
     {
-        return mw_view_;
+        return mweb_view_;
     }
 };
 
@@ -603,11 +603,11 @@ void GetCoinsMapEntry(const CCoinsMap& map, CAmount& value, char& flags)
     }
 }
 
-void WriteCoinsViewEntry(CCoinsView& view, const mw::ICoinsView::Ptr& mw_view, CAmount value, char flags)
+void WriteCoinsViewEntry(CCoinsView& view, const mw::ICoinsView::Ptr& mweb_view, CAmount value, char flags)
 {
     CCoinsMap map;
     InsertCoinsMapEntry(map, value, flags);
-    BOOST_CHECK(view.BatchWrite(map, {}, mw_view));
+    BOOST_CHECK(view.BatchWrite(map, {}, mweb_view));
 }
 
 class SingleEntryCacheTest
@@ -623,12 +623,12 @@ public:
     static std::unique_ptr<CCoinsViewDB> GetCoinsViewDB()
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
-        mw::ICoinsView::Ptr mw_view = mw::Node::Init(
+        mw::ICoinsView::Ptr mweb_view = mw::Node::Init(
             FilePath{GetDataDir().native()},
             {nullptr}, // MW: TODO - Load this first
             nullptr
         );
-        root->SetMWView(mw_view);
+        root->SetMWView(mweb_view);
         return root;
     }
 

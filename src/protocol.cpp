@@ -135,9 +135,9 @@ bool CMessageHeader::IsValid(const MessageStartChars& pchMessageStartIn) const
 
 ServiceFlags GetDesirableServiceFlags(ServiceFlags services) {
     if ((services & NODE_NETWORK_LIMITED) && g_initial_block_download_completed) {
-        return ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS | NODE_MW);
+        return ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS | NODE_MWEB);
     }
-    return ServiceFlags(NODE_NETWORK | NODE_WITNESS | NODE_MW);
+    return ServiceFlags(NODE_NETWORK | NODE_WITNESS | NODE_MWEB);
 }
 
 void SetServiceFlagsIBDCache(bool state) {
@@ -178,8 +178,8 @@ bool operator<(const CInv& a, const CInv& b)
 std::string CInv::GetCommand() const
 {
     std::string cmd;
-    if (type & MSG_MW_FLAG)
-        cmd.append("mw-");
+    if (type & MSG_MWEB_FLAG)
+        cmd.append("mweb-");
     if (type & MSG_WITNESS_FLAG)
         cmd.append("witness-");
     int masked = type & MSG_TYPE_MASK;

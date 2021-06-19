@@ -1550,7 +1550,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                 LoggerAPI::Initialize([](const std::string& logstr) { LogPrintf(logstr.c_str()); });
                 mw::CoinsViewDB::Ptr mweb_dbview = mw::Node::Init(
                     FilePath{GetDataDir().native()},
-                    block.mwBlock.GetMWEBHeader(),
+                    block.mweb_block.GetMWEBHeader(),
                     std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
                 );
                 pcoinsdbview->SetMWView(mweb_dbview);
@@ -1701,8 +1701,8 @@ bool AppInitMain(InitInterfaces& interfaces)
         nLocalServices = ServiceFlags(nLocalServices | NODE_WITNESS);
     }
 
-    if (chainparams.GetConsensus().vDeployments[Consensus::DEPLOYMENT_MW].nTimeout != 0) {
-        nLocalServices = ServiceFlags(nLocalServices | NODE_MW);
+    if (chainparams.GetConsensus().vDeployments[Consensus::DEPLOYMENT_MWEB].nTimeout != 0) {
+        nLocalServices = ServiceFlags(nLocalServices | NODE_MWEB);
     }
 
     // ********************************************************* Step 11: import blocks

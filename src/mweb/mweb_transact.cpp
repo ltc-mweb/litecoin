@@ -89,7 +89,7 @@ bool Transact::CreateTx(
 
     // Create transaction
     std::vector<mw::Coin> input_coins = GetInputCoins(selected_coins);
-    transaction.m_mwtx = TxBuilder::BuildTx(
+    transaction.mweb_tx = TxBuilder::BuildTx(
         input_coins,
         receivers,
         pegouts,
@@ -97,7 +97,7 @@ bool Transact::CreateTx(
         mweb_fee);
 
     // Update pegin output
-    auto pegins = transaction.m_mwtx.GetPegIns();
+    auto pegins = transaction.mweb_tx.GetPegIns();
     if (!pegins.empty()) {
         UpdatePegInOutput(transaction, pegins.front());
     }
@@ -143,7 +143,7 @@ bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const PegInCo
     for (size_t i = 0; i < transaction.vout.size(); i++) {
         if (IsPegInOutput(CTransaction(transaction).GetOutput(i))) {
             CScript pegin_script;
-            pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+            pegin_script << CScript::EncodeOP_N(Consensus::MWEB::WITNESS_VERSION);
             pegin_script << pegin.GetCommitment().vec();
             transaction.vout[i].nValue = pegin.GetAmount();
             transaction.vout[i].scriptPubKey = pegin_script;

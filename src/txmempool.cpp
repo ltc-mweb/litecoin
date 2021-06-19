@@ -22,7 +22,7 @@
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                                  int64_t _nTime, unsigned int _entryHeight,
                                  bool _spendsCoinbase, int64_t _sigOpsCost, LockPoints lp)
-    : tx(_tx), nFee(_nFee), nTxWeight(GetTransactionWeight(*tx)), mweb_weight(tx->m_mwtx.GetMWEBWeight()), nUsageSize(RecursiveDynamicUsage(tx)), nTime(_nTime), entryHeight(_entryHeight),
+    : tx(_tx), nFee(_nFee), nTxWeight(GetTransactionWeight(*tx)), mweb_weight(tx->mweb_tx.GetMWEBWeight()), nUsageSize(RecursiveDynamicUsage(tx)), nTime(_nTime), entryHeight(_entryHeight),
     spendsCoinbase(_spendsCoinbase), sigOpCost(_sigOpsCost), lockPoints(lp)
 {
     nCountWithDescendants = 1;
@@ -53,15 +53,15 @@ void CTxMemPoolEntry::UpdateLockPoints(const LockPoints& lp)
 
 size_t CTxMemPoolEntry::GetTxSize() const
 {
-    if (tx->vin.empty() && tx->vout.empty() && tx->HasMWData()) {
+    if (tx->vin.empty() && tx->vout.empty() && tx->HasMWEBTx()) {
         return 0;
     }
 
     // MW: TODO - Verify this logic. Maybe just use max input & output weights rather than building the actual pegouts?
     // Move this to a reusable location
-    size_t weight = nTxWeight + (GetTransactionInputWeight(CTxIn()) * tx->m_mwtx.GetPegIns().size());
+    size_t weight = nTxWeight + (GetTransactionInputWeight(CTxIn()) * tx->mweb_tx.GetPegIns().size());
 
-    for (const PegOutCoin& pegout : tx->m_mwtx.GetPegOuts()) {
+    for (const PegOutCoin& pegout : tx->mweb_tx.GetPegOuts()) {
         CTxOut pegout_output(pegout.GetAmount(), CScript(pegout.GetScriptPubKey()));
         weight += (::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR);
     }
@@ -421,7 +421,7 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
     }
 
     // MWEB: Add transaction to mapTxOutputs_MWEB for each output
-    for (const Commitment& output_commit : tx.m_mwtx.GetOutputCommits()) {
+    for (const Commitment& output_commit : tx.mweb_tx.GetOutputCommits()) {
         mapTxOutputs_MWEB.insert(std::make_pair(output_commit, &tx));
     }
 
@@ -455,7 +455,7 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
         mapNextTx.erase(txin.GetIndex());
 
     // MWEB: Remove transaction from mapTxOutputs_MWEB for each output
-    for (const Commitment& output_commit : it->GetTx().m_mwtx.GetOutputCommits()) {
+    for (const Commitment& output_commit : it->GetTx().mweb_tx.GetOutputCommits()) {
         mapTxOutputs_MWEB.erase(output_commit);
     }
 
@@ -627,19 +627,19 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
 /**
  * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
  */
-void CTxMemPool::removeForMWBlock(const MWEB::Block& mwBlock, unsigned int nBlockHeight) // MW: TODO - Can we combine this with removeForBlock?
+void CTxMemPool::removeForMWBlock(const MWEB::Block& mweb_block, unsigned int nBlockHeight) // MW: TODO - Can we combine this with removeForBlock?
 {
     LOCK(cs);
 
     std::vector<const CTxMemPoolEntry*> entries;
     setEntries stage;
 
-    auto blockKernelHashes = mwBlock.GetKernelHashes();
+    auto blockKernelHashes = mweb_block.GetKernelHashes();
 
     for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
-        if (!it->GetTx().HasMWData()) continue;
+        if (!it->GetTx().HasMWEBTx()) continue;
 
-        auto txKernelHashes = it->GetTx().m_mwtx.GetKernelHashes();
+        auto txKernelHashes = it->GetTx().mweb_tx.GetKernelHashes();
         std::vector<mw::Hash> commonKernelHashes;
         std::set_intersection(blockKernelHashes.begin(), blockKernelHashes.end(),
                               txKernelHashes.begin(), txKernelHashes.end(),

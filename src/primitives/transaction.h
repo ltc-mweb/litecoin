@@ -16,7 +16,7 @@
 #include <boost/variant.hpp>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
-static const int SERIALIZE_NO_MIMBLEWIMBLE = 0x20000000;
+static const int SERIALIZE_NO_MWEB = 0x20000000;
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
 class COutPoint
@@ -269,13 +269,13 @@ struct CMutableTransaction;
  * - if (flags & 1):
  *   - CTxWitness wit;
  * - if (flags & 8):
- *   - MWEB::Tx m_mwtx
+ *   - MWEB::Tx mweb_tx
  * - uint32_t nLockTime
  */
 template<typename Stream, typename TxType>
 inline void UnserializeTransaction(TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
-    const bool fAllowMW = !(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE);
+    const bool fAllowMWEB = !(s.GetVersion() & SERIALIZE_NO_MWEB);
 
     s >> tx.nVersion;
     unsigned char flags = 0;
@@ -305,12 +305,12 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
             throw std::ios_base::failure("Superfluous witness record");
         }
     }
-    if ((flags & 8) && fAllowMW) {
-        /* The mimblewimble flag is present, and we support mimblewimble. */
+    if ((flags & 8) && fAllowMWEB) {
+        /* The MWEB flag is present, and we support MWEB. */
         flags ^= 8;
 
-        s >> tx.m_mwtx;
-        if (tx.m_mwtx.IsNull()) {
+        s >> tx.mweb_tx;
+        if (tx.mweb_tx.IsNull()) {
             if (tx.vout.empty()) {
                 /* It's illegal to include a HogEx with no outputs. */
                 throw std::ios_base::failure("Missing HogEx output");
@@ -330,7 +330,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 template<typename Stream, typename TxType>
 inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
-    const bool fAllowMW = !(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE);
+    const bool fAllowMWEB = !(s.GetVersion() & SERIALIZE_NO_MWEB);
 
     s << tx.nVersion;
     unsigned char flags = 0;
@@ -341,8 +341,8 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
             flags |= 1;
         }
     }
-    if (fAllowMW) {
-        if (tx.m_hogEx || !tx.m_mwtx.IsNull()) {
+    if (fAllowMWEB) {
+        if (tx.m_hogEx || !tx.mweb_tx.IsNull()) {
             flags |= 8;
         }
     }
@@ -361,7 +361,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         }
     }
     if (flags & 8) {
-        s << tx.m_mwtx;
+        s << tx.mweb_tx;
     }
     s << tx.nLockTime;
 }
@@ -391,7 +391,7 @@ public:
     const std::vector<CTxOut> vout;
     const int32_t nVersion;
     const uint32_t nLockTime;
-    const MWEB::Tx m_mwtx;
+    const MWEB::Tx mweb_tx;
     
     /** Memory only. */
     const bool m_hogEx;
@@ -468,7 +468,7 @@ public:
         return false;
     }
 
-    bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
+    bool HasMWEBTx() const noexcept { return !mweb_tx.IsNull(); }
     bool IsHogEx() const noexcept { return m_hogEx; }
 
     std::vector<CTxInput> GetInputs() const noexcept
@@ -479,7 +479,7 @@ public:
             inputs.push_back(txin);
         }
 
-        for (Commitment commit : m_mwtx.GetInputCommits()) {
+        for (Commitment commit : mweb_tx.GetInputCommits()) {
             inputs.push_back(std::move(commit));
         }
 
@@ -511,7 +511,7 @@ public:
             outputs.push_back(CTxOutput{this, COutPoint(GetHash(), n), vout[n]});
         }
 
-        for (Commitment commit : m_mwtx.GetOutputCommits()) {
+        for (Commitment commit : mweb_tx.GetOutputCommits()) {
             outputs.push_back(CTxOutput{this, std::move(commit)});
         }
 
@@ -526,7 +526,7 @@ struct CMutableTransaction
     std::vector<CTxOut> vout;
     int32_t nVersion;
     uint32_t nLockTime;
-    MWEB::Tx m_mwtx;
+    MWEB::Tx mweb_tx;
 
     /** Memory only. */
     bool m_hogEx = false;
@@ -565,7 +565,7 @@ struct CMutableTransaction
         return false;
     }
 
-    bool HasMWData() const noexcept { return !m_mwtx.IsNull(); }
+    bool HasMWEBTx() const noexcept { return !mweb_tx.IsNull(); }
 };
 
 typedef std::shared_ptr<const CTransaction> CTransactionRef;

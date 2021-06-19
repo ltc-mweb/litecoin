@@ -279,9 +279,9 @@ enum ServiceFlags : uint64_t {
     // serving the last 288 (2 day) blocks
     // See BIP159 for details on how this is implemented.
     NODE_NETWORK_LIMITED = (1 << 10),
-    // NODE_MW indicates that a node can be asked for blocks and transactions including
-    // mimblewimble extension block data.
-    NODE_MW = (1 << 24)
+    // NODE_MWEB indicates that a node can be asked for blocks and transactions including
+    // MWEB data.
+    NODE_MWEB = (1 << 24)
 
     // Bits 25-31 are reserved for temporary experiments. Just pick a bit that
     // isn't getting used, or one not being used much, and notify the
@@ -376,7 +376,7 @@ public:
 
 /** getdata message type flags */
 const uint32_t MSG_WITNESS_FLAG = 1 << 30;
-const uint32_t MSG_MW_FLAG = 1 << 29;
+const uint32_t MSG_MWEB_FLAG = 1 << 29;
 const uint32_t MSG_TYPE_MASK    = 0xffffffff >> 2;
 
 /** getdata / inv message types.
@@ -394,8 +394,8 @@ enum GetDataMsg
     MSG_WITNESS_BLOCK = MSG_BLOCK | MSG_WITNESS_FLAG, //!< Defined in BIP144
     MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,       //!< Defined in BIP144
     MSG_FILTERED_WITNESS_BLOCK = MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG,
-    MSG_MW_BLOCK = MSG_WITNESS_BLOCK | MSG_MW_FLAG,
-    MSG_MW_TX = MSG_WITNESS_TX | MSG_MW_FLAG,
+    MSG_MWEB_BLOCK = MSG_WITNESS_BLOCK | MSG_MWEB_FLAG,
+    MSG_MWEB_TX = MSG_WITNESS_TX | MSG_MWEB_FLAG,
 };
 
 /** inv message data */

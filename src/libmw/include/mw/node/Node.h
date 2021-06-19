@@ -72,24 +72,6 @@ public:
         const mw::BlockUndo::CPtr& pUndoData,
         const ICoinsView::Ptr& pView
     );
-
-    /// <summary>
-    /// Validates the chainstate and replaces the existing state if valid.
-    /// This should be used during initial sync, or when syncing from beyond the horizon.
-    /// </summary>
-    /// <param name="data_dir">The data directory.</param>
-    /// <param name="pChain">Provides access to MWEB headers and blocks. Must not be null.</param>
-    /// <param name="pCoinsDB">A wrapper around the node database. Must not be null.</param>
-    /// <param name="stateHeader">The MWEB header at the chain tip.</param>
-    /// <param name="state">The chainstate to validate and apply. Must not be null.</param>
-    /// <returns>The CoinsViewDB which represents the state of the flushed chain.</returns>
-    static mw::ICoinsView::Ptr ApplyState(
-        const FilePath& data_dir,
-        const mw::IChain::Ptr& pChain,
-        const mw::DBWrapper::Ptr& pCoinsDB,
-        const mw::Header::CPtr& pStateHeader,
-        const mw::State& state
-    );
 };
 
 END_NAMESPACE

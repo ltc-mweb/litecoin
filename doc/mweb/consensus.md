@@ -1,4 +1,4 @@
-# Consensus
+# MWEB Consensus
 
 ## Data Formats
 

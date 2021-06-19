@@ -125,7 +125,7 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
         return Result::INVALID_ADDRESS_OR_KEY;
     }
 
-    uint64_t mweb_weight = wtx.tx->m_mwtx.GetMWEBWeight();
+    uint64_t mweb_weight = wtx.tx->mweb_tx.GetMWEBWeight();
 
     // calculate the old fee and fee-rate
     old_fee = wtx.GetDebit(ISMINE_SPENDABLE) - wtx.tx->GetValueOut();

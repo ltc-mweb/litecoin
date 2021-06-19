@@ -18,7 +18,7 @@ enum DeploymentPos
     DEPLOYMENT_TESTDUMMY,
     DEPLOYMENT_CSV, // Deployment of BIP68, BIP112, and BIP113.
     DEPLOYMENT_SEGWIT, // Deployment of BIP141, BIP143, and BIP147.
-    DEPLOYMENT_MW, // Deployment of LIP-0002 and LIP-0003
+    DEPLOYMENT_MWEB, // Deployment of LIP-0002 and LIP-0003
     // NOTE: Also add new deployments to VersionBitsDeploymentInfo in versionbits.cpp
     MAX_VERSION_BITS_DEPLOYMENTS
 };
@@ -78,7 +78,7 @@ struct Params {
     uint256 defaultAssumeValid;
 };
 
-struct Mimblewimble {
+struct MWEB {
     static constexpr int WITNESS_VERSION = 9;
 };
 } // namespace Consensus

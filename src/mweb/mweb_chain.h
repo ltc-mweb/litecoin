@@ -19,7 +19,7 @@ public:
     {
         while (Valid()) {
             CBlock block;
-            if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mwBlock.IsNull()) {
+            if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mweb_block.IsNull()) {
                 break;
             }
 
@@ -35,8 +35,8 @@ public:
     mw::Header::CPtr GetHeader() const final
     {
         CBlock block;
-        if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mwBlock.IsNull()) {
-            return block.mwBlock.m_block.GetHeader();
+        if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mweb_block.IsNull()) {
+            return block.mweb_block.m_block.GetHeader();
         }
 
         throw std::runtime_error("MWEB header not found");
@@ -45,8 +45,8 @@ public:
     mw::Block::CPtr GetBlock() const final
     {
         CBlock block;
-        if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mwBlock.IsNull()) {
-            return block.mwBlock.m_block;
+        if (m_chain.findBlock(m_locked->getBlockHash(m_height), &block) && !block.mweb_block.IsNull()) {
+            return block.mweb_block.m_block;
         }
 
         throw std::runtime_error("MWEB block not found");

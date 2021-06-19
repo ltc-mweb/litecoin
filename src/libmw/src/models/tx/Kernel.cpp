@@ -43,30 +43,28 @@ mw::Hash Kernel::GetSignatureMessage(
         (lock_height ? HEIGHT_LOCK_FEATURE_BIT : 0) |
         (extra_data.size() > 0 ? EXTRA_DATA_FEATURE_BIT : 0);
 
-    Hasher sig_message_hasher;
-    sig_message_hasher.Append<uint8_t>(features_byte);
+    CHashWriter s(SER_GETHASH, PROTOCOL_VERSION);
+    s << features_byte;
 
     if (fee) {
-        sig_message_hasher.Append<uint64_t>(fee.value());
+        ::WriteVarInt<CHashWriter, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, fee.value());
     }
 
     if (pegin_amount) {
-        sig_message_hasher.Append<uint64_t>(pegin_amount.value());
+        ::WriteVarInt<CHashWriter, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, pegin_amount.value());
     }
 
     if (pegout) {
-        sig_message_hasher
-            .Append<uint64_t>(pegout.value().GetAmount())
-            .Append(pegout.value().GetScriptPubKey());
+        s << pegout.value();
     }
 
     if (lock_height) {
-        sig_message_hasher.Append<int32_t>(lock_height.value());
+        ::WriteVarInt<CHashWriter, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s, lock_height.value());
     }
 
     if (!extra_data.empty()) {
-        sig_message_hasher.Append(extra_data);
+        s << extra_data;
     }
 
-    return sig_message_hasher.hash();
+    return mw::Hash(s.GetHash().begin());
 }

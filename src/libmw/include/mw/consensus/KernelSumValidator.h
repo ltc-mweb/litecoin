@@ -22,13 +22,13 @@ public:
         const BlindingFactor& total_offset)
     {
         // Sum all utxo commitments - expected supply.
-        int64_t total_mw_supply = 0;
+        int64_t total_mweb_supply = 0;
         for (const Kernel& kernel : kernels)
         {
-            total_mw_supply += kernel.GetSupplyChange();
+            total_mweb_supply += kernel.GetSupplyChange();
 
             // Total supply can never go below 0
-            if (total_mw_supply < 0) {
+            if (total_mweb_supply < 0) {
                 ThrowValidation(EConsensusError::BLOCK_SUMS);
             }
         }
@@ -38,7 +38,7 @@ public:
             utxo_commitments,
             Commitments::From(kernels),
             total_offset,
-            total_mw_supply
+            total_mweb_supply
         );
     }
 

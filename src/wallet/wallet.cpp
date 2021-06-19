@@ -743,7 +743,7 @@ void CWallet::AddToSpends(const uint256& wtxid)
 
 void CWallet::AddToOutputCommits(const CWalletTx& wtx)
 {
-    for (const Commitment& output_commit : wtx.tx->m_mwtx.GetOutputCommits()) {
+    for (const Commitment& output_commit : wtx.tx->mweb_tx.GetOutputCommits()) {
         mapOutputCommits.insert(std::make_pair(output_commit, wtx.GetHash()));
     }
     if (wtx.mweb_wtx_info) {
@@ -1087,7 +1087,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const uint256
         mw::Coin mweb_coin;
         for (const CTxOutput& txout : tx.GetOutputs()) {
             if (txout.IsMWEB()) {
-                mweb_wallet->RewindOutput(tx.m_mwtx.m_transaction, txout.GetCommitment(), mweb_coin);
+                mweb_wallet->RewindOutput(tx.mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin);
             }
         }
 
@@ -1303,9 +1303,9 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
         TransactionRemovedFromMempool(pblock->vtx[i]);
     }
 
-    if (!pblock->mwBlock.IsNull()) {
+    if (!pblock->mweb_block.IsNull()) {
         mw::Coin coin;
-        for (const Commitment& input_commit : pblock->mwBlock.GetInputCommits()) {
+        for (const Commitment& input_commit : pblock->mweb_block.GetInputCommits()) {
             if (GetCoin(input_commit, coin) && !IsSpent(*locked_chain, input_commit)) {
                 // MW: TODO - Create spend
 
@@ -1313,8 +1313,8 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
         }
 
         mw::Coin mweb_coin;
-        for (const Commitment& output_commit : pblock->mwBlock.GetOutputCommits()) {
-            if (mweb_wallet->RewindOutput(pblock->mwBlock.m_block, output_commit, mweb_coin)) {
+        for (const Commitment& output_commit : pblock->mweb_block.GetOutputCommits()) {
+            if (mweb_wallet->RewindOutput(pblock->mweb_block.m_block, output_commit, mweb_coin)) {
                 auto wtx = FindWalletTx(output_commit);
                 if (wtx != nullptr) {
                     SyncTransaction(wtx->tx, pindex->GetBlockHash(), 0);
@@ -1340,9 +1340,9 @@ void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock) {
         SyncTransaction(ptx, {} /* block hash */, 0 /* position in block */);
     }
 
-    if (!pblock->mwBlock.IsNull()) {
+    if (!pblock->mweb_block.IsNull()) {
         mw::Coin coin;
-        for (const Commitment& input_commit : pblock->mwBlock.GetInputCommits()) {
+        for (const Commitment& input_commit : pblock->mweb_block.GetInputCommits()) {
             
             if (GetCoin(input_commit, coin)) {
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(input_commit);
@@ -1354,8 +1354,8 @@ void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock) {
             }
         }
 
-        for (const Commitment& output_commit : pblock->mwBlock.GetOutputCommits()) {
-            if (mweb_wallet->RewindOutput(pblock->mwBlock.m_block, output_commit, coin)) {
+        for (const Commitment& output_commit : pblock->mweb_block.GetOutputCommits()) {
+            if (mweb_wallet->RewindOutput(pblock->mweb_block.m_block, output_commit, coin)) {
                 auto wtx = FindWalletTx(output_commit);
                 if (wtx != nullptr) {
                     SyncTransaction(wtx->tx, {} /* block hash */, 0 /* position in block */);
@@ -1966,8 +1966,8 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                     SyncTransaction(block.vtx[posInBlock], block_hash, posInBlock, fUpdate);
                 }
 
-                if (!block.mwBlock.IsNull()) {
-                    for (const Commitment& input_commit : block.mwBlock.GetInputCommits()) {
+                if (!block.mweb_block.IsNull()) {
+                    for (const Commitment& input_commit : block.mweb_block.GetInputCommits()) {
                         if (IsMine(CTxInput(input_commit))) {
                             // MW: TODO - Check for zapped transactions with matching input commits
                             CWalletTx wtx(this, MakeTransactionRef());
@@ -1983,8 +1983,8 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                     }
 
                     mw::Coin mweb_coin;
-                    for (const Commitment& output_commit : block.mwBlock.GetOutputCommits()) {
-                        if (mweb_wallet->RewindOutput(block.mwBlock.m_block, output_commit, mweb_coin)) {
+                    for (const Commitment& output_commit : block.mweb_block.GetOutputCommits()) {
+                        if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_commit, mweb_coin)) {
                             // MW: TODO - Check for zapped transactions with matching output commits
                             CWalletTx wtx(this, MakeTransactionRef());
                             wtx.mweb_wtx_info = MWEB::WalletTxInfo(mweb_coin);
@@ -2886,7 +2886,7 @@ bool CWallet::SignTransaction(CMutableTransaction &tx)
 
 bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl coinControl)
 {
-    if (tx.HasMWData()) {
+    if (tx.HasMWEBTx()) {
         WalletLogPrintf("FundTransaction: PSBT not supported for MWEB transactions.\n%s");
         return false;
     }
@@ -3002,7 +3002,7 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
             mw::Coin mweb_coin;
             for (const CTxOutput& txout : wtxNew.GetOutputs()) {
                 if (txout.IsMWEB()) {
-                    if (mweb_wallet->RewindOutput(wtxNew.tx->m_mwtx.m_transaction, txout.GetCommitment(), mweb_coin)) {
+                    if (mweb_wallet->RewindOutput(wtxNew.tx->mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin)) {
                         WalletLogPrintf("Output rewound: %s\n", txout.GetCommitment().ToHex().c_str());
                     }
                 }

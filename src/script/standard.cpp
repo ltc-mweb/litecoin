@@ -113,7 +113,7 @@ txnouttype Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned 
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_V0_SCRIPTHASH;
         }
-        if (witnessversion == Consensus::Mimblewimble::WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_PEGIN_SIZE) {
+        if (witnessversion == Consensus::MWEB::WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_PEGIN_SIZE) {
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_MWEB_PEGIN;
         }

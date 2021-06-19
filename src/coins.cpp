@@ -37,7 +37,7 @@ mw::ICoinsView::Ptr CCoinsViewBacked::GetMWView() const { return base->GetMWView
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
-CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0), mw_view(baseIn->GetMWView() ? std::make_shared<mw::CoinsViewCache>(baseIn->GetMWView()) : nullptr) {}
+CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0), mweb_view(baseIn->GetMWView() ? std::make_shared<mw::CoinsViewCache>(baseIn->GetMWView()) : nullptr) {}
 
 size_t CCoinsViewCache::DynamicMemoryUsage() const {
     return memusage::DynamicUsage(cacheCoins) + cachedCoinsUsage;
@@ -155,7 +155,7 @@ uint256 CCoinsViewCache::GetBestBlock() const {
 
 void CCoinsViewCache::SetBackend(CCoinsView& viewIn) {
     base = &viewIn;
-    mw_view = viewIn.GetMWView() ? std::make_shared<mw::CoinsViewCache>(viewIn.GetMWView()) : nullptr;
+    mweb_view = viewIn.GetMWView() ? std::make_shared<mw::CoinsViewCache>(viewIn.GetMWView()) : nullptr;
 }
 
 void CCoinsViewCache::SetBestBlock(const uint256 &hashBlockIn) {
@@ -226,7 +226,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
 }
 
 bool CCoinsViewCache::Flush() {
-    bool fOk = base->BatchWrite(cacheCoins, hashBlock, mw_view);
+    bool fOk = base->BatchWrite(cacheCoins, hashBlock, mweb_view);
     cacheCoins.clear();
     cachedCoinsUsage = 0;
     return fOk;

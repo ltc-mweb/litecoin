@@ -1,5 +1,4 @@
 #include <mw/node/Node.h>
-#include "CoinsViewFactory.h"
 
 #include <mw/db/MMRInfoDB.h>
 #include <mw/node/validation/BlockValidator.h>
@@ -85,23 +84,4 @@ void Node::DisconnectBlock(const mw::BlockUndo::CPtr& pUndoData, const mw::ICoin
     pCache->Flush(nullptr);
 
     LOG_TRACE_F("Block {} disconnected. New tip: {}", pHeader, pView->GetBestHeader());
-}
-
-mw::ICoinsView::Ptr Node::ApplyState(
-    const FilePath& datadir,
-    const mw::IChain::Ptr& pChain,
-    const mw::DBWrapper::Ptr& pDBWrapper,
-    const mw::Header::CPtr& pStateHeader,
-    const mw::State& state)
-{
-    return CoinsViewFactory::CreateDBView(
-        pDBWrapper,
-        pChain,
-        datadir,
-        pStateHeader,
-        state.utxos,
-        state.kernels,
-        state.leafset,
-        state.pruned_parent_hashes
-    );
 }

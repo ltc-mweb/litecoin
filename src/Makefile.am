@@ -141,7 +141,6 @@ libmw_a_SOURCES = \
 	libmw/src/node/BlockBuilder.cpp \
 	libmw/src/node/CoinsViewCache.cpp \
 	libmw/src/node/CoinsViewDB.cpp \
-	libmw/src/node/CoinsViewFactory.cpp \
 	libmw/src/node/ICoinsView.cpp \
 	libmw/src/node/Node.cpp \
 	libmw/src/node/Snapshot.cpp \

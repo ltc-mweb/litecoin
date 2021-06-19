@@ -13,7 +13,6 @@
 
 #include <test_framework/models/Tx.h>
 #include <test_framework/Miner.h>
-#include <test_framework/TestUtil.h>
 #include <test_framework/TxBuilder.h>
 
 // FUTURE: Create official test vectors for the consensus rules being tested

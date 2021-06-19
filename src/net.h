@@ -878,7 +878,7 @@ public:
 
     uint64_t GetCmpctBlockVersion() const noexcept
     {
-        if (nLocalServices & NODE_MW) {
+        if (nLocalServices & NODE_MWEB) {
             return 3;
         }
 

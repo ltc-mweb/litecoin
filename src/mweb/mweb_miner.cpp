@@ -28,7 +28,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     std::vector<CTxIn> vin;
     CAmount pegin_amount = 0;
-    std::vector<PegInCoin> pegins = pTx->m_mwtx.GetPegIns();
+    std::vector<PegInCoin> pegins = pTx->mweb_tx.GetPegIns();
 
     if (!ValidatePegIns(pTx, pegins)) {
         LogPrintf("Peg-in Mismatch\n");
@@ -54,7 +54,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     std::vector<CTxOut> vout;
     CAmount pegout_amount = 0;
-    std::vector<PegOutCoin> pegouts = pTx->m_mwtx.GetPegOuts();
+    std::vector<PegOutCoin> pegouts = pTx->mweb_tx.GetPegOuts();
 
     for (const PegOutCoin& pegout : pegouts) {
         CAmount amount(pegout.GetAmount());
@@ -71,7 +71,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     }
 
     // Validate fee amount range
-    CAmount tx_fee = pTx->m_mwtx.GetFee();
+    CAmount tx_fee = pTx->mweb_tx.GetFee();
     if (!MoneyRange(tx_fee)) {
         LogPrintf("Invalid MWEB fee amount\n");
         return false;
@@ -80,7 +80,7 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
     //
     // Add transaction to MWEB
     //
-    if (!mweb_builder->AddTransaction(pTx->m_mwtx.m_transaction, pegins)) {
+    if (!mweb_builder->AddTransaction(pTx->mweb_tx.m_transaction, pegins)) {
         LogPrintf("Failed to add MWEB transaction\n");
         return false;
     }
@@ -111,7 +111,7 @@ bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<PegInCo
         int version;
         std::vector<uint8_t> program;
         if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-            if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
+            if (version == Consensus::MWEB::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
                 PegInCoin pegin(output.nValue, Commitment{std::move(program)});
                 if (pegin_set.erase(pegin) != 1) {
                     return false;
@@ -175,7 +175,7 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     // Update block & template
     //
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
-    pblock->mwBlock = Block(mw_block);
+    pblock->mweb_block = Block(mw_block);
     pblocktemplate->vTxFees.push_back(0);
     
     pblocktemplate->vTxSigOpsCost.push_back(0);

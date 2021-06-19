@@ -61,7 +61,7 @@ uint256 CBlock::GetMWEBHash() const noexcept
         int version;
         std::vector<unsigned char> program;
         if (pHogEx->vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
-            if (program.size() == 32 && version == Consensus::Mimblewimble::WITNESS_VERSION) {
+            if (program.size() == 32 && version == Consensus::MWEB::WITNESS_VERSION) {
                 return uint256(program);
             }
         }

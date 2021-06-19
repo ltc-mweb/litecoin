@@ -2064,8 +2064,8 @@ UniValue analyzepsbt(const JSONRPCRequest& request)
             result.pushKV("estimated_vsize", (int)size);
 
             uint64_t mweb_weight = 0;
-            if (!ctx.m_mwtx.IsNull()) {
-                mweb_weight = ctx.m_mwtx.GetMWEBWeight();
+            if (!ctx.mweb_tx.IsNull()) {
+                mweb_weight = ctx.mweb_tx.GetMWEBWeight();
                 result.pushKV("mweb_weight", (int)mweb_weight);
             }
 

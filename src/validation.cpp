@@ -722,7 +722,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
 
         // Keep track of transactions that spend a coinbase, which we re-scan
         // during reorgs to ensure COINBASE_MATURITY is still met.
-        // MW: TODO - Also check if spends peg-in
         bool fSpendsCoinbase = false;
         for (const CTxIn &txin : tx.vin) {
             const Coin &coin = view.AccessCoin(txin.prevout);
@@ -2020,7 +2019,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
             // MWEB: For HogEx transaction, the fee must not be greater than the total fee of the extension block.
             if (tx.IsHogEx()) {
-                CAmount mweb_fee = block.mwBlock.GetTotalFee();
+                CAmount mweb_fee = block.mweb_block.GetTotalFee();
                 if (txfee > mweb_fee) {
                     return state.DoS(100, error("%s: HogEx fee does not match MWEB fee.", __func__),
                         REJECT_INVALID, "bad-txns-mweb-fee-mismatch");
@@ -2083,40 +2082,42 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
 
     // MWEB: Check activation
-    const bool mw_enabled = IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus());
-    if (mw_enabled && block.mwBlock.IsNull()) {
-        return state.DoS(100, error("ConnectBlock(): Mimblewimble activated, but no MWEB included"),
+    const bool mweb_enabled = IsMWEBEnabled(pindex->pprev, chainparams.GetConsensus());
+    if (mweb_enabled && block.mweb_block.IsNull()) {
+        return state.DoS(100, error("ConnectBlock(): MWEB activated, but no extension block included"),
             REJECT_INVALID, "missing-mweb");
-    } else if (!mw_enabled && !block.mwBlock.IsNull()) {
-        return state.DoS(100, error("ConnectBlock(): Mimblewimble not activated, but MWEB included"),
+    } else if (!mweb_enabled && !block.mweb_block.IsNull()) {
+        return state.DoS(100, error("ConnectBlock(): MWEB not activated, but extension block included"),
             REJECT_INVALID, "unexpected-mweb");
     }
 
     // MWEB: Connect block to chain
-    if (!block.mwBlock.IsNull()) {
+    if (!block.mweb_block.IsNull()) {
         // MW: TODO - Check HogEx transaction: `new value == (prev value + pegins) - (pegouts + fees)`
-        CAmount mweb_amount = pindex->pprev->mweb_amount + block.mwBlock.GetSupplyChange();
+        // MW: TODO - Move this to MWEB::Node::ConnectBlock.
+        CAmount mweb_amount = pindex->pprev->mweb_amount + block.mweb_block.GetSupplyChange();
         if (mweb_amount != block.GetMWEBAmount()) {
-            LogPrintf("prev_mweb_amount: %d, supply_change: %d, block_mweb_amount: %d\n", pindex->pprev->mweb_amount, block.mwBlock.GetSupplyChange(), block.GetMWEBAmount());
+            LogPrintf("prev_mweb_amount: %d, supply_change: %d, block_mweb_amount: %d\n", pindex->pprev->mweb_amount, block.mweb_block.GetSupplyChange(), block.GetMWEBAmount());
             return state.DoS(100, error("ConnectBlock(): HogEx amount does not match expected MWEB amount"),
                 REJECT_INVALID, "mweb-amount-mismatch");
         }
 
         try {
-            blockundo.mwundo = mw::Node::ConnectBlock(block.mwBlock.m_block, view.GetMWView());
+            blockundo.mwundo = mw::Node::ConnectBlock(block.mweb_block.m_block, view.GetMWView());
         } catch (const std::exception& e) {
             return state.DoS(100, error("ConnectBlock(): Failed to connect mw block: %s", e.what()),
-                REJECT_INVALID, "mw-connect-failed");
+                REJECT_INVALID, "mweb-connect-failed");
         }
     }
 
     if (fJustCheck)
         return true;
 
-    if (!block.mwBlock.IsNull()) {
+    // MW: TODO - Also move this to MWEB::Node::ConnectBlock
+    if (!block.mweb_block.IsNull()) {
         if ((pindex->nStatus & BLOCK_HAVE_MWEB) == 0) {
             pindex->nStatus |= BLOCK_HAVE_MWEB;
-            pindex->mweb_header = block.mwBlock.GetMWEBHeader();
+            pindex->mweb_header = block.mweb_block.GetMWEBHeader();
             pindex->mweb_amount = block.GetMWEBAmount();
             setDirtyBlockIndex.insert(pindex);
         }
@@ -2514,8 +2515,8 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
     disconnectpool.removeForBlock(blockConnecting.vtx); // MW: TODO - Do we have to do something with this?
     // MWEB: Remove conflicting transactions from the mempool.
-    if (!blockConnecting.mwBlock.IsNull()) {
-        mempool.removeForMWBlock(blockConnecting.mwBlock, pindexNew->nHeight);
+    if (!blockConnecting.mweb_block.IsNull()) {
+        mempool.removeForMWBlock(blockConnecting.mweb_block, pindexNew->nHeight);
     }
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
@@ -3199,7 +3200,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // checks that use witness data may be performed here.
 
     // Size limits
-    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
+    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-length", false, "size limits failed");
 
     // First transaction must be coinbase, the rest must not be
@@ -3245,10 +3246,10 @@ bool IsNullDummyEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& 
     return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_SEGWIT, versionbitscache) == ThresholdState::ACTIVE);
 }
 
-bool IsMimblewimbleEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params)
+bool IsMWEBEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
-    return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_MW, versionbitscache) == ThresholdState::ACTIVE);
+    return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_MWEB, versionbitscache) == ThresholdState::ACTIVE);
 }
 
 // Compute at which vout of the block's coinbase transaction the witness
@@ -3444,23 +3445,23 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
-    if (IsMimblewimbleEnabled(pindexPrev, consensusParams)) {
-        if (block.mwBlock.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "mweb-missing", true, strprintf("%s : Mimblewimble activated but MWEB not found", __func__));
+    if (IsMWEBEnabled(pindexPrev, consensusParams)) {
+        if (block.mweb_block.IsNull()) {
+            return state.DoS(100, false, REJECT_INVALID, "mweb-missing", true, strprintf("%s : MWEB activated but extension block not found", __func__));
         }
     } else {
-        // No mw data is allowed in blocks that don't commit to mw data, as this would otherwise leave room for spam
-        if (!block.mwBlock.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : Mimblewimble not activated, but MWEB found", __func__));
+        // No MWEB data is allowed in blocks that don't commit to MWEB data, as this would otherwise leave room for spam
+        if (!block.mweb_block.IsNull()) {
+            return state.DoS(100, false, REJECT_INVALID, "unexpected-mweb-data", true, strprintf("%s : MWEB not activated, but extension block found", __func__));
         }
     }
 
-    // Transactions in the mempool or broadcast via p2p may have mimblewimble transaction data attached.
-    // All mw tx data must be moved to the EB when it's mined in a block though.
-    // So at this point, no txs should contain mw data.
+    // MWEB: Transactions in the mempool or broadcast via p2p may have MWEB transaction data attached.
+    // All MWEB tx data must be moved to the EB when it's mined in a block though.
+    // So at this point, no txs should contain MWEB data.
     for (const auto& tx : block.vtx) {
-        if (tx->HasMWData()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : Block contains transactions with mw data attached", __func__));
+        if (tx->HasMWEBTx()) {
+            return state.DoS(100, false, REJECT_INVALID, "unexpected-mweb-data", true, strprintf("%s : Block contains transactions with MWEB data attached", __func__));
         }
     }
 

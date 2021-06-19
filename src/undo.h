@@ -130,7 +130,7 @@ inline void UnserializeBlockUndo(CBlockUndo& blockundo, Stream& s, const unsigne
     }
 
     if (::GetSerializeSize(blockundo) < num_bytes) {
-        // There's more data to read. Mimblewimble rewind data must be available.
+        // There's more data to read. MWEB rewind data must be available.
         s >> blockundo.mwundo;
     }
 }

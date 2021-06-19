@@ -215,7 +215,7 @@ protected:
     /* Cached dynamic memory usage for the inner Coin objects. */
     mutable size_t cachedCoinsUsage;
 
-    mw::ICoinsView::Ptr mw_view;
+    mw::ICoinsView::Ptr mweb_view;
 
 public:
     CCoinsViewCache(CCoinsView *baseIn);
@@ -236,7 +236,7 @@ public:
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
 
-    mw::ICoinsView::Ptr GetMWView() const final { return mw_view; }
+    mw::ICoinsView::Ptr GetMWView() const final { return mweb_view; }
 
     /**
      * Check if we have the given utxo already loaded in this cache.
