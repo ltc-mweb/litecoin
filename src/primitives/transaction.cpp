@@ -59,22 +59,26 @@ CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), 
 
 uint256 CMutableTransaction::GetHash() const
 {
-    int nVersion = SERIALIZE_TRANSACTION_NO_WITNESS;
-    if (!HasMWEBTx() || !vin.empty()) {
-        nVersion |= SERIALIZE_NO_MWEB;
+    if (HasMWEBTx() && vin.empty() && !mweb_tx.m_transaction->GetKernels().empty()) {
+        const auto& kernels = mweb_tx.m_transaction->GetKernels();
+        if (!kernels.empty()) {
+            return uint256(kernels.front().GetHash().vec());
+        }
     }
 
-    return SerializeHash(*this, SER_GETHASH, nVersion);
+    return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB);
 }
 
 uint256 CTransaction::ComputeHash() const
 {
-    int nVersion = SERIALIZE_TRANSACTION_NO_WITNESS;
-    if (!HasMWEBTx() || !vin.empty()) {
-        nVersion |= SERIALIZE_NO_MWEB;
+    if (HasMWEBTx() && vin.empty() && !mweb_tx.m_transaction->GetKernels().empty()) {
+        const auto& kernels = mweb_tx.m_transaction->GetKernels();
+        if (!kernels.empty()) {
+            return uint256(kernels.front().GetHash().vec());
+        }
     }
 
-    return SerializeHash(*this, SER_GETHASH, nVersion);
+    return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB);
 }
 
 uint256 CTransaction::ComputeWitnessHash() const
@@ -82,7 +86,8 @@ uint256 CTransaction::ComputeWitnessHash() const
     if (!HasWitness()) {
         return hash;
     }
-    return SerializeHash(*this, SER_GETHASH);
+
+    return SerializeHash(*this, SER_GETHASH, SERIALIZE_NO_MWEB);
 }
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
