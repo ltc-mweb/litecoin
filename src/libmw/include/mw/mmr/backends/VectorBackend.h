@@ -51,6 +51,7 @@ public:
 
     // Not supported yet
     void Commit(const uint32_t index, const std::unique_ptr<mw::DBBatch>& pBatch) final {}
+    void Compact(const uint32_t index) const final {}
 
 private:
     std::vector<Leaf> m_leaves;

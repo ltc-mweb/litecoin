@@ -19,7 +19,6 @@ public:
 
 	virtual ~ILeafSet() = default;
 
-	//virtual uint64_t GetSize() const = 0;
 	virtual uint8_t GetByte(const uint64_t byteIdx) const = 0;
 	virtual void SetByte(const uint64_t byteIdx, const uint8_t value) = 0;
 
@@ -54,7 +53,6 @@ public:
 	static LeafSet::Ptr Open(const FilePath& leafset_dir, const uint32_t file_index);
 	static FilePath GetPath(const FilePath& leafset_dir, const uint32_t file_index);
 
-    //uint64_t GetSize() const;
 	uint8_t GetByte(const uint64_t byteIdx) const final;
 	void SetByte(const uint64_t byteIdx, const uint8_t value) final;
 
@@ -64,6 +62,7 @@ public:
 		const std::unordered_map<uint64_t, uint8_t>& modifiedBytes
 	) final;
 	void Flush(const uint32_t file_index);
+	void Compact(const uint32_t current_file_index) const;
 
 private:
 	LeafSet(FilePath dir, MemMap&& mmap, const mmr::LeafIndex& nextLeafIdx)

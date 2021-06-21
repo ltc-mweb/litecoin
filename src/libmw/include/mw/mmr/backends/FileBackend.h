@@ -46,6 +46,7 @@ public:
     Leaf GetLeaf(const LeafIndex& idx) const final;
 
     void Commit(const uint32_t file_index, const std::unique_ptr<mw::DBBatch>& pBatch) final;
+    void Compact(const uint32_t current_file_index) const final;
 
 private:
     char m_dbPrefix;

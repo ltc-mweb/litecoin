@@ -47,3 +47,8 @@ void MMR::BatchWrite(
 
     m_pBackend->Commit(file_index, pBatch);
 }
+
+void MMR::Compact(const uint32_t current_file_index) const
+{
+    m_pBackend->Compact(current_file_index);
+}

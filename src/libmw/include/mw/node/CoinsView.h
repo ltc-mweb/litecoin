@@ -122,6 +122,11 @@ public:
     /// <param name="commitment">The commitment to look for.</param>
     /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
     virtual bool HasCoinInCache(const Commitment& commitment) const noexcept = 0;
+
+    /// <summary>
+    /// Cleanup any old MMR files that no longer reflect the latest flushed state.
+    /// </summary>
+    virtual void Compact() const = 0;
     
 protected:
     void ValidateMMRs(const mw::Header::CPtr& pHeader) const;
@@ -155,6 +160,7 @@ public:
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) final;
+    void Compact() const final { m_pBase->Compact(); }
 
     /// <summary>
     /// Commits the changes from the cached CoinsView to the base CoinsView.
@@ -207,6 +213,7 @@ public:
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) final;
+    void Compact() const final;
 
     mmr::ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
     mmr::IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }

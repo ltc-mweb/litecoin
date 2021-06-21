@@ -131,6 +131,19 @@ void mmr::FileBackend::Commit(const uint32_t file_index, const std::unique_ptr<m
     m_leafMap.clear();
 }
 
+void mmr::FileBackend::Compact(const uint32_t current_file_index) const
+{
+    uint32_t file_index = current_file_index;
+    while (file_index > 0) {
+        FilePath prev_hashfile = GetPath(m_dir, m_dbPrefix, --file_index);
+        if (prev_hashfile.Exists()) {
+            prev_hashfile.Remove();
+        } else {
+            break;
+        }
+    }
+}
+
 FilePath mmr::FileBackend::GetPath(const FilePath& dir, const char prefix, const uint32_t file_index)
 {
     return dir.GetChild(StringUtil::Format("{}{:0>6}.dat", prefix, file_index));

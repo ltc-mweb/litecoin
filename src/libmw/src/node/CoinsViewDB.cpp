@@ -1,6 +1,7 @@
 #include <mw/node/CoinsView.h>
 
 #include <mw/db/CoinDB.h>
+#include <mw/db/MMRInfoDB.h>
 #include <mw/exceptions/ValidationException.h>
 
 MW_NAMESPACE
@@ -66,6 +67,17 @@ void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::DBBatch>& pBatch, const C
                 AddUTXO(coinDB, action.pUTXO);
             }
         }
+    }
+}
+
+void CoinsViewDB::Compact() const
+{
+    auto current_mmr_info = MMRInfoDB(GetDatabase().get(), nullptr)
+                                .GetLatest();
+    if (current_mmr_info) {
+        m_pLeafSet->Compact(current_mmr_info->index);
+        m_pKernelMMR->Compact(current_mmr_info->index);
+        m_pOutputPMMR->Compact(current_mmr_info->index);
     }
 }
 

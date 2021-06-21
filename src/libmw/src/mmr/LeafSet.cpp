@@ -69,6 +69,19 @@ void LeafSet::Flush(const uint32_t file_index)
     m_modifiedBytes.clear();
 }
 
+void LeafSet::Compact(const uint32_t current_file_index) const
+{
+    uint32_t file_index = current_file_index;
+    while (file_index > 0) {
+        FilePath prev_leafset = GetPath(m_dir, --file_index);
+        if (prev_leafset.Exists()) {
+            prev_leafset.Remove();
+        } else {
+            break;
+        }
+    }
+}
+
 uint8_t LeafSet::GetByte(const uint64_t byteIdx) const
 {
     // Offset by 8 bytes, since first 8 bytes in file represent the next leaf index

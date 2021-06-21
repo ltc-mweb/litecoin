@@ -121,6 +121,7 @@ public:
         const std::vector<Leaf>& leaves,
         const std::unique_ptr<mw::DBBatch>& pBatch
     ) final;
+    void Compact(const uint32_t current_file_index) const;
 
 private:
     IBackend::Ptr m_pBackend;
