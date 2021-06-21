@@ -2569,8 +2569,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
-        LogPrint(BCLog::NET, "Processing compact block. MWEB included: %s \n", cmpctblock.mweb_block.IsNull() ? "false" : "true");
-
         // We want to be a bit conservative just to be extra careful about DoS
         // possibilities in compact block processing...
         if (pindex->nHeight <= chainActive.Height() + 2) {
