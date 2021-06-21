@@ -2,24 +2,15 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/db/LeafDB.h>
-#include <mw/file/ScopedFileRemover.h>
 
-#include <test_framework/DBWrapper.h>
-#include <test_framework/TestUtil.h>
+#include <test_framework/TestMWEB.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestLeafDB, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestLeafDB, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(LeafDBTest)
 {
-    FilePath datadir = test::TestUtil::GetTempDir();
-    ScopedFileRemover remover(datadir); // Removes the directory when this goes out of scope.
-
-    TestDBWrapper test_wrapper(datadir.GetChild("db"));
-    auto pDatabase = test_wrapper.Get();
+    auto pDatabase = GetDB();
 
     LeafDB ldb('L', pDatabase.get());
 

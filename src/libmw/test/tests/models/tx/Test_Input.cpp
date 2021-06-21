@@ -2,14 +2,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/Input.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestInput, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestInput, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(PlainTxInput)
 {
@@ -37,10 +36,7 @@ BOOST_AUTO_TEST_CASE(PlainTxInput)
         deserializer >> signature2;
         BOOST_REQUIRE(signature2 == signature);
 
-        
-        Input input2;
-        CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> input2;
-        BOOST_REQUIRE(input == input2);
+        BOOST_REQUIRE(input == Input::Deserialize(serialized));
 
         BOOST_REQUIRE(input.GetHash() == Hashed(serialized));
     }

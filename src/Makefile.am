@@ -143,7 +143,6 @@ libmw_a_SOURCES = \
 	libmw/src/node/CoinsViewDB.cpp \
 	libmw/src/node/ICoinsView.cpp \
 	libmw/src/node/Node.cpp \
-	libmw/src/node/Snapshot.cpp \
 	libmw/src/wallet/Keychain.cpp \
 	libmw/src/wallet/TxBuilder.cpp
 

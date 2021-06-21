@@ -2,24 +2,17 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/mmr/LeafSet.h>
 #include <mw/crypto/Hasher.h>
-#include <mw/file/ScopedFileRemover.h>
 
-#include <test_framework/TestUtil.h>
+#include <test_framework/TestMWEB.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestMMRLeafSet, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestMMRLeafSet, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(LeafSet)
 {
-    FilePath temp_dir = test::TestUtil::GetTempDir();
-    ScopedFileRemover remover(temp_dir); // Removes the directory when this goes out of scope.
-
     {
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(temp_dir, 0);
+        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 0);
 
         BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 0);
         BOOST_REQUIRE(!pLeafset->Contains(mmr::LeafIndex::At(0)));
@@ -59,7 +52,7 @@ BOOST_AUTO_TEST_CASE(LeafSet)
 
     {
         // Reload from disk and validate
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(temp_dir, 1);
+        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 1);
         BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 2);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b11000000 }));
     }

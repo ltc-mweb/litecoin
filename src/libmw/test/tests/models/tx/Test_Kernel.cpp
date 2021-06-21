@@ -2,15 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Schnorr.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/Kernel.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestKernel, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestKernel, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(PlainKernel)
 {
@@ -36,7 +35,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
         mw::Hash hashed = kernel.GetSignatureMessage();
         mw::Hash message_hash = Hasher()
             .Append<uint8_t>(1)
-            .Append<uint64_t>(fee)
+            .Append<CVarInt<VarIntMode::NONNEGATIVE_SIGNED, CAmount>>(VARINT(fee, VarIntMode::NONNEGATIVE_SIGNED))
             .hash();
         BOOST_REQUIRE(hashed == message_hash);
     }
@@ -55,6 +54,8 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
         BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
     }
 }
+
+// MW: TODO - Uncomment these
 
 //BOOST_AUTO_TEST_CASE(PegInKernel)
 //{

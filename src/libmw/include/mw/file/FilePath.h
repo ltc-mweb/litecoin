@@ -13,6 +13,7 @@
 #pragma warning(disable: 4100 4127 4244)
 #endif
 
+#include <boost/filesystem.hpp>
 #include <ghc/filesystem.hpp>
 
 #ifdef _MSC_VER
@@ -36,6 +37,7 @@ public:
     //
     FilePath(const FilePath& other) = default;
     FilePath(FilePath&& other) = default;
+    FilePath(const boost::filesystem::path& path) : m_path(path.native()) {}
     FilePath(const filesystem::path& path) : m_path(path) {}
     FilePath(const char* path) : m_path(path) {}
     FilePath(const std::string& u8str) : m_path(u8str) {}

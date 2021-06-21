@@ -2,12 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/models/crypto/BigInteger.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestBigInt, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestBigInt, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(BigIntTest)
 {
@@ -53,9 +52,7 @@ BOOST_AUTO_TEST_CASE(BigIntTest)
     BOOST_REQUIRE(bigInt1.ToHex() == "0123456789abcdef");
 
     std::vector<uint8_t> serialized = bigInt1.Serialized();
-    BigInt<8> bigInt6;
-    CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> bigInt6;
-    BOOST_REQUIRE(bigInt1 == bigInt6);
+    BOOST_REQUIRE(bigInt1 == BigInt<8>::Deserialize(serialized));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

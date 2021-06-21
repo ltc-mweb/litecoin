@@ -2,16 +2,15 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/models/wallet/StealthAddress.h>
 #include <mw/serialization/Deserializer.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestUTXO, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestUTXO, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxUTXO)
 {

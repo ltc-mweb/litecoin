@@ -19,6 +19,9 @@ TEST_NAMESPACE
 class Miner
 {
 public:
+    Miner(const FilePath& datadir)
+        : m_datadir(datadir) {}
+
     MinedBlock MineBlock(const uint64_t height, const std::vector<Tx>& txs)
     {
         mw::Transaction::CPtr pTransaction = std::make_shared<const mw::Transaction>();
@@ -134,9 +137,10 @@ private:
 
         blockInfos.push_back(blockInfo);
 
-        return TestLeafSet::Create(blockInfos);
+        return TestLeafSet::Create(m_datadir, blockInfos);
     }
 
+    FilePath m_datadir;
     std::vector<MinedBlock> m_blocks;
 };
 

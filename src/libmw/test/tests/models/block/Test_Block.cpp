@@ -2,14 +2,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/models/block/Block.h>
 #include <mw/consensus/Aggregation.h>
 #include <test_framework/models/Tx.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestBlock, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestBlock, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(Block)
 {

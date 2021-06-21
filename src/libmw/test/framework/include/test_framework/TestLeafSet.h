@@ -3,7 +3,6 @@
 #include <mw/mmr/LeafSet.h>
 #include <mw/models/crypto/Commitment.h>
 #include <mw/exceptions/NotFoundException.h>
-#include <test_framework/TestUtil.h>
 
 class TestLeafSet
 {
@@ -16,9 +15,9 @@ public:
         std::vector<Commitment> outputs;
     };
 
-    static TestLeafSet::Ptr Create(const std::vector<BlockInfo>& blocks)
+    static TestLeafSet::Ptr Create(const FilePath& datadir, const std::vector<BlockInfo>& blocks)
     {
-        FilePath path = test::TestUtil::GetTempDir().GetChild("leafset.bin");
+        FilePath path = datadir.GetChild("leafset.bin");
         auto pLeafSet = mmr::LeafSet::Open(path, 0);
 
         auto pTestLeafSet = std::shared_ptr<TestLeafSet>(new TestLeafSet(path, pLeafSet));

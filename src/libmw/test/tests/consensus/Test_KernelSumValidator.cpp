@@ -2,22 +2,19 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/consensus/KernelSumValidator.h>
 #include <mw/consensus/Aggregation.h>
 #include <mw/crypto/Random.h>
-#include <mw/file/ScopedFileRemover.h>
 #include <mw/node/CoinsView.h>
 
+#include <test_framework/TestMWEB.h>
 #include <test_framework/models/Tx.h>
 #include <test_framework/Miner.h>
 #include <test_framework/TxBuilder.h>
 
 // FUTURE: Create official test vectors for the consensus rules being tested
 
-BOOST_FIXTURE_TEST_SUITE(TestKernelSumValidator, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestKernelSumValidator, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(ValidateState)
 {

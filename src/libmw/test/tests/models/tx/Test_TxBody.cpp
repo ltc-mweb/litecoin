@@ -2,12 +2,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
+#include <test_framework/TestMWEB.h>
 #include <test_framework/TxBuilder.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestTxBody, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestTxBody, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxBodyTest)
 {

@@ -1,6 +1,5 @@
 #include <mw/node/validation/StateValidator.h>
 #include <mw/consensus/KernelSumValidator.h>
-#include <mw/serialization/Deserializer.h>
 
 void StateValidator::Validate(const mw::ICoinsView& coins_view)
 {
@@ -15,7 +14,7 @@ void StateValidator::Validate(const mw::ICoinsView& coins_view)
         mmr::LeafIndex index = mmr::LeafIndex::At(i);
         if (pLeafSet->Contains(index)) {
             mmr::Leaf leaf = pOutputPMMR->GetLeaf(index);
-            OutputId output_id = Deserializer(leaf.vec()).Read<OutputId>();
+            OutputId output_id = OutputId::Deserialize(leaf.vec());
             utxos.push_back(output_id.GetCommitment());
         }
     }
@@ -24,7 +23,7 @@ void StateValidator::Validate(const mw::ICoinsView& coins_view)
     const uint64_t num_kernels = pKernelMMR->GetNumLeaves();
     for (size_t i = 0; i < num_kernels; i++) {
         mmr::Leaf leaf = pKernelMMR->GetLeaf(mmr::LeafIndex::At(i));
-        kernels.push_back(Deserializer(leaf.vec()).Read<Kernel>());
+        kernels.push_back(Kernel::Deserialize(leaf.vec()));
     }
 
     KernelSumValidator::ValidateState(utxos, kernels, coins_view.GetBestHeader()->GetKernelOffset());

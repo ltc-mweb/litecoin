@@ -2,17 +2,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/crypto/Random.h>
 #include <mw/mmr/Leaf.h>
 #include <mw/mmr/MMRFactory.h>
 #include <mw/mmr/MMRUtil.h>
 
+#include <test_framework/TestMWEB.h>
+
 using namespace mmr;
 
-BOOST_FIXTURE_TEST_SUITE(TestMMRFactory, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestMMRFactory, MWEBTestingSetup)
 
 static std::vector<Leaf> RandomLeaves(const BitSet& leafset)
 {

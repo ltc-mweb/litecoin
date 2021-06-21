@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <serialize.h>
 
-// TODO: Not needed if we decide not to require peg-in outputs to mature.
+// MW: TODO - Not needed if we decide not to require peg-in outputs to mature.
 enum EOutputFeatures : uint8_t
 {
     // No Flags

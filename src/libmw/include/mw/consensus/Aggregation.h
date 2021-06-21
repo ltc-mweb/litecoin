@@ -56,7 +56,7 @@ public:
             owner_offsets.push_back(pTransaction->GetOwnerOffset());
         }
 
-        // TODO: Do we need to prevent duplicate inputs, outputs, and kernels here?
+        // MW: TODO - Do we need to prevent duplicate inputs, outputs, and kernels here?
         // In theory, that should already be done in the mempool.
         // Belt and suspenders checks wouldn't be bad, but it will result in a lot of
         // memory duplication and hashtable lookups slowing down mining.

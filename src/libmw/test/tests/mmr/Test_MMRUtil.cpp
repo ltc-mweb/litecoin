@@ -2,15 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/mmr/MMRUtil.h>
 #include <unordered_set>
 
+#include <test_framework/TestMWEB.h>
+
 using namespace mmr;
 
-BOOST_FIXTURE_TEST_SUITE(TestMMRUtil, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestMMRUtil, MWEBTestingSetup)
 
 #define REQUIRE_NEXT(iter, expected_pos) \
     BOOST_REQUIRE(iter.Next()); \

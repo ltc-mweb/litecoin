@@ -3,7 +3,6 @@
 #include <mw/common/Macros.h>
 #include <mw/common/BitSet.h>
 #include <mw/node/CoinsView.h>
-#include <mw/node/State.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/block/Block.h>
 #include <mw/models/block/BlockUndo.h>

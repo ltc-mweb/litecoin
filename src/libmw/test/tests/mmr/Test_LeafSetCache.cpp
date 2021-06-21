@@ -2,24 +2,17 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/mmr/LeafSet.h>
 #include <mw/crypto/Hasher.h>
-#include <mw/file/ScopedFileRemover.h>
 
-#include <test_framework/TestUtil.h>
+#include <test_framework/TestMWEB.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestMMRLeafSetCache, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestMMRLeafSetCache, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(LeafSetCache)
 {
-    FilePath temp_dir = test::TestUtil::GetTempDir();
-    ScopedFileRemover remover(temp_dir); // Removes the directory when this goes out of scope.
-
     {
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(temp_dir, 0);
+        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 0);
 
         pLeafset->Add(mmr::LeafIndex::At(0));
         pLeafset->Add(mmr::LeafIndex::At(1));
@@ -32,7 +25,7 @@ BOOST_AUTO_TEST_CASE(LeafSetCache)
 
     {
         // Reload from disk
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(temp_dir, 1);
+        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 1);
 
         // Create cache and validate
         mmr::LeafSetCache::Ptr pCache = std::make_shared<mmr::LeafSetCache>(pLeafset);

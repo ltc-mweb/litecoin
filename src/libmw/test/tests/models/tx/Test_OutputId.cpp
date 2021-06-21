@@ -2,15 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/OutputId.h>
 #include <mw/serialization/Deserializer.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestOutputId, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestOutputId, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
 {
@@ -50,9 +49,7 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
         BOOST_REQUIRE(deserializer.Read<BigInt<16>>() == maskedNonce);
         BOOST_REQUIRE(deserializer.Read<PublicKey>() == senderPubKey);
 
-        OutputId outputId2;
-        CDataStream(serialized, SER_DISK, PROTOCOL_VERSION) >> outputId2;
-        BOOST_REQUIRE(outputId == outputId2);
+        BOOST_REQUIRE(outputId == OutputId::Deserialize(serialized));
 
         BOOST_REQUIRE(outputId.GetHash() == Hashed(serialized));
     }

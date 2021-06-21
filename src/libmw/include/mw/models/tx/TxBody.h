@@ -86,7 +86,7 @@ public:
     {
         READWRITE(m_inputs);
         READWRITE(m_outputs);
-        READWRITE(m_kernels);
+        READWRITE(m_kernels); // MW: TODO - We should probably require at least 1 kernel
         READWRITE(m_ownerSigs);
     }
 
