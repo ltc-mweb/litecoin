@@ -10,8 +10,6 @@
 
 class ILeafSetBackend;
 
-MMR_NAMESPACE
-
 class ILeafSet
 {
 public:
@@ -22,11 +20,11 @@ public:
 	virtual uint8_t GetByte(const uint64_t byteIdx) const = 0;
 	virtual void SetByte(const uint64_t byteIdx, const uint8_t value) = 0;
 
-	void Add(const LeafIndex& idx);
-	void Remove(const LeafIndex& idx);
-	bool Contains(const LeafIndex& idx) const noexcept;
+	void Add(const mmr::LeafIndex& idx);
+	void Remove(const mmr::LeafIndex& idx);
+	bool Contains(const mmr::LeafIndex& idx) const noexcept;
 	mw::Hash Root() const;
-	void Rewind(const uint64_t numLeaves, const std::vector<LeafIndex>& leavesToAdd);
+	void Rewind(const uint64_t numLeaves, const std::vector<mmr::LeafIndex>& leavesToAdd);
 	const mmr::LeafIndex& GetNextLeafIdx() const noexcept { return m_nextLeafIdx; }
 	BitSet ToBitSet() const;
 
@@ -62,7 +60,7 @@ public:
 		const std::unordered_map<uint64_t, uint8_t>& modifiedBytes
 	) final;
 	void Flush(const uint32_t file_index);
-	void Compact(const uint32_t current_file_index) const;
+	void Cleanup(const uint32_t current_file_index) const;
 
 private:
 	LeafSet(FilePath dir, MemMap&& mmap, const mmr::LeafIndex& nextLeafIdx)
@@ -96,5 +94,3 @@ private:
 	ILeafSet::Ptr m_pBacked;
 	std::unordered_map<uint64_t, uint8_t> m_modifiedBytes;
 };
-
-END_NAMESPACE

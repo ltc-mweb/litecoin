@@ -8,13 +8,13 @@
 
 BOOST_FIXTURE_TEST_SUITE(TestPruneList, MWEBTestingSetup)
 
-BOOST_AUTO_TEST_CASE(PruneList)
+BOOST_AUTO_TEST_CASE(PruneListTest)
 {
     // Bitset: 00100000 01000000 00000000 00110011 11111111 100000000
     File(GetDataDir() / "prun000009.dat")
         .Write({ 0x20, 0x40, 0x00, 0x33, 0xff, 0x80 });
 
-    mmr::PruneList::Ptr pPruneList = mmr::PruneList::Open(GetDataDir(), 9);
+    PruneList::Ptr pPruneList = PruneList::Open(GetDataDir(), 9);
 
     BOOST_REQUIRE(pPruneList->GetTotalShift() == 15);
     BOOST_REQUIRE(pPruneList->GetShift(mmr::Index::At(1)) == 0);

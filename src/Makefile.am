@@ -119,7 +119,6 @@ libmw_a_SOURCES = \
 	libmw/src/db/LeafDB.cpp \
 	libmw/src/db/MMRInfoDB.cpp \
 	libmw/src/file/File.cpp \
-	libmw/src/mmr/backends/FileBackend.cpp \
 	libmw/src/mmr/ILeafSet.cpp \
 	libmw/src/mmr/IMMR.cpp \
 	libmw/src/mmr/Index.cpp \
@@ -127,7 +126,6 @@ libmw_a_SOURCES = \
 	libmw/src/mmr/LeafSetCache.cpp \
 	libmw/src/mmr/MMR.cpp \
 	libmw/src/mmr/MMRCache.cpp \
-	libmw/src/mmr/MMRFactory.cpp \
 	libmw/src/mmr/PruneList.cpp \
 	libmw/src/models/block/Block.cpp \
 	libmw/src/models/crypto/Commitment.cpp \

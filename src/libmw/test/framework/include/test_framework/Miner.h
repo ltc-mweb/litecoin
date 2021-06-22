@@ -6,13 +6,12 @@
 #include <mw/consensus/Aggregation.h>
 #include <mw/mmr/MMR.h>
 #include <mw/mmr/LeafSet.h>
-#include <mw/mmr/backends/VectorBackend.h>
 
 #include <test_framework/models/MinedBlock.h>
 #include <test_framework/models/Tx.h>
 #include <test_framework/TestLeafSet.h>
 
-#include <iostream>
+#include <mweb/mweb_db.h>
 
 TEST_NAMESPACE
 
@@ -20,7 +19,10 @@ class Miner
 {
 public:
     Miner(const FilePath& datadir)
-        : m_datadir(datadir) {}
+        : m_datadir(datadir)
+    {
+
+    }
 
     MinedBlock MineBlock(const uint64_t height, const std::vector<Tx>& txs)
     {
@@ -48,16 +50,14 @@ public:
 
         auto pHeader = std::make_shared<mw::Header>(
             height,
-            outputMMR.Root(),
-            kernelMMR.Root(),
+            outputMMR->Root(),
+            kernelMMR->Root(),
             pLeafSet->Root(),
             std::move(kernel_offset),
             std::move(owner_offset),
-            outputMMR.GetNumLeaves(),
-            kernelMMR.GetNumLeaves()
+            outputMMR->GetNumLeaves(),
+            kernelMMR->GetNumLeaves()
         );
-
-        std::cout << "Mined Block: " << pHeader->GetHeight() << " - " << pHeader->Format() << std::endl;
 
         MinedBlock minedBlock(
             std::make_shared<mw::Block>(pHeader, pTransaction->GetBody()),
@@ -74,7 +74,7 @@ public:
     }
 
 private:
-    mmr::MMR GetKernelMMR(const std::vector<Kernel>& additionalKernels = {})
+    MMR::Ptr GetKernelMMR(const std::vector<Kernel>& additionalKernels = {})
     {
         std::vector<Kernel> kernels;
         for (const auto& block : m_blocks) {
@@ -84,15 +84,23 @@ private:
 
         kernels.insert(kernels.end(), additionalKernels.cbegin(), additionalKernels.cend());
 
-        auto mmr = mmr::MMR(std::make_shared<mmr::VectorBackend>());
+        FilePath temp_dir = m_datadir.GetChild(Random::CSPRNG<6>().GetBigInt().ToHex());
+        auto pWrapper = std::make_unique<CDBWrapper>(temp_dir.ToBoost(), 1 << 10);
+        auto mmr = MMR::Open(
+            'k',
+            m_datadir.GetChild("miner_mmr"),
+            m_fileIndex++,
+            std::make_shared<MWEB::DBWrapper>(pWrapper.get()),
+            nullptr
+        );
         for (const Kernel& kernel : kernels) {
-            mmr.Add(kernel.Serialized());
+            mmr->Add(kernel.Serialized());
         }
 
         return mmr;
     }
 
-    mmr::MMR GetOutputMMR(const std::vector<Output>& additionalOutputs = {})
+    MMR::Ptr GetOutputMMR(const std::vector<Output>& additionalOutputs = {})
     {
         std::vector<Output> outputs;
         for (const auto& block : m_blocks) {
@@ -102,9 +110,17 @@ private:
 
         std::copy(additionalOutputs.cbegin(), additionalOutputs.cend(), std::back_inserter(outputs));
 
-        auto mmr = mmr::MMR(std::make_shared<mmr::VectorBackend>());
+        FilePath temp_dir = m_datadir.GetChild(Random::CSPRNG<6>().GetBigInt().ToHex());
+        auto pWrapper = std::make_unique<CDBWrapper>(temp_dir.ToBoost(), 1 << 10);
+        auto mmr = MMR::Open(
+            'o',
+            m_datadir.GetChild("miner_mmr"),
+            m_fileIndex++,
+            std::make_shared<MWEB::DBWrapper>(pWrapper.get()),
+            nullptr
+        );
         for (const Output& output : outputs) {
-            mmr.Add(output.ToOutputId().Serialized());
+            mmr->Add(output.ToOutputId().Serialized());
         }
 
         return mmr;
@@ -141,6 +157,7 @@ private:
     }
 
     FilePath m_datadir;
+    uint32_t m_fileIndex;
     std::vector<MinedBlock> m_blocks;
 };
 

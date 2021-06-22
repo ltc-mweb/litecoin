@@ -1,7 +1,7 @@
 #include <mw/mmr/LeafSet.h>
 #include <mw/crypto/Hasher.h>
 
-MMR_NAMESPACE
+using namespace mmr;
 
 void LeafSetCache::ApplyUpdates(
     const uint32_t /*file_index*/,
@@ -36,5 +36,3 @@ void LeafSetCache::SetByte(const uint64_t byteIdx, const uint8_t value)
 {
     m_modifiedBytes[byteIdx] = value;
 }
-
-END_NAMESPACE

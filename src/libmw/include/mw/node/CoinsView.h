@@ -104,9 +104,9 @@ public:
         const mw::Header::CPtr& pHeader
     ) = 0;
 
-    virtual mmr::ILeafSet::Ptr GetLeafSet() const noexcept = 0;
-    virtual mmr::IMMR::Ptr GetKernelMMR() const noexcept = 0;
-    virtual mmr::IMMR::Ptr GetOutputPMMR() const noexcept = 0;
+    virtual ILeafSet::Ptr GetLeafSet() const noexcept = 0;
+    virtual IMMR::Ptr GetKernelMMR() const noexcept = 0;
+    virtual IMMR::Ptr GetOutputPMMR() const noexcept = 0;
 
     /// <summary>
     /// Checks if there's a unspent coin in the view with a matching commitment.
@@ -145,9 +145,9 @@ public:
     CoinsViewCache(const ICoinsView::Ptr& pBase)
         : ICoinsView(pBase->GetBestHeader(), pBase->GetDatabase()),
         m_pBase(pBase),
-        m_pLeafSet(std::make_unique<mmr::LeafSetCache>(pBase->GetLeafSet())),
-        m_pKernelMMR(std::make_unique<mmr::MMRCache>(pBase->GetKernelMMR())),
-        m_pOutputPMMR(std::make_unique<mmr::MMRCache>(pBase->GetOutputPMMR())),
+        m_pLeafSet(std::make_unique<LeafSetCache>(pBase->GetLeafSet())),
+        m_pKernelMMR(std::make_unique<MMRCache>(pBase->GetKernelMMR())),
+        m_pOutputPMMR(std::make_unique<MMRCache>(pBase->GetOutputPMMR())),
         m_pUpdates(std::make_shared<CoinsViewUpdates>()) { }
 
     bool IsCache() const noexcept final { return true; }
@@ -174,9 +174,9 @@ public:
 
     bool HasCoinInCache(const Commitment& commitment) const noexcept final;
 
-    mmr::ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
-    mmr::IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
-    mmr::IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
+    ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
+    IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
+    IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
 private:
     void AddUTXO(const uint64_t header_height, const Output& output);
@@ -184,9 +184,9 @@ private:
 
     ICoinsView::Ptr m_pBase;
 
-    mmr::LeafSetCache::Ptr m_pLeafSet;
-    mmr::MMRCache::Ptr m_pKernelMMR;
-    mmr::MMRCache::Ptr m_pOutputPMMR;
+    LeafSetCache::Ptr m_pLeafSet;
+    MMRCache::Ptr m_pKernelMMR;
+    MMRCache::Ptr m_pOutputPMMR;
 
     CoinsViewUpdates::Ptr m_pUpdates;
 };
@@ -197,9 +197,9 @@ public:
     CoinsViewDB(
         const mw::Header::CPtr& pBestHeader,
         const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
-        const mmr::LeafSet::Ptr& pLeafSet,
-        const mmr::MMR::Ptr& pKernelMMR,
-        const mmr::MMR::Ptr& pOutputPMMR
+        const LeafSet::Ptr& pLeafSet,
+        const MMR::Ptr& pKernelMMR,
+        const MMR::Ptr& pOutputPMMR
     ) : ICoinsView(pBestHeader, pDBWrapper),
         m_pLeafSet(pLeafSet),
         m_pKernelMMR(pKernelMMR),
@@ -215,9 +215,9 @@ public:
     ) final;
     void Compact() const final;
 
-    mmr::ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
-    mmr::IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
-    mmr::IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
+    ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
+    IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
+    IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
     bool HasCoinInCache(const Commitment& commitment) const noexcept final { return false; }
 
@@ -227,9 +227,9 @@ private:
     void SpendUTXO(CoinDB& coinDB, const Commitment& commitment);
     std::vector<UTXO::CPtr> GetUTXOs(const CoinDB& coinDB, const Commitment& commitment) const;
 
-    mmr::LeafSet::Ptr m_pLeafSet;
-    mmr::MMR::Ptr m_pKernelMMR;
-    mmr::MMR::Ptr m_pOutputPMMR;
+    LeafSet::Ptr m_pLeafSet;
+    MMR::Ptr m_pKernelMMR;
+    MMR::Ptr m_pOutputPMMR;
 };
 
 END_NAMESPACE

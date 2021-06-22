@@ -75,9 +75,9 @@ void CoinsViewDB::Compact() const
     auto current_mmr_info = MMRInfoDB(GetDatabase().get(), nullptr)
                                 .GetLatest();
     if (current_mmr_info) {
-        m_pLeafSet->Compact(current_mmr_info->index);
-        m_pKernelMMR->Compact(current_mmr_info->index);
-        m_pOutputPMMR->Compact(current_mmr_info->index);
+        m_pLeafSet->Cleanup(current_mmr_info->index);
+        m_pKernelMMR->Cleanup(current_mmr_info->index);
+        m_pOutputPMMR->Cleanup(current_mmr_info->index);
     }
 }
 

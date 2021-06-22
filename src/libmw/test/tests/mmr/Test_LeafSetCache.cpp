@@ -9,10 +9,10 @@
 
 BOOST_FIXTURE_TEST_SUITE(TestMMRLeafSetCache, MWEBTestingSetup)
 
-BOOST_AUTO_TEST_CASE(LeafSetCache)
+BOOST_AUTO_TEST_CASE(LeafSetCacheTest)
 {
     {
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 0);
+        LeafSet::Ptr pLeafset = LeafSet::Open(GetDataDir(), 0);
 
         pLeafset->Add(mmr::LeafIndex::At(0));
         pLeafset->Add(mmr::LeafIndex::At(1));
@@ -25,15 +25,15 @@ BOOST_AUTO_TEST_CASE(LeafSetCache)
 
     {
         // Reload from disk
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 1);
+        LeafSet::Ptr pLeafset = LeafSet::Open(GetDataDir(), 1);
 
         // Create cache and validate
-        mmr::LeafSetCache::Ptr pCache = std::make_shared<mmr::LeafSetCache>(pLeafset);
+        LeafSetCache::Ptr pCache = std::make_shared<LeafSetCache>(pLeafset);
         BOOST_REQUIRE(pCache->GetNextLeafIdx().Get() == 5);
         BOOST_REQUIRE(pCache->Root() == Hashed({0b11101000}));
 
         // Test with 2 layers of caches to cover all scenarios
-        mmr::LeafSetCache::Ptr pCache2 = std::make_shared<mmr::LeafSetCache>(pCache);
+        LeafSetCache::Ptr pCache2 = std::make_shared<LeafSetCache>(pCache);
         pCache2->Add(mmr::LeafIndex::At(5));
         pCache2->Remove(mmr::LeafIndex::At(2));
 

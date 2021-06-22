@@ -1,4 +1,5 @@
 #include <mw/mmr/MMR.h>
+#include <mw/mmr/MMRUtil.h>
 
 using namespace mmr;
 
@@ -34,7 +35,7 @@ mw::Hash IMMR::Root() const
         if (hash.IsZero()) {
             hash = peakHash;
         } else {
-            hash = Node::CreateParent(Index::At(size), peakHash, hash).GetHash();
+            hash = MMRUtil::CalcParentHash(Index::At(size), peakHash, hash);
         }
     }
 

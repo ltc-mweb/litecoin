@@ -4,7 +4,6 @@
 
 #include <mw/node/CoinsView.h>
 #include <mw/node/Node.h>
-#include <mw/mmr/backends/FileBackend.h>
 
 #include <test_framework/Miner.h>
 #include <test_framework/TestMWEB.h>

@@ -40,7 +40,6 @@ public:
     FilePath(const ghc::filesystem::path& path) : m_path(path) {}
     FilePath(const char* path) : m_path(path) {}
     FilePath(const std::string& u8str) : m_path(u8str) {}
-    FilePath(const std::u16string& u16str) : m_path(u16str) {}
 
     //
     // Destructor
@@ -57,7 +56,6 @@ public:
     FilePath GetChild(const ghc::filesystem::path& filename) const { return FilePath(m_path / filename); }
     FilePath GetChild(const char* filename) const { return FilePath(m_path / ghc::filesystem::path(filename)); }
     FilePath GetChild(const std::string& filename) const { return FilePath(m_path / ghc::filesystem::path(filename)); }
-    FilePath GetChild(const std::u16string& filename) const { return FilePath(m_path / ghc::filesystem::path(filename)); }
 
     FilePath GetParent() const
     {
@@ -122,10 +120,8 @@ public:
         }
     }
 
-    const ghc::filesystem::path& GetFSPath() const noexcept { return m_path; }
-
     std::string ToString() const { return m_path.u8string(); }
-    std::string u8string() const { return m_path.u8string(); }
+    boost::filesystem::path ToBoost() const { return boost::filesystem::path(m_path.u8string()); }
 
     //
     // Traits

@@ -9,10 +9,10 @@
 
 BOOST_FIXTURE_TEST_SUITE(TestMMRLeafSet, MWEBTestingSetup)
 
-BOOST_AUTO_TEST_CASE(LeafSet)
+BOOST_AUTO_TEST_CASE(LeafSetTest)
 {
     {
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 0);
+        LeafSet::Ptr pLeafset = LeafSet::Open(GetDataDir(), 0);
 
         BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 0);
         BOOST_REQUIRE(!pLeafset->Contains(mmr::LeafIndex::At(0)));
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(LeafSet)
 
     {
         // Reload from disk and validate
-        mmr::LeafSet::Ptr pLeafset = mmr::LeafSet::Open(GetDataDir(), 1);
+        LeafSet::Ptr pLeafset = LeafSet::Open(GetDataDir(), 1);
         BOOST_REQUIRE(pLeafset->GetNextLeafIdx().Get() == 2);
         BOOST_REQUIRE(pLeafset->Root() == Hashed({ 0b11000000 }));
     }

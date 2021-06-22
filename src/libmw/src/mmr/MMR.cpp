@@ -1,34 +1,106 @@
 #include <mw/mmr/MMR.h>
+#include <mw/mmr/MMRUtil.h>
+#include <mw/mmr/PruneList.h>
+#include <mw/db/LeafDB.h>
+#include <mw/exceptions/NotFoundException.h>
 
 using namespace mmr;
 
-LeafIndex MMR::AddLeaf(std::vector<uint8_t>&& data)
+MMR::Ptr MMR::Open(
+    const char dbPrefix,
+    const FilePath& mmr_dir,
+    const uint32_t file_index,
+    const mw::DBWrapper::Ptr& pDBWrapper,
+    const PruneList::CPtr& pPruneList)
 {
-    const LeafIndex leafIdx = m_pBackend->GetNextLeaf();
-    m_pBackend->AddLeaf(Leaf::Create(leafIdx, std::move(data)));
-    return leafIdx;
+    auto pHashFile = AppendOnlyFile::Load(
+        GetPath(mmr_dir, dbPrefix, file_index)
+    );
+    return std::make_shared<MMR>(
+        dbPrefix,
+        mmr_dir,
+        pHashFile,
+        pDBWrapper,
+        pPruneList
+    );
+}
+
+FilePath MMR::GetPath(const FilePath& dir, const char prefix, const uint32_t file_index)
+{
+    return dir.GetChild(StringUtil::Format("{}{:0>6}.dat", prefix, file_index));
+}
+
+LeafIndex MMR::AddLeaf(const mmr::Leaf& leaf)
+{
+    m_leafMap[leaf.GetLeafIndex()] = m_leaves.size();
+    m_leaves.push_back(leaf);
+    m_pHashFile->Append(leaf.GetHash().vec());
+
+    auto rightHash = leaf.GetHash();
+    auto nextIdx = leaf.GetNodeIndex().GetNext();
+    while (!nextIdx.IsLeaf()) {
+        const mw::Hash leftHash = GetHash(nextIdx.GetLeftChild());
+        rightHash = MMRUtil::CalcParentHash(nextIdx, leftHash, rightHash);
+
+        m_pHashFile->Append(rightHash.vec());
+        nextIdx = nextIdx.GetNext();
+    }
+
+    return leaf.GetLeafIndex();
+}
+
+Leaf MMR::GetLeaf(const LeafIndex& idx) const
+{
+    auto it = m_leafMap.find(idx);
+    if (it != m_leafMap.end()) {
+        return m_leaves[it->second];
+    }
+
+    LeafDB ldb(m_dbPrefix, m_pDatabase.get());
+    auto pLeaf = ldb.Get(idx);
+    if (!pLeaf) {
+        ThrowNotFound_F("Can't get leaf at position {}", idx.GetPosition());
+    }
+
+    return std::move(*pLeaf);
+}
+
+mw::Hash MMR::GetHash(const Index& idx) const
+{
+    uint64_t pos = idx.GetPosition();
+    if (m_pPruneList) {
+        pos -= m_pPruneList->GetShift(idx);
+    }
+
+    return mw::Hash(m_pHashFile->Read(pos * mw::Hash::size(), mw::Hash::size()));
 }
 
 uint64_t MMR::GetNumLeaves() const noexcept
 {
-    return m_pBackend->GetNumLeaves();
+    uint64_t num_hashes = (m_pHashFile->GetSize() / mw::Hash::size());
+    if (m_pPruneList) {
+        num_hashes += m_pPruneList->GetTotalShift();
+    }
+
+    return Index::At(num_hashes).GetLeafIndex();
 }
 
 uint64_t MMR::GetNumNodes() const noexcept
 {
-    const uint64_t numLeaves = m_pBackend->GetNumLeaves();
-    if (numLeaves == 0)
-    {
-        return 0;
-    }
-
-    return LeafIndex::At(numLeaves).GetPosition();
+    return LeafIndex::At(GetNumLeaves()).GetPosition();
 }
 
 void MMR::Rewind(const uint64_t numLeaves)
 {
     LOG_TRACE_F("MMR: Rewinding to {}", numLeaves);
-    m_pBackend->Rewind(LeafIndex::At(numLeaves));
+
+    LeafIndex next_leaf_idx = LeafIndex::At(numLeaves);
+    uint64_t pos = next_leaf_idx.GetPosition();
+    if (m_pPruneList) {
+        pos -= m_pPruneList->GetShift(next_leaf_idx);
+    }
+
+    m_pHashFile->Rewind(pos * mw::Hash::size());
 }
 
 void MMR::BatchWrite(
@@ -39,16 +111,30 @@ void MMR::BatchWrite(
 {
     LOG_TRACE_F("MMR: Writing batch {} with first leaf {}", file_index, firstLeafIdx.Get());
 
-    m_pBackend->Rewind(firstLeafIdx);
-    for (const Leaf& leaf : leaves)
-    {
-        m_pBackend->AddLeaf(leaf);
+    Rewind(firstLeafIdx.Get());
+    for (const Leaf& leaf : leaves) {
+        AddLeaf(leaf);
     }
 
-    m_pBackend->Commit(file_index, pBatch);
+    m_pHashFile->Commit(GetPath(m_dir, m_dbPrefix, file_index));
+
+    // Update database
+    LeafDB(m_dbPrefix, m_pDatabase.get(), pBatch.get())
+        .Add(m_leaves);
+
+    m_leaves.clear();
+    m_leafMap.clear();
 }
 
-void MMR::Compact(const uint32_t current_file_index) const
+void MMR::Cleanup(const uint32_t current_file_index) const
 {
-    m_pBackend->Compact(current_file_index);
+    uint32_t file_index = current_file_index;
+    while (file_index > 0) {
+        FilePath prev_hashfile = GetPath(m_dir, m_dbPrefix, --file_index);
+        if (prev_hashfile.Exists()) {
+            prev_hashfile.Remove();
+        } else {
+            break;
+        }
+    }
 }

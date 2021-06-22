@@ -5,7 +5,7 @@
 #include <mw/consensus/Aggregation.h>
 #include <mw/common/Logger.h>
 #include <mw/mmr/MMR.h>
-#include <mw/mmr/backends/FileBackend.h>
+#include <mw/mmr/PruneList.h>
 #include <unordered_map>
 
 using namespace mw;
@@ -19,14 +19,11 @@ mw::CoinsViewDB::Ptr Node::Init(
     uint32_t file_index = current_mmr_info ? current_mmr_info->index : 0;
     uint32_t compact_index = current_mmr_info ? current_mmr_info->compact_index : 0;
 
-    auto pLeafSet = mmr::LeafSet::Open(datadir, file_index);
-    auto pPruneList = mmr::PruneList::Open(datadir, compact_index);
+    auto pLeafSet = LeafSet::Open(datadir, file_index);
+    auto pPruneList = PruneList::Open(datadir, compact_index);
 
-    auto pKernelsBackend = mmr::FileBackend::Open('K', datadir, file_index, pDBWrapper, nullptr);
-    mmr::MMR::Ptr pKernelsMMR = std::make_shared<mmr::MMR>(pKernelsBackend);
-
-    auto pOutputBackend = mmr::FileBackend::Open('O', datadir, file_index, pDBWrapper, pPruneList);
-    mmr::MMR::Ptr pOutputMMR = std::make_shared<mmr::MMR>(pOutputBackend);
+    MMR::Ptr pKernelsMMR = MMR::Open('K', datadir, file_index, pDBWrapper, nullptr);
+    MMR::Ptr pOutputMMR = MMR::Open('O', datadir, file_index, pDBWrapper, pPruneList);
 
     return std::make_shared<mw::CoinsViewDB>(
         pBestHeader,

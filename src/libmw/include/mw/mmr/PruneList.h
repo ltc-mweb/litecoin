@@ -6,8 +6,6 @@
 #include <mw/common/BitSet.h>
 #include <memory>
 
-MMR_NAMESPACE
-
 class PruneList
 {
 public:
@@ -31,5 +29,3 @@ private:
     BitSet m_compacted;
     uint64_t m_totalShift;
 };
-
-END_NAMESPACE

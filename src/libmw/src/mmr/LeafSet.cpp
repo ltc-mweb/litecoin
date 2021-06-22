@@ -1,7 +1,7 @@
 #include <mw/mmr/LeafSet.h>
 #include <mw/crypto/Hasher.h>
 
-MMR_NAMESPACE
+using namespace mmr;
 
 LeafSet::Ptr LeafSet::Open(const FilePath& leafset_dir, const uint32_t file_index)
 {
@@ -69,7 +69,7 @@ void LeafSet::Flush(const uint32_t file_index)
     m_modifiedBytes.clear();
 }
 
-void LeafSet::Compact(const uint32_t current_file_index) const
+void LeafSet::Cleanup(const uint32_t current_file_index) const
 {
     uint32_t file_index = current_file_index;
     while (file_index > 0) {
@@ -104,5 +104,3 @@ void LeafSet::SetByte(const uint64_t byteIdx, const uint8_t value)
 {
     m_modifiedBytes[byteIdx + 8] = value;
 }
-
-END_NAMESPACE
