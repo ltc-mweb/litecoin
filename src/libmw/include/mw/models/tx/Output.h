@@ -5,7 +5,6 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Traits.h>
-#include <mw/models/tx/Features.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/ProofData.h>
@@ -26,7 +25,6 @@ public:
     // Constructors
     //
     OutputMessage(
-        Features features_,
         PublicKey receiverPubKey_,
         PublicKey keyExchangePubKey_,
         uint8_t viewTag_,
@@ -34,7 +32,6 @@ public:
         BigInt<16> maskedNonce_,
         PublicKey senderPubKey_
     ) : 
-        features(features_),
         receiverPubKey(std::move(receiverPubKey_)),
         keyExchangePubKey(std::move(keyExchangePubKey_)),
         viewTag(viewTag_),
@@ -56,7 +53,6 @@ public:
     bool operator<(const OutputMessage& output_message) const noexcept { return m_hash < output_message.m_hash; }
     bool operator==(const OutputMessage& output_message) const noexcept { return m_hash == output_message.m_hash; }
 
-    Features features;
     PublicKey receiverPubKey;
     PublicKey keyExchangePubKey;
     uint8_t viewTag;
@@ -70,7 +66,6 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        READWRITE(features);
         READWRITE(receiverPubKey);
         READWRITE(keyExchangePubKey);
         READWRITE(viewTag);
@@ -124,8 +119,6 @@ public:
     // Getters
     //
     const Commitment& GetCommitment() const noexcept final { return m_commitment; }
-
-    bool IsPeggedIn() const noexcept { return m_message.features.IsSet(EOutputFeatures::PEGGED_IN); }
 
     //
     // Serialization/Deserialization
@@ -190,7 +183,6 @@ public:
     //
     static Output Create(
         BlindingFactor& blind_out,
-        const Features& features,
         const SecretKey& sender_privkey,
         const StealthAddress& receiver_addr,
         const uint64_t value
@@ -217,7 +209,6 @@ public:
     const OutputMessage& GetOutputMessage() const noexcept { return m_message; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
-    Features GetFeatures() const noexcept { return m_message.features; }
     const PublicKey& GetReceiverPubKey() const noexcept { return m_message.receiverPubKey; }
     const PublicKey& GetKeyExchangePubKey() const noexcept { return m_message.keyExchangePubKey; }
     uint8_t GetViewTag() const noexcept { return m_message.viewTag; }
@@ -230,8 +221,6 @@ public:
 
     SignedMessage BuildSignedMsg() const noexcept;
     ProofData BuildProofData() const noexcept;
-
-    bool IsPeggedIn() const noexcept { return GetFeatures().IsSet(EOutputFeatures::PEGGED_IN); }
 
     OutputId ToOutputId() const noexcept {
         return OutputId(m_commitment, m_message);

@@ -1549,7 +1549,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                 // MWEB: Initialize MWEB node APIs
                 LoggerAPI::Initialize([](const std::string& logstr) { LogPrintf(logstr.c_str()); });
                 mw::CoinsViewDB::Ptr mweb_dbview = mw::Node::Init(
-                    FilePath{GetDataDir().native()},
+                    FilePath{GetDataDir()},
                     block.mweb_block.GetMWEBHeader(),
                     std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
                 );

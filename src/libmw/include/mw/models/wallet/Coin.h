@@ -23,10 +23,6 @@ static constexpr uint32_t PEGIN_INDEX{1};
 /// Represents an output owned by the wallet, and the keys necessary to spend it.
 /// </summary>
 struct Coin : public Traits::ISerializable {
-    // 0 for typical outputs or 1 for pegged-in outputs
-    // This is used to determine the required number of confirmations before spending.
-    uint8_t features;
-
     // Index of the subaddress this coin was received at.
     uint32_t address_index;
 
@@ -54,7 +50,6 @@ struct Coin : public Traits::ISerializable {
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
-        READWRITE(features);
         READWRITE(VARINT(address_index));
         READWRITE(key);
         READWRITE(blind);

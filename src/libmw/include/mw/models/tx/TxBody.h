@@ -68,7 +68,6 @@ public:
     std::vector<Commitment> GetOutputCommits() const noexcept { return Commitments::From(m_outputs); }
 
     std::vector<PegInCoin> GetPegIns() const noexcept;
-    std::vector<Output> GetPegInOutputs() const noexcept;
     CAmount GetPegInAmount() const noexcept;
     std::vector<PegOutCoin> GetPegOuts() const noexcept;
     CAmount GetTotalFee() const noexcept;

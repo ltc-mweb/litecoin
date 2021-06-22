@@ -6,7 +6,6 @@ test::Tx test::Tx::CreatePegIn(const CAmount amount, const CAmount fee)
 
     SecretKey sender_privkey = Random::CSPRNG<32>();
     test::TxOutput output = test::TxOutput::Create(
-        EOutputFeatures::PEGGED_IN,
         sender_privkey,
         StealthAddress::Random(),
         amount

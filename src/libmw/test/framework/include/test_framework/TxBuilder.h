@@ -22,25 +22,19 @@ public:
     TxBuilder& AddInput(const TxOutput& input);
     TxBuilder& AddInput(
         const CAmount amount,
-        const Features& features = Features(EOutputFeatures::DEFAULT_OUTPUT),
         const BlindingFactor& blind = Random::CSPRNG<32>()
     );
     TxBuilder& AddInput(
         const CAmount amount,
         const SecretKey& privkey,
-        const Features& features,
         const BlindingFactor& blind
     );
 
-    TxBuilder& AddOutput(
-        const CAmount amount,
-        const Features& features = Features(EOutputFeatures::DEFAULT_OUTPUT)
-    );
+    TxBuilder& AddOutput(const CAmount amount);
     TxBuilder& AddOutput(
         const CAmount amount,
         const SecretKey& sender_privkey,
-        const StealthAddress& receiver_addr,
-        const Features& features
+        const StealthAddress& receiver_addr
     );
 
     TxBuilder& AddOwnerSig(const Kernel& kernel);

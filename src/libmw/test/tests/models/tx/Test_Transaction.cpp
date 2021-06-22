@@ -16,8 +16,8 @@ BOOST_AUTO_TEST_CASE(TxTransaction)
     const CAmount fee = 5;
 
     mw::Transaction::CPtr tx = test::TxBuilder()
-        .AddInput(20).AddInput(30, EOutputFeatures::PEGGED_IN)
-        .AddOutput(45).AddOutput(pegInAmount, EOutputFeatures::PEGGED_IN)
+        .AddInput(20).AddInput(30)
+        .AddOutput(45).AddOutput(pegInAmount)
         .AddPlainKernel(fee).AddPeginKernel(pegInAmount)
         .Build().GetTransaction();
 

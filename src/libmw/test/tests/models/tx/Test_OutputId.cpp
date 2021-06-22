@@ -14,7 +14,6 @@ BOOST_FIXTURE_TEST_SUITE(TestOutputId, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
 {
     Commitment commit = Random::CSPRNG<33>().GetBigInt();
-    EOutputFeatures features = EOutputFeatures::DEFAULT_OUTPUT;
     PublicKey receiverPubKey = Random::CSPRNG<33>().GetBigInt();
     PublicKey exchangePubKey = Random::CSPRNG<33>().GetBigInt();
     uint8_t viewTag = 100;
@@ -23,7 +22,6 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
     PublicKey senderPubKey = Random::CSPRNG<33>().GetBigInt();
 
     OutputMessage message(
-        features,
         receiverPubKey,
         exchangePubKey,
         viewTag,
@@ -42,7 +40,6 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
 
         Deserializer deserializer(serialized);
         BOOST_REQUIRE(deserializer.Read<Commitment>() == commit);
-        BOOST_REQUIRE(deserializer.Read<uint8_t>() == features);
         BOOST_REQUIRE(deserializer.Read<PublicKey>() == receiverPubKey);
         BOOST_REQUIRE(deserializer.Read<PublicKey>() == exchangePubKey);
         BOOST_REQUIRE(deserializer.Read<uint8_t>() == viewTag);
@@ -59,8 +56,6 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
     // Getters
     //
     {
-        BOOST_REQUIRE(!outputId.IsPeggedIn());
-        //REQUIRE(outputId.GetFeatures() == features);
         BOOST_REQUIRE(outputId.GetCommitment() == commit);
     }
 }

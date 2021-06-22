@@ -18,18 +18,6 @@ std::vector<PegInCoin> TxBody::GetPegIns() const noexcept
     return pegins;
 }
 
-std::vector<Output> TxBody::GetPegInOutputs() const noexcept
-{
-    std::vector<Output> peggedIn;
-    std::copy_if(
-        m_outputs.cbegin(), m_outputs.cend(),
-        std::back_inserter(peggedIn),
-        [](const Output& output) -> bool { return output.IsPeggedIn(); }
-    );
-
-    return peggedIn;
-}
-
 CAmount TxBody::GetPegInAmount() const noexcept
 {
     return std::accumulate(

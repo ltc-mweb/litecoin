@@ -48,7 +48,6 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
         GetSpendKey(index)
     );
 
-    coin.features = output.GetFeatures().Get();
     coin.address_index = index;
     coin.key = boost::make_optional(BlindingFactor(private_key.data()));
     coin.blind = boost::make_optional(mask.GetRawBlind());

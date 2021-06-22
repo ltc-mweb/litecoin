@@ -25,13 +25,11 @@ BOOST_AUTO_TEST_CASE(Create)
     );
 
     // Build output
-    EOutputFeatures features = EOutputFeatures::DEFAULT_OUTPUT;
     uint64_t amount = 1'234'567;
     BlindingFactor blind;
     SecretKey sender_key = Random::CSPRNG<32>();
     Output output = Output::Create(
         blind,
-        features,
         sender_key,
         receiver_addr,
         amount
@@ -50,9 +48,7 @@ BOOST_AUTO_TEST_CASE(Create)
     BOOST_REQUIRE(Schnorr::BatchVerify({ signed_msg }));
 
     // Getters
-    BOOST_REQUIRE(!output.IsPeggedIn());
     BOOST_REQUIRE(output.GetCommitment() == expected_commit);
-    BOOST_REQUIRE(output.GetFeatures() == features);
     BOOST_REQUIRE(output.ToOutputId() == OutputId(expected_commit, output.GetOutputMessage()));
 
     //

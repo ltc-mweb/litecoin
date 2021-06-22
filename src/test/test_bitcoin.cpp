@@ -84,7 +84,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
 
         mw::ICoinsView::Ptr mweb_view = mw::Node::Init(
-            FilePath{GetDataDir().native()},
+            FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
         );

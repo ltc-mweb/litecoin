@@ -20,8 +20,8 @@ BOOST_AUTO_TEST_CASE(ValidateState)
 {
     // Pegin transaction
     test::Tx pegin_tx = test::TxBuilder()
-        .AddOutput(4'000'000, EOutputFeatures::PEGGED_IN)
-        .AddOutput(5'000'000, EOutputFeatures::PEGGED_IN)
+        .AddOutput(4'000'000)
+        .AddOutput(5'000'000)
         .AddPeginKernel(9'000'000)
         .Build();
 
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlock)
 
     // Pegin transaction - 1 output, 1 kernel
     mw::Transaction::CPtr tx2 = test::TxBuilder()
-        .AddOutput(8'000'000, EOutputFeatures::PEGGED_IN)
+        .AddOutput(8'000'000)
         .AddPeginKernel(8'000'000)
         .Build().GetTransaction();
     KernelSumValidator::ValidateForTx(*tx2); // Sanity check
@@ -124,7 +124,6 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
     // Add outputs
     SecretKey output1_sender_key = Random::CSPRNG<32>();
     test::TxOutput output1 = test::TxOutput::Create(
-        EOutputFeatures::DEFAULT_OUTPUT,
         output1_sender_key,
         StealthAddress::Random(),
         4'000'000
@@ -134,7 +133,6 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
 
     SecretKey output2_sender_key = Random::CSPRNG<32>();
     test::TxOutput output2 = test::TxOutput::Create(
-        EOutputFeatures::DEFAULT_OUTPUT,
         output2_sender_key,
         StealthAddress::Random(),
         6'500'000
@@ -185,7 +183,7 @@ BOOST_AUTO_TEST_CASE(ValidateForTx)
 
     // Pegin transaction - 1 output, 1 kernel
     mw::Transaction::CPtr tx2 = test::TxBuilder()
-        .AddOutput(8'000'000, EOutputFeatures::PEGGED_IN)
+        .AddOutput(8'000'000)
         .AddPeginKernel(8'000'000)
         .Build().GetTransaction();
     KernelSumValidator::ValidateForTx(*tx2);

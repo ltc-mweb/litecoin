@@ -42,7 +42,7 @@ public:
     CCoinsViewTest()
     {
         mweb_view_ = mw::Node::Init(
-            FilePath{GetDataDir().native()},
+            FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             nullptr
         );
@@ -624,7 +624,7 @@ public:
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
         mw::ICoinsView::Ptr mweb_view = mw::Node::Init(
-            FilePath{GetDataDir().native()},
+            FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             nullptr
         );

@@ -18,7 +18,6 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
     BlindingFactor blind;
     Output output = Output::Create(
         blind,
-        EOutputFeatures::DEFAULT_OUTPUT,
         Random::CSPRNG<32>(),
         StealthAddress::Random(),
         amount

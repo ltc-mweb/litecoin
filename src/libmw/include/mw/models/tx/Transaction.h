@@ -102,7 +102,6 @@ public:
     std::vector<Commitment> GetInputCommits() const noexcept { return m_body.GetInputCommits(); }
     std::vector<Commitment> GetOutputCommits() const noexcept { return m_body.GetOutputCommits(); }
     std::vector<PegInCoin> GetPegIns() const noexcept { return m_body.GetPegIns(); }
-    std::vector<Output> GetPegInOutputs() const noexcept { return m_body.GetPegInOutputs(); }
     CAmount GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
     std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_body.GetPegOuts(); }
     CAmount GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }

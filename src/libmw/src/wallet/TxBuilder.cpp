@@ -102,7 +102,6 @@ TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& re
             SecretKey ephemeral_key = Random::CSPRNG<32>();
             Output output = Output::Create(
                 blind,
-                EOutputFeatures::DEFAULT_OUTPUT,
                 ephemeral_key,
                 recipient.address,
                 recipient.amount

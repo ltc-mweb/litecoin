@@ -26,9 +26,9 @@ BOOST_AUTO_TEST_CASE(ValidateState)
     // Block containing peg-ins only
     test::Tx tx1 = test::TxBuilder()
         .AddPeginKernel(50)
-        .AddOutput(50, EOutputFeatures::PEGGED_IN)
+        .AddOutput(50)
         .AddPeginKernel(30)
-        .AddOutput(30, EOutputFeatures::PEGGED_IN)
+        .AddOutput(30)
         .Build();
 
     std::vector<PegInCoin> pegInCoins = tx1.GetTransaction()->GetPegIns();

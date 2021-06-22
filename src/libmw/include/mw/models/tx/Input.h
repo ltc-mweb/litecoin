@@ -10,7 +10,6 @@
 #include <mw/models/crypto/PublicKey.h>
 #include <mw/models/crypto/Signature.h>
 #include <mw/models/crypto/SignedMessage.h>
-#include <mw/models/tx/Features.h>
 
 ////////////////////////////////////////
 // INPUT

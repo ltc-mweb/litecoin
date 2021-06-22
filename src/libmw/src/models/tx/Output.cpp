@@ -7,7 +7,6 @@
 
 Output Output::Create(
     BlindingFactor& blind_out,
-    const Features& features,
     const SecretKey& sender_privkey,
     const StealthAddress& receiver_addr,
     const uint64_t value)
@@ -46,7 +45,6 @@ Output Output::Create(
 
     // Sign the malleable output data
     mw::Hash sig_message = Hasher()
-        .Append<uint8_t>(features.Get())
         .Append(Ko)
         .Append(Ke)
         .Append(t[0])
@@ -56,7 +54,7 @@ Output Output::Create(
     PublicKey sender_pubkey = Keys::From(sender_privkey).PubKey();
     Signature signature = Schnorr::Sign(sender_privkey.data(), sig_message);
 
-    OutputMessage message{features, Ko, Ke, t[0], mv, mn, sender_pubkey};
+    OutputMessage message{Ko, Ke, t[0], mv, mn, sender_pubkey};
     std::vector<uint8_t> proof_data = message.Serialized();
     proof_data.insert(proof_data.end(), signature.vec().begin(), signature.vec().end());
 
@@ -81,7 +79,6 @@ Output Output::Create(
 SignedMessage Output::BuildSignedMsg() const noexcept
 {
     mw::Hash hashed_msg = Hasher()
-        .Append<uint8_t>(m_message.features.Get())
         .Append(m_message.receiverPubKey)
         .Append(m_message.keyExchangePubKey)
         .Append(m_message.viewTag)

@@ -23,7 +23,6 @@ public:
     const Commitment& GetCommitment() const noexcept { return m_output.GetCommitment(); }
     const RangeProof::CPtr& GetRangeProof() const noexcept { return m_output.GetRangeProof(); }
     ProofData BuildProofData() const noexcept { return m_output.BuildProofData(); }
-    bool IsPeggedIn() const noexcept { return m_output.IsPeggedIn(); }
 
     IMPL_SERIALIZABLE(UTXO);
     ADD_SERIALIZE_METHODS;
