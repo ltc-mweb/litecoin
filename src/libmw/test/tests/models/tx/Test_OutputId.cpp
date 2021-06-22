@@ -36,7 +36,6 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
     //
     {
         std::vector<uint8_t> serialized = outputId.Serialized();
-        BOOST_REQUIRE(serialized.size() == 158);
 
         Deserializer deserializer(serialized);
         BOOST_REQUIRE(deserializer.Read<Commitment>() == commit);

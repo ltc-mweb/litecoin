@@ -311,7 +311,7 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // Deployment of MWEB (LIP-0002 and LIP-0003)
-        consensus.vDeployments[Consensus::DEPLOYMENT_MWEB].bit = 2; // MW: TODO - Figure out bit, nStartTime, and nTimeout
+        consensus.vDeployments[Consensus::DEPLOYMENT_MWEB].bit = 2;
         consensus.vDeployments[Consensus::DEPLOYMENT_MWEB].nStartTime = 1601450001; // September 30, 2020
         consensus.vDeployments[Consensus::DEPLOYMENT_MWEB].nTimeout = 1632960000;   // Spetember 30, 2021
         

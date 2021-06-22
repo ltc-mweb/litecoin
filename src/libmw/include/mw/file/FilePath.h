@@ -36,7 +36,7 @@ public:
     //
     FilePath(const FilePath& other) = default;
     FilePath(FilePath&& other) = default;
-    FilePath(const boost::filesystem::path& path) : m_path(boost::filesystem::canonical(path).string()) {}
+    FilePath(const boost::filesystem::path& path) : m_path(path.string()) {}
     FilePath(const ghc::filesystem::path& path) : m_path(path) {}
     FilePath(const char* path) : m_path(path) {}
     FilePath(const std::string& u8str) : m_path(u8str) {}
