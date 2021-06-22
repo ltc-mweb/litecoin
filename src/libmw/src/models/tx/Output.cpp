@@ -1,7 +1,6 @@
 #include <mw/models/tx/Output.h>
+#include <mw/models/tx/OutputMask.h>
 #include <mw/models/wallet/StealthAddress.h>
-#include <mw/serialization/Serializer.h>
-#include <mw/serialization/Deserializer.h>
 #include <mw/crypto/Random.h>
 #include <mw/crypto/Bulletproofs.h>
 #include <mw/crypto/Schnorr.h>
@@ -36,15 +35,13 @@ Output Output::Create(
     // Key exchange public key 'Ke' = s*B
     PublicKey Ke = receiver_addr.B().Mul(s);
 
-    // Feed the shared secret 't' into a stream cipher (in our case, just a hash function)
-    // to derive a blinding factor r and two encryption masks mv (masked value) and mn (masked nonce)
-    Deserializer hash64(Hash512(t).vec());
-    BlindingFactor r = hash64.Read<BlindingFactor>();
-    uint64_t mv = hash64.Read<uint64_t>() ^ value;
-    BigInt<16> mn = n ^ hash64.ReadVector(16);
+    // Calc blinding factor and mask nonce and amount.
+    OutputMask mask = OutputMask::FromShared(t);
+    blind_out = mask.BlindSwitch(value);
+    uint64_t mv = mask.MaskValue(value);
+    BigInt<16> mn = mask.MaskNonce(n);
 
     // Commitment 'C' = r*G + v*H
-    blind_out = Crypto::BlindSwitch(r, value);
     Commitment output_commit = Crypto::CommitBlinded(value, blind_out);
 
     // Sign the malleable output data
@@ -59,16 +56,9 @@ Output Output::Create(
     PublicKey sender_pubkey = Keys::From(sender_privkey).PubKey();
     Signature signature = Schnorr::Sign(sender_privkey.data(), sig_message);
 
-    std::vector<uint8_t> proof_data = Serializer()
-        .Append<uint8_t>(features.Get())
-        .Append(Ko)
-        .Append(Ke)
-        .Append(t[0])
-        .Append(mv)
-        .Append(mn)
-        .Append(sender_pubkey)
-        .Append(signature)
-        .vec();
+    OutputMessage message{features, Ko, Ke, t[0], mv, mn, sender_pubkey};
+    std::vector<uint8_t> proof_data = message.Serialized();
+    proof_data.insert(proof_data.end(), signature.vec().begin(), signature.vec().end());
 
     // Probably best to store sender_key so sender can identify all outputs they've sent?
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(
@@ -82,13 +72,7 @@ Output Output::Create(
 
     return Output{
         std::move(output_commit),
-        features,
-        std::move(Ko),
-        std::move(Ke),
-        t[0],
-        mv,
-        std::move(mn),
-        std::move(sender_pubkey),
+        std::move(message),
         std::move(signature),
         pRangeProof
     };
@@ -97,28 +81,20 @@ Output Output::Create(
 SignedMessage Output::BuildSignedMsg() const noexcept
 {
     mw::Hash hashed_msg = Hasher()
-        .Append<uint8_t>(m_features.Get())
-        .Append(m_receiverPubKey)
-        .Append(m_keyExchangePubKey)
-        .Append(m_viewTag)
-        .Append(m_maskedValue)
-        .Append(m_maskedNonce)
+        .Append<uint8_t>(m_message.features.Get())
+        .Append(m_message.receiverPubKey)
+        .Append(m_message.keyExchangePubKey)
+        .Append(m_message.viewTag)
+        .Append(m_message.maskedValue)
+        .Append(m_message.maskedNonce)
         .hash();
-    return SignedMessage{ std::move(hashed_msg), m_senderPubKey, m_signature };
+    return SignedMessage{ std::move(hashed_msg), m_message.senderPubKey, m_signature };
 }
 
 ProofData Output::BuildProofData() const noexcept
 {
-    std::vector<uint8_t> message = Serializer()
-        .Append<uint8_t>(m_features.Get())
-        .Append(m_receiverPubKey)
-        .Append(m_keyExchangePubKey)
-        .Append(m_viewTag)
-        .Append(m_maskedValue)
-        .Append(m_maskedNonce)
-        .Append(m_senderPubKey)
-        .Append(m_signature)
-        .vec();
+    std::vector<uint8_t> message = m_message.Serialized();
+    message.insert(message.end(), m_signature.vec().begin(), m_signature.vec().end());
 
     return ProofData{ m_commitment, m_pProof, std::move(message) };
 }

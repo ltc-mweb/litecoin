@@ -4,9 +4,9 @@
 
 #include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
-#include <mw/models/tx/OutputId.h>
-#include <mw/serialization/Deserializer.h>
+#include <mw/models/tx/Output.h>
 
+#include <test_framework/Deserializer.h>
 #include <test_framework/TestMWEB.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestOutputId, MWEBTestingSetup)
@@ -21,8 +21,8 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
     uint64_t maskedValue = 123456789;
     BigInt<16> maskedNonce = Random::CSPRNG<16>().GetBigInt();
     PublicKey senderPubKey = Random::CSPRNG<33>().GetBigInt();
-    OutputId outputId(
-        commit,
+
+    OutputMessage message(
         features,
         receiverPubKey,
         exchangePubKey,
@@ -31,6 +31,7 @@ BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
         maskedNonce,
         senderPubKey
     );
+    OutputId outputId(commit, message);
 
     //
     // Serialization

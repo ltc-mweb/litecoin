@@ -3,8 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/consensus/KernelSumValidator.h>
-#include <mw/serialization/Deserializer.h>
 
+#include <test_framework/Deserializer.h>
 #include <test_framework/TestMWEB.h>
 #include <test_framework/TxBuilder.h>
 

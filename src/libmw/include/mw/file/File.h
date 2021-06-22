@@ -31,7 +31,7 @@ public:
     void CopyTo(const FilePath& new_path) const;
 
     const FilePath& GetPath() const noexcept { return m_path; }
-    const filesystem::path& GetFSPath() const noexcept { return m_path.GetFSPath(); }
+    const ghc::filesystem::path& GetFSPath() const noexcept { return m_path.GetFSPath(); }
 
     //
     // Traits

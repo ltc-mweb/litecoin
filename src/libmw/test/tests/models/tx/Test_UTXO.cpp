@@ -6,8 +6,8 @@
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/models/wallet/StealthAddress.h>
-#include <mw/serialization/Deserializer.h>
 
+#include <test_framework/Deserializer.h>
 #include <test_framework/TestMWEB.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestUTXO, MWEBTestingSetup)

@@ -68,7 +68,7 @@ void mmr::FileBackend::Compact(const uint32_t file_index, const boost::dynamic_b
     uint64_t num_hashes = m_pHashFile->GetSize() / mw::Hash::size();
     assert(num_hashes == hashes_to_remove.size());
 
-    const FilePath path = GetPath(filesystem::temp_directory_path(), m_dbPrefix, file_index);
+    const FilePath path = GetPath(ghc::filesystem::temp_directory_path(), m_dbPrefix, file_index);
     AppendOnlyFile::Ptr pFile = AppendOnlyFile::Load(path);
 
     for (uint64_t pos = 0; pos < hashes_to_remove.size(); pos++) {

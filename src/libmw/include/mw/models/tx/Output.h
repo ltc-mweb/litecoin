@@ -6,7 +6,6 @@
 
 #include <mw/common/Traits.h>
 #include <mw/models/tx/Features.h>
-#include <mw/models/tx/OutputId.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/ProofData.h>
@@ -16,6 +15,146 @@
 
 // Forward Declarations
 class StealthAddress;
+
+////////////////////////////////////////
+// OUTPUT MESSAGE
+////////////////////////////////////////
+class OutputMessage : public Traits::ISerializable, public Traits::IHashable
+{
+public:
+    //
+    // Constructors
+    //
+    OutputMessage(
+        Features features_,
+        PublicKey receiverPubKey_,
+        PublicKey keyExchangePubKey_,
+        uint8_t viewTag_,
+        uint64_t maskedValue_,
+        BigInt<16> maskedNonce_,
+        PublicKey senderPubKey_
+    ) : 
+        features(features_),
+        receiverPubKey(std::move(receiverPubKey_)),
+        keyExchangePubKey(std::move(keyExchangePubKey_)),
+        viewTag(viewTag_),
+        maskedValue(maskedValue_),
+        maskedNonce(std::move(maskedNonce_)),
+        senderPubKey(std::move(senderPubKey_))
+    {
+        m_hash = Hashed(*this);
+    }
+    OutputMessage(const OutputMessage& output_message) = default;
+    OutputMessage(OutputMessage&& output_message) noexcept = default;
+    OutputMessage() = default;
+
+    //
+    // Operators
+    //
+    OutputMessage& operator=(const OutputMessage& output_message) = default;
+    OutputMessage& operator=(OutputMessage&& output_message) noexcept = default;
+    bool operator<(const OutputMessage& output_message) const noexcept { return m_hash < output_message.m_hash; }
+    bool operator==(const OutputMessage& output_message) const noexcept { return m_hash == output_message.m_hash; }
+
+    Features features;
+    PublicKey receiverPubKey;
+    PublicKey keyExchangePubKey;
+    uint8_t viewTag;
+    uint64_t maskedValue;
+    BigInt<16> maskedNonce;
+    PublicKey senderPubKey;
+
+    IMPL_SERIALIZABLE(OutputMessage);
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(features);
+        READWRITE(receiverPubKey);
+        READWRITE(keyExchangePubKey);
+        READWRITE(viewTag);
+        READWRITE(maskedValue);
+        READWRITE(maskedNonce);
+        READWRITE(senderPubKey);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
+    }
+
+    //
+    // Traits
+    //
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
+
+private:
+    mw::Hash m_hash;
+};
+
+////////////////////////////////////////
+// OUTPUT IDENTIFIER
+////////////////////////////////////////
+class OutputId final : public Traits::ICommitted,
+                       public Traits::IHashable,
+                       public Traits::ISerializable
+{
+public:
+    //
+    // Constructors
+    //
+    OutputId(Commitment commitment, OutputMessage message)
+        : m_commitment(std::move(commitment)), m_message(std::move(message))
+    {
+        m_hash = Hashed(*this);
+    }
+    OutputId(const OutputId& output) = default;
+    OutputId(OutputId&& output) noexcept = default;
+    OutputId() = default;
+
+    //
+    // Operators
+    //
+    OutputId& operator=(const OutputId& OutputId) = default;
+    OutputId& operator=(OutputId&& OutputId) noexcept = default;
+    bool operator<(const OutputId& OutputId) const noexcept { return m_hash < OutputId.m_hash; }
+    bool operator==(const OutputId& OutputId) const noexcept { return m_hash == OutputId.m_hash; }
+
+    //
+    // Getters
+    //
+    const Commitment& GetCommitment() const noexcept final { return m_commitment; }
+
+    bool IsPeggedIn() const noexcept { return m_message.features.IsSet(EOutputFeatures::PEGGED_IN); }
+
+    //
+    // Serialization/Deserialization
+    //
+    IMPL_SERIALIZABLE(OutputId);
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(m_commitment);
+        READWRITE(m_message);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
+    }
+
+    //
+    // Traits
+    //
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
+
+private:
+    Commitment m_commitment;
+    OutputMessage m_message;
+
+    mw::Hash m_hash;
+};
 
 ////////////////////////////////////////
 // OUTPUT
@@ -29,25 +168,13 @@ public:
     // Constructors
     //
     Output(
-        Commitment&& commitment,
-        Features features,
-        PublicKey&& receiver_pubkey,
-        PublicKey&& key_exchange_pubkey,
-        uint8_t view_tag,
-        uint64_t masked_value,
-        BigInt<16>&& masked_nonce,
-        PublicKey&& sender_pubkey,
-        Signature&& signature,
+        Commitment commitment,
+        OutputMessage message,
+        Signature signature,
         const RangeProof::CPtr& pProof
     ) :
         m_commitment(std::move(commitment)),
-        m_features(features),
-        m_receiverPubKey(std::move(receiver_pubkey)),
-        m_keyExchangePubKey(std::move(key_exchange_pubkey)),
-        m_viewTag(view_tag),
-        m_maskedValue(masked_value),
-        m_maskedNonce(std::move(masked_nonce)),
-        m_senderPubKey(std::move(sender_pubkey)),
+        m_message(std::move(message)),
         m_signature(std::move(signature)),
         m_pProof(pProof)
     {
@@ -77,28 +204,29 @@ public:
     //
     // Operators
     //
-    Output& operator=(const Output& Output) = default;
-    Output& operator=(Output&& Output) noexcept = default;
-    bool operator<(const Output& Output) const noexcept { return m_hash < Output.m_hash; }
-    bool operator==(const Output& Output) const noexcept { return m_hash == Output.m_hash; }
+    Output& operator=(const Output& output) = default;
+    Output& operator=(Output&& output) noexcept = default;
+    bool operator<(const Output& output) const noexcept { return m_hash < output.m_hash; }
+    bool operator==(const Output& output) const noexcept { return m_hash == output.m_hash; }
 
     //
     // Getters
     //
     const Commitment& GetCommitment() const noexcept final { return m_commitment; }
     const RangeProof::CPtr& GetRangeProof() const noexcept { return m_pProof; }
-
-    Features GetFeatures() const noexcept { return m_features; }
-    const PublicKey& GetReceiverPubKey() const noexcept { return m_receiverPubKey; }
-    const PublicKey& GetKeyExchangePubKey() const noexcept { return m_keyExchangePubKey; }
-    uint8_t GetViewTag() const noexcept { return m_viewTag; }
-    uint64_t GetMaskedValue() const noexcept { return m_maskedValue; }
-    const BigInt<16>& GetMaskedNonce() const noexcept { return m_maskedNonce; }
-    const PublicKey& GetSenderPubKey() const noexcept { return m_senderPubKey; }
+    const OutputMessage& GetOutputMessage() const noexcept { return m_message; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
-    const PublicKey& Ko() const noexcept { return m_receiverPubKey; }
-    const PublicKey& Ke() const noexcept { return m_keyExchangePubKey; }
+    Features GetFeatures() const noexcept { return m_message.features; }
+    const PublicKey& GetReceiverPubKey() const noexcept { return m_message.receiverPubKey; }
+    const PublicKey& GetKeyExchangePubKey() const noexcept { return m_message.keyExchangePubKey; }
+    uint8_t GetViewTag() const noexcept { return m_message.viewTag; }
+    uint64_t GetMaskedValue() const noexcept { return m_message.maskedValue; }
+    const BigInt<16>& GetMaskedNonce() const noexcept { return m_message.maskedNonce; }
+    const PublicKey& GetSenderPubKey() const noexcept { return m_message.senderPubKey; }
+
+    const PublicKey& Ko() const noexcept { return m_message.receiverPubKey; }
+    const PublicKey& Ke() const noexcept { return m_message.keyExchangePubKey; }
 
     SignedMessage BuildSignedMsg() const noexcept;
     ProofData BuildProofData() const noexcept;
@@ -106,16 +234,7 @@ public:
     bool IsPeggedIn() const noexcept { return GetFeatures().IsSet(EOutputFeatures::PEGGED_IN); }
 
     OutputId ToOutputId() const noexcept {
-        return OutputId(
-            m_commitment,
-            m_features,
-            m_receiverPubKey,
-            m_keyExchangePubKey,
-            m_viewTag,
-            m_maskedValue,
-            m_maskedNonce,
-            m_senderPubKey
-        );
+        return OutputId(m_commitment, m_message);
     }
 
     //
@@ -128,13 +247,7 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(m_commitment);
-        READWRITE(m_features);
-        READWRITE(m_receiverPubKey);
-        READWRITE(m_keyExchangePubKey);
-        READWRITE(m_viewTag);
-        READWRITE(m_maskedValue);
-        READWRITE(m_maskedNonce);
-        READWRITE(m_senderPubKey);
+        READWRITE(m_message);
         READWRITE(m_signature);
         READWRITE(m_pProof);
 
@@ -146,14 +259,7 @@ public:
 private:
     // The homomorphic commitment representing the output amount
     Commitment m_commitment;
-
-    Features m_features;
-    PublicKey m_receiverPubKey;
-    PublicKey m_keyExchangePubKey;
-    uint8_t m_viewTag;
-    uint64_t m_maskedValue;
-    BigInt<16> m_maskedNonce;
-    PublicKey m_senderPubKey;
+    OutputMessage m_message;
     Signature m_signature;
 
     // A proof that the commitment is in the right range

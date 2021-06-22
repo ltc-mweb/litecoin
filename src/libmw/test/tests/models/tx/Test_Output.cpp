@@ -8,8 +8,8 @@
 #include <mw/crypto/Schnorr.h>
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
-#include <mw/serialization/Deserializer.h>
 
+#include <test_framework/Deserializer.h>
 #include <test_framework/TestMWEB.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestOutput, MWEBTestingSetup)
@@ -53,16 +53,7 @@ BOOST_AUTO_TEST_CASE(Create)
     BOOST_REQUIRE(!output.IsPeggedIn());
     BOOST_REQUIRE(output.GetCommitment() == expected_commit);
     BOOST_REQUIRE(output.GetFeatures() == features);
-    BOOST_REQUIRE(output.ToOutputId() == OutputId(
-        expected_commit,
-        features,
-        output.GetReceiverPubKey(),
-        output.GetKeyExchangePubKey(),
-        output.GetViewTag(),
-        output.GetMaskedValue(),
-        output.GetMaskedNonce(),
-        output.GetSenderPubKey()
-    ));
+    BOOST_REQUIRE(output.ToOutputId() == OutputId(expected_commit, output.GetOutputMessage()));
 
     //
     // Test Restoring Output

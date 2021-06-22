@@ -17,7 +17,7 @@ public:
     PublicKey(BigInt<33>&& compressed) : m_compressed(std::move(compressed)) {}
     PublicKey(const BigInt<33>& compressed) : m_compressed(compressed) {}
     PublicKey(const PublicKey&) = default;
-    PublicKey(PublicKey&&) = default;
+    PublicKey(PublicKey&&) noexcept = default;
 
     //
     // Destructor

@@ -76,7 +76,7 @@ void File::Rename(const std::string& filename)
     }
 
     std::error_code ec;
-    filesystem::rename(m_path.m_path, destination.m_path, ec);
+    ghc::filesystem::rename(m_path.m_path, destination.m_path, ec);
     if (ec) {
         ThrowFile_F("Failed to rename {} to {}", *this, destination);
     }
@@ -87,11 +87,11 @@ void File::Rename(const std::string& filename)
 std::vector<uint8_t> File::ReadBytes() const
 {
     std::error_code ec;
-    if (!filesystem::exists(m_path.m_path, ec) || ec) {
+    if (!ghc::filesystem::exists(m_path.m_path, ec) || ec) {
         ThrowFile_F("{} not found", *this);
     }
 
-    size_t size = (size_t)filesystem::file_size(m_path.m_path, ec);
+    size_t size = (size_t)ghc::filesystem::file_size(m_path.m_path, ec);
 
     return ReadBytes(0, size);
 }
@@ -99,7 +99,7 @@ std::vector<uint8_t> File::ReadBytes() const
 std::vector<uint8_t> File::ReadBytes(const size_t startIndex, const size_t numBytes) const
 {
     std::error_code ec;
-    if (!filesystem::exists(m_path.m_path, ec) || ec) {
+    if (!ghc::filesystem::exists(m_path.m_path, ec) || ec) {
         ThrowFile_F("{} not found", *this);
     }
 
@@ -108,7 +108,7 @@ std::vector<uint8_t> File::ReadBytes(const size_t startIndex, const size_t numBy
         ThrowFile_F("Failed to open {} for reading", *this);
     }
 
-    const size_t size = (size_t)filesystem::file_size(m_path.m_path, ec);
+    const size_t size = (size_t)ghc::filesystem::file_size(m_path.m_path, ec);
     if (size < (startIndex + numBytes)) {
         ThrowFile_F("Failed to read {} bytes from {}.", numBytes, *this);
     }
@@ -173,7 +173,7 @@ size_t File::GetSize() const
     }
 
     std::error_code ec;
-    const size_t size = (size_t)filesystem::file_size(m_path.m_path, ec);
+    const size_t size = (size_t)ghc::filesystem::file_size(m_path.m_path, ec);
     if (ec) {
         ThrowFile_F("Failed to determine size of {}", *this);
     }
@@ -188,7 +188,7 @@ void File::CopyTo(const FilePath& new_path) const
     }
 
     std::error_code ec;
-    filesystem::copy(m_path.m_path, new_path.m_path, ec);
+    ghc::filesystem::copy(m_path.m_path, new_path.m_path, ec);
     if (ec) {
         ThrowFile_F("Failed to copy {} to {}", m_path, new_path);
     }
