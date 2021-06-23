@@ -7,7 +7,7 @@
 
 BOOST_FIXTURE_TEST_SUITE(TestTxBody, MWEBTestingSetup)
 
-BOOST_AUTO_TEST_CASE(TxBodyTest)
+BOOST_AUTO_TEST_CASE(Test_TxBody)
 {
     const uint64_t pegInAmount = 123;
     const uint64_t fee = 5;
@@ -33,6 +33,20 @@ BOOST_AUTO_TEST_CASE(TxBodyTest)
     // Getters
     //
     BOOST_REQUIRE(txBody.GetTotalFee() == fee);
+}
+
+// Transactions without any kernels will throw during deserialization.
+BOOST_AUTO_TEST_CASE(Test_TxBody_NoKernels)
+{
+    mw::Transaction::CPtr tx = test::TxBuilder()
+        .AddInput(20).AddInput(30)
+        .AddOutput(50)
+        .Build().GetTransaction();
+
+    std::vector<uint8_t> serialized = tx->GetBody().Serialized();
+    VectorReader reader(SER_NETWORK, PROTOCOL_VERSION, serialized, 0);
+    TxBody txBody;
+    BOOST_REQUIRE_THROW(reader >> txBody, std::ios_base::failure);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
