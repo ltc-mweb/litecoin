@@ -4,7 +4,9 @@
 #include <mw/db/MMRInfoDB.h>
 #include <mw/exceptions/ValidationException.h>
 
-MW_NAMESPACE
+#include "CoinActions.h"
+
+using namespace mw;
 
 std::vector<UTXO::CPtr> CoinsViewDB::GetUTXOs(const Commitment& commitment) const
 {
@@ -80,5 +82,3 @@ void CoinsViewDB::Compact() const
         m_pOutputPMMR->Cleanup(current_mmr_info->index);
     }
 }
-
-END_NAMESPACE

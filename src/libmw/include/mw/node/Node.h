@@ -1,18 +1,13 @@
 #pragma once
 
 #include <mw/common/Macros.h>
-#include <mw/common/BitSet.h>
+#include <mw/file/FilePath.h>
 #include <mw/node/CoinsView.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/block/Block.h>
-#include <mw/models/block/BlockUndo.h>
-#include <mw/models/tx/Transaction.h>
 #include <mw/models/tx/PegInCoin.h>
 #include <mw/models/tx/PegOutCoin.h>
-#include <mw/models/tx/UTXO.h>
-#include <mw/interfaces/chain_interface.h>
 #include <mw/interfaces/db_interface.h>
-#include <functional>
 #include <vector>
 
 MW_NAMESPACE
@@ -48,29 +43,6 @@ public:
         const std::vector<PegInCoin>& pegInCoins,
         const std::vector<PegOutCoin>& pegOutCoins
     ) noexcept;
-
-    /// <summary>
-    /// Validates and connects the MW ext block to the end of the chain in the given CoinsView.
-    /// Consumer is required to call ValidateBlock first.
-    /// </summary>
-    /// <pre>Block must be validated via CheckBlock before connecting it to the chain.</pre>
-    /// <param name="block">The block to connect. Must not be null.</param>
-    /// <param name="view">The CoinsView to connect the block to. Must not be null.</param>
-    /// <throws>ValidationException if consensus rules are not met.</throws>
-    static mw::BlockUndo::CPtr ConnectBlock(
-        const mw::Block::CPtr& pBlock,
-        const ICoinsView::Ptr& pView
-    );
-
-    /// <summary>
-    /// Removes a MW ext block from the end of the chain in the given CoinsView.
-    /// </summary>
-    /// <param name="undoData">The MW ext block undo data to apply. Must not be null.</param>
-    /// <param name="view">The CoinsView to disconnect the block from. Must not be null.</param>
-    static void DisconnectBlock(
-        const mw::BlockUndo::CPtr& pUndoData,
-        const ICoinsView::Ptr& pView
-    );
 };
 
 END_NAMESPACE

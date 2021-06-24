@@ -44,41 +44,10 @@ bool Node::ValidateBlock(
 
     try {
         BlockValidator().Validate(pBlock, mweb_hash, pegInCoins, pegOutCoins);
-        LOG_TRACE_F("Block {} validated", pBlock);
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR_F("Failed to validate {}. Error: {}", *pBlock, e);
     }
 
     return false;
-}
-
-mw::BlockUndo::CPtr Node::ConnectBlock(const mw::Block::CPtr& pBlock, const mw::ICoinsView::Ptr& pView)
-{
-    assert(pBlock != nullptr);
-    assert(pView != nullptr);
-
-    LOG_TRACE_F("Connecting block {}", pBlock);
-
-    mw::CoinsViewCache::Ptr pCache = std::make_shared<mw::CoinsViewCache>(pView);
-    auto pUndo = pCache->ApplyBlock(pBlock);
-    pCache->Flush(nullptr);
-
-    LOG_TRACE_F("Block {} connected", pBlock);
-    return pUndo;
-}
-
-void Node::DisconnectBlock(const mw::BlockUndo::CPtr& pUndoData, const mw::ICoinsView::Ptr& pView)
-{
-    assert(pUndoData != nullptr);
-    assert(pView != nullptr);
-
-    auto pHeader = pView->GetBestHeader();
-    LOG_TRACE_F("Disconnecting block {}", pHeader);
-
-    mw::CoinsViewCache::Ptr pCache = std::make_shared<mw::CoinsViewCache>(pView);
-    pCache->UndoBlock(pUndoData);
-    pCache->Flush(nullptr);
-
-    LOG_TRACE_F("Block {} disconnected. New tip: {}", pHeader, pView->GetBestHeader());
 }

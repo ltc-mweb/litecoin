@@ -105,7 +105,6 @@ bool EvaluateSequenceLocks(const CBlockIndex& block, std::pair<int, int64_t> loc
     return true;
 }
 
-// MW: TODO - Do we want to support relative locks for anything?
 bool SequenceLocks(const CTransaction &tx, int flags, std::vector<int>* prevHeights, const CBlockIndex& block)
 {
     return EvaluateSequenceLocks(block, CalculateSequenceLocks(tx, flags, prevHeights, block));
@@ -163,12 +162,12 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
     return nSigOps;
 }
 
-bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFromBlock)
+bool CheckTransaction(const CTransaction& tx, CValidationState& state)
 {
     // Basic checks that don't depend on any context
 
     // MWEB: Check MWEB tx
-    if (!MWEB::Node::CheckTransaction(tx, state, fFromBlock)) {
+    if (!MWEB::Node::CheckTransaction(tx, state)) {
         return false;
     }
 

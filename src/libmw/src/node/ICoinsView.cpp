@@ -2,9 +2,7 @@
 
 #include <mw/exceptions/ValidationException.h>
 
-MW_NAMESPACE
-
-void ICoinsView::ValidateMMRs(const mw::Header::CPtr& pHeader) const
+void mw::ICoinsView::ValidateMMRs(const mw::Header::CPtr& pHeader) const
 {
     assert(pHeader != nullptr);
 
@@ -19,5 +17,3 @@ void ICoinsView::ValidateMMRs(const mw::Header::CPtr& pHeader) const
         ThrowValidation(EConsensusError::MMR_MISMATCH);
     }
 }
-
-END_NAMESPACE

@@ -43,5 +43,5 @@ public:
 
 private:
     CAmount m_amount;
-    std::vector<uint8_t> m_scriptPubKey;
+    std::vector<uint8_t> m_scriptPubKey; // MW: TODO - Change to CScript
 };

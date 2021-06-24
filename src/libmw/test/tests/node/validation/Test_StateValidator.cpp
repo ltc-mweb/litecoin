@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(ValidateState)
 
     auto block1 = miner.MineBlock(150, { tx1 });
     BOOST_REQUIRE(mw::Node::ValidateBlock(block1.GetBlock(), block1.GetHash(), pegInCoins, {}));
-    mw::Node::ConnectBlock(block1.GetBlock(), pCachedView);
+    pCachedView->ApplyBlock(block1.GetBlock());
     pCachedView->ValidateState();
 
     // Block containing peg-outs and regular sends only
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(ValidateState)
 
     auto block2 = miner.MineBlock(151, { tx2 });
     BOOST_REQUIRE(mw::Node::ValidateBlock(block2.GetBlock(), block2.GetHash(), {}, pegOutCoins));
-    mw::Node::ConnectBlock(block2.GetBlock(), pCachedView);
+    pCachedView->ApplyBlock(block2.GetBlock());
     pCachedView->ValidateState();
 }
 

@@ -37,6 +37,11 @@ struct Block {
         return IsNull() ? mw::Header::CPtr{nullptr} : m_block->GetHeader();
     }
 
+    int32_t GetHeight() const noexcept
+    {
+        return IsNull() ? -1 : m_block->GetHeight();
+    }
+
     std::vector<Commitment> GetInputCommits() const
     {
         if (IsNull()) {

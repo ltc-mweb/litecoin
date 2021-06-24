@@ -581,7 +581,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         *pfMissingInputs = false;
     }
 
-    if (!CheckTransaction(tx, state, false))
+    if (!CheckTransaction(tx, state))
         return false; // state filled in by CheckTransaction
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -1648,7 +1648,12 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     }
 
     if (blockUndo.mwundo != nullptr) {
-        mw::Node::DisconnectBlock(blockUndo.mwundo, view.GetMWView());
+        try {
+            view.GetMWEBCacheView()->UndoBlock(blockUndo.mwundo);
+        } catch (const std::exception& e) {
+            error("DisconnectBlock(): Failed to disconnect MWEB block");
+            return DISCONNECT_FAILED;
+        }
     }
 
     // move best block pointer to prevout block
@@ -2017,15 +2022,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
             }
 
-            // MWEB: For HogEx transaction, the fee must not be greater than the total fee of the extension block.
-            if (tx.IsHogEx()) {
-                CAmount mweb_fee = block.mweb_block.GetTotalFee();
-                if (txfee > mweb_fee) {
-                    return state.DoS(100, error("%s: HogEx fee does not match MWEB fee.", __func__),
-                        REJECT_INVALID, "bad-txns-mweb-fee-mismatch");
-                }
-            }
-
             // Check that transaction is BIP68 final
             // BIP68 lock checks (as opposed to nLockTime checks) must
             // be in ConnectBlock because they require the UTXO set
@@ -2082,42 +2078,19 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
 
     // MWEB: Check activation
-    const bool mweb_enabled = IsMWEBEnabled(pindex->pprev, chainparams.GetConsensus());
-    if (mweb_enabled && block.mweb_block.IsNull()) {
-        return state.DoS(100, error("ConnectBlock(): MWEB activated, but no extension block included"),
-            REJECT_INVALID, "missing-mweb");
-    } else if (!mweb_enabled && !block.mweb_block.IsNull()) {
-        return state.DoS(100, error("ConnectBlock(): MWEB not activated, but extension block included"),
-            REJECT_INVALID, "unexpected-mweb");
-    }
-
-    // MWEB: Connect block to chain
-    if (!block.mweb_block.IsNull()) {
-        // MW: TODO - Check HogEx transaction: `new value == (prev value + pegins) - (pegouts + fees)`
-        // MW: TODO - Move this to MWEB::Node::ConnectBlock.
-        CAmount mweb_amount = pindex->pprev->mweb_amount + block.mweb_block.GetSupplyChange();
-        if (mweb_amount != block.GetMWEBAmount()) {
-            LogPrintf("prev_mweb_amount: %d, supply_change: %d, block_mweb_amount: %d\n", pindex->pprev->mweb_amount, block.mweb_block.GetSupplyChange(), block.GetMWEBAmount());
-            return state.DoS(100, error("ConnectBlock(): HogEx amount does not match expected MWEB amount"),
-                REJECT_INVALID, "mweb-amount-mismatch");
-        }
-
-        try {
-            blockundo.mwundo = mw::Node::ConnectBlock(block.mweb_block.m_block, view.GetMWView());
-        } catch (const std::exception& e) {
-            return state.DoS(100, error("ConnectBlock(): Failed to connect mw block: %s", e.what()),
-                REJECT_INVALID, "mweb-connect-failed");
-        }
+    if (!MWEB::Node::ConnectBlock(block, chainparams.GetConsensus(), pindex->pprev, blockundo, *view.GetMWEBCacheView(), state)) {
+        return false;
     }
 
     if (fJustCheck)
         return true;
 
-    // MW: TODO - Also move this to MWEB::Node::ConnectBlock
+    // MWEB: Update BlockIndex
     if (!block.mweb_block.IsNull()) {
         if ((pindex->nStatus & BLOCK_HAVE_MWEB) == 0) {
             pindex->nStatus |= BLOCK_HAVE_MWEB;
             pindex->mweb_header = block.mweb_block.GetMWEBHeader();
+            pindex->hogex_hash = block.GetHogEx()->GetHash();
             pindex->mweb_amount = block.GetMWEBAmount();
             setDirtyBlockIndex.insert(pindex);
         }
@@ -3212,7 +3185,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
     // Check transactions
     for (const auto& tx : block.vtx)
-        if (!CheckTransaction(*tx, state, true))
+        if (!CheckTransaction(*tx, state))
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
 
@@ -3445,24 +3418,8 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
-    if (IsMWEBEnabled(pindexPrev, consensusParams)) {
-        if (block.mweb_block.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "mweb-missing", true, strprintf("%s : MWEB activated but extension block not found", __func__));
-        }
-    } else {
-        // No MWEB data is allowed in blocks that don't commit to MWEB data, as this would otherwise leave room for spam
-        if (!block.mweb_block.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mweb-data", true, strprintf("%s : MWEB not activated, but extension block found", __func__));
-        }
-    }
-
-    // MWEB: Transactions in the mempool or broadcast via p2p may have MWEB transaction data attached.
-    // All MWEB tx data must be moved to the EB when it's mined in a block though.
-    // So at this point, no txs should contain MWEB data.
-    for (const auto& tx : block.vtx) {
-        if (tx->HasMWEBTx()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mweb-data", true, strprintf("%s : Block contains transactions with MWEB data attached", __func__));
-        }
+    if (!MWEB::Node::ContextualCheckBlock(block, consensusParams, pindexPrev, state)) {
+        return false;
     }
 
     return true;

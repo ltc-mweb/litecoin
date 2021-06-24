@@ -1520,6 +1520,17 @@ BOOST_AUTO_TEST_CASE(script_can_append_self)
     BOOST_CHECK(s == d);
 }
 
+// MWEB: Pegin Script
+BOOST_AUTO_TEST_CASE(script_mweb_pegin)
+{
+    CScript script;
+    Commitment commitment(Random::CSPRNG<33>().GetBigInt());
+    script << OP_9 << commitment.vec();
+
+    Commitment commitment2;
+    BOOST_CHECK(script.IsMWEBPegin(commitment2));
+    BOOST_CHECK(commitment == commitment2);
+}
 
 #if defined(HAVE_CONSENSUS_LIB)
 

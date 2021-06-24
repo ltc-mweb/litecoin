@@ -77,10 +77,6 @@ struct Params {
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 };
-
-struct MWEB {
-    static constexpr int WITNESS_VERSION = 9;
-};
 } // namespace Consensus
 
 #endif // BITCOIN_CONSENSUS_PARAMS_H

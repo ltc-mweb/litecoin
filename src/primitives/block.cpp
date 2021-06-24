@@ -14,7 +14,6 @@
 #include <script/standard.h>
 #include <util/strencodings.h>
 #include <bech32.h>
-#include <chainparams.h>
 
 uint256 CBlockHeader::GetHash() const
 {
@@ -61,7 +60,7 @@ uint256 CBlock::GetMWEBHash() const noexcept
         int version;
         std::vector<unsigned char> program;
         if (pHogEx->vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
-            if (program.size() == 32 && version == Consensus::MWEB::WITNESS_VERSION) {
+            if (program.size() == WITNESS_MWEB_HEADERHASH_SIZE && version == MWEB_WITNESS_VERSION) {
                 return uint256(program);
             }
         }

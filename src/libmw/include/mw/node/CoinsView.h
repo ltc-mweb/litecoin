@@ -13,66 +13,9 @@
 
 // Forward Declarations
 class CoinDB;
+class CoinsViewUpdates;
 
 MW_NAMESPACE
-
-struct CoinAction
-{
-    bool IsSpend() const noexcept { return pUTXO == nullptr; }
-
-    UTXO::CPtr pUTXO;
-};
-
-class CoinsViewUpdates
-{
-public:
-    using Ptr = std::shared_ptr<CoinsViewUpdates>;
-
-    CoinsViewUpdates() = default;
-
-    void AddUTXO(const UTXO::CPtr& pUTXO)
-    {
-        AddAction(pUTXO->GetCommitment(), CoinAction{ pUTXO });
-    }
-
-    void SpendUTXO(const Commitment& commitment)
-    {
-        AddAction(commitment, CoinAction{ nullptr });
-    }
-
-    const std::unordered_map<Commitment, std::vector<CoinAction>>& GetActions() const noexcept { return m_actions; }
-
-    std::vector<CoinAction> GetActions(const Commitment& commitment) const noexcept
-    {
-        auto iter = m_actions.find(commitment);
-        if (iter != m_actions.cend()) {
-            return iter->second;
-        }
-
-        return {};
-    }
-
-    void Clear() noexcept
-    {
-        m_actions.clear();
-    }
-
-private:
-    void AddAction(const Commitment& commitment, CoinAction&& action)
-    {
-        auto iter = m_actions.find(commitment);
-        if (iter != m_actions.end()) {
-            std::vector<CoinAction>& actions = iter->second;
-            actions.emplace_back(std::move(action));
-        } else {
-            std::vector<CoinAction> actions;
-            actions.emplace_back(std::move(action));
-            m_actions.insert({ commitment, actions });
-        }
-    }
-
-    std::unordered_map<Commitment, std::vector<CoinAction>> m_actions;
-};
 
 //
 // An interface for the various views of the extension block's UTXO set.
@@ -142,19 +85,27 @@ public:
     using Ptr = std::shared_ptr<CoinsViewCache>;
     using CPtr = std::shared_ptr<const CoinsViewCache>;
 
-    CoinsViewCache(const ICoinsView::Ptr& pBase)
-        : ICoinsView(pBase->GetBestHeader(), pBase->GetDatabase()),
-        m_pBase(pBase),
-        m_pLeafSet(std::make_unique<LeafSetCache>(pBase->GetLeafSet())),
-        m_pKernelMMR(std::make_unique<MMRCache>(pBase->GetKernelMMR())),
-        m_pOutputPMMR(std::make_unique<MMRCache>(pBase->GetOutputPMMR())),
-        m_pUpdates(std::make_shared<CoinsViewUpdates>()) { }
+    CoinsViewCache(const ICoinsView::Ptr& pBase);
 
     bool IsCache() const noexcept final { return true; }
 
     std::vector<UTXO::CPtr> GetUTXOs(const Commitment& commitment) const noexcept final;
+
+    /// <summary>
+    /// Validates and connects the block to the end of the chain.
+    /// Consumer is required to call ValidateBlock first.
+    /// </summary>
+    /// <pre>Block must be validated via CheckBlock before connecting it to the chain.</pre>
+    /// <param name="pBlock">The block to connect. Must not be null.</param>
+    /// <throws>ValidationException if consensus rules are not met.</throws>
     mw::BlockUndo::CPtr ApplyBlock(const mw::Block::CPtr& pBlock);
+
+    /// <summary>
+    /// Removes a block from the end of the chain.
+    /// </summary>
+    /// <param name="pUndo">The MWEB undo data to apply. Must not be null.</param>
     void UndoBlock(const mw::BlockUndo::CPtr& pUndo);
+
     void WriteBatch(
         const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
@@ -168,6 +119,7 @@ public:
     /// </summary>
     /// <param name="pBatch">The optional DB batch. This must be non-null when the base CoinsView is a DB view.</param>
     void Flush(const mw::DBBatch::UPtr& pBatch = nullptr);
+
     mw::Block::Ptr BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions);
 
     void ValidateState() const;
@@ -188,7 +140,7 @@ private:
     MMRCache::Ptr m_pKernelMMR;
     MMRCache::Ptr m_pOutputPMMR;
 
-    CoinsViewUpdates::Ptr m_pUpdates;
+    std::shared_ptr<CoinsViewUpdates> m_pUpdates;
 };
 
 class CoinsViewDB : public mw::ICoinsView

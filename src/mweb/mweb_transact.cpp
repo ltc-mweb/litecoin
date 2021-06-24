@@ -143,7 +143,7 @@ bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const PegInCo
     for (size_t i = 0; i < transaction.vout.size(); i++) {
         if (IsPegInOutput(CTransaction(transaction).GetOutput(i))) {
             CScript pegin_script;
-            pegin_script << CScript::EncodeOP_N(Consensus::MWEB::WITNESS_VERSION);
+            pegin_script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
             pegin_script << pegin.GetCommitment().vec();
             transaction.vout[i].nValue = pegin.GetAmount();
             transaction.vout[i].scriptPubKey = pegin_script;

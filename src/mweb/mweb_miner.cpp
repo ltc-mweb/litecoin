@@ -108,14 +108,11 @@ bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<PegInCo
     std::unordered_set<PegInCoin> pegin_set(pegins.cbegin(), pegins.cend());
 
     for (const CTxOut& output : pTx->vout) {
-        int version;
-        std::vector<uint8_t> program;
-        if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-            if (version == Consensus::MWEB::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-                PegInCoin pegin(output.nValue, Commitment{std::move(program)});
-                if (pegin_set.erase(pegin) != 1) {
-                    return false;
-                }
+        Commitment commitment;
+        if (output.scriptPubKey.IsMWEBPegin(commitment)) {
+            PegInCoin pegin(output.nValue, std::move(commitment));
+            if (pegin_set.erase(pegin) != 1) {
+                return false;
             }
         }
     }

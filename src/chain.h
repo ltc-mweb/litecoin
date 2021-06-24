@@ -225,6 +225,7 @@ public:
 
     //! MWEB data (only populated when BLOCK_HAVE_MWEB is set)
     mw::Header::CPtr mweb_header;
+    uint256 hogex_hash;
     CAmount mweb_amount;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
@@ -256,6 +257,7 @@ public:
         nNonce         = 0;
 
         mweb_header.reset();
+        hogex_hash = uint256();
         mweb_amount = 0;
     }
 
@@ -431,6 +433,7 @@ public:
 
         if (nStatus & BLOCK_HAVE_MWEB) {
             READWRITE(mweb_header);
+            READWRITE(hogex_hash);
             READWRITE(VARINT(mweb_amount, VarIntMode::NONNEGATIVE_SIGNED));
         }
 

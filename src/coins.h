@@ -237,6 +237,7 @@ public:
     }
 
     mw::ICoinsView::Ptr GetMWView() const final { return mweb_view; }
+    mw::CoinsViewCache* GetMWEBCacheView() const { return dynamic_cast<mw::CoinsViewCache*>(mweb_view.get()); }
 
     /**
      * Check if we have the given utxo already loaded in this cache.

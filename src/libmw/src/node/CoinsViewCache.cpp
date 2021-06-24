@@ -6,7 +6,17 @@
 #include <mw/common/Logger.h>
 #include <mw/db/MMRInfoDB.h>
 
-MW_NAMESPACE
+#include "CoinActions.h"
+
+using namespace mw;
+
+CoinsViewCache::CoinsViewCache(const ICoinsView::Ptr& pBase)
+    : ICoinsView(pBase->GetBestHeader(), pBase->GetDatabase()),
+      m_pBase(pBase),
+      m_pLeafSet(std::make_unique<LeafSetCache>(pBase->GetLeafSet())),
+      m_pKernelMMR(std::make_unique<MMRCache>(pBase->GetKernelMMR())),
+      m_pOutputPMMR(std::make_unique<MMRCache>(pBase->GetOutputPMMR())),
+      m_pUpdates(std::make_shared<CoinsViewUpdates>()) {}
 
 std::vector<UTXO::CPtr> CoinsViewCache::GetUTXOs(const Commitment& commitment) const noexcept
 {
@@ -231,5 +241,3 @@ void CoinsViewCache::Flush(const std::unique_ptr<mw::DBBatch>& pBatch)
 
     m_pUpdates->Clear();
 }
-
-END_NAMESPACE
