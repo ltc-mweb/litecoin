@@ -51,23 +51,11 @@ void BlockValidator::ValidatePegInCoins(
     }
 }
 
-namespace std
-{
-    template<>
-    struct hash<std::vector<uint8_t>>
-    {
-        size_t operator()(const std::vector<uint8_t>& scriptPubKey) const
-        {
-            return boost::hash_value(scriptPubKey);
-        }
-    };
-}
-
 void BlockValidator::ValidatePegOutCoins(
     const mw::Block::CPtr& pBlock,
     const std::vector<PegOutCoin>& pegOutCoins)
 {
-    std::unordered_map<std::vector<uint8_t>, CAmount> pegOutAmounts;
+    std::map<CScript, CAmount> pegOutAmounts;
     std::for_each(
         pegOutCoins.cbegin(), pegOutCoins.cend(),
         [&pegOutAmounts](const PegOutCoin& coin) {

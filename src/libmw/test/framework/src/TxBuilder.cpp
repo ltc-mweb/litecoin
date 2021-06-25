@@ -109,7 +109,7 @@ TxBuilder& TxBuilder::AddPegoutKernel(const CAmount amount, const CAmount fee, c
     m_kernelOffset.Sub(kernel_excess);
     std::vector<uint8_t> ltc_address = Random::CSPRNG<32>().vec();
 
-    Kernel kernel = Kernel::Create(kernel_excess, fee, boost::none, PegOutCoin(amount, ltc_address), boost::none);
+    Kernel kernel = Kernel::Create(kernel_excess, fee, boost::none, PegOutCoin(amount, CScript(ltc_address.begin(), ltc_address.end())), boost::none);
 
     if (add_owner_sig) {
         SecretKey offset = Random::CSPRNG<32>();

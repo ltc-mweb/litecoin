@@ -2,6 +2,7 @@
 
 #include <mw/common/Traits.h>
 #include <mw/util/StringUtil.h>
+#include <script/script.h>
 #include <util/strencodings.h>
 #include <amount.h>
 
@@ -12,7 +13,7 @@ class PegOutCoin : public Traits::ISerializable, public Traits::IPrintable
 {
 public:
     PegOutCoin() = default;
-    PegOutCoin(const CAmount amount, std::vector<uint8_t> scriptPubKey)
+    PegOutCoin(const CAmount amount, CScript scriptPubKey)
         : m_amount(amount), m_scriptPubKey(std::move(scriptPubKey)) { }
 
     bool operator==(const PegOutCoin& rhs) const noexcept
@@ -21,7 +22,7 @@ public:
     }
 
     CAmount GetAmount() const noexcept { return m_amount; }
-    const std::vector<uint8_t>& GetScriptPubKey() const noexcept { return m_scriptPubKey; }
+    const CScript& GetScriptPubKey() const noexcept { return m_scriptPubKey; }
 
     //
     // Serialization/Deserialization
@@ -43,5 +44,5 @@ public:
 
 private:
     CAmount m_amount;
-    std::vector<uint8_t> m_scriptPubKey; // MW: TODO - Change to CScript
+    CScript m_scriptPubKey;
 };

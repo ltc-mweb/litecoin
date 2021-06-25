@@ -13,7 +13,8 @@ BOOST_FIXTURE_TEST_SUITE(TestPegOutCoin, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(TxPegOutCoin)
 {
     CAmount amount = 123;
-    std::vector<uint8_t> scriptPubKey = Random::CSPRNG<32>().vec();
+    std::vector<uint8_t> vpubkey = Random::CSPRNG<32>().vec();
+    CScript scriptPubKey(vpubkey.begin(), vpubkey.end());
     PegOutCoin pegOutCoin(amount, scriptPubKey);
 
     //

@@ -56,7 +56,7 @@ bool Transact::CreateTx(
         } else {
             PegOutCoin pegout_recipient(
                 recipient.nAmount,
-                std::vector<uint8_t>(recipient.receiver.GetScript().begin(), recipient.receiver.GetScript().end())
+                recipient.receiver.GetScript()
             );
             pegouts.push_back(std::move(pegout_recipient));
         }
