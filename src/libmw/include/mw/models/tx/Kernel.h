@@ -16,24 +16,19 @@ class Kernel :
     public Traits::IHashable,
     public Traits::ISerializable
 {
-    enum FeatureBit {
-        FEE_FEATURE_BIT         = 0x01,
-        PEGIN_FEATURE_BIT       = 0x02,
-        PEGOUT_FEATURE_BIT      = 0x04,
-        HEIGHT_LOCK_FEATURE_BIT = 0x08,
-        EXTRA_DATA_FEATURE_BIT  = 0x10
-    };
 public:
     Kernel() = default;
     Kernel(
+        const uint8_t features,
         boost::optional<CAmount> fee,
         boost::optional<CAmount> pegin,
         boost::optional<PegOutCoin> pegout,
         boost::optional<int32_t> lockHeight,
         std::vector<uint8_t> extraData,
-        Commitment&& excess,
-        Signature&& signature
-    ) : m_fee(fee),
+        Commitment excess,
+        Signature signature
+    ) : m_features(features),
+        m_fee(fee),
         m_pegin(pegin),
         m_pegout(std::move(pegout)),
         m_lockHeight(lockHeight),
@@ -43,6 +38,15 @@ public:
     {
         m_hash = Hashed(*this);
     }
+
+    enum FeatureBit {
+        FEE_FEATURE_BIT = 0x01,
+        PEGIN_FEATURE_BIT = 0x02,
+        PEGOUT_FEATURE_BIT = 0x04,
+        HEIGHT_LOCK_FEATURE_BIT = 0x08,
+        EXTRA_DATA_FEATURE_BIT = 0x10,
+        ALL_FEATURE_BITS = FEE_FEATURE_BIT | PEGIN_FEATURE_BIT | PEGOUT_FEATURE_BIT | HEIGHT_LOCK_FEATURE_BIT | EXTRA_DATA_FEATURE_BIT
+    };
 
     //
     // Factories
@@ -65,14 +69,18 @@ public:
     //
     // Getters
     //
+    uint8_t GetFeatures() const noexcept { return m_features; }
     CAmount GetFee() const noexcept { return m_fee.value_or(0); }
     int32_t GetLockHeight() const noexcept { return m_lockHeight.value_or(0); }
     const Commitment& GetExcess() const noexcept { return m_excess; }
     const Signature& GetSignature() const noexcept { return m_signature; }
     const std::vector<uint8_t>& GetExtraData() const noexcept { return m_extraData; }
 
+    bool IsStandard() const noexcept { return m_features <= ALL_FEATURE_BITS; }
+
     mw::Hash GetSignatureMessage() const;
     static mw::Hash GetSignatureMessage(
+        const uint8_t features,
         const boost::optional<CAmount>& fee,
         const boost::optional<CAmount>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
@@ -100,13 +108,7 @@ public:
     template <typename Stream>
     void Serialize(Stream& s) const
     {
-        uint8_t features_byte =
-            (m_fee ? FEE_FEATURE_BIT : 0) |
-            (m_pegin ? PEGIN_FEATURE_BIT : 0) |
-            (m_pegout ? PEGOUT_FEATURE_BIT : 0) |
-            (m_lockHeight ? HEIGHT_LOCK_FEATURE_BIT : 0) |
-            (m_extraData.size() > 0 ? EXTRA_DATA_FEATURE_BIT : 0);
-        s << features_byte;
+        s << m_features;
 
         if (m_fee) {
             ::WriteVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, m_fee.value());
@@ -134,28 +136,27 @@ public:
     template <typename Stream>
     void Unserialize(Stream& s)
     {
-        uint8_t features_byte;
-        s >> features_byte; // MW: TODO - Verify it's less than 32? Maybe only check in IsStandardTx?
+        s >> m_features;
 
-        if (features_byte & FEE_FEATURE_BIT) {
+        if (m_features & FEE_FEATURE_BIT) {
             m_fee = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s);
         }
 
-        if (features_byte & PEGIN_FEATURE_BIT) {
+        if (m_features & PEGIN_FEATURE_BIT) {
             m_pegin = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s);
         }
 
-        if (features_byte & PEGOUT_FEATURE_BIT) {
+        if (m_features & PEGOUT_FEATURE_BIT) {
             PegOutCoin pegout;
             s >> pegout;
             m_pegout = boost::make_optional(std::move(pegout));
         }
 
-        if (features_byte & HEIGHT_LOCK_FEATURE_BIT) {
+        if (m_features & HEIGHT_LOCK_FEATURE_BIT) {
             m_lockHeight = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s);
         }
 
-        if (features_byte & EXTRA_DATA_FEATURE_BIT) {
+        if (m_features & EXTRA_DATA_FEATURE_BIT) {
             s >> m_extraData;
         }
 
@@ -168,10 +169,10 @@ public:
     // Traits
     //
     const mw::Hash& GetHash() const noexcept final { return m_hash; }
-
     const Commitment& GetCommitment() const noexcept final { return m_excess; }
 
 private:
+    uint8_t m_features;
     boost::optional<CAmount> m_fee;
     boost::optional<CAmount> m_pegin;
     boost::optional<PegOutCoin> m_pegout;
@@ -188,13 +189,13 @@ private:
     mw::Hash m_hash;
 };
 
-// Sorts by net supply increase [pegin - (fee + pegout)] with highest increase first, then sorts by hash.
+// Sorts by net supply increase [pegin - (fee + pegout)] with highest increase first, then sorts by commitment.
 static const struct
 {
     bool operator()(const Kernel& a, const Kernel& b) const
     {
         CAmount a_pegin = a.GetSupplyChange();
         CAmount b_pegin = b.GetSupplyChange();
-        return (a_pegin > b_pegin) || (a_pegin == b_pegin && a.GetHash() < b.GetHash());
+        return (a_pegin > b_pegin) || (a_pegin == b_pegin && a.GetCommitment() < b.GetCommitment());
     }
 } KernelSort;

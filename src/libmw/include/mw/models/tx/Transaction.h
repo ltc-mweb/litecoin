@@ -105,8 +105,6 @@ public:
     std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_body.GetPegOuts(); }
     CAmount GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
 
-    // MW: TODO - Implement IsStandard()
-
     //
     // Serialization/Deserialization
     //
@@ -131,6 +129,7 @@ public:
     std::string Format() const final { return "Tx(" + GetHash().Format() + ")"; }
     const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
+    bool IsStandard() const noexcept;
     void Validate() const;
 
     std::string Print() const noexcept

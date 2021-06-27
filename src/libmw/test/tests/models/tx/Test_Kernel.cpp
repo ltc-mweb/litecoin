@@ -54,6 +54,37 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
     }
 }
 
+BOOST_AUTO_TEST_CASE(NonStandardKernel)
+{
+    CAmount fee = 1000;
+    CAmount pegin = 10000;
+    PegOutCoin pegout(2000, CScript(Random::CSPRNG<30>().vec()));
+    int32_t lock_height = 123456;
+    Kernel standard_kernel(
+        Kernel::ALL_FEATURE_BITS,
+        fee,
+        pegin,
+        boost::make_optional(PegOutCoin(2000, CScript(Random::CSPRNG<30>().vec()))),
+        lock_height,
+        Random::CSPRNG<20>().vec(),
+        Commitment::Random(),
+        Signature(Random::CSPRNG<64>().GetBigInt())
+    );
+    Kernel nonstandard_kernel(
+        Kernel::ALL_FEATURE_BITS | 0x20,
+        fee,
+        pegin,
+        boost::make_optional(PegOutCoin(2000, CScript(Random::CSPRNG<30>().vec()))),
+        lock_height,
+        Random::CSPRNG<20>().vec(),
+        standard_kernel.GetCommitment(),
+        standard_kernel.GetSignature()
+    );
+
+    BOOST_REQUIRE(standard_kernel.IsStandard());
+    BOOST_REQUIRE(!nonstandard_kernel.IsStandard());
+}
+
 // MW: TODO - Uncomment these
 
 //BOOST_AUTO_TEST_CASE(PegInKernel)

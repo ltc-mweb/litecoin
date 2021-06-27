@@ -11,8 +11,8 @@ BOOST_FIXTURE_TEST_SUITE(TestInput, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(PlainTxInput)
 {
-    Commitment commit(Random::CSPRNG<33>().GetBigInt());
-    PublicKey pubkey(Random::CSPRNG<33>().GetBigInt());
+    Commitment commit = Commitment::Random();
+    PublicKey pubkey = PublicKey::Random();
     Signature signature(Random::CSPRNG<64>().GetBigInt());
     Input input(commit, pubkey, signature);
 

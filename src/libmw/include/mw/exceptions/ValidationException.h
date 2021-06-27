@@ -8,7 +8,7 @@
 enum class EConsensusError
 {
     HASH_MISMATCH,
-    DUPLICATE_COMMITS,
+    DUPLICATES,
     BLOCK_WEIGHT,
     BLOCK_SUMS,
     OWNER_SUMS,
@@ -43,8 +43,8 @@ private:
         {
             case EConsensusError::HASH_MISMATCH:
                 return "HASH_MISMATCH";
-            case EConsensusError::DUPLICATE_COMMITS:
-                return "DUPLICATE_COMMITS";
+            case EConsensusError::DUPLICATES:
+                return "DUPLICATES";
             case EConsensusError::BLOCK_WEIGHT:
                 return "BLOCK_WEIGHT";
             case EConsensusError::BLOCK_SUMS:

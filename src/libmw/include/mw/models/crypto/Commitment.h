@@ -39,6 +39,7 @@ public:
     //
     // Factories
     //
+    static Commitment Random();
     static Commitment Switch(const BlindingFactor& blind, const uint64_t value);
     static Commitment Blinded(const BlindingFactor& blind, const uint64_t value);
     static Commitment Transparent(const uint64_t value);

@@ -1,8 +1,5 @@
 # MWEB Consensus
 
-## Data Formats
-
-
 ## Rules
 
 #### Output Uniqueness

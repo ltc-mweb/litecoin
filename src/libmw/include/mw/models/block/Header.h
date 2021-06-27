@@ -103,7 +103,7 @@ private:
     mw::Hash m_kernelRoot;
 	mw::Hash m_leafsetRoot;
     BlindingFactor m_kernelOffset;
-    BlindingFactor m_ownerOffset; // MW: TODO - This should probably be a PrivateKey instead
+    BlindingFactor m_ownerOffset;
     uint64_t m_outputMMRSize;
     uint64_t m_kernelMMRSize;
 

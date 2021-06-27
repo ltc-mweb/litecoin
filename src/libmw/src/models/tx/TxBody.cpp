@@ -89,22 +89,28 @@ void TxBody::Validate() const
         ThrowValidation(EConsensusError::NOT_SORTED);
     }
 
-    // Verify no duplicate inputs
+    // Verify no duplicate input commitments
     std::unordered_set<Commitment> input_commits = Commitments::SetFrom(m_inputs);
     if (input_commits.size() != m_inputs.size()) {
-        ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
+        ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate outputs
+    // Verify no duplicate output commitments
     std::unordered_set<Commitment> output_commits = Commitments::SetFrom(m_outputs);
     if (output_commits.size() != m_outputs.size()) {
-        ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
+        ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate kernels
+    // Verify no duplicate kernel commitments
     std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels);
     if (kernel_commits.size() != m_kernels.size()) {
-        ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
+        ThrowValidation(EConsensusError::DUPLICATES);
+    }
+
+    // Verify no duplicate owner signatures
+    std::vector<SignedMessage> owner_sigs = m_ownerSigs;
+    if (std::unique(owner_sigs.begin(), owner_sigs.end()) != owner_sigs.end()) {
+        ThrowValidation(EConsensusError::DUPLICATES);
     }
 
     // Verify kernel exists with matching hash for each owner sig

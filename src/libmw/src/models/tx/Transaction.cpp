@@ -2,7 +2,20 @@
 #include <mw/consensus/KernelSumValidator.h>
 #include <mw/consensus/OwnerSumValidator.h>
 
-void mw::Transaction::Validate() const
+using namespace mw;
+
+bool Transaction::IsStandard() const noexcept
+{
+    for (const Kernel& kernel : GetKernels()) {
+        if (!kernel.IsStandard()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Transaction::Validate() const
 {
     m_body.Validate();
 
