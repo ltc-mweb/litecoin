@@ -24,9 +24,7 @@ BOOST_AUTO_TEST_CASE(BlockValidator)
     std::vector<PegOutCoin> pegOutCoins;
     test::MinedBlock block_10 = miner.MineBlock(10, block_10_txs);
 
-    BOOST_REQUIRE(!block_10.GetBlock()->WasValidated());
     BOOST_REQUIRE(mw::Node::ValidateBlock(block_10.GetBlock(), block_10.GetHash(), pegInCoins, pegOutCoins));
-    BOOST_REQUIRE(block_10.GetBlock()->WasValidated());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

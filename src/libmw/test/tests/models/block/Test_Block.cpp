@@ -50,10 +50,7 @@ BOOST_AUTO_TEST_CASE(Block)
     BOOST_REQUIRE(*block.GetHeader() == *block2.GetHeader());
     BOOST_REQUIRE(block.GetTxBody() == block2.GetTxBody());
 
-    BOOST_REQUIRE(!block.WasValidated());
     block.Validate();
-    block.MarkAsValidated();
-    BOOST_REQUIRE(block.WasValidated());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -122,8 +122,6 @@ public:
 
     mw::Block::Ptr BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions);
 
-    void ValidateState() const;
-
     bool HasCoinInCache(const Commitment& commitment) const noexcept final;
 
     ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }

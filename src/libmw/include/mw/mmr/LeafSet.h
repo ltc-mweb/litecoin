@@ -8,8 +8,6 @@
 #include <mw/mmr/LeafIndex.h>
 #include <unordered_map>
 
-class ILeafSetBackend;
-
 class ILeafSet
 {
 public:

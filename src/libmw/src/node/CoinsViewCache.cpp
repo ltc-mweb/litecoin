@@ -1,5 +1,4 @@
 #include <mw/node/CoinsView.h>
-#include <mw/node/validation/StateValidator.h>
 #include <mw/exceptions/ValidationException.h>
 #include <mw/consensus/Aggregation.h>
 #include <mw/consensus/KernelSumValidator.h>
@@ -135,7 +134,7 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
 
     BlindingFactor kernel_offset = pTransaction->GetKernelOffset();
     if (GetBestHeader() != nullptr) {
-        kernel_offset = Crypto::AddBlindingFactors({
+        kernel_offset = Pedersen::AddBlindingFactors({
             GetBestHeader()->GetKernelOffset(),
             pTransaction->GetKernelOffset()
         });
@@ -155,11 +154,6 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
     );
 
     return std::make_shared<mw::Block>(pHeader, pTransaction->GetBody());
-}
-
-void CoinsViewCache::ValidateState() const
-{
-    StateValidator().Validate(*this);
 }
 
 bool CoinsViewCache::HasCoinInCache(const Commitment& commitment) const noexcept

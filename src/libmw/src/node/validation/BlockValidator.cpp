@@ -10,10 +10,6 @@ void BlockValidator::Validate(
 {
     assert(pBlock != nullptr);
 
-    if (pBlock->WasValidated()) {
-        return;
-    }
-
     if (pBlock->GetHash() != mweb_hash) {
         ThrowValidation(EConsensusError::HASH_MISMATCH);
     }
@@ -22,8 +18,6 @@ void BlockValidator::Validate(
 
     ValidatePegInCoins(pBlock, pegInCoins);
     ValidatePegOutCoins(pBlock, pegOutCoins);
-
-    pBlock->MarkAsValidated();
 }
 
 void BlockValidator::ValidatePegInCoins(

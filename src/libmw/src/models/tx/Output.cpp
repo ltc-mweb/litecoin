@@ -3,6 +3,7 @@
 #include <mw/models/wallet/StealthAddress.h>
 #include <mw/crypto/Random.h>
 #include <mw/crypto/Bulletproofs.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/crypto/Schnorr.h>
 
 Output Output::Create(
@@ -41,7 +42,7 @@ Output Output::Create(
     BigInt<16> mn = mask.MaskNonce(n);
 
     // Commitment 'C' = r*G + v*H
-    Commitment output_commit = Crypto::CommitBlinded(value, blind_out);
+    Commitment output_commit = Commitment::Blinded(blind_out, value);
 
     // Sign the malleable output data
     mw::Hash sig_message = Hasher()

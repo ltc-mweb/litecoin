@@ -2,10 +2,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/MuSig.h>
-#include <mw/crypto/Schnorr.h>
+#include <mw/crypto/PublicKeys.h>
 #include <mw/crypto/Random.h>
+#include <mw/crypto/Schnorr.h>
 
 #include <test_framework/TestMWEB.h>
 
@@ -17,22 +17,22 @@ BOOST_AUTO_TEST_CASE(AggSigInteraction)
 
     // Generate sender keypairs
     SecretKey secretKeySender = Random::CSPRNG<32>();
-    PublicKey publicKeySender = Crypto::CalculatePublicKey(secretKeySender.GetBigInt());
+    PublicKey publicKeySender = PublicKey::From(secretKeySender);
     SecretKey secretNonceSender = MuSig::GenerateSecureNonce();
-    PublicKey publicNonceSender = Crypto::CalculatePublicKey(secretNonceSender.GetBigInt());
+    PublicKey publicNonceSender = PublicKey::From(secretNonceSender);
 
     // Generate receiver keypairs
     SecretKey secretKeyReceiver = Random::CSPRNG<32>();
-    PublicKey publicKeyReceiver = Crypto::CalculatePublicKey(secretKeyReceiver.GetBigInt());
+    PublicKey publicKeyReceiver = PublicKey::From(secretKeyReceiver);
     SecretKey secretNonceReceiver = MuSig::GenerateSecureNonce();
-    PublicKey publicNonceReceiver = Crypto::CalculatePublicKey(secretNonceReceiver.GetBigInt());
+    PublicKey publicNonceReceiver = PublicKey::From(secretNonceReceiver);
 
     // Add pubKeys and pubNonces
-    PublicKey sumPubKeys = Crypto::AddPublicKeys(
+    PublicKey sumPubKeys = PublicKeys::Add(
         std::vector<PublicKey>({ publicKeySender, publicKeyReceiver })
     );
 
-    PublicKey sumPubNonces = Crypto::AddPublicKeys(
+    PublicKey sumPubNonces = PublicKeys::Add(
         std::vector<PublicKey>({ publicNonceSender, publicNonceReceiver })
     );
 
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(SingleSchnorrSig)
 {
     mw::Hash message = Random::CSPRNG<32>().GetBigInt();
     SecretKey secret_key = Random::CSPRNG<32>();
-    PublicKey public_key = Crypto::CalculatePublicKey(secret_key.GetBigInt());
+    PublicKey public_key = PublicKey::From(secret_key);
     Signature signature = Schnorr::Sign(secret_key.data(), message);
 
     const bool valid = Schnorr::Verify(signature, public_key, message);

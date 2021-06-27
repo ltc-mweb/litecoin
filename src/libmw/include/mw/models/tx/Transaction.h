@@ -7,7 +7,6 @@
 #include <mw/common/Macros.h>
 #include <mw/common/Traits.h>
 #include <mw/consensus/Weight.h>
-#include <mw/crypto/Crypto.h>
 #include <mw/models/crypto/Hash.h>
 #include <mw/models/crypto/BigInteger.h>
 #include <mw/models/crypto/BlindingFactor.h>
@@ -105,6 +104,8 @@ public:
     CAmount GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
     std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_body.GetPegOuts(); }
     CAmount GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
+
+    // MW: TODO - Implement IsStandard()
 
     //
     // Serialization/Deserialization

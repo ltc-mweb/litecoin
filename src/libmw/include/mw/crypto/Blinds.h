@@ -1,21 +1,27 @@
 #pragma once
 
-#include <mw/crypto/Crypto.h>
+#include <mw/crypto/Pedersen.h>
 
 class Blinds
 {
 public:
     Blinds() = default;
 
-    Blinds& Add(const BlindingFactor& blind)
+    Blinds& Add(BlindingFactor blind)
     {
-        m_positive.push_back(blind);
+        m_positive.push_back(std::move(blind));
         return *this;
     }
 
-    Blinds& Add(BlindingFactor&& blind)
+    Blinds& Add(const BigInt<32>& blind)
     {
-        m_positive.push_back(std::move(blind));
+        m_positive.push_back(BlindingFactor(blind));
+        return *this;
+    }
+
+    Blinds& Add(const SecretKey& key)
+    {
+        m_positive.push_back(BlindingFactor(key.GetBigInt()));
         return *this;
     }
 
@@ -25,15 +31,29 @@ public:
         return *this;
     }
 
-    Blinds& Sub(const BlindingFactor& blind)
+    Blinds& Add(const std::vector<SecretKey>& keys)
     {
-        m_negative.push_back(blind);
+        std::transform(
+            keys.cbegin(), keys.cend(), std::back_inserter(m_positive),
+            [](const SecretKey& key) { return BlindingFactor(key.GetBigInt()); });
         return *this;
     }
 
-    Blinds& Sub(BlindingFactor&& blind)
+    Blinds& Sub(BlindingFactor blind)
     {
         m_negative.push_back(std::move(blind));
+        return *this;
+    }
+
+    Blinds& Sub(const BigInt<32>& blind)
+    {
+        m_negative.push_back(BlindingFactor(blind));
+        return *this;
+    }
+
+    Blinds& Sub(const SecretKey& key)
+    {
+        m_negative.push_back(BlindingFactor(key.GetBigInt()));
         return *this;
     }
 
@@ -43,7 +63,17 @@ public:
         return *this;
     }
 
-    BlindingFactor Total() const { return Crypto::AddBlindingFactors(m_positive, m_negative); }
+    Blinds& Sub(const std::vector<SecretKey>& keys)
+    {
+        std::transform(
+            keys.cbegin(), keys.cend(), std::back_inserter(m_negative),
+            [](const SecretKey& key) { return BlindingFactor(key.GetBigInt()); }
+        );
+        return *this;
+    }
+
+    BlindingFactor Total() const { return Pedersen::AddBlindingFactors(m_positive, m_negative); }
+    SecretKey ToKey() const { return Pedersen::AddBlindingFactors(m_positive, m_negative).data(); }
 
 private:
     std::vector<BlindingFactor> m_positive;

@@ -11,7 +11,7 @@ class TxBuilder
     struct Outputs
     {
         BlindingFactor total_blind;
-        BlindingFactor total_key;
+        SecretKey total_key;
         std::vector<Output> outputs;
     };
 

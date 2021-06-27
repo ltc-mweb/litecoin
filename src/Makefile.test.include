@@ -165,6 +165,7 @@ BITCOIN_TESTS += \
   libmw/test/tests/consensus/Test_Weight.cpp \
   libmw/test/tests/crypto/Test_AddCommitments.cpp \
   libmw/test/tests/crypto/Test_AggSig.cpp \
+  libmw/test/tests/crypto/Test_Keys.cpp \
   libmw/test/tests/crypto/Test_RangeProofs.cpp \
   libmw/test/tests/db/Test_LeafDB.cpp \
   libmw/test/tests/mmr/Test_Index.cpp \
@@ -189,6 +190,7 @@ BITCOIN_TESTS += \
   libmw/test/tests/node/Test_BlockBuilder.cpp \
   libmw/test/tests/node/Test_MineChain.cpp \
   libmw/test/tests/node/Test_Reorg.cpp \
+  libmw/test/tests/node/validation/Test_BlockValidator.cpp \
   libmw/test/tests/wallet/Test_GetStealthAddress.cpp
 
 test_test_litecoin_SOURCES = $(BITCOIN_TEST_SUITE) $(BITCOIN_TESTS) $(JSON_TEST_FILES) $(RAW_TEST_FILES)

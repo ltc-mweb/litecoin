@@ -33,7 +33,7 @@ bool Bulletproofs::BatchVerify(const std::vector<ProofData>& proofs)
     {
         auto cache_writer = CACHE.Write();
         if (!cache_writer->Cached(proof.commitment) || proof != cache_writer->Get(proof.commitment)) {
-            secpCommitments.push_back(ConversionUtil(BP_CONTEXT).ToSecp256k1(proof.commitment));
+            secpCommitments.push_back(ConversionUtil::ToSecp256k1(proof.commitment));
             bulletproofPointers.emplace_back(proof.pRangeProof->data());
 
             if (!proof.extraData.empty()) {
@@ -146,7 +146,7 @@ std::unique_ptr<RewoundProof> Bulletproofs::Rewind(
     const std::vector<uint8_t>& extraData,
     const SecretKey& nonce)
 {
-    secp256k1_pedersen_commitment secpCommitment = ConversionUtil(BP_CONTEXT).ToSecp256k1(commitment);
+    secp256k1_pedersen_commitment secpCommitment = ConversionUtil::ToSecp256k1(commitment);
 
     uint64_t value;
     SecretKey blindingFactor;

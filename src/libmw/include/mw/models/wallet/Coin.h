@@ -28,7 +28,7 @@ struct Coin : public Traits::ISerializable {
 
     // The private key needed in order to spend the coin.
     // May be empty for watch-only wallets.
-    boost::optional<BlindingFactor> key;
+    boost::optional<SecretKey> key;
 
     // The blinding factor needed in order to spend the coin.
     // May be empty for watch-only wallets.

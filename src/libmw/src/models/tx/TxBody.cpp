@@ -110,8 +110,7 @@ void TxBody::Validate() const
     // Verify kernel exists with matching hash for each owner sig
     std::unordered_set<mw::Hash> kernel_hashes;
     std::transform(
-        m_kernels.cbegin(), m_kernels.cend(),
-        std::inserter(kernel_hashes, kernel_hashes.end()),
+        m_kernels.cbegin(), m_kernels.cend(), std::inserter(kernel_hashes, kernel_hashes.end()),
         [](const Kernel& kernel) { return kernel.GetHash(); }
     );
 
@@ -126,23 +125,20 @@ void TxBody::Validate() const
     //
     std::vector<SignedMessage> signatures;
     std::transform(
-        m_kernels.cbegin(), m_kernels.cend(),
-        std::back_inserter(signatures),
+        m_kernels.cbegin(), m_kernels.cend(), std::back_inserter(signatures),
         [](const Kernel& kernel) {
-            PublicKey public_key = Crypto::ToPublicKey(kernel.GetCommitment());
+            PublicKey public_key = PublicKey::From(kernel.GetCommitment());
             return SignedMessage{ kernel.GetSignatureMessage(), public_key, kernel.GetSignature() };
         }
     );
 
     std::transform(
-        m_inputs.cbegin(), m_inputs.cend(),
-        std::back_inserter(signatures),
+        m_inputs.cbegin(), m_inputs.cend(), std::back_inserter(signatures),
         [](const Input& input) { return input.BuildSignedMsg(); }
     );
 
     std::transform(
-        m_outputs.cbegin(), m_outputs.cend(),
-        std::back_inserter(signatures),
+        m_outputs.cbegin(), m_outputs.cend(), std::back_inserter(signatures),
         [](const Output& output) { return output.BuildSignedMsg(); }
     );
 
@@ -157,8 +153,7 @@ void TxBody::Validate() const
     //
     std::vector<ProofData> rangeProofs;
     std::transform(
-        m_outputs.cbegin(), m_outputs.cend(),
-        std::back_inserter(rangeProofs),
+        m_outputs.cbegin(), m_outputs.cend(), std::back_inserter(rangeProofs),
         [](const Output& output) { return output.BuildProofData(); }
     );
     if (!Bulletproofs::BatchVerify(rangeProofs)) {

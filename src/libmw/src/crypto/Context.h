@@ -26,8 +26,7 @@ public:
     {
         const SecretKey randomSeed = Random::CSPRNG<32>();
         const int randomizeResult = secp256k1_context_randomize(m_pContext, randomSeed.data());
-        if (randomizeResult != 1)
-        {
+        if (randomizeResult != 1) {
             ThrowCrypto("Context randomization failed.");
         }
 

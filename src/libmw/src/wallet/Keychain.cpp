@@ -1,4 +1,5 @@
 #include <mw/wallet/Keychain.h>
+#include <mw/crypto/Blinds.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/common/Logger.h>
 #include <mw/models/tx/OutputMask.h>
@@ -43,13 +44,13 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
         return false;
     }
 
-    SecretKey private_key = Crypto::AddPrivateKeys(
-        Hashed(EHashTag::OUT_KEY, t),
-        GetSpendKey(index)
-    );
+    SecretKey private_key = Blinds()
+        .Add(Hashed(EHashTag::OUT_KEY, t))
+        .Add(GetSpendKey(index))
+        .ToKey();
 
     coin.address_index = index;
-    coin.key = boost::make_optional(BlindingFactor(private_key.data()));
+    coin.key = boost::make_optional(std::move(private_key));
     coin.blind = boost::make_optional(mask.GetRawBlind());
     coin.amount = value;
     coin.commitment = output.GetCommitment();
@@ -77,7 +78,7 @@ SecretKey Keychain::GetSpendKey(const uint32_t index) const
         .Append(m_scanSecret)
         .hash();
 
-    return Crypto::AddPrivateKeys(m_spendSecret, mi);
+    return Blinds().Add(m_spendSecret).Add(mi).ToKey();
 }
 
 bool Keychain::IsSpendPubKey(const PublicKey& spend_pubkey, uint32_t& index_out) const

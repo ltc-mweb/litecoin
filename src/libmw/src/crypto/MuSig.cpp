@@ -21,8 +21,7 @@ SecretKey MuSig::GenerateSecureNonce()
         nonce.data(),
         seed.data()
     );
-    if (result != 1)
-    {
+    if (result != 1) {
         ThrowCrypto_F("secp256k1_aggsig_export_secnonce_single failed with error: {}", result);
     }
 
@@ -36,8 +35,8 @@ CompactSignature MuSig::CalculatePartial(
     const PublicKey& sumPubNonces,
     const mw::Hash& message)
 {
-    secp256k1_pubkey pubKeyForE = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(sumPubKeys);
-    secp256k1_pubkey pubNoncesForE = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(sumPubNonces);
+    secp256k1_pubkey pubKeyForE = ConversionUtil::ToSecp256k1(sumPubKeys);
+    secp256k1_pubkey pubNoncesForE = ConversionUtil::ToSecp256k1(sumPubNonces);
 
     const SecretKey randomSeed = Random::CSPRNG<32>();
 
@@ -54,12 +53,11 @@ CompactSignature MuSig::CalculatePartial(
         &pubKeyForE,
         randomSeed.data()
     );
-    if (signedResult != 1)
-    {
+    if (signedResult != 1) {
         ThrowCrypto("Failed to calculate partial signature.");
     }
 
-    return ConversionUtil(MUSIG_CONTEXT).ToCompact(signature);
+    return ConversionUtil::ToCompact(signature);
 }
 
 bool MuSig::VerifyPartial(
@@ -69,11 +67,11 @@ bool MuSig::VerifyPartial(
     const PublicKey& sumPubNonces,
     const mw::Hash& message)
 {
-    secp256k1_ecdsa_signature signature = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(partialSignature);
+    secp256k1_ecdsa_signature signature = ConversionUtil::ToSecp256k1(partialSignature);
 
-    secp256k1_pubkey pubkey = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(publicKey);
-    secp256k1_pubkey sumPubKey = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(sumPubKeys);
-    secp256k1_pubkey sumNoncesPubKey = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(sumPubNonces);
+    secp256k1_pubkey pubkey = ConversionUtil::ToSecp256k1(publicKey);
+    secp256k1_pubkey sumPubKey = ConversionUtil::ToSecp256k1(sumPubKeys);
+    secp256k1_pubkey sumNoncesPubKey = ConversionUtil::ToSecp256k1(sumPubNonces);
 
     const int verifyResult = secp256k1_aggsig_verify_single(
         MUSIG_CONTEXT.Read()->Get(),
@@ -95,9 +93,9 @@ Signature MuSig::Aggregate(
 {
     assert(!signatures.empty());
 
-    secp256k1_pubkey pubNonces = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(sumPubNonces);
+    secp256k1_pubkey pubNonces = ConversionUtil::ToSecp256k1(sumPubNonces);
 
-    std::vector<secp256k1_ecdsa_signature> parsedSignatures = ConversionUtil(MUSIG_CONTEXT).ToSecp256k1(signatures);
+    std::vector<secp256k1_ecdsa_signature> parsedSignatures = ConversionUtil::ToSecp256k1(signatures);
     std::vector<secp256k1_ecdsa_signature*> signaturePtrs = VectorUtil::ToPointerVec(parsedSignatures);
 
     secp256k1_ecdsa_signature aggregatedSignature;
@@ -108,8 +106,7 @@ Signature MuSig::Aggregate(
         signaturePtrs.size(),
         &pubNonces
     );
-    if (result != 1)
-    {
+    if (result != 1) {
         ThrowCrypto("Failed to aggregate signatures");
     }
 

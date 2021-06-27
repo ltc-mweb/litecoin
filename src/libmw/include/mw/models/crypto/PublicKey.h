@@ -40,6 +40,8 @@ public:
     // Factory
     //
     static PublicKey From(const SecretKey& key);
+    static PublicKey From(const Commitment& commitment);
+    static PublicKey Random();
 
     const BigInt<33>& GetBigInt() const { return m_compressed; }
     std::array<uint8_t, 33> array() const { return m_compressed.ToArray(); }

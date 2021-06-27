@@ -28,8 +28,8 @@ TxBuilder& TxBuilder::AddInput(
     m_kernelOffset.Sub(blind);
     m_ownerOffset.Sub(privkey);
 
-    Commitment commitment = Crypto::CommitBlinded(amount, blind);
-    PublicKey pubkey = Crypto::CalculatePublicKey(privkey.GetBigInt());
+    Commitment commitment = Commitment::Blinded(blind, amount);
+    PublicKey pubkey = PublicKey::From(privkey);
     Signature sig = Schnorr::Sign(privkey.data(), InputMessage());
     m_inputs.push_back(Input{ std::move(commitment), std::move(pubkey), std::move(sig) });
     m_amount += (int64_t)amount;

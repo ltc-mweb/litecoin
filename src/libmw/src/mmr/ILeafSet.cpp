@@ -26,7 +26,7 @@ bool ILeafSet::Contains(const LeafIndex& idx) const noexcept
     return GetByte(idx.Get() / 8) & BitToByte(idx.Get() % 8);
 }
 
-mw::Hash ILeafSet::Root() const
+mw::Hash ILeafSet::Root() const // MW: TODO - Is this efficient enough, or do we need a better way to commit to the leafset?
 {
     uint64_t numBytes = (m_nextLeafIdx.Get() + 7) / 8;
 

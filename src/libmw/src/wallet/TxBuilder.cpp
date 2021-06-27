@@ -66,12 +66,15 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     );
 
     // FUTURE: Only necessary when none of the addresses are owned by this wallet?
-    BlindingFactor owner_sig_key = Random::CSPRNG<32>();
-    SignedMessage owner_sig = Schnorr::SignMessage(owner_sig_key.GetBigInt(), kernel.GetHash());
+    // MW: TODO - OwnerSignature won't be enough for peg-ins with no MWEB inputs or MWEB change.
+    // A better ruleset would be:
+    // 1. Include change when none of the MWEB inputs are your previous change (i.e. self-generated blinds)
+    SecretKey owner_sig_key = Random::CSPRNG<32>();
+    SignedMessage owner_sig = Schnorr::SignMessage(owner_sig_key, kernel.GetHash());
 
     // Total owner offset is split between raw owner_offset and the owner_sig's key.
     // sum(output.sender_key) - sum(input.key) = owner_offset + sum(owner_sig.key)
-    std::vector<BlindingFactor> input_keys = WalletUtil::GetKeys(input_coins);
+    std::vector<SecretKey> input_keys = WalletUtil::GetKeys(input_coins);
     BlindingFactor owner_offset = Blinds()
         .Add(outputs.total_key)
         .Sub(input_keys)
@@ -95,8 +98,7 @@ TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& re
     Blinds output_keys;
     std::vector<Output> outputs;
     std::transform(
-        recipients.cbegin(), recipients.cend(),
-        std::back_inserter(outputs),
+        recipients.cbegin(), recipients.cend(), std::back_inserter(outputs),
         [&output_blinds, &output_keys](const mw::Recipient& recipient) {
             BlindingFactor blind;
             SecretKey ephemeral_key = Random::CSPRNG<32>();
@@ -115,7 +117,7 @@ TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& re
 
     return TxBuilder::Outputs{
         output_blinds.Total(),
-        output_keys.Total(),
+        SecretKey(output_keys.Total().data()),
         std::move(outputs)
     };
 }

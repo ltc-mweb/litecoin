@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Crypto.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/crypto/Random.h>
 
 #include <test_framework/TestMWEB.h>
@@ -15,14 +15,14 @@ BOOST_AUTO_TEST_CASE(AddCommitment)
     {
         BlindingFactor blind_a = Random::CSPRNG<32>().GetBigInt();
 
-        Commitment commit_a = Crypto::CommitBlinded(3, blind_a);
-        Commitment commit_b = Crypto::CommitTransparent(2);
+        Commitment commit_a = Commitment::Blinded(blind_a, 3);
+        Commitment commit_b = Commitment::Transparent(2);
 
-        Commitment sum = Crypto::AddCommitments(
+        Commitment sum = Pedersen::AddCommitments(
             std::vector<Commitment>({ commit_a, commit_b }),
             std::vector<Commitment>()
         );
-        Commitment expected = Crypto::CommitBlinded(5, blind_a);
+        Commitment expected = Commitment::Blinded(blind_a, 5);
 
         BOOST_REQUIRE(sum == expected);
     }
@@ -32,15 +32,15 @@ BOOST_AUTO_TEST_CASE(AddCommitment)
         BlindingFactor blind_a = Random::CSPRNG<32>().GetBigInt();
         BlindingFactor blind_b = Random::CSPRNG<32>().GetBigInt();
 
-        Commitment commit_a = Crypto::CommitBlinded(3, blind_a);
-        Commitment commit_b = Crypto::CommitBlinded(2, blind_b);
-        Commitment sum = Crypto::AddCommitments(
+        Commitment commit_a = Pedersen::Commit(3, blind_a);
+        Commitment commit_b = Pedersen::Commit(2, blind_b);
+        Commitment sum = Pedersen::AddCommitments(
             std::vector<Commitment>({ commit_a, commit_b }),
             std::vector<Commitment>()
         );
 
-        BlindingFactor blind_c = Crypto::AddBlindingFactors({ blind_a, blind_b });
-        Commitment commit_c = Crypto::CommitBlinded(5, blind_c);
+        BlindingFactor blind_c = Pedersen::AddBlindingFactors({ blind_a, blind_b });
+        Commitment commit_c = Pedersen::Commit(5, blind_c);
         BOOST_REQUIRE(commit_c == sum);
     }
 
@@ -49,15 +49,15 @@ BOOST_AUTO_TEST_CASE(AddCommitment)
         BlindingFactor blind_a = Random::CSPRNG<32>().GetBigInt();
         BlindingFactor blind_b = Random::CSPRNG<32>().GetBigInt();
 
-        Commitment commit_a = Crypto::CommitBlinded(3, blind_a);
-        Commitment commit_b = Crypto::CommitBlinded(2, blind_b);
-        Commitment difference = Crypto::AddCommitments(
+        Commitment commit_a = Commitment::Blinded(blind_a, 3);
+        Commitment commit_b = Commitment::Blinded(blind_b, 2);
+        Commitment difference = Pedersen::AddCommitments(
             std::vector<Commitment>({ commit_a }),
             std::vector<Commitment>({ commit_b })
         );
 
-        BlindingFactor blind_c = Crypto::AddBlindingFactors({ blind_a }, { blind_b });
-        Commitment commit_c = Crypto::CommitBlinded(1, blind_c);
+        BlindingFactor blind_c = Pedersen::AddBlindingFactors({blind_a}, {blind_b});
+        Commitment commit_c = Commitment::Blinded(blind_c, 1);
         BOOST_REQUIRE(commit_c == difference);
     }
 }

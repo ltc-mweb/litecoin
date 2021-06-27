@@ -109,7 +109,6 @@ libmw_a_SOURCES = \
 	libmw/src/common/Logger.cpp \
 	libmw/src/crypto/Bulletproofs.cpp \
 	libmw/src/crypto/ConversionUtil.cpp \
-	libmw/src/crypto/Crypto.cpp \
 	libmw/src/crypto/Hasher.cpp \
 	libmw/src/crypto/MuSig.cpp \
 	libmw/src/crypto/Pedersen.cpp \
@@ -135,7 +134,6 @@ libmw_a_SOURCES = \
 	libmw/src/models/tx/Transaction.cpp \
 	libmw/src/models/tx/TxBody.cpp \
 	libmw/src/node/validation/BlockValidator.cpp \
-	libmw/src/node/validation/StateValidator.cpp \
 	libmw/src/node/BlockBuilder.cpp \
 	libmw/src/node/CoinsViewCache.cpp \
 	libmw/src/node/CoinsViewDB.cpp \

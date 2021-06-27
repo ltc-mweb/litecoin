@@ -20,7 +20,7 @@ public:
     );
 
     static SignedMessage SignMessage(
-        const BigInt<32>& secretKey,
+        const SecretKey& secretKey,
         const mw::Hash& message
     );
 

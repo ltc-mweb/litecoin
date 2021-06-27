@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mw/crypto/Pedersen.h>
 #include <mw/models/tx/Transaction.h>
 #include <cassert>
 
@@ -62,8 +63,8 @@ public:
         // memory duplication and hashtable lookups slowing down mining.
 
         // Sum the offsets up to give us an aggregate offsets for the transaction.
-        BlindingFactor kernel_offset = Crypto::AddBlindingFactors(kernel_offsets);
-        BlindingFactor owner_offset = Crypto::AddBlindingFactors(owner_offsets);
+        BlindingFactor kernel_offset = Pedersen::AddBlindingFactors(kernel_offsets);
+        BlindingFactor owner_offset = Pedersen::AddBlindingFactors(owner_offsets);
 
         // Build a new aggregate tx
         return mw::Transaction::Create(

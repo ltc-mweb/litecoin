@@ -4,6 +4,7 @@
 
 #include <mw/consensus/KernelSumValidator.h>
 #include <mw/consensus/Aggregation.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/crypto/Random.h>
 #include <mw/node/CoinsView.h>
 
@@ -97,7 +98,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlock)
     mw::Transaction::CPtr pAggregated = Aggregation::Aggregate({ tx1, tx2, tx3 });
     KernelSumValidator::ValidateForTx(*pAggregated); // Sanity check
 
-    BlindingFactor total_offset = Crypto::AddBlindingFactors({ prev_total_offset, pAggregated->GetKernelOffset() });
+    BlindingFactor total_offset = Pedersen::AddBlindingFactors({ prev_total_offset, pAggregated->GetKernelOffset() });
 
     KernelSumValidator::ValidateForBlock(pAggregated->GetBody(), total_offset, prev_total_offset);
 }

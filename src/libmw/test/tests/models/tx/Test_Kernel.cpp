@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Schnorr.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/Kernel.h>
@@ -50,7 +49,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
         BOOST_REQUIRE(kernel.GetPegOut() == boost::none);
         BOOST_REQUIRE(kernel.GetLockHeight() == 0);
         BOOST_REQUIRE(kernel.GetFee() == fee);
-        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+        BOOST_REQUIRE(kernel.GetCommitment() == Commitment::Blinded(excess_blind, 0));
         BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
     }
 }
@@ -101,7 +100,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 //        BOOST_REQUIRE(kernel.GetPeggedOut() == 0);
 //        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
 //        BOOST_REQUIRE(kernel.GetFee() == 0);
-//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetCommitment() == Commitment::Blinded(excess_blind, 0));
 //        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //    }
 //}
@@ -156,7 +155,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 //        BOOST_REQUIRE(kernel.GetPeggedOut() == amount);
 //        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
 //        BOOST_REQUIRE(kernel.GetFee() == fee);
-//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetCommitment() == Commitment::Blinded(excess_blind, 0));
 //        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //    }
 //}
@@ -208,7 +207,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 //        BOOST_REQUIRE(!kernel.GetPegOut().has_value());
 //        BOOST_REQUIRE(kernel.GetLockHeight() == lockHeight);
 //        BOOST_REQUIRE(kernel.GetFee() == fee);
-//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetCommitment() == Commitment::Blinded(excess_blind, 0));
 //        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //    }
 //}
@@ -220,7 +219,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 //    BlindingFactor excess_blind(Random::CSPRNG<32>());
 //    std::vector<uint8_t> extraData = { 1, 2, 3 };
 //
-//    Commitment excess_commit = Crypto::CommitBlinded(0, excess_blind);
+//    Commitment excess_commit = Commitment::Blinded(excess_blind, 0);
 //    mw::Hash message_hash = Hasher()
 //        .Append<uint8_t>(features)
 //        .Append<uint64_t>(fee)
@@ -267,7 +266,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel)
 //        BOOST_REQUIRE(kernel.GetPeggedOut() == 0);
 //        BOOST_REQUIRE(kernel.GetLockHeight() == 0);
 //        BOOST_REQUIRE(kernel.GetFee() == fee);
-//        BOOST_REQUIRE(kernel.GetCommitment() == Crypto::CommitBlinded(0, excess_blind));
+//        BOOST_REQUIRE(kernel.GetCommitment() == Commitment::Blinded(excess_blind, 0));
 //        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
 //        BOOST_REQUIRE(kernel.GetExtraData() == extraData);
 //        BOOST_REQUIRE(kernel.GetSignatureMessage() == message_hash);

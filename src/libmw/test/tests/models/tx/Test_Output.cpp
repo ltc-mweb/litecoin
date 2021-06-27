@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/crypto/Blinds.h>
 #include <mw/crypto/Bulletproofs.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/crypto/Random.h>
@@ -79,7 +80,10 @@ BOOST_AUTO_TEST_CASE(Create)
         BOOST_REQUIRE(output.Ke() == receiver_addr.B().Mul(s));
 
         // Make sure receiver can generate the spend key
-        SecretKey spend_key = Crypto::AddPrivateKeys(b, Hashed(EHashTag::OUT_KEY, t));
+        SecretKey spend_key = Blinds()
+            .Add(b)
+            .Add(Hashed(EHashTag::OUT_KEY, t))
+            .ToKey();
         BOOST_REQUIRE(output.GetReceiverPubKey() == PublicKey::From(spend_key));
     }
 }

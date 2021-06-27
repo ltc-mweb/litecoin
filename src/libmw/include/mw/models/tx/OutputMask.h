@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Hasher.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/SecretKey.h>
 
@@ -26,7 +26,7 @@ public:
     }
 
     const BlindingFactor& GetRawBlind() const noexcept { return blind; }
-    BlindingFactor BlindSwitch(const uint64_t value) const { return Crypto::BlindSwitch(blind, value); }
+    BlindingFactor BlindSwitch(const uint64_t value) const { return Pedersen::BlindSwitch(blind, value); }
     Commitment SwitchCommit(const uint64_t value) const { return Commitment::Switch(blind, value); }
     BigInt<16> MaskNonce(const BigInt<16>& nonce) const { return nonce ^ nonce_mask; }
     uint64_t MaskValue(const uint64_t value) const { return value ^ value_mask; }

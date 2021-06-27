@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/models/wallet/StealthAddress.h>
@@ -22,7 +21,7 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
         StealthAddress::Random(),
         amount
     );
-    Commitment commit = Crypto::CommitBlinded(amount, blind);
+    Commitment commit = Commitment::Blinded(blind, amount);
 
     int32_t blockHeight = 20;
     mmr::LeafIndex leafIndex = mmr::LeafIndex::At(5);

@@ -3,7 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/crypto/Bulletproofs.h>
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 
 #include <test_framework/TestMWEB.h>
@@ -14,7 +13,7 @@ BOOST_AUTO_TEST_CASE(RangeProofs)
 {
     const uint64_t value = 123;
     BlindingFactor blind = Random::CSPRNG<32>();
-    Commitment commit = Crypto::CommitBlinded(value, blind);
+    Commitment commit = Commitment::Blinded(blind, value);
     SecretKey nonce = Random::CSPRNG<32>();
     SecretKey nonce2 = Random::CSPRNG<32>();
     ProofMessage message = Random::CSPRNG<20>().GetBigInt();

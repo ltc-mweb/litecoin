@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mw/exceptions/ValidationException.h>
-#include <mw/crypto/Crypto.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/models/tx/TxBody.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/models/tx/UTXO.h>
@@ -23,8 +23,7 @@ public:
     {
         // Sum all utxo commitments - expected supply.
         int64_t total_mweb_supply = 0;
-        for (const Kernel& kernel : kernels)
-        {
+        for (const Kernel& kernel : kernels) {
             total_mweb_supply += kernel.GetSupplyChange();
 
             // Total supply can never go below 0
@@ -49,7 +48,7 @@ public:
     {
         BlindingFactor block_offset = total_offset;
         if (!prev_total_offset.IsZero()) {
-            block_offset = Crypto::AddBlindingFactors({ block_offset }, { prev_total_offset });
+            block_offset = Pedersen::AddBlindingFactors({block_offset}, {prev_total_offset});
         }
 
         ValidateSums(
@@ -81,22 +80,22 @@ private:
         const int64_t coins_added)
     {
         // Calculate UTXO nonce sum
-        Commitment sum_utxo_commitment = Crypto::AddCommitments(output_commits, input_commits);
+        Commitment sum_utxo_commitment = Pedersen::AddCommitments(output_commits, input_commits);
         if (coins_added > 0) {
-            sum_utxo_commitment = Crypto::AddCommitments(
-                { sum_utxo_commitment }, { Crypto::CommitTransparent(coins_added) }
+            sum_utxo_commitment = Pedersen::AddCommitments(
+                { sum_utxo_commitment }, { Pedersen::CommitTransparent(coins_added) }
             );
         } else if (coins_added < 0) {
-            sum_utxo_commitment = Crypto::AddCommitments(
-                { sum_utxo_commitment, Crypto::CommitTransparent(std::abs(coins_added)) }
+            sum_utxo_commitment = Pedersen::AddCommitments(
+                { sum_utxo_commitment, Commitment::Transparent(std::abs(coins_added)) }
             );
         }
 
         // Calculate total kernel excess
-        Commitment sum_excess_commitment = Crypto::AddCommitments(kernel_commits);
+        Commitment sum_excess_commitment = Pedersen::AddCommitments(kernel_commits);
         if (!offset.IsZero()) {
-            sum_excess_commitment = Crypto::AddCommitments(
-                { sum_excess_commitment, Crypto::CommitBlinded((uint64_t)0, offset) }
+            sum_excess_commitment = Pedersen::AddCommitments(
+                { sum_excess_commitment, Commitment::Blinded(offset, 0) }
             );
         }
 

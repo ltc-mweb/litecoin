@@ -1,18 +1,18 @@
 #include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/BlindingFactor.h>
-#include <mw/crypto/Crypto.h>
+#include <mw/crypto/Pedersen.h>
 
 Commitment Commitment::Switch(const BlindingFactor& blind, const uint64_t value)
 {
-    return Crypto::CommitBlinded(value, Crypto::BlindSwitch(blind, value));
+    return Pedersen::Commit(value, Pedersen::BlindSwitch(blind, value));
 }
 
 Commitment Commitment::Blinded(const BlindingFactor& blind, const uint64_t value)
 {
-    return Crypto::CommitBlinded(value, blind);
+    return Pedersen::Commit(value, blind);
 }
 
 Commitment Commitment::Transparent(const uint64_t value)
 {
-    return Crypto::CommitTransparent(value);
+    return Pedersen::CommitTransparent(value);
 }

@@ -1,7 +1,6 @@
 #include <mw/crypto/Schnorr.h>
 #include "Context.h"
 #include "ConversionUtil.h"
-#include "PublicKeys.h"
 
 #include <caches/Cache.h>
 #include <mw/common/Logger.h>
@@ -32,14 +31,14 @@ Signature Schnorr::Sign(
         ThrowCrypto("Failed to sign message.");
     }
 
-    return ConversionUtil(SCHNORR_CONTEXT).ToSignature(signature);
+    return ConversionUtil::ToSignature(signature);
 }
 
 SignedMessage Schnorr::SignMessage(
-    const BigInt<32>& secretKey,
+    const SecretKey& secretKey,
     const mw::Hash& message)
 {
-    PublicKey pubkey = PublicKeys(SCHNORR_CONTEXT).CalculatePublicKey(secretKey);
+    PublicKey pubkey = PublicKey::From(secretKey);
     Signature sig = Sign(secretKey.data(), message);
 
     return SignedMessage(message, pubkey, sig);
@@ -55,7 +54,7 @@ bool Schnorr::Verify(
         return true;
     }
 
-    secp256k1_pubkey parsedPubKey = ConversionUtil(SCHNORR_CONTEXT).ToSecp256k1(sumPubKeys);
+    secp256k1_pubkey parsedPubKey = ConversionUtil::ToSecp256k1(sumPubKeys);
 
     const int verifyResult = secp256k1_aggsig_verify_single(
         SCHNORR_CONTEXT.Read()->Get(),
@@ -67,7 +66,6 @@ bool Schnorr::Verify(
         nullptr,
         false
     );
-
     if (verifyResult == 1) {
         CACHE.Write()->Put(signed_message, true);
     }
@@ -82,15 +80,14 @@ bool Schnorr::BatchVerify(const std::vector<SignedMessage>& signatures)
     std::vector<secp256k1_schnorrsig> parsedSignatures;
     std::vector<const uint8_t*> messageData;
 
-    ConversionUtil converter(SCHNORR_CONTEXT);
     for (const SignedMessage& signed_message : signatures) {
         if (CACHE.Write()->Cached(signed_message)) {
             continue;
         }
 
         unverified_messages.push_back(signed_message);
-        parsedPubKeys.push_back(converter.ToSecp256k1(signed_message.GetPublicKey()));
-        parsedSignatures.push_back(converter.ToSecp256k1(signed_message.GetSignature()));
+        parsedPubKeys.push_back(ConversionUtil::ToSecp256k1(signed_message.GetPublicKey()));
+        parsedSignatures.push_back(ConversionUtil::ToSecp256k1(signed_message.GetSignature()));
         messageData.push_back(signed_message.GetMsgHash().data());
     }
 

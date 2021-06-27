@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mw/common/Macros.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/consensus/Aggregation.h>
@@ -19,10 +20,7 @@ class Miner
 {
 public:
     Miner(const FilePath& datadir)
-        : m_datadir(datadir)
-    {
-
-    }
+        : m_datadir(datadir) { }
 
     MinedBlock MineBlock(const uint64_t height, const std::vector<Tx>& txs)
     {
@@ -39,7 +37,7 @@ public:
 
         auto kernel_offset = pTransaction->GetKernelOffset();
         if (!m_blocks.empty()) {
-            kernel_offset = Crypto::AddBlindingFactors({ kernel_offset, m_blocks.back().GetKernelOffset() });
+            kernel_offset = Pedersen::AddBlindingFactors({ kernel_offset, m_blocks.back().GetKernelOffset() });
         }
 
         auto owner_offset = pTransaction->GetOwnerOffset();

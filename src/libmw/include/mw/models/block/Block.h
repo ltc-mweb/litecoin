@@ -25,7 +25,7 @@ public:
     // Constructors
     //
     Block(const mw::Header::CPtr& pHeader, TxBody body)
-        : m_pHeader(pHeader), m_body(std::move(body)), m_validated(false) { }
+        : m_pHeader(pHeader), m_body(std::move(body)) { }
     Block(const Block& other) = default;
     Block(Block&& other) noexcept = default;
     Block() = default;
@@ -80,13 +80,9 @@ public:
     //
     void Validate() const;
 
-    bool WasValidated() const noexcept { return m_validated; }
-    void MarkAsValidated() const noexcept { m_validated = true; }
-
 private:
     mw::Header::CPtr m_pHeader;
     TxBody m_body;
-    mutable bool m_validated;
 };
 
 END_NAMESPACE

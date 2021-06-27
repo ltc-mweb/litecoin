@@ -2,9 +2,9 @@
 
 #include <mw/common/Macros.h>
 #include <mw/common/Traits.h>
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/models/crypto/BlindingFactor.h>
+#include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/Signature.h>
 #include <mw/models/tx/PegOutCoin.h>
 #include <mw/models/tx/KernelType.h>
@@ -135,7 +135,7 @@ public:
     void Unserialize(Stream& s)
     {
         uint8_t features_byte;
-        s >> features_byte;
+        s >> features_byte; // MW: TODO - Verify it's less than 32? Maybe only check in IsStandardTx?
 
         if (features_byte & FEE_FEATURE_BIT) {
             m_fee = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s);
