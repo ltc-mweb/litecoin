@@ -53,20 +53,7 @@ void CTxMemPoolEntry::UpdateLockPoints(const LockPoints& lp)
 
 size_t CTxMemPoolEntry::GetTxSize() const
 {
-    if (tx->vin.empty() && tx->vout.empty() && tx->HasMWEBTx()) {
-        return 0;
-    }
-
-    // MW: TODO - Verify this logic. Maybe just use max input & output weights rather than building the actual pegouts?
-    // Move this to a reusable location
-    size_t weight = nTxWeight + (GetTransactionInputWeight(CTxIn()) * tx->mweb_tx.GetPegIns().size());
-
-    for (const PegOutCoin& pegout : tx->mweb_tx.GetPegOuts()) {
-        CTxOut pegout_output(pegout.GetAmount(), pegout.GetScriptPubKey());
-        weight += (::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR);
-    }
-
-    return GetVirtualTransactionSize(weight, sigOpCost);
+    return GetVirtualTransactionSize(nTxWeight, sigOpCost);
 }
 
 // Update the given tx for any in-mempool descendants.

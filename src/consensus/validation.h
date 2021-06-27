@@ -95,7 +95,21 @@ public:
 // weight = (stripped_size * 3) + total_size.
 static inline int64_t GetTransactionWeight(const CTransaction& tx)
 {
-    return ::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB) * (WITNESS_SCALE_FACTOR - 1) + ::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_NO_MWEB);
+    // MWEB: Maybe just use max output weights rather than building the actual pegouts?
+    size_t pegout_weight = 0;
+    for (const PegOutCoin& pegout : tx.mweb_tx.GetPegOuts()) {
+        CTxOut pegout_output(pegout.GetAmount(), pegout.GetScriptPubKey());
+        pegout_weight += ::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR;
+    }
+
+    if (tx.vin.empty() && tx.vout.empty() && tx.HasMWEBTx()) {
+        return pegout_weight;
+    }
+
+    size_t pegin_weight = ::GetSerializeSize(CTxIn(), PROTOCOL_VERSION) * tx.mweb_tx.GetPegIns().size() * WITNESS_SCALE_FACTOR;
+    size_t weight = ::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB) * (WITNESS_SCALE_FACTOR - 1) + ::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_NO_MWEB);
+    
+    return weight + pegout_weight + pegin_weight;
 }
 static inline int64_t GetBlockWeight(const CBlock& block)
 {
