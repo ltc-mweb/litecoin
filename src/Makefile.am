@@ -642,7 +642,6 @@ include_HEADERS = script/bitcoinconsensus.h
 libbitcoinconsensus_la_SOURCES = \
   $(crypto_libbitcoin_crypto_base_a_SOURCES) \
   $(libbitcoin_consensus_a_SOURCES) \
-  libmw/src/crypto/Hasher.cpp \
   support/cleanse.cpp
 
 if GLIBC_BACK_COMPAT

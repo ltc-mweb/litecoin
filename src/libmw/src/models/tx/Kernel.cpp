@@ -43,15 +43,15 @@ mw::Hash Kernel::GetSignatureMessage(
     const boost::optional<int32_t>& lock_height,
     const std::vector<uint8_t>& extra_data)
 {
-    CHashWriter s(SER_GETHASH, PROTOCOL_VERSION);
+    Hasher s;
     s << features;
 
     if (fee) {
-        ::WriteVarInt<CHashWriter, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, fee.value());
+        ::WriteVarInt<Hasher, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, fee.value());
     }
 
     if (pegin_amount) {
-        ::WriteVarInt<CHashWriter, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, pegin_amount.value());
+        ::WriteVarInt<Hasher, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, pegin_amount.value());
     }
 
     if (pegout) {
@@ -59,12 +59,12 @@ mw::Hash Kernel::GetSignatureMessage(
     }
 
     if (lock_height) {
-        ::WriteVarInt<CHashWriter, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s, lock_height.value());
+        ::WriteVarInt<Hasher, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s, lock_height.value());
     }
 
     if (!extra_data.empty()) {
         s << extra_data;
     }
 
-    return mw::Hash(s.GetHash().begin());
+    return s.hash();
 }

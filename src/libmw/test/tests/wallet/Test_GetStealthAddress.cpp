@@ -14,8 +14,8 @@ BOOST_AUTO_TEST_CASE(GetStealthAddress)
     SecretKey b = BigInt<32>::FromHex("da5b685cbcdad4aabcec8f58253f8f4aa89a116659b1e5a8e3c407cc09c19738");
 
     StealthAddress address_100 = mw::Keychain(a, b, 50).GetStealthAddress(100);
-    BOOST_REQUIRE_EQUAL(address_100.A().ToHex(), "03186fefb89b5bdfe2a466058b02aa1cceff5a66225b34ac7c79893cbf2772ccfe");
-    BOOST_REQUIRE_EQUAL(address_100.B().ToHex(), "0335be5bf363be2cc892fc868135b2f8f93a867695383cff45b89e9aeee6df5869");
+    BOOST_CHECK_EQUAL(address_100.A().ToHex(), "0378091104a43ec19c2196b8fc128a084a395c62a3d591166c8e8fefc3b04a0f0d");
+    BOOST_CHECK_EQUAL(address_100.B().ToHex(), "0266a008e6831e31822d3786e54c89174b3adfda827a93da0123eab93cd99fd2a6");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

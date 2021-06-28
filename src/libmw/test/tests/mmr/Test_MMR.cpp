@@ -38,18 +38,18 @@ BOOST_AUTO_TEST_CASE(MMRTest)
 
     BOOST_REQUIRE(mmr->GetNumLeaves() == 4);
     BOOST_REQUIRE(mmr->GetNumNodes() == 7);
-    BOOST_REQUIRE_EQUAL(mmr->Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
+    BOOST_CHECK_EQUAL(mmr->Root().ToHex(), "9ab6e3c4a8594b9846b39b6beefe8f704c1de720f28426ddf3898bd4f8d6e45f");
 
     mmr->Add(leaf4);
     BOOST_REQUIRE(mmr->GetLeaf(LeafIndex::At(4)) == Leaf::Create(LeafIndex::At(4), leaf4));
     BOOST_REQUIRE(mmr->GetNumLeaves() == 5);
     BOOST_REQUIRE(mmr->GetNumNodes() == 8);
-    BOOST_REQUIRE_EQUAL(mmr->Root().ToHex(), "3b9b05f1c8fd31811131684ead63ca7de8dca35e92ae97ba1ace850a804b1f40");
+    BOOST_CHECK_EQUAL(mmr->Root().ToHex(), "376ef1612abbb461ab78f317569c9a19d054f2c928c79410d50403564b91c5f7");
 
     mmr->Rewind(4);
     BOOST_REQUIRE(mmr->GetNumLeaves() == 4);
     BOOST_REQUIRE(mmr->GetNumNodes() == 7);
-    BOOST_REQUIRE_EQUAL(mmr->Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
+    BOOST_CHECK_EQUAL(mmr->Root().ToHex(), "9ab6e3c4a8594b9846b39b6beefe8f704c1de720f28426ddf3898bd4f8d6e45f");
 }
 
 BOOST_AUTO_TEST_CASE(MMRCacheTest)
@@ -80,16 +80,16 @@ BOOST_AUTO_TEST_CASE(MMRCacheTest)
     BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(3)) == Leaf::Create(LeafIndex::At(3), leaf3));
 
     BOOST_REQUIRE(cache.GetNumLeaves() == 4);
-    BOOST_REQUIRE_EQUAL(cache.Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
+    BOOST_CHECK_EQUAL(cache.Root().ToHex(), "9ab6e3c4a8594b9846b39b6beefe8f704c1de720f28426ddf3898bd4f8d6e45f");
 
     cache.Add(leaf4);
     BOOST_REQUIRE(cache.GetLeaf(LeafIndex::At(4)) == Leaf::Create(LeafIndex::At(4), leaf4));
     BOOST_REQUIRE(cache.GetNumLeaves() == 5);
-    BOOST_REQUIRE_EQUAL(cache.Root().ToHex(), "3b9b05f1c8fd31811131684ead63ca7de8dca35e92ae97ba1ace850a804b1f40");
+    BOOST_CHECK_EQUAL(cache.Root().ToHex(), "376ef1612abbb461ab78f317569c9a19d054f2c928c79410d50403564b91c5f7");
 
     cache.Rewind(4);
     BOOST_REQUIRE(cache.GetNumLeaves() == 4);
-    BOOST_REQUIRE_EQUAL(cache.Root().ToHex(), "56a97c32569242afde58b078bf37aa9f4f0bc6c90f466ff668295b281dac88bf");
+    BOOST_CHECK_EQUAL(cache.Root().ToHex(), "9ab6e3c4a8594b9846b39b6beefe8f704c1de720f28426ddf3898bd4f8d6e45f");
 
     cache.Flush(1, nullptr);
 }

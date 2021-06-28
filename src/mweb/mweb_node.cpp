@@ -91,7 +91,7 @@ bool Node::ContextualCheckBlock(const CBlock& block, const Consensus::Params& co
     size_t next_pegin_idx = 0;
     if (IsMWEBEnabled(pindexPrev->pprev, consensus_params)) {
         const COutPoint& prev_hogex_out = pHogEx->vin[next_pegin_idx++].prevout;
-        if (prev_hogex_out.n != 0 || pindexPrev->pprev->hogex_hash != prev_hogex_out.hash) {
+        if (prev_hogex_out.n != 0 || pindexPrev->hogex_hash != prev_hogex_out.hash) {
             return state.DoS(100, false, REJECT_INVALID, "invalid-hogex-input", false, "First input of HogEx does not point to previous HogEx");
         }
     }

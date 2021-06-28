@@ -3,7 +3,7 @@
 #include <mw/common/Traits.h>
 #include <mw/models/crypto/Hash.h>
 
-#include <crypto/sha512.h>
+#include <crypto/blake3/blake3.h>
 #include <hash.h>
 
 enum class EHashTag : char
@@ -18,24 +18,50 @@ enum class EHashTag : char
 class Hasher
 {
 public:
-    Hasher() : m_writer(SER_GETHASH, 0) { }
-    Hasher(const EHashTag tag)
-        : m_writer(SER_GETHASH, 0)
+    Hasher()
     {
-        m_writer << static_cast<char>(tag);
+        blake3_hasher_init(&m_hasher);
     }
 
-    mw::Hash hash() { return mw::Hash(m_writer.GetHash().begin()); }
+    Hasher(const EHashTag tag)
+    {
+        blake3_hasher_init(&m_hasher);
+        char c_tag = static_cast<char>(tag);
+        write(&c_tag, 1);
+    }
+
+    int GetType() const { return SER_GETHASH; }
+    int GetVersion() const { return 0; }
+
+    void write(const char* pch, size_t size)
+    {
+        blake3_hasher_update(&m_hasher, pch, size);
+    }
+
+    mw::Hash hash()
+    {
+        mw::Hash hashed;
+        blake3_hasher_finalize(&m_hasher, hashed.data(), hashed.size());
+        return hashed;
+    }
 
     template <class T>
     Hasher& Append(const T& t)
     {
-        m_writer << t;
+        ::Serialize(*this, t);
         return *this;
     }
 
+    template <typename T>
+    Hasher& operator<<(const T& obj)
+    {
+        // Serialize to this stream
+        ::Serialize(*this, obj);
+        return (*this);
+    }
+
 private:
-    CHashWriter m_writer;
+    blake3_hasher m_hasher;
 };
 
 extern mw::Hash Hashed(const std::vector<uint8_t>& serialized);

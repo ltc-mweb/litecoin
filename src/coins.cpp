@@ -240,7 +240,7 @@ void CCoinsViewCache::Uncache(const OutputIndex& coin)
             cacheCoins.erase(it);
         }
     } else {
-        // MW: TODO - libmw::node::Uncache(GetMWView(), boost::get<Commitment>(coin));
+        // MW: TODO - Do we need to do anything here?
     }
 }
 
