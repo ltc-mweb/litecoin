@@ -129,7 +129,8 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     hogExTransaction.m_hogEx = true;
 
     CBlock prevBlock;
-    assert(ReadBlockFromDisk(prevBlock, pIndexPrev, Params().GetConsensus()));
+    bool read_success = ReadBlockFromDisk(prevBlock, pIndexPrev, Params().GetConsensus());
+    assert(read_success);
 
     CAmount previous_amount = 0;
 

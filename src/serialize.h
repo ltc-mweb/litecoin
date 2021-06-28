@@ -635,37 +635,6 @@ OptionalPtr<I> WrapOptionalPtr(I& n)
     return OptionalPtr<I>(n);
 }
 
-template <typename T>
-class NonEmptyVec
-{
-protected:
-    std::vector<T>& vec;
-
-public:
-    explicit NonEmptyVec(std::vector<T>& vec_in) : vec(vec_in) {}
-
-    template <typename Stream>
-    void Serialize(Stream& s) const
-    {
-        ::Serialize(s, vec);
-    }
-
-    template <typename Stream>
-    void Unserialize(Stream& s)
-    {
-        ::Unserialize(s, vec);
-        if (vec.empty()) {
-            throw std::ios_base::failure("empty vec unserialized in NonEmptyVec");
-        }
-    }
-};
-
-template <typename T>
-NonEmptyVec<T> WrapNonEmptyVec(std::vector<T>& n)
-{
-    return NonEmptyVec<T>(n);
-}
-
 
 /**
  * If none of the specialized versions above matched, default to calling member function.

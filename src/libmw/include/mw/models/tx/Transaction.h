@@ -119,6 +119,9 @@ public:
         READWRITE(m_body);
 
         if (ser_action.ForRead()) {
+            if (m_body.GetKernels().empty()) {
+                throw std::ios_base::failure("Transaction requires at least one kernel");
+            }
             m_hash = Hashed(*this);
         }
     }

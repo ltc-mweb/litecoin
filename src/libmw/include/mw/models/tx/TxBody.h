@@ -85,7 +85,7 @@ public:
     {
         READWRITE(m_inputs);
         READWRITE(m_outputs);
-        READWRITE(WrapNonEmptyVec(m_kernels));
+        READWRITE(m_kernels);
         READWRITE(m_ownerSigs);
     }
 
