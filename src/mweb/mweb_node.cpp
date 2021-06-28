@@ -23,6 +23,12 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
         return state.DoS(100, false, REJECT_INVALID, "bad-hogex", false, "HogEx missing or invalid");
     }
 
+    for (size_t i = 0; i < block.vtx.size() - 1; i++) {
+        if (block.vtx[i]->IsHogEx()) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-hogex-position", false, "hogex in wrong position");
+        }
+    }
+
     // HasMWEBTx() is true only when mweb txs being shared outside of a block (for use by mempools).
     // Blocks themselves do not store mweb txs like normal txs.
     // They are instead stored and processed separately in the mweb block.

@@ -582,21 +582,40 @@ void CTxMemPool::removeConflicts(const CTransaction &tx)
 /**
  * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
  */
-void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight)
+void CTxMemPool::removeForBlock(const CBlock& block, unsigned int nBlockHeight, DisconnectedBlockTransactions* disconnectpool)
 {
     LOCK(cs);
     std::vector<const CTxMemPoolEntry*> entries;
-    for (const auto& tx : vtx)
+    for (const auto& tx : block.vtx)
     {
-        uint256 hash = tx->GetHash();
-
-        indexed_transaction_set::iterator i = mapTx.find(hash);
+        indexed_transaction_set::iterator i = mapTx.find(tx->GetHash());
         if (i != mapTx.end())
             entries.push_back(&*i);
     }
+
+    // MWEB: Check for transactions with kernels included in the block
+    std::vector<CTransactionRef> txs = block.vtx;
+    if (!block.mweb_block.IsNull()) {
+        auto block_kernels = block.mweb_block.GetKernelHashes();
+        for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
+            if (!it->GetTx().HasMWEBTx()) continue;
+
+            const auto& tx_kernels = it->GetTx().mweb_tx.m_transaction->GetKernels();
+            bool remove_tx = std::any_of(tx_kernels.begin(), tx_kernels.end(),
+                [&block_kernels](const Kernel& tx_kernel) {
+                    return block_kernels.count(tx_kernel.GetHash()) != 0;
+                }
+            );
+            if (remove_tx) {
+                entries.push_back(&*it);
+                txs.push_back(it->GetSharedTx());
+            }
+        }
+    }
+
     // Before the txs in the new block have been removed from the mempool, update policy estimates
     if (minerPolicyEstimator) {minerPolicyEstimator->processBlock(nBlockHeight, entries);}
-    for (const auto& tx : vtx)
+    for (const auto& tx : txs)
     {
         txiter it = mapTx.find(tx->GetHash());
         if (it != mapTx.end()) {
@@ -607,44 +626,13 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
         removeConflicts(*tx);
         ClearPrioritisation(tx->GetHash());
     }
+
     lastRollingFeeUpdate = GetTime();
     blockSinceLastRollingFeeBump = true;
-}
 
-/**
- * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
- */
-void CTxMemPool::removeForMWBlock(const MWEB::Block& mweb_block, unsigned int nBlockHeight) // MW: TODO - Can we combine this with removeForBlock?
-{
-    LOCK(cs);
-
-    std::vector<const CTxMemPoolEntry*> entries;
-    setEntries stage;
-
-    auto blockKernelHashes = mweb_block.GetKernelHashes();
-
-    for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
-        if (!it->GetTx().HasMWEBTx()) continue;
-
-        auto txKernelHashes = it->GetTx().mweb_tx.GetKernelHashes();
-        std::vector<mw::Hash> commonKernelHashes;
-        std::set_intersection(blockKernelHashes.begin(), blockKernelHashes.end(),
-                              txKernelHashes.begin(), txKernelHashes.end(),
-                              std::back_inserter(commonKernelHashes));
-
-        if (commonKernelHashes.size()) {
-            entries.push_back(&*it);
-            stage.insert(it);
-        }
+    if (disconnectpool) {
+        disconnectpool->removeForBlock(txs);
     }
-
-    // Before the txs in the new block have been removed from the mempool, update policy estimates
-    if (minerPolicyEstimator) minerPolicyEstimator->processBlock(nBlockHeight, entries);
-
-    RemoveStaged(stage, true, MemPoolRemovalReason::BLOCK);
-
-    lastRollingFeeUpdate = GetTime();
-    blockSinceLastRollingFeeBump = true;
 }
 
 void CTxMemPool::_clear()

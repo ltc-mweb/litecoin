@@ -103,20 +103,6 @@ struct Tx {
     Tx(const mw::Transaction::CPtr& tx)
         : m_transaction(tx) {}
 
-    std::set<mw::Hash> GetKernelHashes() const
-    {
-        if (IsNull()) {
-            return std::set<mw::Hash>{};
-        }
-
-        std::set<mw::Hash> kernel_hashes;
-        for (const Kernel& kernel : m_transaction->GetKernels()) {
-            kernel_hashes.insert(kernel.GetHash());
-        }
-
-        return kernel_hashes;
-    }
-
     std::set<Commitment> GetInputCommits() const noexcept
     {
         if (IsNull()) {
