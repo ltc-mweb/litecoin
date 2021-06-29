@@ -282,6 +282,7 @@ bool CreateTransactionEx(
     CAmount nFeeNeeded;
 
     uint64_t mweb_weight = 0;
+    MWEB::TxType mweb_type = MWEB::TxType::LTC_TO_LTC;
     bool change_on_mweb = false;
 
     int nBytes;
@@ -382,7 +383,7 @@ bool CreateTransactionEx(
                     }
                 }
 
-                MWEB::TxType mweb_type = MWEB::GetTxType(vecSend, std::vector<CInputCoin>(setCoins.begin(), setCoins.end()));
+                mweb_type = MWEB::GetTxType(vecSend, std::vector<CInputCoin>(setCoins.begin(), setCoins.end()));
                 change_on_mweb = IsChangeOnMWEB(mweb_type, coin_control);
 
                 if (mweb_type != MWEB::TxType::LTC_TO_LTC) {
@@ -565,6 +566,14 @@ bool CreateTransactionEx(
         }
 
         CAmount mweb_fee = ::minRelayTxFee.GetMWEBFee(mweb_weight);
+        if (mweb_type == MWEB::TxType::PEGOUT) {
+            CTxOut pegout_output(vecSend.front().nAmount, vecSend.front().receiver.GetScript());
+            nBytes += ::GetSerializeSize(pegout_output, PROTOCOL_VERSION);
+            LogPrintf("Pegout bytes: %d", ::GetSerializeSize(pegout_output, PROTOCOL_VERSION));
+
+            mweb_fee += GetMinimumFee(wallet, nBytes, mweb_weight, coin_control, ::mempool, ::feeEstimator, &feeCalc);
+        }
+
         if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, nFeeRet, mweb_fee, change_on_mweb)) {
             strFailReason = _("Failed to create MWEB transaction");
             return false;
