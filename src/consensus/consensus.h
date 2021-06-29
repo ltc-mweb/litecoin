@@ -10,7 +10,8 @@
 #include <stdint.h>
 
 /** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
-static const unsigned int MAX_BLOCK_SERIALIZED_SIZE = 4000000; // MW: TODO - Need to increase this to account for MWEB
+static const unsigned int MAX_BLOCK_SERIALIZED_SIZE = 4000000;
+static const unsigned int MAX_BLOCK_SERIALIZED_SIZE_WITH_MWEB = MAX_BLOCK_SERIALIZED_SIZE + 6000000; // MW: TODO - A max isn't really possible due to unlimited MWEB inputs. Not sure what we should do about this.
 /** The maximum allowed weight for a block, see BIP 141 (network rule) */
 static const unsigned int MAX_BLOCK_WEIGHT = 4000000;
 /** The maximum allowed number of signature check operations in a block (network rule) */
