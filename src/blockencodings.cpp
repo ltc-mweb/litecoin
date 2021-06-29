@@ -24,7 +24,7 @@ CBlockHeaderAndShortTxIDs::CBlockHeaderAndShortTxIDs(const CBlock& block, bool f
 
     // MWEB: Include HogEx transaction
     if (!mweb_block.IsNull()) {
-        prefilledtxn.push_back({(uint16_t)(block.vtx.size() - 1), block.vtx.back()});
+        prefilledtxn.push_back({(uint16_t)(block.vtx.size() - 2), block.vtx.back()});
     }
 
     shorttxids.reserve(block.vtx.size() - 1);

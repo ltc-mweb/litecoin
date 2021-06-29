@@ -29,11 +29,11 @@ class MWEBBasicTest(BitcoinTestFramework):
         self.sync_all()
 
         self.log.info("Check for MWEB UTXOs")
-        utxos = [x for x in self.nodes[0].listunspent() if x['address'].startswith('mweb')]
+        utxos = [x for x in self.nodes[0].listunspent() if x['address'].startswith('tmweb')]
         assert_equal(len(utxos), 2)
         utxos.sort(key=lambda x: x['amount'])
         assert utxos[0]['amount'] == 10 and utxos[0]['address'] == addr0
-        assert utxos[1]['amount'] > 39 and utxos[1]['amount'] < 40
+        assert utxos[1]['amount'] < 40 # change from single coinbase being spent
 
         self.log.info("Send MWEB coins to node 1")
         addr1 = self.nodes[1].getnewaddress(address_type='mweb')
@@ -42,12 +42,12 @@ class MWEBBasicTest(BitcoinTestFramework):
         self.sync_all()
 
         self.log.info("Check MWEB coins are spent on node 0")
-        utxos = [x for x in self.nodes[0].listunspent() if x['address'].startswith('mweb')]
+        utxos = [x for x in self.nodes[0].listunspent() if x['address'].startswith('tmweb')]
         assert_equal(len(utxos), 2)
         assert sum(x['amount'] for x in utxos) < 45
 
         self.log.info("Check for MWEB UTXO on node 1")
-        utxos = [x for x in self.nodes[1].listunspent() if x['address'].startswith('mweb')]
+        utxos = [x for x in self.nodes[1].listunspent() if x['address'].startswith('tmweb')]
         assert_equal(len(utxos), 1)
         assert utxos[0]['amount'] == 5 and utxos[0]['address'] == addr1
 
@@ -58,9 +58,10 @@ class MWEBBasicTest(BitcoinTestFramework):
         self.sync_all()
 
         self.log.info("Check MWEB coins are spent on node 1")
-        utxos = [x for x in self.nodes[1].listunspent() if x['address'].startswith('mweb')]
+        utxos = [x for x in self.nodes[1].listunspent() if x['address'].startswith('tmweb')]
         assert_equal(len(utxos), 1)
         assert sum(x['amount'] for x in utxos) < 3
+        self.log.info("UTXO amount: {}".format(utxos[0]['amount']))
 
         self.log.info("Check for MWEB UTXO on node 0")
         utxos = self.nodes[0].listunspent(addresses=[addr0])
@@ -71,11 +72,11 @@ class MWEBBasicTest(BitcoinTestFramework):
         addr2 = self.nodes[1].getnewaddress()
         self.nodes[1].sendtoaddress(addr2, 2)
         self.sync_all()
-        self.nodes[0].generate(1)
+        self.nodes[1].generate(1)
         self.sync_all()
 
         self.log.info("Check MWEB coins are spent on node 1")
-        utxos = [x for x in self.nodes[1].listunspent() if x['address'].startswith('mweb')]
+        utxos = [x for x in self.nodes[1].listunspent() if x['address'].startswith('tmweb')]
         assert_equal(len(utxos), 1)
         assert sum(x['amount'] for x in utxos) < 1
 
