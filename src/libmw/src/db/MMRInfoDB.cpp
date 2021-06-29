@@ -5,7 +5,7 @@
 static const DBTable MMR_TABLE = { 'M' };
 static const uint32_t LATEST_INDEX = std::numeric_limits<uint32_t>::max();
 
-MMRInfoDB::MMRInfoDB(mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch)
+MMRInfoDB::MMRInfoDB(mw::DBWrapper* pDBWrapper, mw::DBBatch* pBatch)
     : m_pDatabase(std::make_unique<Database>(pDBWrapper, pBatch)) { }
 
 MMRInfoDB::~MMRInfoDB() { }

@@ -167,7 +167,7 @@ public:
 
     //! Do a bulk modification (multiple Coin changes + BestBlock change).
     //! The passed mapCoins can be modified.
-    virtual bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView);
+    virtual bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView);
 
     //! Get a cursor to iterate over the whole state
     virtual CCoinsViewCursor *Cursor() const;
@@ -194,7 +194,7 @@ public:
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) override;
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
     mw::ICoinsView::Ptr GetMWView() const override;
@@ -215,7 +215,7 @@ protected:
     /* Cached dynamic memory usage for the inner Coin objects. */
     mutable size_t cachedCoinsUsage;
 
-    mw::ICoinsView::Ptr mw_view;
+    mw::CoinsViewCache::Ptr mweb_view;
 
 public:
     CCoinsViewCache(CCoinsView *baseIn);
@@ -231,12 +231,13 @@ public:
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256& hashBlock);
     void SetBackend(CCoinsView& viewIn);
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) override;
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) override;
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
 
-    mw::ICoinsView::Ptr GetMWView() const final { return mw_view; }
+    mw::ICoinsView::Ptr GetMWView() const final { return mweb_view; }
+    mw::CoinsViewCache::Ptr GetMWEBCacheView() const { return mweb_view; }
 
     /**
      * Check if we have the given utxo already loaded in this cache.

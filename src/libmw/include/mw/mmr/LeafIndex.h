@@ -5,12 +5,13 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/mmr/Index.h>
 #include <mw/util/BitUtil.h>
 
 MMR_NAMESPACE
 
-class LeafIndex
+class LeafIndex : public Traits::ISerializable
 {
 public:
     LeafIndex() noexcept
@@ -41,6 +42,22 @@ public:
     const Index& GetNodeIndex() const noexcept { return m_nodeIndex; }
     uint64_t GetPosition() const noexcept { return m_nodeIndex.GetPosition(); }
     LeafIndex Next() const noexcept { return LeafIndex::At(m_leafIndex + 1); }
+
+    IMPL_SERIALIZABLE(LeafIndex);
+
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        s << m_leafIndex;
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        uint64_t leaf_idx;
+        s >> leaf_idx;
+        *this = LeafIndex::At(leaf_idx);
+    }
 
 private:
     uint64_t m_leafIndex;

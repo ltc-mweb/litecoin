@@ -7,13 +7,13 @@
 
 #include <chainparams.h>
 #include <hash.h>
+#include <mweb/mweb_db.h>
 #include <random.h>
 #include <pow.h>
 #include <shutdown.h>
 #include <uint256.h>
 #include <util/system.h>
 #include <ui_interface.h>
-#include <mweb/mweb_db.h>
 
 #include <stdint.h>
 
@@ -85,7 +85,7 @@ std::vector<uint256> CCoinsViewDB::GetHeadBlocks() const {
     return vhashHeadBlocks;
 }
 
-bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const mw::ICoinsView::Ptr& derivedView) {
+bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const mw::CoinsViewCache::Ptr& derivedView) {
     std::shared_ptr<CDBBatch> batch = std::make_shared<CDBBatch>(db);
     size_t count = 0;
     size_t changed = 0;
@@ -136,9 +136,8 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, con
         }
     }
 
-    // MWEB: Flushes mimblewimble coins & MMRs
-    auto mweb_cache_view = dynamic_cast<mw::CoinsViewCache*>(derivedView.get());
-    mweb_cache_view->Flush(std::make_unique<MWEB::DBBatch>(&db, batch));
+    // MWEB: Flushes MWEB coins & MMRs
+    derivedView->Flush(std::make_unique<MWEB::DBBatch>(&db, batch));
 
     // In the last batch, mark the database as consistent with hashBlock again.
     batch->Erase(DB_HEAD_BLOCKS);
@@ -146,6 +145,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, con
 
     LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch->SizeEstimate() * (1.0 / 1048576.0));
     bool ret = db.WriteBatch(*batch);
+    derivedView->Compact(); // MWEB: Cleanup old MMR files
     LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
     return ret;
 }
@@ -282,9 +282,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
-                pindexNew->mweb_hash      = diskindex.mweb_hash;
-                pindexNew->mweb_amount    = diskindex.mweb_amount;
+                pindexNew->mweb_header    = diskindex.mweb_header;
                 pindexNew->hogex_hash     = diskindex.hogex_hash;
+                pindexNew->mweb_amount    = diskindex.mweb_amount;
 
                 // Litecoin: Disable PoW Sanity check while loading block index from disk.
                 // We use the sha256 hash for the block index for performance reasons, which is recorded for later use.

@@ -1,9 +1,12 @@
 #include <mw/node/CoinsView.h>
 
 #include <mw/db/CoinDB.h>
+#include <mw/db/MMRInfoDB.h>
 #include <mw/exceptions/ValidationException.h>
 
-MW_NAMESPACE
+#include "CoinActions.h"
+
+using namespace mw;
 
 std::vector<UTXO::CPtr> CoinsViewDB::GetUTXOs(const Commitment& commitment) const
 {
@@ -51,7 +54,7 @@ void CoinsViewDB::SpendUTXO(CoinDB& coinDB, const Commitment& commitment)
     coinDB.RemoveUTXOs(std::vector<Commitment>{ commitment });
 }
 
-void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::IDBBatch>& pBatch, const CoinsViewUpdates& updates, const mw::Header::CPtr& pHeader)
+void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::DBBatch>& pBatch, const CoinsViewUpdates& updates, const mw::Header::CPtr& pHeader)
 {
     assert(pBatch != nullptr);
     SetBestHeader(pHeader);
@@ -69,4 +72,12 @@ void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::IDBBatch>& pBatch, const 
     }
 }
 
-END_NAMESPACE
+void CoinsViewDB::Compact() const
+{
+    auto current_mmr_info = MMRInfoDB(GetDatabase().get(), nullptr)
+                                .GetLatest();
+    if (current_mmr_info) {
+        m_pLeafSet->Cleanup(current_mmr_info->index);
+        m_pOutputPMMR->Cleanup(current_mmr_info->index);
+    }
+}

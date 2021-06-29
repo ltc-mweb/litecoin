@@ -13,71 +13,14 @@
 
 // Forward Declarations
 class CoinDB;
+class CoinsViewUpdates;
 
 MW_NAMESPACE
-
-struct CoinAction
-{
-    bool IsSpend() const noexcept { return pUTXO == nullptr; }
-
-    UTXO::CPtr pUTXO;
-};
-
-class CoinsViewUpdates
-{
-public:
-    using Ptr = std::shared_ptr<CoinsViewUpdates>;
-
-    CoinsViewUpdates() = default;
-
-    void AddUTXO(const UTXO::CPtr& pUTXO)
-    {
-        AddAction(pUTXO->GetCommitment(), CoinAction{ pUTXO });
-    }
-
-    void SpendUTXO(const Commitment& commitment)
-    {
-        AddAction(commitment, CoinAction{ nullptr });
-    }
-
-    const std::unordered_map<Commitment, std::vector<CoinAction>>& GetActions() const noexcept { return m_actions; }
-
-    std::vector<CoinAction> GetActions(const Commitment& commitment) const noexcept
-    {
-        auto iter = m_actions.find(commitment);
-        if (iter != m_actions.cend()) {
-            return iter->second;
-        }
-
-        return {};
-    }
-
-    void Clear() noexcept
-    {
-        m_actions.clear();
-    }
-
-private:
-    void AddAction(const Commitment& commitment, CoinAction&& action)
-    {
-        auto iter = m_actions.find(commitment);
-        if (iter != m_actions.end()) {
-            std::vector<CoinAction>& actions = iter->second;
-            actions.emplace_back(std::move(action));
-        } else {
-            std::vector<CoinAction> actions;
-            actions.emplace_back(std::move(action));
-            m_actions.insert({ commitment, actions });
-        }
-    }
-
-    std::unordered_map<Commitment, std::vector<CoinAction>> m_actions;
-};
 
 //
 // An interface for the various views of the extension block's UTXO set.
 // This is similar to CCoinsView in the main codebase, and in fact, each CCoinsView
-// should also hold an instance of a mw::ICoinsView for use with mimblewimble-related logic.
+// should also hold an instance of a mw::ICoinsView for use with MWEB-related logic.
 //
 class ICoinsView : public std::enable_shared_from_this<ICoinsView>
 {
@@ -85,28 +28,27 @@ public:
     using Ptr = std::shared_ptr<ICoinsView>;
     using CPtr = std::shared_ptr<const ICoinsView>;
 
-    ICoinsView(const mw::Header::CPtr& pHeader, const std::shared_ptr<mw::IDBWrapper>& pDBWrapper)
+    ICoinsView(const mw::Header::CPtr& pHeader, const std::shared_ptr<mw::DBWrapper>& pDBWrapper)
         : m_pHeader(pHeader), m_pDatabase(pDBWrapper) { }
     virtual ~ICoinsView() = default;
 
     void SetBestHeader(const mw::Header::CPtr& pHeader) noexcept { m_pHeader = pHeader; }
     mw::Header::CPtr GetBestHeader() const noexcept { return m_pHeader; }
 
-    const std::shared_ptr<mw::IDBWrapper>& GetDatabase() const noexcept { return m_pDatabase; }
+    const std::shared_ptr<mw::DBWrapper>& GetDatabase() const noexcept { return m_pDatabase; }
 
     virtual bool IsCache() const noexcept = 0;
 
     // Virtual functions
     virtual std::vector<UTXO::CPtr> GetUTXOs(const Commitment& commitment) const = 0;
     virtual void WriteBatch(
-        const mw::IDBBatch::UPtr& pBatch,
+        const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) = 0;
 
-    virtual mmr::ILeafSet::Ptr GetLeafSet() const noexcept = 0;
-    virtual mmr::IMMR::Ptr GetKernelMMR() const noexcept = 0;
-    virtual mmr::IMMR::Ptr GetOutputPMMR() const noexcept = 0;
+    virtual ILeafSet::Ptr GetLeafSet() const noexcept = 0;
+    virtual IMMR::Ptr GetOutputPMMR() const noexcept = 0;
 
     /// <summary>
     /// Checks if there's a unspent coin in the view with a matching commitment.
@@ -122,13 +64,15 @@ public:
     /// <param name="commitment">The commitment to look for.</param>
     /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
     virtual bool HasCoinInCache(const Commitment& commitment) const noexcept = 0;
-    
-protected:
-    void ValidateMMRs(const mw::Header::CPtr& pHeader) const;
+
+    /// <summary>
+    /// Cleanup any old MMR files that no longer reflect the latest flushed state.
+    /// </summary>
+    virtual void Compact() const = 0;
 
 private:
     mw::Header::CPtr m_pHeader;
-    std::shared_ptr<mw::IDBWrapper> m_pDatabase;
+    std::shared_ptr<mw::DBWrapper> m_pDatabase;
 };
 
 class CoinsViewCache : public mw::ICoinsView
@@ -137,40 +81,47 @@ public:
     using Ptr = std::shared_ptr<CoinsViewCache>;
     using CPtr = std::shared_ptr<const CoinsViewCache>;
 
-    CoinsViewCache(const ICoinsView::Ptr& pBase)
-        : ICoinsView(pBase->GetBestHeader(), pBase->GetDatabase()),
-        m_pBase(pBase),
-        m_pLeafSet(std::make_unique<mmr::LeafSetCache>(pBase->GetLeafSet())),
-        m_pKernelMMR(std::make_unique<mmr::MMRCache>(pBase->GetKernelMMR())),
-        m_pOutputPMMR(std::make_unique<mmr::MMRCache>(pBase->GetOutputPMMR())),
-        m_pUpdates(std::make_shared<CoinsViewUpdates>()) { }
+    CoinsViewCache(const ICoinsView::Ptr& pBase);
 
     bool IsCache() const noexcept final { return true; }
 
     std::vector<UTXO::CPtr> GetUTXOs(const Commitment& commitment) const noexcept final;
+
+    /// <summary>
+    /// Validates and connects the block to the end of the chain.
+    /// Consumer is required to call ValidateBlock first.
+    /// </summary>
+    /// <pre>Block must be validated via CheckBlock before connecting it to the chain.</pre>
+    /// <param name="pBlock">The block to connect. Must not be null.</param>
+    /// <throws>ValidationException if consensus rules are not met.</throws>
     mw::BlockUndo::CPtr ApplyBlock(const mw::Block::CPtr& pBlock);
+
+    /// <summary>
+    /// Removes a block from the end of the chain.
+    /// </summary>
+    /// <param name="pUndo">The MWEB undo data to apply. Must not be null.</param>
     void UndoBlock(const mw::BlockUndo::CPtr& pUndo);
+
     void WriteBatch(
-        const mw::IDBBatch::UPtr& pBatch,
+        const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) final;
+    void Compact() const final { m_pBase->Compact(); }
 
     /// <summary>
     /// Commits the changes from the cached CoinsView to the base CoinsView.
     /// Adds the cached updates to the database if the base CoinsView is a DB view.
     /// </summary>
     /// <param name="pBatch">The optional DB batch. This must be non-null when the base CoinsView is a DB view.</param>
-    void Flush(const mw::IDBBatch::UPtr& pBatch = nullptr);
-    mw::Block::Ptr BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions);
+    void Flush(const mw::DBBatch::UPtr& pBatch = nullptr);
 
-    void ValidateState() const;
+    mw::Block::Ptr BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions);
 
     bool HasCoinInCache(const Commitment& commitment) const noexcept final;
 
-    mmr::ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
-    mmr::IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
-    mmr::IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
+    ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
+    IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
 private:
     void AddUTXO(const uint64_t header_height, const Output& output);
@@ -178,11 +129,10 @@ private:
 
     ICoinsView::Ptr m_pBase;
 
-    mmr::LeafSetCache::Ptr m_pLeafSet;
-    mmr::MMRCache::Ptr m_pKernelMMR;
-    mmr::MMRCache::Ptr m_pOutputPMMR;
+    LeafSetCache::Ptr m_pLeafSet;
+    MMRCache::Ptr m_pOutputPMMR;
 
-    CoinsViewUpdates::Ptr m_pUpdates;
+    std::shared_ptr<CoinsViewUpdates> m_pUpdates;
 };
 
 class CoinsViewDB : public mw::ICoinsView
@@ -190,27 +140,25 @@ class CoinsViewDB : public mw::ICoinsView
 public:
     CoinsViewDB(
         const mw::Header::CPtr& pBestHeader,
-        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
-        const mmr::LeafSet::Ptr& pLeafSet,
-        const mmr::MMR::Ptr& pKernelMMR,
-        const mmr::MMR::Ptr& pOutputPMMR
+        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
+        const LeafSet::Ptr& pLeafSet,
+        const MMR::Ptr& pOutputPMMR
     ) : ICoinsView(pBestHeader, pDBWrapper),
         m_pLeafSet(pLeafSet),
-        m_pKernelMMR(pKernelMMR),
         m_pOutputPMMR(pOutputPMMR) { }
 
     bool IsCache() const noexcept final { return false; }
 
     std::vector<UTXO::CPtr> GetUTXOs(const Commitment& commitment) const final;
     void WriteBatch(
-        const mw::IDBBatch::UPtr& pBatch,
+        const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
         const mw::Header::CPtr& pHeader
     ) final;
+    void Compact() const final;
 
-    mmr::ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
-    mmr::IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
-    mmr::IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
+    ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
+    IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
     bool HasCoinInCache(const Commitment& commitment) const noexcept final { return false; }
 
@@ -220,9 +168,8 @@ private:
     void SpendUTXO(CoinDB& coinDB, const Commitment& commitment);
     std::vector<UTXO::CPtr> GetUTXOs(const CoinDB& coinDB, const Commitment& commitment) const;
 
-    mmr::LeafSet::Ptr m_pLeafSet;
-    mmr::MMR::Ptr m_pKernelMMR;
-    mmr::MMR::Ptr m_pOutputPMMR;
+    LeafSet::Ptr m_pLeafSet;
+    MMR::Ptr m_pOutputPMMR;
 };
 
 END_NAMESPACE

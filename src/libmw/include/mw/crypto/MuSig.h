@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/SecretKey.h>
 #include <mw/models/crypto/Signature.h>
 #include <mw/models/crypto/PublicKey.h>

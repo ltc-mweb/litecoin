@@ -2,12 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/wallet/Keychain.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestGetStealthAddress, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestGetStealthAddress, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(GetStealthAddress)
 {
@@ -15,8 +14,8 @@ BOOST_AUTO_TEST_CASE(GetStealthAddress)
     SecretKey b = BigInt<32>::FromHex("da5b685cbcdad4aabcec8f58253f8f4aa89a116659b1e5a8e3c407cc09c19738");
 
     StealthAddress address_100 = mw::Keychain(a, b, 50).GetStealthAddress(100);
-    BOOST_REQUIRE(address_100.A().Format() == "02676d6f55a58297072c602b9e3c98bdcf7f2632c4c88686bd8e8cf3f12d394111");
-    BOOST_REQUIRE(address_100.B().Format() == "03e7421b2c09154a4201072c733929dfc25262dd79146f1164b4b000c4f5533e01");
+    BOOST_CHECK_EQUAL(address_100.A().ToHex(), "0378091104a43ec19c2196b8fc128a084a395c62a3d591166c8e8fefc3b04a0f0d");
+    BOOST_CHECK_EQUAL(address_100.B().ToHex(), "0266a008e6831e31822d3786e54c89174b3adfda827a93da0123eab93cd99fd2a6");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

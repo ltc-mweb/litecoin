@@ -5,15 +5,12 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/consensus/Weight.h>
-#include <mw/crypto/Crypto.h>
 #include <mw/models/crypto/Hash.h>
 #include <mw/models/crypto/BigInteger.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/tx/TxBody.h>
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
-#include <mw/traits/Hashable.h>
 
 #include <memory>
 #include <numeric>
@@ -35,13 +32,11 @@ public:
     //
     // Constructors
     //
-    Transaction(BlindingFactor&& kernel_offset, BlindingFactor&& owner_offset, TxBody&& body)
+    Transaction(BlindingFactor kernel_offset, BlindingFactor owner_offset, TxBody body)
         : m_kernelOffset(std::move(kernel_offset)), m_ownerOffset(std::move(owner_offset)), m_body(std::move(body))
     {
         m_hash = Hashed(*this);
     }
-    Transaction(const BlindingFactor& kernel_offset, const BlindingFactor& owner_offset, const TxBody& body)
-        : Transaction(BlindingFactor(kernel_offset), BlindingFactor(owner_offset), TxBody(body)) { }
     Transaction(const Transaction& transaction) = default;
     Transaction(Transaction&& transaction) noexcept = default;
     Transaction() = default;
@@ -98,38 +93,22 @@ public:
     const std::vector<Output>& GetOutputs() const noexcept { return m_body.GetOutputs(); }
     const std::vector<Kernel>& GetKernels() const noexcept { return m_body.GetKernels(); }
     const std::vector<SignedMessage>& GetOwnerSigs() const noexcept { return m_body.GetOwnerSigs(); }
-    uint64_t GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
-    uint64_t GetLockHeight() const noexcept { return m_body.GetLockHeight(); }
+    CAmount GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
+    int32_t GetLockHeight() const noexcept { return m_body.GetLockHeight(); }
     uint64_t CalcWeight() const noexcept { return (uint64_t)Weight::Calculate(m_body); }
 
     std::vector<Commitment> GetKernelCommits() const noexcept { return m_body.GetKernelCommits(); }
     std::vector<Commitment> GetInputCommits() const noexcept { return m_body.GetInputCommits(); }
     std::vector<Commitment> GetOutputCommits() const noexcept { return m_body.GetOutputCommits(); }
     std::vector<PegInCoin> GetPegIns() const noexcept { return m_body.GetPegIns(); }
-    std::vector<Output> GetPegInOutputs() const noexcept { return m_body.GetPegInOutputs(); }
-    uint64_t GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
+    CAmount GetPegInAmount() const noexcept { return m_body.GetPegInAmount(); }
     std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_body.GetPegOuts(); }
-    int64_t GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
+    CAmount GetSupplyChange() const noexcept { return m_body.GetSupplyChange(); }
 
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_kernelOffset)
-            .Append(m_ownerOffset)
-            .Append(m_body);
-    }
-
-    static Transaction Deserialize(Deserializer& deserializer)
-    {
-        BlindingFactor kernel_offset = BlindingFactor::Deserialize(deserializer);
-        BlindingFactor owner_offset = BlindingFactor::Deserialize(deserializer);
-        TxBody body = TxBody::Deserialize(deserializer);
-        return Transaction(std::move(kernel_offset), std::move(owner_offset), std::move(body));
-    }
-
+    IMPL_SERIALIZABLE(Transaction);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -138,14 +117,22 @@ public:
         READWRITE(m_kernelOffset);
         READWRITE(m_ownerOffset);
         READWRITE(m_body);
+
+        if (ser_action.ForRead()) {
+            if (m_body.GetKernels().empty()) {
+                throw std::ios_base::failure("Transaction requires at least one kernel");
+            }
+            m_hash = Hashed(*this);
+        }
     }
 
     //
     // Traits
     //
     std::string Format() const final { return "Tx(" + GetHash().Format() + ")"; }
-    mw::Hash GetHash() const noexcept final { return m_hash; }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
+    bool IsStandard() const noexcept;
     void Validate() const;
 
     std::string Print() const noexcept

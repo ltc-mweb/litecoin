@@ -179,8 +179,13 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Invalid address");
     }
 
+    DestinationScript dest_script(destination);
+    if (dest_script.IsMWEB()) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Cannot generate to MWEB address");
+    }
+
     std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
-    coinbaseScript->reserveScript = GetScriptForDestination(destination);
+    coinbaseScript->reserveScript = dest_script.GetScript();
 
     return generateBlocks(coinbaseScript, nGenerate, nMaxTries, false);
 }

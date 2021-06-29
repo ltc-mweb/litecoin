@@ -5,6 +5,7 @@
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/common/Macros.h>
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/BigInteger.h>
 #include <boost/functional/hash.hpp>
 
@@ -25,3 +26,11 @@ namespace std
         }
     };
 }
+
+static const struct
+{
+    bool operator()(const Traits::IHashable& a, const Traits::IHashable& b) const
+    {
+        return a.GetHash() < b.GetHash();
+    }
+} SortByHash;

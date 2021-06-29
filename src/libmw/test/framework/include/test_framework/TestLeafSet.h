@@ -2,8 +2,6 @@
 
 #include <mw/mmr/LeafSet.h>
 #include <mw/models/crypto/Commitment.h>
-#include <mw/exceptions/NotFoundException.h>
-#include <test_framework/TestUtil.h>
 
 class TestLeafSet
 {
@@ -16,10 +14,10 @@ public:
         std::vector<Commitment> outputs;
     };
 
-    static TestLeafSet::Ptr Create(const std::vector<BlockInfo>& blocks)
+    static TestLeafSet::Ptr Create(const FilePath& datadir, const std::vector<BlockInfo>& blocks)
     {
-        FilePath path = test::TestUtil::GetTempDir();
-        auto pLeafSet = mmr::LeafSet::Open(path, 0);
+        FilePath path = datadir.GetChild("leafset.bin");
+        auto pLeafSet = LeafSet::Open(path, 0);
 
         auto pTestLeafSet = std::shared_ptr<TestLeafSet>(new TestLeafSet(path, pLeafSet));
 
@@ -28,7 +26,7 @@ public:
             for (const Commitment& input : block.inputs) {
                 auto iter = unspentLeaves.find(input);
                 if (iter == unspentLeaves.cend()) {
-                    ThrowNotFound_F("Unspent leaf not found with input commitment {}", input);
+                    throw std::runtime_error(StringUtil::Format("Unspent leaf not found with input commitment {}", input));
                 }
 
                 pLeafSet->Remove(iter->second);
@@ -37,7 +35,7 @@ public:
             for (const Commitment& output : block.outputs) {
                 auto iter = unspentLeaves.find(output);
                 if (iter != unspentLeaves.cend()) {
-                    ThrowNotFound_F("Unspent leaf already exists with commitment {}", output);
+                    throw std::runtime_error(StringUtil::Format("Unspent leaf already exists with commitment {}", output));
                 }
 
                 unspentLeaves.insert({ output, pTestLeafSet->m_nextLeafIdx });
@@ -61,10 +59,10 @@ public:
     }
 
 private:
-    TestLeafSet(const FilePath& path, const mmr::LeafSet::Ptr& pLeafSet)
+    TestLeafSet(const FilePath& path, const LeafSet::Ptr& pLeafSet)
         : m_path(path), m_pLeafSet(pLeafSet), m_nextLeafIdx(mmr::LeafIndex::At(0)){ }
 
     FilePath m_path;
-    mmr::LeafSet::Ptr m_pLeafSet;
+    LeafSet::Ptr m_pLeafSet;
     mmr::LeafIndex m_nextLeafIdx;
 };

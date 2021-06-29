@@ -4,13 +4,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Traits.h>
+#include <mw/crypto/Hasher.h>
+#include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/PublicKey.h>
 #include <mw/models/crypto/Signature.h>
-#include <mw/models/tx/Features.h>
-#include <mw/crypto/Hasher.h>
-#include <mw/traits/Committed.h>
-#include <mw/traits/Hashable.h>
-#include <mw/traits/Serializable.h>
+#include <mw/models/crypto/SignedMessage.h>
 
 ////////////////////////////////////////
 // INPUT
@@ -24,13 +23,11 @@ public:
     //
     // Constructors
     //
-    Input(Commitment&& commitment, PublicKey&& pubkey, Signature&& signature)
+    Input(Commitment commitment, PublicKey pubkey, Signature signature)
         : m_commitment(std::move(commitment)), m_pubkey(std::move(pubkey)), m_signature(std::move(signature))
     {
-        m_hash = Hashed(Serialized());
+        m_hash = Hashed(*this);
     }
-    Input(const Commitment& commitment, const PublicKey& pubkey, const Signature& signature)
-        : Input(Commitment(commitment), PublicKey(pubkey), Signature(signature)) { }
     Input(const Input& input) = default;
     Input(Input&& input) noexcept = default;
     Input() = default;
@@ -55,25 +52,15 @@ public:
     const PublicKey& GetPubKey() const noexcept { return m_pubkey; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
+    SignedMessage BuildSignedMsg() const noexcept
+    {
+        return SignedMessage{InputMessage(), GetPubKey(), GetSignature()};
+    }
+
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return serializer
-            .Append(m_commitment)
-            .Append(m_pubkey)
-            .Append(m_signature);
-    }
-
-    static Input Deserialize(Deserializer& deserializer)
-    {
-        Commitment commitment = Commitment::Deserialize(deserializer);
-        PublicKey pubkey = PublicKey::Deserialize(deserializer);
-        Signature signature = Signature::Deserialize(deserializer);
-        return Input(std::move(commitment), std::move(pubkey), std::move(signature));
-    }
-
+    IMPL_SERIALIZABLE(Input);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
@@ -82,12 +69,16 @@ public:
         READWRITE(m_commitment);
         READWRITE(m_pubkey);
         READWRITE(m_signature);
+
+        if (ser_action.ForRead()) {
+            m_hash = Hashed(*this);
+        }
     }
 
     //
     // Traits
     //
-    mw::Hash GetHash() const noexcept final { return m_hash; }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
 
 private:
     // The commit referencing the output being spent.
@@ -98,5 +89,5 @@ private:
 
     Signature m_signature;
 
-    mutable mw::Hash m_hash;
+    mw::Hash m_hash;
 };

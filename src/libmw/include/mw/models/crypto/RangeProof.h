@@ -4,14 +4,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
-#include <mw/serialization/Serializer.h>
-#include <mw/util/HexUtil.h>
+#include <mw/common/Traits.h>
+#include <util/strencodings.h>
 
 #include <cassert>
-#include <cstdint>
-#include <vector>
 
 class RangeProof :
     public Traits::IPrintable,
@@ -19,13 +15,13 @@ class RangeProof :
 {
 public:
     using CPtr = std::shared_ptr<const RangeProof>;
-    enum { MAX_SIZE = 675 };
+    enum { SIZE = 675 };
 
     //
     // Constructors
     //
-    RangeProof() = default;
-    RangeProof(std::vector<uint8_t>&& bytes) : m_bytes(std::move(bytes)) { assert(m_bytes.size() <= MAX_SIZE); }
+    RangeProof() noexcept : m_bytes(SIZE) {}
+    RangeProof(std::vector<uint8_t>&& bytes) : m_bytes(std::move(bytes)) { assert(m_bytes.size() == SIZE); }
     RangeProof(const RangeProof& other) = default;
     RangeProof(RangeProof&& other) noexcept = default;
 
@@ -51,35 +47,24 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
+    IMPL_SERIALIZABLE(RangeProof);
+
+    template <typename Stream>
+    void Serialize(Stream& s) const
     {
-        return serializer
-            .Append<uint16_t>((uint16_t)m_bytes.size())
-            .Append(m_bytes);
+        s.write((const char*)m_bytes.data(), SIZE);
     }
 
-    static RangeProof Deserialize(Deserializer& deserializer)
+    template <typename Stream>
+    void Unserialize(Stream& s)
     {
-        const uint16_t proofSize = deserializer.Read<uint16_t>();
-        if (proofSize > MAX_SIZE) {
-            ThrowDeserialization("RangeProof is larger than MAX_SIZE");
-        }
-
-        return RangeProof(deserializer.ReadVector(proofSize));
-    }
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action)
-    {
-        READWRITE(m_bytes);
+        s.read((char*)m_bytes.data(), SIZE);
     }
 
     //
     // Traits
     //
-    std::string Format() const final { return HexUtil::ToHex(m_bytes); }
+    std::string Format() const final { return HexStr(m_bytes); }
 
 private:
     // The proof itself, at most 675 bytes long.

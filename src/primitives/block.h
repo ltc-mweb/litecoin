@@ -81,7 +81,7 @@ public:
     // memory only
     mutable bool fChecked;
 
-    MWEB::Block mwBlock;
+    MWEB::Block mweb_block;
 
     CBlock()
     {
@@ -100,9 +100,9 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITEAS(CBlockHeader, *this);
         READWRITE(vtx);
-        if (!(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE)) {
-            if (HasHogEx()) {
-                READWRITE(mwBlock);
+        if (!(s.GetVersion() & SERIALIZE_NO_MWEB)) {
+            if (GetHogEx() != nullptr) {
+                READWRITE(mweb_block);
             }
         }
     }
@@ -112,7 +112,7 @@ public:
         CBlockHeader::SetNull();
         vtx.clear();
         fChecked = false;
-        mwBlock.SetNull();
+        mweb_block.SetNull();
     }
 
     CBlockHeader GetBlockHeader() const
@@ -129,41 +129,9 @@ public:
 
     std::string ToString() const;
 
-    bool HasHogEx() const noexcept
-    {
-        return vtx.size() >= 2 && vtx.back()->IsHogEx();
-    }
-
-    uint256 GetMWEBHash() const noexcept
-    {
-        if (!HasHogEx()) {
-            return uint256();
-        }
-
-        return vtx.back()->GetMWEBHash();
-    }
-
-    uint256 GetHogExHash() const noexcept
-    {
-        if (!HasHogEx()) {
-            return uint256();
-        }
-
-        return vtx.back()->GetHash();
-    }
-
-    // The amount of the first output in the HogEx transaction.
-    CAmount GetMWEBAmount() const noexcept
-    {
-        if (!HasHogEx() || vtx.back()->vout.empty()) {
-            return 0;
-        }
-
-        return vtx.back()->vout[0].nValue;
-    }
-
-    std::vector<PegInCoin> GetPegInCoins() const noexcept;
-    std::vector<PegOutCoin> GetPegOutCoins() const noexcept;
+    CTransactionRef GetHogEx() const noexcept;
+    uint256 GetMWEBHash() const noexcept;
+    CAmount GetMWEBAmount() const noexcept;
 };
 
 /** Describes a place in the block chain to another node such that if the

@@ -23,7 +23,9 @@ class Wallet
 public:
     Wallet(CWallet* pWallet)
         : m_pWallet(pWallet) {}
-    
+
+    const mw::Keychain::Ptr& GetKeychain() const;
+
     CExtKey GetHDKey(const std::string& bip32Path) const;
     bool GetCoin(const Commitment& output_commit, mw::Coin& coin) const;
 
@@ -39,10 +41,8 @@ public:
     void DeleteCoins(const std::vector<mw::Coin>& coins);
 
 private:
-    const mw::Keychain::Ptr& GetKeychain();
-
     CWallet* m_pWallet;
-    mw::Keychain::Ptr m_keychain;
+    mutable mw::Keychain::Ptr m_keychain;
     std::map<Commitment, mw::Coin> m_coins;
 };
 
@@ -85,14 +85,13 @@ struct WalletTxInfo
             READWRITE(received);
 
             if (received) {
-                std::vector<uint8_t> bytes;
-                READWRITE(bytes);
-                Deserializer deserializer(std::move(bytes));
-                received_coin = mw::Coin::Deserialize(deserializer);
+                mw::Coin coin;
+                READWRITE(coin);
+                received_coin = boost::make_optional<mw::Coin>(std::move(coin));
             } else {
-                std::array<uint8_t, 33> input_commit;
-                READWRITE(input_commit); // MW: TODO - Add serialization/deserialization for Commitment objects
-                spent_input = boost::make_optional<Commitment>(Commitment(input_commit));
+                Commitment input_commit;
+                READWRITE(input_commit);
+                spent_input = boost::make_optional<Commitment>(std::move(input_commit));
             }
 
             hash = SerializeHash(*this);
@@ -101,10 +100,9 @@ struct WalletTxInfo
             READWRITE(received);
 
             if (received) {
-                std::vector<uint8_t> bytes = received_coin->Serialized();
-                READWRITE(bytes);
+                READWRITE(*received_coin);
             } else {
-                READWRITE(spent_input->array()); // MW: TODO - Add serialization/deserialization for Commitment objects
+                READWRITE(*spent_input);
             }
         }
     }

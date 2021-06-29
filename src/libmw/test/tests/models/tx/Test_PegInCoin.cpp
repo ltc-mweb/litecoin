@@ -2,18 +2,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/PegInCoin.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestPegInCoin, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestPegInCoin, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxPegInCoin)
 {
-    uint64_t amount = 123;
+    CAmount amount = 123;
     Commitment commit = Random::CSPRNG<33>().GetBigInt();
     PegInCoin pegInCoin(amount, commit);
 
@@ -21,15 +19,9 @@ BOOST_AUTO_TEST_CASE(TxPegInCoin)
     // Serialization
     //
     {
-        std::vector<uint8_t> serialized = pegInCoin.Serialized();
-        BOOST_REQUIRE(serialized.size() == 41);
-
-        Deserializer deserializer(serialized);
-        BOOST_REQUIRE(deserializer.Read<uint64_t>() == amount);
-        BOOST_REQUIRE(Commitment::Deserialize(deserializer) == commit);
-
-        Deserializer deserializer2(serialized);
-        BOOST_REQUIRE(pegInCoin == PegInCoin::Deserialize(deserializer2));
+        PegInCoin pegInCoin2;
+        CDataStream(pegInCoin.Serialized(), SER_DISK, PROTOCOL_VERSION) >> pegInCoin2;
+        BOOST_REQUIRE(pegInCoin == pegInCoin2);
     }
 
     //

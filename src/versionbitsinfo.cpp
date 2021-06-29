@@ -20,6 +20,6 @@ const struct VBDeploymentInfo VersionBitsDeploymentInfo[Consensus::MAX_VERSION_B
         /*.gbt_force =*/ true,
     },
     {
-        /*.name =*/"mimblewimble",
+        /*.name =*/"mweb",
         /*.gbt_force =*/true,
     }};

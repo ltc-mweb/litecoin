@@ -41,8 +41,7 @@ const char *SENDCMPCT="sendcmpct";
 const char *CMPCTBLOCK="cmpctblock";
 const char *GETBLOCKTXN="getblocktxn";
 const char *BLOCKTXN="blocktxn";
-const char *GETMWEBSTATE="getmwebstate";
-const char* MWEBSTATE="mwebstate";
+// MW: TODO - support GETMWEBUTXOS and MWEBUTXOS
 } // namespace NetMsgType
 
 /** All known message types. Keep this in the same order as the list of
@@ -74,9 +73,7 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::SENDCMPCT,
     NetMsgType::CMPCTBLOCK,
     NetMsgType::GETBLOCKTXN,
-    NetMsgType::BLOCKTXN,
-    NetMsgType::GETMWEBSTATE,
-    NetMsgType::MWEBSTATE,
+    NetMsgType::BLOCKTXN
 };
 const static std::vector<std::string> allNetMessageTypesVec(allNetMessageTypes, allNetMessageTypes+ARRAYLEN(allNetMessageTypes));
 
@@ -135,9 +132,9 @@ bool CMessageHeader::IsValid(const MessageStartChars& pchMessageStartIn) const
 
 ServiceFlags GetDesirableServiceFlags(ServiceFlags services) {
     if ((services & NODE_NETWORK_LIMITED) && g_initial_block_download_completed) {
-        return ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS | NODE_MW);
+        return ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS | NODE_MWEB);
     }
-    return ServiceFlags(NODE_NETWORK | NODE_WITNESS | NODE_MW);
+    return ServiceFlags(NODE_NETWORK | NODE_WITNESS | NODE_MWEB);
 }
 
 void SetServiceFlagsIBDCache(bool state) {
@@ -178,8 +175,8 @@ bool operator<(const CInv& a, const CInv& b)
 std::string CInv::GetCommand() const
 {
     std::string cmd;
-    if (type & MSG_MW_FLAG)
-        cmd.append("mw-");
+    if (type & MSG_MWEB_FLAG)
+        cmd.append("mweb-");
     if (type & MSG_WITNESS_FLAG)
         cmd.append("witness-");
     int masked = type & MSG_TYPE_MASK;

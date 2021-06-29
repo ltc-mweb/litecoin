@@ -35,7 +35,7 @@ LIBBITCOIN_UTIL=libbitcoin_util.a
 LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.a
 LIBBITCOINQT=qt/libbitcoinqt.a
 LIBSECP256K1=secp256k1-zkp/libsecp256k1.la
-LIBMW=libmw/libmw.a
+LIBMW=libmw.a
 
 if ENABLE_ZMQ
 LIBBITCOIN_ZMQ=libbitcoin_zmq.a
@@ -103,13 +103,12 @@ endif
 endif
 
 LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/caches/include -I$(srcdir)/libmw/deps/crypto/include
-libmw_libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
-libmw_libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libmw_libmw_a_SOURCES = \
+libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
+libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libmw_a_SOURCES = \
 	libmw/src/common/Logger.cpp \
 	libmw/src/crypto/Bulletproofs.cpp \
 	libmw/src/crypto/ConversionUtil.cpp \
-	libmw/src/crypto/Crypto.cpp \
 	libmw/src/crypto/Hasher.cpp \
 	libmw/src/crypto/MuSig.cpp \
 	libmw/src/crypto/Pedersen.cpp \
@@ -119,7 +118,6 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/db/LeafDB.cpp \
 	libmw/src/db/MMRInfoDB.cpp \
 	libmw/src/file/File.cpp \
-	libmw/src/mmr/backends/FileBackend.cpp \
 	libmw/src/mmr/ILeafSet.cpp \
 	libmw/src/mmr/IMMR.cpp \
 	libmw/src/mmr/Index.cpp \
@@ -127,7 +125,6 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/mmr/LeafSetCache.cpp \
 	libmw/src/mmr/MMR.cpp \
 	libmw/src/mmr/MMRCache.cpp \
-	libmw/src/mmr/MMRFactory.cpp \
 	libmw/src/mmr/PruneList.cpp \
 	libmw/src/models/block/Block.cpp \
 	libmw/src/models/crypto/Commitment.cpp \
@@ -137,15 +134,10 @@ libmw_libmw_a_SOURCES = \
 	libmw/src/models/tx/Transaction.cpp \
 	libmw/src/models/tx/TxBody.cpp \
 	libmw/src/node/validation/BlockValidator.cpp \
-	libmw/src/node/validation/StateValidator.cpp \
 	libmw/src/node/BlockBuilder.cpp \
 	libmw/src/node/CoinsViewCache.cpp \
 	libmw/src/node/CoinsViewDB.cpp \
-	libmw/src/node/CoinsViewFactory.cpp \
-	libmw/src/node/ICoinsView.cpp \
 	libmw/src/node/Node.cpp \
-	libmw/src/node/Snapshot.cpp \
-	libmw/src/traits/Serializable.cpp \
 	libmw/src/wallet/Keychain.cpp \
 	libmw/src/wallet/TxBuilder.cpp
 
@@ -201,11 +193,9 @@ BITCOIN_CORE_H = \
   merkleblock.h \
   miner.h \
   mweb/mweb_chain.h \
-  mweb/mweb_db.h \
   mweb/mweb_miner.h \
   mweb/mweb_models.h \
   mweb/mweb_node.h \
-  mweb/mweb_state.h \
   mweb/mweb_transact.h \
   mweb/mweb_wallet.h \
   net.h \
@@ -316,7 +306,6 @@ libbitcoin_server_a_SOURCES = \
   interfaces/handler.cpp \
   interfaces/node.cpp \
   init.cpp \
-  dbwrapper.cpp \
   merkleblock.cpp \
   miner.cpp \
   mweb/mweb_miner.cpp \
@@ -517,6 +506,7 @@ libbitcoin_util_a_SOURCES = \
   support/lockedpool.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
+  dbwrapper.cpp \
   compat/glibc_sanity.cpp \
   compat/glibcxx_sanity.cpp \
   compat/strnlen.cpp \
@@ -617,7 +607,6 @@ litecoin_tx_LDADD = \
   $(LIBMW)
 
 litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS)
-#
 
 # bitcoin-wallet binary #
 litecoin_wallet_SOURCES = bitcoin-wallet.cpp
@@ -652,8 +641,6 @@ include_HEADERS = script/bitcoinconsensus.h
 libbitcoinconsensus_la_SOURCES = \
   $(crypto_libbitcoin_crypto_base_a_SOURCES) \
   $(libbitcoin_consensus_a_SOURCES) \
-  libmw/src/crypto/Hasher.cpp \
-  libmw/src/traits/Serializable.cpp \
   support/cleanse.cpp
 
 if GLIBC_BACK_COMPAT

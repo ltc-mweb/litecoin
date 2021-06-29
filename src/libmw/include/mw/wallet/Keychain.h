@@ -25,6 +25,7 @@ public:
     StealthAddress GetStealthAddress(const uint32_t index) const;
     SecretKey GetSpendKey(const uint32_t index) const;
     bool IsSpendPubKey(const PublicKey& spend_pubkey, uint32_t& index_out) const;
+    bool IsMine(const StealthAddress& address) const;
 
     const SecretKey& GetScanSecret() const noexcept { return m_scanSecret; }
     const SecretKey& GetSpendSecret() const noexcept { return m_spendSecret; }

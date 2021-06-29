@@ -1,7 +1,7 @@
 #include <mw/mmr/LeafSet.h>
 #include <mw/crypto/Hasher.h>
 
-MMR_NAMESPACE
+using namespace mmr;
 
 LeafSet::Ptr LeafSet::Open(const FilePath& leafset_dir, const uint32_t file_index)
 {
@@ -12,10 +12,9 @@ LeafSet::Ptr LeafSet::Open(const FilePath& leafset_dir, const uint32_t file_inde
 
     mmr::LeafIndex nextLeafIdx = mmr::LeafIndex::At(0);
     if (file.GetSize() < 8) {
-        file.Write(Serializer().Append<uint64_t>(0).vec());
+        file.Write(nextLeafIdx.Serialized());
     } else {
-        Deserializer deserializer{ file.ReadBytes(0, 8) };
-        nextLeafIdx = mmr::LeafIndex::At(deserializer.Read<uint64_t>());
+        nextLeafIdx = LeafIndex::Deserialize(file.ReadBytes(0, 8));
     }
 
     MemMap mappedFile{ file };
@@ -51,9 +50,7 @@ void LeafSet::Flush(const uint32_t file_index)
 {
     m_mmap.Unmap();
 
-    std::vector<uint8_t> nextLeafIdxBytes = Serializer()
-        .Append<uint64_t>(m_nextLeafIdx.Get())
-        .vec();
+    std::vector<uint8_t> nextLeafIdxBytes = m_nextLeafIdx.Serialized();
     assert(nextLeafIdxBytes.size() == 8);
 
     for (uint8_t i = 0; i < 8; i++) {
@@ -70,6 +67,19 @@ void LeafSet::Flush(const uint32_t file_index)
     m_mmap.Map();
 
     m_modifiedBytes.clear();
+}
+
+void LeafSet::Cleanup(const uint32_t current_file_index) const
+{
+    uint32_t file_index = current_file_index;
+    while (file_index > 0) {
+        FilePath prev_leafset = GetPath(m_dir, --file_index);
+        if (prev_leafset.Exists()) {
+            prev_leafset.Remove();
+        } else {
+            break;
+        }
+    }
 }
 
 uint8_t LeafSet::GetByte(const uint64_t byteIdx) const
@@ -94,5 +104,3 @@ void LeafSet::SetByte(const uint64_t byteIdx, const uint8_t value)
 {
     m_modifiedBytes[byteIdx + 8] = value;
 }
-
-END_NAMESPACE

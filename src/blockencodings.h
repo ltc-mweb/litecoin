@@ -145,7 +145,7 @@ protected:
 
 public:
     CBlockHeader header;
-    MWEB::Block mwBlock;
+    MWEB::Block mweb_block;
 
     // Dummy for deserialization
     CBlockHeaderAndShortTxIDs() {}
@@ -160,7 +160,7 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-        const bool fAllowMW = !(s.GetVersion() & SERIALIZE_NO_MIMBLEWIMBLE);
+        const bool fAllowMWEB = !(s.GetVersion() & SERIALIZE_NO_MWEB);
 
         READWRITE(header);
         READWRITE(nonce);
@@ -196,8 +196,8 @@ public:
         if (ser_action.ForRead())
             FillShortTxIDSelector();
 
-        if (fAllowMW) {
-            READWRITE(mwBlock);
+        if (fAllowMWEB) {
+            READWRITE(mweb_block);
         }
     }
 };

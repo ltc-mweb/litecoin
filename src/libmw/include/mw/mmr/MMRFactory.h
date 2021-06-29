@@ -8,28 +8,24 @@
 #include <mw/models/crypto/Hash.h>
 #include <mw/interfaces/db_interface.h>
 
-MMR_NAMESPACE
-
 class MMRFactory
 {
 public:
     static MMR::Ptr Build(
         const char prefix,
-        const std::shared_ptr<mw::IDBWrapper>& pDBWrapper,
-        const std::unique_ptr<mw::IDBBatch>& pBatch,
+        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
+        const std::unique_ptr<mw::DBBatch>& pBatch,
         const PruneList::Ptr& pPruneList,
         const MMRInfo& mmr_info,
         const FilePath& data_dir,
         const BitSet& unspent_leaf_indices,
-        const std::vector<Leaf>& unspent_leaves,
+        const std::vector<mmr::Leaf>& unspent_leaves,
         const std::vector<mw::Hash>& pruned_parent_hashes
     );
 
     static std::vector<mw::Hash> CalcHashes(
         const BitSet& unspent_leaf_indices,
-        const std::vector<Leaf>& unspent_leaves,
+        const std::vector<mmr::Leaf>& unspent_leaves,
         const std::vector<mw::Hash>& pruned_parent_hashes
     );
 };
-
-END_NAMESPACE

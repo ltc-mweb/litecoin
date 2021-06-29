@@ -2,12 +2,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/models/block/Header.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestHeader, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestHeader, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(Header)
 {
@@ -42,7 +41,7 @@ BOOST_AUTO_TEST_CASE(Header)
         kernelMMRSize
     );
 
-    BOOST_REQUIRE(!(header == header2));
+    BOOST_REQUIRE(header != header2);
     BOOST_REQUIRE(header.GetHeight() == height);
     BOOST_REQUIRE(header.GetOutputRoot() == outputRoot);
     BOOST_REQUIRE(header.GetKernelRoot() == kernelRoot);
@@ -51,10 +50,12 @@ BOOST_AUTO_TEST_CASE(Header)
     BOOST_REQUIRE(header.GetOwnerOffset() == ownerOffset);
     BOOST_REQUIRE(header.GetNumTXOs() == outputMMRSize);
     BOOST_REQUIRE(header.GetNumKernels() == kernelMMRSize);
-    BOOST_REQUIRE(header.Format() == "56f10c78905687658dff9aadf812498a68d5704932cb59efe95f13552eac73b5");
+    BOOST_REQUIRE_EQUAL(header.Format(), "688fed89903b3f312daa3f04fe94994c67f3d0688482cdd5ada2851c0b70d7de");
 
-    Deserializer deserializer = header.Serialized();
-    BOOST_REQUIRE(header == mw::Header::Deserialize(deserializer));
+    std::vector<uint8_t> header_serialized = header.Serialized();
+    mw::Header header3;
+    CDataStream(header_serialized, SER_DISK, 0) >> header3;
+    BOOST_REQUIRE(header == header3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

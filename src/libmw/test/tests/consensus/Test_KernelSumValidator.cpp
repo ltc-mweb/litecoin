@@ -2,31 +2,27 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/consensus/KernelSumValidator.h>
 #include <mw/consensus/Aggregation.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/crypto/Random.h>
-#include <mw/file/ScopedFileRemover.h>
 #include <mw/node/CoinsView.h>
 
+#include <test_framework/TestMWEB.h>
 #include <test_framework/models/Tx.h>
-#include <test_framework/DBWrapper.h>
 #include <test_framework/Miner.h>
-#include <test_framework/TestUtil.h>
 #include <test_framework/TxBuilder.h>
 
 // FUTURE: Create official test vectors for the consensus rules being tested
 
-BOOST_FIXTURE_TEST_SUITE(TestKernelSumValidator, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestKernelSumValidator, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(ValidateState)
 {
     // Pegin transaction
     test::Tx pegin_tx = test::TxBuilder()
-        .AddOutput(4'000'000, EOutputFeatures::PEGGED_IN)
-        .AddOutput(5'000'000, EOutputFeatures::PEGGED_IN)
+        .AddOutput(4'000'000)
+        .AddOutput(5'000'000)
         .AddPeginKernel(9'000'000)
         .Build();
 
@@ -86,7 +82,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlock)
 
     // Pegin transaction - 1 output, 1 kernel
     mw::Transaction::CPtr tx2 = test::TxBuilder()
-        .AddOutput(8'000'000, EOutputFeatures::PEGGED_IN)
+        .AddOutput(8'000'000)
         .AddPeginKernel(8'000'000)
         .Build().GetTransaction();
     KernelSumValidator::ValidateForTx(*tx2); // Sanity check
@@ -102,7 +98,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlock)
     mw::Transaction::CPtr pAggregated = Aggregation::Aggregate({ tx1, tx2, tx3 });
     KernelSumValidator::ValidateForTx(*pAggregated); // Sanity check
 
-    BlindingFactor total_offset = Crypto::AddBlindingFactors({ prev_total_offset, pAggregated->GetKernelOffset() });
+    BlindingFactor total_offset = Pedersen::AddBlindingFactors({ prev_total_offset, pAggregated->GetKernelOffset() });
 
     KernelSumValidator::ValidateForBlock(pAggregated->GetBody(), total_offset, prev_total_offset);
 }
@@ -129,7 +125,6 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
     // Add outputs
     SecretKey output1_sender_key = Random::CSPRNG<32>();
     test::TxOutput output1 = test::TxOutput::Create(
-        EOutputFeatures::DEFAULT_OUTPUT,
         output1_sender_key,
         StealthAddress::Random(),
         4'000'000
@@ -139,7 +134,6 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
 
     SecretKey output2_sender_key = Random::CSPRNG<32>();
     test::TxOutput output2 = test::TxOutput::Create(
-        EOutputFeatures::DEFAULT_OUTPUT,
         output2_sender_key,
         StealthAddress::Random(),
         6'500'000
@@ -162,7 +156,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
         .Total();
 
     // Add kernel
-    const uint64_t fee = 500'000;
+    const CAmount fee = 500'000;
     kernels.push_back(Kernel::Create(excess, fee, boost::none, boost::none, boost::none));
 
     // Create Transaction
@@ -190,7 +184,7 @@ BOOST_AUTO_TEST_CASE(ValidateForTx)
 
     // Pegin transaction - 1 output, 1 kernel
     mw::Transaction::CPtr tx2 = test::TxBuilder()
-        .AddOutput(8'000'000, EOutputFeatures::PEGGED_IN)
+        .AddOutput(8'000'000)
         .AddPeginKernel(8'000'000)
         .Build().GetTransaction();
     KernelSumValidator::ValidateForTx(*tx2);

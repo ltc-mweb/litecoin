@@ -1,7 +1,7 @@
 #include <mw/mmr/LeafSet.h>
 #include <mw/crypto/Hasher.h>
 
-MMR_NAMESPACE
+using namespace mmr;
 
 void ILeafSet::Add(const LeafIndex& idx)
 {
@@ -74,5 +74,3 @@ BitSet ILeafSet::ToBitSet() const
 
     return bitset;
 }
-
-END_NAMESPACE

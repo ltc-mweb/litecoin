@@ -52,22 +52,22 @@ bool Transact::CreateTx(
     std::vector<PegOutCoin> pegouts;
     for (const CRecipient& recipient : recipients) {
         if (recipient.IsMWEB()) {
-            receivers.push_back(mw::Recipient{(uint64_t)recipient.nAmount, recipient.GetMWEBAddress()});
+            receivers.push_back(mw::Recipient{recipient.nAmount, recipient.GetMWEBAddress()});
         } else {
             PegOutCoin pegout_recipient(
-                (uint64_t)recipient.nAmount,
-                std::vector<uint8_t>(recipient.receiver.GetScript().begin(), recipient.receiver.GetScript().end())
+                recipient.nAmount,
+                recipient.receiver.GetScript()
             );
             pegouts.push_back(std::move(pegout_recipient));
         }
     }
 
     // Calculate pegin_amount
-    boost::optional<uint64_t> pegin_amount = boost::none;
+    boost::optional<CAmount> pegin_amount = boost::none;
     CAmount ltc_input_amount = GetLTCInputAmount(selected_coins);
     if (ltc_input_amount > 0) {
         assert(ltc_fee < ltc_input_amount);
-        pegin_amount = (uint64_t)(ltc_input_amount - ltc_fee + mweb_fee); // MW: TODO - There could also be LTC change
+        pegin_amount = (ltc_input_amount - ltc_fee + mweb_fee); // MW: TODO - There could also be LTC change
     }
 
     // Add Change
@@ -84,20 +84,20 @@ bool Transact::CreateTx(
             return false;
         }
         StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
-        receivers.push_back(mw::Recipient{(uint64_t)change_amount, change_address});
+        receivers.push_back(mw::Recipient{change_amount, change_address});
     }
 
     // Create transaction
     std::vector<mw::Coin> input_coins = GetInputCoins(selected_coins);
-    transaction.m_mwtx = TxBuilder::BuildTx(
+    transaction.mweb_tx = TxBuilder::BuildTx(
         input_coins,
         receivers,
         pegouts,
         pegin_amount,
-        (uint64_t)mweb_fee);
+        mweb_fee);
 
     // Update pegin output
-    auto pegins = transaction.m_mwtx.GetPegIns();
+    auto pegins = transaction.mweb_tx.GetPegIns();
     if (!pegins.empty()) {
         UpdatePegInOutput(transaction, pegins.front());
     }
@@ -143,7 +143,7 @@ bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const PegInCo
     for (size_t i = 0; i < transaction.vout.size(); i++) {
         if (IsPegInOutput(CTransaction(transaction).GetOutput(i))) {
             CScript pegin_script;
-            pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+            pegin_script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
             pegin_script << pegin.GetCommitment().vec();
             transaction.vout[i].nValue = pegin.GetAmount();
             transaction.vout[i].scriptPubKey = pegin_script;

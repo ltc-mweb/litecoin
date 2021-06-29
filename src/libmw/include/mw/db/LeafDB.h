@@ -10,7 +10,7 @@ class Database;
 class LeafDB
 {
 public:
-    LeafDB(const char prefix, mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch = nullptr);
+    LeafDB(const char prefix, mw::DBWrapper* pDBWrapper, mw::DBBatch* pBatch = nullptr);
     ~LeafDB();
 
     std::unique_ptr<mmr::Leaf> Get(const mmr::LeafIndex& idx) const;

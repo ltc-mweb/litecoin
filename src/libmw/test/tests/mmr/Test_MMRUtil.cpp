@@ -2,15 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/mmr/MMRUtil.h>
 #include <unordered_set>
 
+#include <test_framework/TestMWEB.h>
+
 using namespace mmr;
 
-BOOST_FIXTURE_TEST_SUITE(TestMMRUtil, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestMMRUtil, MWEBTestingSetup)
 
 #define REQUIRE_NEXT(iter, expected_pos) \
     BOOST_REQUIRE(iter.Next()); \
@@ -116,7 +115,7 @@ BOOST_AUTO_TEST_CASE(BuildCompactBitSet)
         unspent_leaf_indices.set(i);
     }
 
-    BitSet compactable_node_indices = mmr::MMRUtil::BuildCompactBitSet(num_leaves, unspent_leaf_indices);
+    BitSet compactable_node_indices = MMRUtil::BuildCompactBitSet(num_leaves, unspent_leaf_indices);
     BOOST_REQUIRE(compactable_node_indices.str() == "1100000111111000001100111111000111111111111110110000011000000000000000000000000000000000000000000000");
     BOOST_REQUIRE(compactable_node_indices.count() == 34);
 }
@@ -130,7 +129,7 @@ BOOST_AUTO_TEST_CASE(DiffCompactBitSet)
     new_compact.set(0, 5, true);
     new_compact.set(8, 10, true);
 
-    BitSet diff = mmr::MMRUtil::DiffCompactBitSet(prev_compact, new_compact);
+    BitSet diff = MMRUtil::DiffCompactBitSet(prev_compact, new_compact);
 
     BOOST_REQUIRE(diff.size() == 15);
     BOOST_REQUIRE(diff.str() == "000111111111100");
@@ -148,7 +147,7 @@ BOOST_AUTO_TEST_CASE(CalcPrunedParents)
         unspent_leaf_indices.set(i);
     }
 
-    BitSet pruned_parent_hashes = mmr::MMRUtil::CalcPrunedParents(unspent_leaf_indices);
+    BitSet pruned_parent_hashes = MMRUtil::CalcPrunedParents(unspent_leaf_indices);
     BOOST_REQUIRE(pruned_parent_hashes.str() == "0010100000000101000010000000100000000000000001001000000100000000000000000000000000000000000000000000");
 }
 

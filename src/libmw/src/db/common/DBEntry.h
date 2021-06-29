@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mw/traits/Serializable.h>
+#include <mw/common/Traits.h>
 #include <string>
 #include <memory>
 

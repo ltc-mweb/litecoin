@@ -699,7 +699,7 @@ struct COutputCoin
         }
     }
 
-    boost::variant<CScript, StealthAddress> GetAddress() const
+    DestinationScript GetAddress() const
     {
         if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
 
@@ -1402,6 +1402,7 @@ public:
     CWalletTx* FindPrevTx(const CTxInput& input);
 
     const std::shared_ptr<MWEB::Wallet>& GetMWWallet() const noexcept { return mweb_wallet; }
+    mw::Keychain::Ptr GetMWEBKeychain() const override { return mweb_wallet->GetKeychain(); }
 };
 
 /** A key allocated from the key pool. */

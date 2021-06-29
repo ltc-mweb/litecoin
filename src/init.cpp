@@ -25,8 +25,8 @@
 #include <key.h>
 #include <validation.h>
 #include <miner.h>
-#include <mweb/mweb_db.h>
 #include <mw/node/Node.h>
+#include <mweb/mweb_db.h>
 #include <netbase.h>
 #include <net.h>
 #include <net_processing.h>
@@ -1549,8 +1549,8 @@ bool AppInitMain(InitInterfaces& interfaces)
                 // MWEB: Initialize MWEB node APIs
                 LoggerAPI::Initialize([](const std::string& logstr) { LogPrintf(logstr.c_str()); });
                 mw::CoinsViewDB::Ptr mweb_dbview = mw::Node::Init(
-                    FilePath{GetDataDir().native()},
-                    block.mwBlock.GetMWEBHeader(),
+                    FilePath{GetDataDir()},
+                    block.mweb_block.GetMWEBHeader(),
                     std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
                 );
                 pcoinsdbview->SetMWView(mweb_dbview);
@@ -1701,8 +1701,8 @@ bool AppInitMain(InitInterfaces& interfaces)
         nLocalServices = ServiceFlags(nLocalServices | NODE_WITNESS);
     }
 
-    if (chainparams.GetConsensus().vDeployments[Consensus::DEPLOYMENT_MW].nTimeout != 0) {
-        nLocalServices = ServiceFlags(nLocalServices | NODE_MW);
+    if (chainparams.GetConsensus().vDeployments[Consensus::DEPLOYMENT_MWEB].nTimeout != 0) {
+        nLocalServices = ServiceFlags(nLocalServices | NODE_MWEB);
     }
 
     // ********************************************************* Step 11: import blocks

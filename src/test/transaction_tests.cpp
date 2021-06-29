@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(tx_valid)
             CTransaction tx(deserialize, stream);
 
             CValidationState state;
-            BOOST_CHECK_MESSAGE(CheckTransaction(tx, state, true), strTest);
+            BOOST_CHECK_MESSAGE(CheckTransaction(tx, state), strTest);
             BOOST_CHECK(state.IsValid());
 
             PrecomputedTransactionData txdata(tx);
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(tx_invalid)
             CTransaction tx(deserialize, stream);
 
             CValidationState state;
-            fValid = CheckTransaction(tx, state, true) && state.IsValid();
+            fValid = CheckTransaction(tx, state) && state.IsValid();
 
             PrecomputedTransactionData txdata(tx);
             for (unsigned int i = 0; i < tx.vin.size() && fValid; i++)
@@ -274,11 +274,11 @@ BOOST_AUTO_TEST_CASE(basic_transaction_tests)
     CMutableTransaction tx;
     stream >> tx;
     CValidationState state;
-    BOOST_CHECK_MESSAGE(CheckTransaction(CTransaction(tx), state, true) && state.IsValid(), "Simple deserialized transaction should be valid.");
+    BOOST_CHECK_MESSAGE(CheckTransaction(CTransaction(tx), state) && state.IsValid(), "Simple deserialized transaction should be valid.");
 
     // Check that duplicate txins fail
     tx.vin.push_back(tx.vin[0]);
-    BOOST_CHECK_MESSAGE(!CheckTransaction(CTransaction(tx), state, true) || !state.IsValid(), "Transaction with duplicate txins should be invalid.");
+    BOOST_CHECK_MESSAGE(!CheckTransaction(CTransaction(tx), state) || !state.IsValid(), "Transaction with duplicate txins should be invalid.");
 }
 
 //
@@ -768,17 +768,5 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
     t.vout[1].scriptPubKey = CScript() << OP_RETURN;
     BOOST_CHECK(!IsStandardTx(CTransaction(t), reason));
 }
-
-// MW: TODO - Fix this test
-//BOOST_AUTO_TEST_CASE(test_mweb)
-//{
-//    CMutableTransaction mut_tx_mweb;
-//    mut_tx_mweb.m_mwtx = MWEB::Tx(libmw::wallet::CreatePegInTx(std::shared_ptr<libmw::IWallet>(new MockMWWallet()), 20).first);
-//
-//    CValidationState state;
-//    BOOST_CHECK_MESSAGE(CheckTransaction(CTransaction(mut_tx_mweb), state, false) && state.IsValid(), "Transaction with MWEB data should be valid outside of a block.");
-//   
-//    BOOST_CHECK_MESSAGE(!CheckTransaction(CTransaction(mut_tx_mweb), state, true) || !state.IsValid(), "Transaction with MWEB data should be invalid in a block.");
-//}
 
 BOOST_AUTO_TEST_SUITE_END()

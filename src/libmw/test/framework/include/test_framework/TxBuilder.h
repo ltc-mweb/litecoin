@@ -21,38 +21,32 @@ public:
 
     TxBuilder& AddInput(const TxOutput& input);
     TxBuilder& AddInput(
-        const uint64_t amount,
-        const Features& features = Features(EOutputFeatures::DEFAULT_OUTPUT),
+        const CAmount amount,
         const BlindingFactor& blind = Random::CSPRNG<32>()
     );
     TxBuilder& AddInput(
-        const uint64_t amount,
+        const CAmount amount,
         const SecretKey& privkey,
-        const Features& features,
         const BlindingFactor& blind
     );
 
+    TxBuilder& AddOutput(const CAmount amount);
     TxBuilder& AddOutput(
-        const uint64_t amount,
-        const Features& features = Features(EOutputFeatures::DEFAULT_OUTPUT)
-    );
-    TxBuilder& AddOutput(
-        const uint64_t amount,
+        const CAmount amount,
         const SecretKey& sender_privkey,
-        const StealthAddress& receiver_addr,
-        const Features& features
+        const StealthAddress& receiver_addr
     );
 
     TxBuilder& AddOwnerSig(const Kernel& kernel);
 
-    TxBuilder& AddPlainKernel(const uint64_t fee, const bool add_owner_sig = false);
-    TxBuilder& AddPeginKernel(const uint64_t amount, const boost::optional<uint64_t>& fee = boost::none, const bool add_owner_sig = false);
-    TxBuilder& AddPegoutKernel(const uint64_t amount, const uint64_t fee, const bool add_owner_sig = false);
+    TxBuilder& AddPlainKernel(const CAmount fee, const bool add_owner_sig = false);
+    TxBuilder& AddPeginKernel(const CAmount amount, const boost::optional<CAmount>& fee = boost::none, const bool add_owner_sig = false);
+    TxBuilder& AddPegoutKernel(const CAmount amount, const CAmount fee, const bool add_owner_sig = false);
 
     Tx Build();
 
 private:
-    int64_t m_amount;
+    CAmount m_amount;
     Blinds m_kernelOffset;
     Blinds m_ownerOffset;
 

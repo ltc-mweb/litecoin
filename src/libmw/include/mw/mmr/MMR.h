@@ -6,15 +6,15 @@
 
 #include <mw/common/Macros.h>
 #include <mw/common/Logger.h>
+#include <mw/common/Traits.h>
+#include <mw/file/AppendOnlyFile.h>
+#include <mw/file/FilePath.h>
 #include <mw/models/crypto/Hash.h>
-#include <mw/traits/Serializable.h>
-#include <mw/mmr/Backend.h>
 #include <mw/mmr/LeafIndex.h>
 #include <mw/mmr/Leaf.h>
-#include <mw/mmr/Node.h>
+#include <mw/mmr/MMRUtil.h>
+#include <mw/mmr/PruneList.h>
 #include <mw/interfaces/db_interface.h>
-
-MMR_NAMESPACE
 
 /// <summary>
 /// An interface for interacting with MMRs.
@@ -23,15 +23,16 @@ class IMMR
 {
 public:
     using Ptr = std::shared_ptr<IMMR>;
+    virtual ~IMMR() = default;
 
     /// <summary>
     /// Adds a new leaf with the given data to the end of the MMR.
     /// </summary>
     /// <param name="data">The serialized leaf data.</param>
     /// <returns>The LeafIndex where the data was added.</returns>
-    virtual LeafIndex AddLeaf(std::vector<uint8_t>&& data) = 0;
-    LeafIndex Add(const std::vector<uint8_t>& data) { return AddLeaf(std::vector<uint8_t>(data)); }
-    LeafIndex Add(const Traits::ISerializable& serializable) { return AddLeaf(serializable.Serialized()); }
+    virtual mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) = 0;
+    mmr::LeafIndex Add(const std::vector<uint8_t>& data) { return AddLeaf(mmr::Leaf::Create(GetNextLeafIdx(), data)); }
+    mmr::LeafIndex Add(const Traits::ISerializable& serializable) { return AddLeaf(mmr::Leaf::Create(GetNextLeafIdx(), serializable.Serialized())); }
 
     /// <summary>
     /// Retrieves the leaf at the given leaf index.
@@ -40,7 +41,7 @@ public:
     /// <returns>The retrieved Leaf.</returns>
     /// <throws>std::exception if index is beyond the end of the MMR.</throws>
     /// <throws>std::exception if leaf at given index has been pruned.</throws>
-    virtual Leaf GetLeaf(const LeafIndex& leafIdx) const = 0;
+    virtual mmr::Leaf GetLeaf(const mmr::LeafIndex& leafIdx) const = 0;
 
     /// <summary>
     /// Retrieves the hash at the given MMR index.
@@ -49,21 +50,21 @@ public:
     /// <returns>The hash of the leaf or node at the index.</returns>
     /// <throws>std::exception if index is beyond the end of the MMR.</throws>
     /// <throws>std::exception if node at the given index has been pruned.</throws>
-    virtual mw::Hash GetHash(const Index& idx) const = 0;
+    virtual mw::Hash GetHash(const mmr::Index& idx) const = 0;
 
     /// <summary>
     /// Retrieves the index of the next leaf to be added to the MMR.
     /// eg. If the MMR contains 3 leaves (0, 1, 2), this will return LeafIndex 3.
     /// </summary>
     /// <returns>The next leaf index.</returns>
-    virtual LeafIndex GetNextLeafIdx() const noexcept = 0;
+    virtual mmr::LeafIndex GetNextLeafIdx() const noexcept = 0;
 
     /// <summary>
     /// Gets the number of leaves in the MMR, including those that have been pruned.
     /// eg. If the MMR contains leaves 0, 1, and 2, this will return 3.
     /// </summary>
     /// <returns>The number of (pruned and unpruned) leaves in the MMR.</returns>
-    uint64_t GetNumLeaves() const noexcept { return GetNextLeafIdx().Get(); }
+    virtual uint64_t GetNumLeaves() const noexcept = 0;
 
     /// <summary>
     /// "Rewinds" the MMR to the given number of leaves.
@@ -71,7 +72,7 @@ public:
     /// </summary>
     /// <param name="numLeaves">The total number of (pruned and unpruned) leaves in the MMR.</param>
     virtual void Rewind(const uint64_t numLeaves) = 0;
-    void Rewind(const LeafIndex& nextLeaf) { Rewind(nextLeaf.Get()); }
+    void Rewind(const mmr::LeafIndex& nextLeaf) { Rewind(nextLeaf.Get()); }
     
     /// <summary>
     /// Unlike a Merkle tree, an MMR generally has no single root so we need a method to compute one.
@@ -92,10 +93,67 @@ public:
     /// <param name="pBatch">A wrapper around a DB Batch. Required when called for an MMR (ie, non-cache).</param>
     virtual void BatchWrite(
         const uint32_t file_index,
-        const LeafIndex& firstLeafIdx,
-        const std::vector<Leaf>& leaves,
-        const std::unique_ptr<mw::IDBBatch>& pBatch
+        const mmr::LeafIndex& firstLeafIdx,
+        const std::vector<mmr::Leaf>& leaves,
+        const std::unique_ptr<mw::DBBatch>& pBatch
     ) = 0;
+};
+
+/// <summary>
+/// Memory-only MMR with no pruning or file I/O.
+/// </summary>
+class MemMMR : public IMMR
+{
+public:
+    using Ptr = std::shared_ptr<MemMMR>;
+
+    virtual ~MemMMR() = default;
+
+    mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) final
+    {
+        m_leaves.push_back(leaf);
+        m_hashes.push_back(leaf.GetHash());
+
+        auto nextIdx = leaf.GetNodeIndex().GetNext();
+        while (!nextIdx.IsLeaf()) {
+            mw::Hash leftHash = GetHash(nextIdx.GetLeftChild());
+            m_hashes.push_back(MMRUtil::CalcParentHash(nextIdx, leftHash, m_hashes.back()));
+            nextIdx = nextIdx.GetNext();
+        }
+
+        return leaf.GetLeafIndex();
+    }
+
+    mmr::Leaf GetLeaf(const mmr::LeafIndex& leafIdx) const final
+    {
+        assert(leafIdx.Get() < m_leaves.size());
+        return m_leaves[leafIdx.Get()];
+    }
+
+    mw::Hash GetHash(const mmr::Index& idx) const final
+    {
+        assert(idx.GetPosition() < m_hashes.size());
+        return m_hashes[idx.GetPosition()];
+    }
+
+    mmr::LeafIndex GetNextLeafIdx() const noexcept final { return mmr::LeafIndex::At(GetNumLeaves()); }
+    uint64_t GetNumLeaves() const noexcept final { return m_leaves.size(); }
+    void Rewind(const uint64_t numLeaves) final
+    {
+        assert(numLeaves <= m_leaves.size());
+        m_leaves.resize(numLeaves);
+        m_hashes.resize(GetNextLeafIdx().GetPosition());
+    }
+
+    void BatchWrite(
+        const uint32_t,
+        const mmr::LeafIndex&,
+        const std::vector<mmr::Leaf>&,
+        const std::unique_ptr<mw::DBBatch>&) final {}
+
+private:
+    std::vector<mw::Hash> m_hashes;
+    std::vector<mmr::Leaf> m_leaves;
 };
 
 class MMR : public IMMR
@@ -103,27 +161,56 @@ class MMR : public IMMR
 public:
     using Ptr = std::shared_ptr<MMR>;
 
-    MMR(const IBackend::Ptr& pBackend) : m_pBackend(pBackend) { }
+    static MMR::Ptr Open(
+        const char dbPrefix,
+        const FilePath& mmr_dir,
+        const uint32_t file_index,
+        const mw::DBWrapper::Ptr& pDBWrapper,
+        const std::shared_ptr<const PruneList>& pPruneList
+    );
 
-    LeafIndex AddLeaf(std::vector<uint8_t>&& data) final;
+    MMR(const char dbPrefix,
+        const FilePath& mmr_dir,
+        const AppendOnlyFile::Ptr& pHashFile,
+        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
+        const PruneList::CPtr& pPruneList
+    ) :
+        m_dbPrefix(dbPrefix),
+        m_dir(mmr_dir),
+        m_pHashFile(pHashFile),
+        m_pDatabase(pDBWrapper),
+        m_pPruneList(pPruneList) { }
 
-    Leaf GetLeaf(const LeafIndex& leafIdx) const final { return m_pBackend->GetLeaf(leafIdx); }
-    mw::Hash GetHash(const Index& idx) const final { return m_pBackend->GetHash(idx); }
-    LeafIndex GetNextLeafIdx() const noexcept final { return m_pBackend->GetNextLeaf(); }
+    virtual ~MMR() = default;
 
-    uint64_t GetNumLeaves() const noexcept;
+    static FilePath GetPath(const FilePath& dir, const char prefix, const uint32_t file_index);
+
+    mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) final;
+
+    mmr::Leaf GetLeaf(const mmr::LeafIndex& leafIdx) const final;
+    mw::Hash GetHash(const mmr::Index& idx) const final;
+    mmr::LeafIndex GetNextLeafIdx() const noexcept final { return mmr::LeafIndex::At(GetNumLeaves()); }
+
+    uint64_t GetNumLeaves() const noexcept final;
     uint64_t GetNumNodes() const noexcept;
     void Rewind(const uint64_t numLeaves) final;
 
     void BatchWrite(
         const uint32_t file_index,
-        const LeafIndex& firstLeafIdx,
-        const std::vector<Leaf>& leaves,
-        const std::unique_ptr<mw::IDBBatch>& pBatch
+        const mmr::LeafIndex& firstLeafIdx,
+        const std::vector<mmr::Leaf>& leaves,
+        const std::unique_ptr<mw::DBBatch>& pBatch
     ) final;
+    void Cleanup(const uint32_t current_file_index) const;
 
 private:
-    IBackend::Ptr m_pBackend;
+    char m_dbPrefix;
+    FilePath m_dir;
+    AppendOnlyFile::Ptr m_pHashFile;
+    std::vector<mmr::Leaf> m_leaves;
+    std::map<mmr::LeafIndex, size_t> m_leafMap;
+    std::shared_ptr<mw::DBWrapper> m_pDatabase;
+    PruneList::CPtr m_pPruneList;
 };
 
 class MMRCache : public IMMR
@@ -133,29 +220,29 @@ public:
 
     MMRCache(const IMMR::Ptr& pBacked)
         : m_pBase(pBacked), m_firstLeaf(pBacked->GetNextLeafIdx()){ }
+    virtual ~MMRCache() = default;
 
-    LeafIndex AddLeaf(std::vector<uint8_t>&& data) final;
+    mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) final;
 
-    Leaf GetLeaf(const LeafIndex& leafIdx) const final;
-    LeafIndex GetNextLeafIdx() const noexcept final;
-    mw::Hash GetHash(const Index& idx) const final;
+    mmr::Leaf GetLeaf(const mmr::LeafIndex& leafIdx) const final;
+    mmr::LeafIndex GetNextLeafIdx() const noexcept final;
+    uint64_t GetNumLeaves() const noexcept final { return GetNextLeafIdx().Get(); }
+    mw::Hash GetHash(const mmr::Index& idx) const final;
 
     void Rewind(const uint64_t numLeaves) final;
 
     void BatchWrite(
         const uint32_t file_index,
-        const LeafIndex& firstLeafIdx,
-        const std::vector<Leaf>& leaves,
-        const std::unique_ptr<mw::IDBBatch>& pBatch
+        const mmr::LeafIndex& firstLeafIdx,
+        const std::vector<mmr::Leaf>& leaves,
+        const std::unique_ptr<mw::DBBatch>& pBatch
     ) final;
 
-    void Flush(const uint32_t index, const std::unique_ptr<mw::IDBBatch>& pBatch);
+    void Flush(const uint32_t index, const std::unique_ptr<mw::DBBatch>& pBatch);
 
 private:
     IMMR::Ptr m_pBase;
-    LeafIndex m_firstLeaf;
-    std::vector<Leaf> m_leaves;
+    mmr::LeafIndex m_firstLeaf;
+    std::vector<mmr::Leaf> m_leaves;
     std::vector<mw::Hash> m_nodes;
 };
-
-END_NAMESPACE

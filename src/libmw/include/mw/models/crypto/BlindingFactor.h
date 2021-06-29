@@ -4,9 +4,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/BigInteger.h>
 #include <mw/models/crypto/SecretKey.h>
-#include <mw/traits/Serializable.h>
 
 class BlindingFactor : public Traits::ISerializable
 {
@@ -46,16 +46,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return m_value.Serialize(serializer);
-    }
-
-    static BlindingFactor Deserialize(Deserializer& deserializer)
-    {
-        return BlindingFactor(BigInt<32>::Deserialize(deserializer));
-    }
-
+    IMPL_SERIALIZABLE(BlindingFactor);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

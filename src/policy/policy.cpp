@@ -112,9 +112,15 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
         }
     }
 
+    // MWEB: Also check pegout scripts
+    std::vector<CTxOut> txouts = tx.vout;
+    for (const PegOutCoin& pegout : tx.mweb_tx.GetPegOuts()) {
+        txouts.push_back(CTxOut(pegout.GetAmount(), pegout.GetScriptPubKey()));
+    }
+
     unsigned int nDataOut = 0;
     txnouttype whichType;
-    for (const CTxOut& txout : tx.vout) {
+    for (const CTxOut& txout : txouts) {
         if (!::IsStandard(txout.scriptPubKey, whichType)) {
             reason = "scriptpubkey";
             return false;
@@ -135,6 +141,14 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
     if (nDataOut > 1) {
         reason = "multi-op-return";
         return false;
+    }
+
+    // MWEB: Check MWEB transaction for non-standard kernel features
+    if (tx.HasMWEBTx()) {
+        if (!tx.mweb_tx.m_transaction->IsStandard()) {
+            reason = "non-standard-mweb-tx";
+            return false;
+        }
     }
 
     return true;
@@ -161,6 +175,7 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
     if (tx.IsCoinBase())
         return true; // Coinbases don't use vin normally
 
+    // MW: TODO - Consider also checking pegout scripts
     for (unsigned int i = 0; i < tx.vin.size(); i++)
     {
         const CTxOut& prev = mapInputs.AccessCoin(tx.vin[i].prevout).out;

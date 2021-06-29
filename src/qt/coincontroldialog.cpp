@@ -496,8 +496,8 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
         nAmount += out.nValue;
 
         // Bytes
-        if (out.address.type() == typeid(CScript)) {
-            const CScript& scriptPubKey = boost::get<CScript>(out.address);
+        if (!out.address.IsMWEB()) {
+            const CScript& scriptPubKey = out.address.GetScript();
             CTxDestination address;
             int witnessversion = 0;
             std::vector<unsigned char> witnessprogram;
@@ -692,20 +692,18 @@ void CoinControlDialog::updateView()
             // address
             QString sAddress = "";
 
-            if (out.address.which() == 0) {
-                const CScript& scriptPubKey = boost::get<CScript>(out.address);
-
+            if (out.address.IsMWEB()) {
+                sAddress = QString::fromStdString(EncodeDestination(coins.first));
+            } else {
                 // scriptpubkey index
                 CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
-                stream << scriptPubKey;
+                stream << out.address.GetScript();
                 itemOutput->setData(COLUMN_ADDRESS, PubKeyRole, QString::fromStdString(HexStr(stream.begin(), stream.end())));
 
                 CTxDestination outputAddress;
-                if (ExtractDestination(scriptPubKey, outputAddress)) {
+                if (ExtractDestination(out.address.GetScript(), outputAddress)) {
                     sAddress = QString::fromStdString(EncodeDestination(outputAddress));
                 }
-            } else {
-                sAddress = QString::fromStdString(EncodeDestination(coins.first));
             }
 
             // if listMode or change => show bitcoin address. In tree mode, address is not shown again for direct wallet address outputs

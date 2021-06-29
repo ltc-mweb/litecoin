@@ -19,7 +19,7 @@
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
 {
     // MWEB: Check kernel lock heights
-    if (tx.m_mwtx.GetLockHeight() > (uint64_t)nBlockHeight)
+    if (tx.mweb_tx.GetLockHeight() > nBlockHeight)
         return false;
 
     if (tx.nLockTime == 0)
@@ -105,7 +105,6 @@ bool EvaluateSequenceLocks(const CBlockIndex& block, std::pair<int, int64_t> loc
     return true;
 }
 
-// MW: TODO - Do we want to support relative locks for anything?
 bool SequenceLocks(const CTransaction &tx, int flags, std::vector<int>* prevHeights, const CBlockIndex& block)
 {
     return EvaluateSequenceLocks(block, CalculateSequenceLocks(tx, flags, prevHeights, block));
@@ -163,17 +162,17 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
     return nSigOps;
 }
 
-bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFromBlock)
+bool CheckTransaction(const CTransaction& tx, CValidationState& state)
 {
     // Basic checks that don't depend on any context
 
     // MWEB: Check MWEB tx
-    if (!MWEB::Node::CheckTransaction(tx, state, fFromBlock)) {
+    if (!MWEB::Node::CheckTransaction(tx, state)) {
         return false;
     }
 
-    if (tx.HasMWData() && tx.vin.empty() && tx.vout.empty()) {
-        // Do nothing. A mimblewimble tx with 0 inputs & 0 outputs is valid.
+    if (tx.HasMWEBTx() && tx.vin.empty() && tx.vout.empty()) {
+        // Do nothing. An MWEB tx with 0 inputs & 0 outputs is valid.
     } else {
         if (tx.vin.empty())
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
@@ -182,7 +181,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fFro
     }
 
     // Size limits (this doesn't take the witness into account, as that hasn't been checked for malleability)
-    if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
+    if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-oversize");
 
     // Check for negative or overflow output values
@@ -262,21 +261,16 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     }
 
     // MWEB
-    if (tx.HasMWData()) {
-        for (const Input& input : tx.m_mwtx.m_transaction->GetInputs()) {
+    if (tx.HasMWEBTx()) {
+        for (const Input& input : tx.mweb_tx.m_transaction->GetInputs()) {
             auto utxos = inputs.GetMWView()->GetUTXOs(input.GetCommitment());
             if (utxos.empty()) {
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-missing", false,
                     strprintf("%s: MWEB inputs missing", __func__));
             }
-
-            if (utxos.back()->IsPeggedIn() && nSpendHeight < (int)utxos.back()->GetBlockHeight() + mw::PEGIN_MATURITY) {
-                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-immature", false,
-                    strprintf("%s: MWEB inputs immature", __func__));
-            }
         }
 
-        CAmount mweb_fee = tx.m_mwtx.GetFee();
+        CAmount mweb_fee = tx.mweb_tx.GetFee();
         txfee_aux += mweb_fee;
 
         if (!MoneyRange(mweb_fee) || !MoneyRange(txfee_aux)) {

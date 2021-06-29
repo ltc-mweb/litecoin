@@ -1,13 +1,12 @@
 #pragma once
 
 #include <mw/common/BitSet.h>
+#include <mw/crypto/Hasher.h>
 #include <mw/mmr/Index.h>
 #include <mw/mmr/LeafIndex.h>
 #include <mw/util/BitUtil.h>
 #include <boost/dynamic_bitset.hpp>
 #include <cmath>
-
-MMR_NAMESPACE
 
 struct SiblingIter
 {
@@ -46,6 +45,15 @@ private:
 class MMRUtil
 {
 public:
+    static mw::Hash CalcParentHash(const mmr::Index& index, const mw::Hash& left_hash, const mw::Hash& right_hash)
+    {
+        return Hasher()
+            .Append<uint64_t>(index.GetPosition())
+            .Append(left_hash)
+            .Append(right_hash)
+            .hash();
+    }
+
     static BitSet BuildCompactBitSet(const uint64_t num_leaves, const BitSet& unspent_leaf_indices)
     {
         BitSet compactable_node_indices(num_leaves * 2);
@@ -144,5 +152,3 @@ public:
         return ret;
     }
 };
-
-END_NAMESPACE

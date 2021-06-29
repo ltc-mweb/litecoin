@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mw/crypto/Pedersen.h>
 #include <mw/models/tx/Transaction.h>
 #include <cassert>
 
@@ -56,14 +57,9 @@ public:
             owner_offsets.push_back(pTransaction->GetOwnerOffset());
         }
 
-        // TODO: Do we need to prevent duplicate inputs, outputs, and kernels here?
-        // In theory, that should already be done in the mempool.
-        // Belt and suspenders checks wouldn't be bad, but it will result in a lot of
-        // memory duplication and hashtable lookups slowing down mining.
-
         // Sum the offsets up to give us an aggregate offsets for the transaction.
-        BlindingFactor kernel_offset = Crypto::AddBlindingFactors(kernel_offsets);
-        BlindingFactor owner_offset = Crypto::AddBlindingFactors(owner_offsets);
+        BlindingFactor kernel_offset = Pedersen::AddBlindingFactors(kernel_offsets);
+        BlindingFactor owner_offset = Pedersen::AddBlindingFactors(owner_offsets);
 
         // Build a new aggregate tx
         return mw::Transaction::Create(

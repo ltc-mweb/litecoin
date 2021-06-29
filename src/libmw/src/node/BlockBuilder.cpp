@@ -88,7 +88,7 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
     }
 
     m_pAggregated = pAggregated;
-    m_weight += weight;
+    m_weight = Weight::Calculate(pAggregated->GetBody());
 
     return true;
 }

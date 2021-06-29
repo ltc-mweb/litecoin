@@ -13,40 +13,36 @@
 
 MW_NAMESPACE
 
-class IDBBatch
+class DBBatch
 {
 public:
-    using UPtr = std::unique_ptr<mw::IDBBatch>;
-    virtual ~IDBBatch() = default;
+    using UPtr = std::unique_ptr<DBBatch>;
 
     virtual void Write(const std::string& key, const std::vector<uint8_t>& value) = 0;
     virtual void Erase(const std::string& key) = 0;
-
     virtual void Commit() = 0;
 };
 
-class IDBIterator
+class DBIterator
 {
 public:
-    virtual ~IDBIterator() = default;
+    virtual ~DBIterator() = default;
 
     virtual void Seek(const std::string& key) = 0;
     virtual void Next() = 0;
-
     virtual bool GetKey(std::string& key) const = 0;
     virtual bool Valid() const = 0;
 };
 
-class IDBWrapper
+class DBWrapper
 {
 public:
-    using Ptr = std::shared_ptr<mw::IDBWrapper>;
+    using Ptr = std::shared_ptr<DBWrapper>;
 
-    virtual ~IDBWrapper() = default;
-
+    // MW: TODO - Should support serializable object instead of vector?
     virtual bool Read(const std::string& key, std::vector<uint8_t>& value) const = 0;
-    virtual std::unique_ptr<IDBIterator> NewIterator() = 0;
-    virtual std::unique_ptr<IDBBatch> CreateBatch() = 0;
+    virtual std::unique_ptr<DBIterator> NewIterator() = 0;
+    virtual std::unique_ptr<DBBatch> CreateBatch() = 0;
 };
 
 END_NAMESPACE // mw

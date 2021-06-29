@@ -392,7 +392,7 @@ struct WalletTxStatus
 //! Wallet transaction output.
 struct WalletTxOut
 {
-    boost::variant<CScript, StealthAddress> address;
+    DestinationScript address;
     OutputIndex output_index;
     CAmount nValue;
     int64_t time;

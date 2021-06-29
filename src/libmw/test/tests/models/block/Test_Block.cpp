@@ -2,14 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/models/block/Block.h>
 #include <mw/consensus/Aggregation.h>
+#include <mw/mmr/MMR.h>
 #include <test_framework/models/Tx.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestBlock, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestBlock, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(Block)
 {
@@ -20,10 +20,15 @@ BOOST_AUTO_TEST_CASE(Block)
         tx2.GetTransaction()
     });
 
+    MemMMR kernel_mmr;
+    for (const Kernel& kernel : pTransaction->GetKernels()) {
+        kernel_mmr.Add(kernel);
+    }
+
     mw::Header::CPtr pHeader = std::make_shared<mw::Header>(
         100,
         mw::Hash::FromHex("000102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20"),
-        mw::Hash::FromHex("001102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20"),
+        kernel_mmr.Root(),
         mw::Hash::FromHex("002102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20"),
         BlindingFactor(pTransaction->GetKernelOffset()),
         BlindingFactor(pTransaction->GetOwnerOffset()),
@@ -45,15 +50,13 @@ BOOST_AUTO_TEST_CASE(Block)
     BOOST_REQUIRE(block.GetPegInAmount() == 30);
     BOOST_REQUIRE(block.GetPegOuts().empty());
 
-    Deserializer deserializer = block.Serialized();
-    mw::Block block2 = mw::Block::Deserialize(deserializer);
+    std::vector<uint8_t> block_serialized = block.Serialized();
+    mw::Block block2;
+    CDataStream(block_serialized, SER_DISK, 0) >> block2;
     BOOST_REQUIRE(*block.GetHeader() == *block2.GetHeader());
     BOOST_REQUIRE(block.GetTxBody() == block2.GetTxBody());
 
-    BOOST_REQUIRE(!block.WasValidated());
     block.Validate();
-    block.MarkAsValidated();
-    BOOST_REQUIRE(block.WasValidated());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

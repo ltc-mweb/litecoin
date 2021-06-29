@@ -4,8 +4,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/BigInteger.h>
-#include <mw/traits/Serializable.h>
 #include <support/allocators/secure.h>
 
 template<size_t NUM_BYTES>
@@ -48,16 +48,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return m_value.Serialize(serializer);
-    }
-
-    static secret_key_t<NUM_BYTES> Deserialize(Deserializer& deserializer)
-    {
-        return secret_key_t<NUM_BYTES>(BigInt<NUM_BYTES>::Deserialize(deserializer));
-    }
-
+    IMPL_SERIALIZABLE(secret_key_t<NUM_BYTES>);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

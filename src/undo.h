@@ -113,8 +113,7 @@ public:
         READWRITE(vtxundo);
 
         if (mwundo != nullptr) {
-            std::vector<uint8_t> bytes = mwundo->Serialized();
-            READWRITE(bytes);
+            READWRITE(mwundo);
         }
     }
 };
@@ -131,11 +130,8 @@ inline void UnserializeBlockUndo(CBlockUndo& blockundo, Stream& s, const unsigne
     }
 
     if (::GetSerializeSize(blockundo) < num_bytes) {
-        // There's more data to read. Mimblewimble rewind data must be available.
-        std::vector<uint8_t> mwundo_bytes;
-        s >> mwundo_bytes;
-        Deserializer deserializer(std::move(mwundo_bytes));
-        blockundo.mwundo = std::make_shared<mw::BlockUndo>(mw::BlockUndo::Deserialize(deserializer));
+        // There's more data to read. MWEB rewind data must be available.
+        s >> blockundo.mwundo;
     }
 }
 

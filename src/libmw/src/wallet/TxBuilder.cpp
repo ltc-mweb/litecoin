@@ -10,21 +10,21 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     const std::vector<mw::Coin>& input_coins,
     const std::vector<mw::Recipient>& recipients,
     const std::vector<PegOutCoin>& pegouts,
-    const boost::optional<uint64_t>& pegin_amount,
-    const uint64_t fee)
+    const boost::optional<CAmount>& pegin_amount,
+    const CAmount fee)
 {
     if (pegouts.size() > 1) {
         throw std::runtime_error("Only supporting one pegout at this time.");
     }
 
-    uint64_t pegout_total = std::accumulate(
-        pegouts.cbegin(), pegouts.cend(), (uint64_t)0,
-        [](uint64_t sum, const PegOutCoin& pegout) { return sum + pegout.GetAmount(); }
+    CAmount pegout_total = std::accumulate(
+        pegouts.cbegin(), pegouts.cend(), (CAmount)0,
+        [](CAmount sum, const PegOutCoin& pegout) { return sum + pegout.GetAmount(); }
     );
 
-    uint64_t recipient_total = std::accumulate(
-        recipients.cbegin(), recipients.cend(), (uint64_t)0,
-        [](uint64_t sum, const mw::Recipient& recipient) { return sum + recipient.amount; }
+    CAmount recipient_total = std::accumulate(
+        recipients.cbegin(), recipients.cend(), (CAmount)0,
+        [](CAmount sum, const mw::Recipient& recipient) { return sum + recipient.amount; }
     );
 
     // Get input coins
@@ -66,12 +66,14 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     );
 
     // FUTURE: Only necessary when none of the addresses are owned by this wallet?
-    BlindingFactor owner_sig_key = Random::CSPRNG<32>();
-    SignedMessage owner_sig = Schnorr::SignMessage(owner_sig_key.GetBigInt(), kernel.GetHash());
+    // MW: TODO - OwnerSignature won't be enough for peg-ins with no MWEB inputs or MWEB change.
+    // Would be better to just include change when none of the MWEB inputs are your previous change (i.e. self-generated blinds)
+    SecretKey owner_sig_key = Random::CSPRNG<32>();
+    SignedMessage owner_sig = Schnorr::SignMessage(owner_sig_key, kernel.GetHash());
 
     // Total owner offset is split between raw owner_offset and the owner_sig's key.
     // sum(output.sender_key) - sum(input.key) = owner_offset + sum(owner_sig.key)
-    std::vector<BlindingFactor> input_keys = WalletUtil::GetKeys(input_coins);
+    std::vector<SecretKey> input_keys = WalletUtil::GetKeys(input_coins);
     BlindingFactor owner_offset = Blinds()
         .Add(outputs.total_key)
         .Sub(input_keys)
@@ -95,14 +97,12 @@ TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& re
     Blinds output_keys;
     std::vector<Output> outputs;
     std::transform(
-        recipients.cbegin(), recipients.cend(),
-        std::back_inserter(outputs),
+        recipients.cbegin(), recipients.cend(), std::back_inserter(outputs),
         [&output_blinds, &output_keys](const mw::Recipient& recipient) {
             BlindingFactor blind;
             SecretKey ephemeral_key = Random::CSPRNG<32>();
             Output output = Output::Create(
                 blind,
-                EOutputFeatures::DEFAULT_OUTPUT,
                 ephemeral_key,
                 recipient.address,
                 recipient.amount
@@ -116,7 +116,7 @@ TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& re
 
     return TxBuilder::Outputs{
         output_blinds.Total(),
-        output_keys.Total(),
+        SecretKey(output_keys.Total().data()),
         std::move(outputs)
     };
 }

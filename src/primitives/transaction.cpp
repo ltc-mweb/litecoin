@@ -55,26 +55,30 @@ std::string CTxOut::ToString() const
 }
 
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0), m_hogEx(false) {}
-CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), m_mwtx(tx.m_mwtx), m_hogEx(tx.m_hogEx) {}
+CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), mweb_tx(tx.mweb_tx), m_hogEx(tx.m_hogEx) {}
 
 uint256 CMutableTransaction::GetHash() const
 {
-    int nVersion = SERIALIZE_TRANSACTION_NO_WITNESS;
-    if (!HasMWData() || !vin.empty()) {
-        nVersion |= SERIALIZE_NO_MIMBLEWIMBLE;
+    if (HasMWEBTx() && vin.empty() && !mweb_tx.m_transaction->GetKernels().empty()) {
+        const auto& kernels = mweb_tx.m_transaction->GetKernels();
+        if (!kernels.empty()) {
+            return uint256(kernels.front().GetHash().vec());
+        }
     }
 
-    return SerializeHash(*this, SER_GETHASH, nVersion);
+    return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB);
 }
 
 uint256 CTransaction::ComputeHash() const
 {
-    int nVersion = SERIALIZE_TRANSACTION_NO_WITNESS;
-    if (!HasMWData() || !vin.empty()) {
-        nVersion |= SERIALIZE_NO_MIMBLEWIMBLE;
+    if (HasMWEBTx() && vin.empty() && !mweb_tx.m_transaction->GetKernels().empty()) {
+        const auto& kernels = mweb_tx.m_transaction->GetKernels();
+        if (!kernels.empty()) {
+            return uint256(kernels.front().GetHash().vec());
+        }
     }
 
-    return SerializeHash(*this, SER_GETHASH, nVersion);
+    return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB);
 }
 
 uint256 CTransaction::ComputeWitnessHash() const
@@ -82,13 +86,14 @@ uint256 CTransaction::ComputeWitnessHash() const
     if (!HasWitness()) {
         return hash;
     }
-    return SerializeHash(*this, SER_GETHASH);
+
+    return SerializeHash(*this, SER_GETHASH, SERIALIZE_NO_MWEB);
 }
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
 CTransaction::CTransaction() : vin(), vout(), nVersion(CTransaction::CURRENT_VERSION), nLockTime(0), m_hogEx(false), hash{}, m_witness_hash{} {}
-CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), m_mwtx(tx.m_mwtx), m_hogEx(tx.m_hogEx), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
-CTransaction::CTransaction(CMutableTransaction&& tx) : vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), m_mwtx(tx.m_mwtx), m_hogEx(tx.m_hogEx), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), mweb_tx(tx.mweb_tx), m_hogEx(tx.m_hogEx), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(CMutableTransaction&& tx) : vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), mweb_tx(tx.mweb_tx), m_hogEx(tx.m_hogEx), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
 
 CAmount CTransaction::GetValueOut() const
 {
@@ -122,8 +127,8 @@ std::string CTransaction::ToString() const
     for (const auto& tx_out : vout)
         str += "    " + tx_out.ToString() + "\n";
 
-    if (!m_mwtx.IsNull()) {
-        str += "    " + m_mwtx.ToString() + "\n";
+    if (!mweb_tx.IsNull()) {
+        str += "    " + mweb_tx.ToString() + "\n";
     }
 
     return str;

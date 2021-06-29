@@ -1,9 +1,10 @@
 #pragma once
 
-#include <hash.h>
-#include <crypto/sha512.h>
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/Hash.h>
-#include <mw/traits/Serializable.h>
+
+#include <crypto/blake3/blake3.h>
+#include <hash.h>
 
 enum class EHashTag : char
 {
@@ -14,31 +15,62 @@ enum class EHashTag : char
     NONCE = 'N'
 };
 
-// FUTURE: Incrementally update hash on each Append using CSHA256.write()
 class Hasher
 {
 public:
-    Hasher() = default;
-    Hasher(const EHashTag tag)
+    Hasher()
     {
-        m_serializer.Append<char>(static_cast<char>(tag));
+        blake3_hasher_init(&m_hasher);
     }
 
-    mw::Hash hash() const { return mw::Hash(SerializeHash(m_serializer.vec()).begin()); }
+    Hasher(const EHashTag tag)
+    {
+        blake3_hasher_init(&m_hasher);
+        char c_tag = static_cast<char>(tag);
+        write(&c_tag, 1);
+    }
+
+    int GetType() const { return SER_GETHASH; }
+    int GetVersion() const { return 0; }
+
+    void write(const char* pch, size_t size)
+    {
+        blake3_hasher_update(&m_hasher, pch, size);
+    }
+
+    mw::Hash hash()
+    {
+        mw::Hash hashed;
+        blake3_hasher_finalize(&m_hasher, hashed.data(), hashed.size());
+        return hashed;
+    }
 
     template <class T>
     Hasher& Append(const T& t)
     {
-        m_serializer.Append(t);
+        ::Serialize(*this, t);
         return *this;
     }
 
+    template <typename T>
+    Hasher& operator<<(const T& obj)
+    {
+        // Serialize to this stream
+        ::Serialize(*this, obj);
+        return (*this);
+    }
+
 private:
-    Serializer m_serializer;
+    blake3_hasher m_hasher;
 };
 
 extern mw::Hash Hashed(const std::vector<uint8_t>& serialized);
 extern mw::Hash Hashed(const Traits::ISerializable& serializable);
-extern mw::Hash Hashed(const EHashTag tag, const Traits::ISerializable& serializable);
+
+template<class T>
+mw::Hash Hashed(const EHashTag tag, const T& serializable)
+{
+    return Hasher(tag).Append(serializable).hash();
+}
 extern const mw::Hash& InputMessage();
 extern BigInt<64> Hash512(const Traits::ISerializable& serializable);

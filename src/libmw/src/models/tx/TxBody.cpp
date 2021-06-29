@@ -18,23 +18,11 @@ std::vector<PegInCoin> TxBody::GetPegIns() const noexcept
     return pegins;
 }
 
-std::vector<Output> TxBody::GetPegInOutputs() const noexcept
-{
-    std::vector<Output> peggedIn;
-    std::copy_if(
-        m_outputs.cbegin(), m_outputs.cend(),
-        std::back_inserter(peggedIn),
-        [](const Output& output) -> bool { return output.IsPeggedIn(); }
-    );
-
-    return peggedIn;
-}
-
-uint64_t TxBody::GetPegInAmount() const noexcept
+CAmount TxBody::GetPegInAmount() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (uint64_t)0,
-        [](const uint64_t sum, const auto& kernel) noexcept { return sum + kernel.GetPegIn(); }
+        m_kernels.cbegin(), m_kernels.cend(), (CAmount)0,
+        [](const CAmount sum, const auto& kernel) noexcept { return sum + kernel.GetPegIn(); }
     );
 }
 
@@ -49,27 +37,27 @@ std::vector<PegOutCoin> TxBody::GetPegOuts() const noexcept
     return pegouts;
 }
 
-uint64_t TxBody::GetTotalFee() const noexcept
+CAmount TxBody::GetTotalFee() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (uint64_t)0,
-        [](const uint64_t sum, const auto& kernel) noexcept { return sum + kernel.GetFee(); }
+        m_kernels.cbegin(), m_kernels.cend(), (CAmount)0,
+        [](const CAmount sum, const auto& kernel) noexcept { return sum + kernel.GetFee(); }
     );
 }
 
-int64_t TxBody::GetSupplyChange() const noexcept
+CAmount TxBody::GetSupplyChange() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (int64_t)0,
-        [](const int64_t supply_change, const auto& kernel) noexcept { return supply_change + kernel.GetSupplyChange(); }
+        m_kernels.cbegin(), m_kernels.cend(), (CAmount)0,
+        [](const CAmount supply_change, const auto& kernel) noexcept { return supply_change + kernel.GetSupplyChange(); }
     );
 }
 
-uint64_t TxBody::GetLockHeight() const noexcept
+int32_t TxBody::GetLockHeight() const noexcept
 {
     return std::accumulate(
-        m_kernels.cbegin(), m_kernels.cend(), (uint64_t)0,
-        [](const uint64_t lock_height, const auto& kernel) noexcept { return std::max(lock_height, kernel.GetLockHeight()); }
+        m_kernels.cbegin(), m_kernels.cend(), (int32_t)0,
+        [](const int32_t lock_height, const auto& kernel) noexcept { return std::max(lock_height, kernel.GetLockHeight()); }
     );
 }
 
@@ -101,29 +89,34 @@ void TxBody::Validate() const
         ThrowValidation(EConsensusError::NOT_SORTED);
     }
 
-    // Verify no duplicate inputs
+    // Verify no duplicate input commitments
     std::unordered_set<Commitment> input_commits = Commitments::SetFrom(m_inputs);
     if (input_commits.size() != m_inputs.size()) {
-        ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
+        ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate outputs
+    // Verify no duplicate output commitments
     std::unordered_set<Commitment> output_commits = Commitments::SetFrom(m_outputs);
     if (output_commits.size() != m_outputs.size()) {
-        ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
+        ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate kernels
+    // Verify no duplicate kernel commitments
     std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels);
     if (kernel_commits.size() != m_kernels.size()) {
-        ThrowValidation(EConsensusError::DUPLICATE_COMMITS);
+        ThrowValidation(EConsensusError::DUPLICATES);
+    }
+
+    // Verify no duplicate owner signatures
+    std::vector<SignedMessage> owner_sigs = m_ownerSigs;
+    if (std::unique(owner_sigs.begin(), owner_sigs.end()) != owner_sigs.end()) {
+        ThrowValidation(EConsensusError::DUPLICATES);
     }
 
     // Verify kernel exists with matching hash for each owner sig
     std::unordered_set<mw::Hash> kernel_hashes;
     std::transform(
-        m_kernels.cbegin(), m_kernels.cend(),
-        std::inserter(kernel_hashes, kernel_hashes.end()),
+        m_kernels.cbegin(), m_kernels.cend(), std::inserter(kernel_hashes, kernel_hashes.end()),
         [](const Kernel& kernel) { return kernel.GetHash(); }
     );
 
@@ -138,25 +131,20 @@ void TxBody::Validate() const
     //
     std::vector<SignedMessage> signatures;
     std::transform(
-        m_kernels.cbegin(), m_kernels.cend(),
-        std::back_inserter(signatures),
+        m_kernels.cbegin(), m_kernels.cend(), std::back_inserter(signatures),
         [](const Kernel& kernel) {
-            PublicKey public_key = Crypto::ToPublicKey(kernel.GetCommitment());
+            PublicKey public_key = PublicKey::From(kernel.GetCommitment());
             return SignedMessage{ kernel.GetSignatureMessage(), public_key, kernel.GetSignature() };
         }
     );
 
     std::transform(
-        m_inputs.cbegin(), m_inputs.cend(),
-        std::back_inserter(signatures),
-        [](const Input& input) {
-            return SignedMessage{ InputMessage(), input.GetPubKey(), input.GetSignature() };
-        }
+        m_inputs.cbegin(), m_inputs.cend(), std::back_inserter(signatures),
+        [](const Input& input) { return input.BuildSignedMsg(); }
     );
 
     std::transform(
-        m_outputs.cbegin(), m_outputs.cend(),
-        std::back_inserter(signatures),
+        m_outputs.cbegin(), m_outputs.cend(), std::back_inserter(signatures),
         [](const Output& output) { return output.BuildSignedMsg(); }
     );
 
@@ -171,8 +159,7 @@ void TxBody::Validate() const
     //
     std::vector<ProofData> rangeProofs;
     std::transform(
-        m_outputs.cbegin(), m_outputs.cend(),
-        std::back_inserter(rangeProofs),
+        m_outputs.cbegin(), m_outputs.cend(), std::back_inserter(rangeProofs),
         [](const Output& output) { return output.BuildProofData(); }
     );
     if (!Bulletproofs::BatchVerify(rangeProofs)) {

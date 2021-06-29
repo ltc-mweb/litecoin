@@ -8,7 +8,7 @@
 enum class EConsensusError
 {
     HASH_MISMATCH,
-    DUPLICATE_COMMITS,
+    DUPLICATES,
     BLOCK_WEIGHT,
     BLOCK_SUMS,
     OWNER_SUMS,
@@ -18,7 +18,6 @@ enum class EConsensusError
     PEGOUT_MISMATCH,
     MMR_MISMATCH,
     UTXO_MISSING,
-    PEGIN_MATURITY,
     KERNEL_MISSING,
     NOT_SORTED
 };
@@ -44,8 +43,8 @@ private:
         {
             case EConsensusError::HASH_MISMATCH:
                 return "HASH_MISMATCH";
-            case EConsensusError::DUPLICATE_COMMITS:
-                return "DUPLICATE_COMMITS";
+            case EConsensusError::DUPLICATES:
+                return "DUPLICATES";
             case EConsensusError::BLOCK_WEIGHT:
                 return "BLOCK_WEIGHT";
             case EConsensusError::BLOCK_SUMS:
@@ -64,8 +63,6 @@ private:
                 return "MMR_MISMATCH";
             case EConsensusError::UTXO_MISSING:
                 return "UTXO_MISSING";
-            case EConsensusError::PEGIN_MATURITY:
-                return "PEGIN_MATURITY";
             case EConsensusError::KERNEL_MISSING:
                 return "KERNEL_MISSING";
             case EConsensusError::NOT_SORTED:

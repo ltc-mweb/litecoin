@@ -28,7 +28,9 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/signals2/signal.hpp>
 
+class CBlock;
 class CBlockIndex;
+struct DisconnectedBlockTransactions;
 extern CCriticalSection cs_main;
 
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
@@ -597,8 +599,7 @@ public:
     void removeRecursive(const CTransaction &tx, MemPoolRemovalReason reason = MemPoolRemovalReason::UNKNOWN);
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     void removeConflicts(const CTransaction &tx) EXCLUSIVE_LOCKS_REQUIRED(cs);
-    void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight);
-    void removeForMWBlock(const MWEB::Block& mwBlock, unsigned int nBlockHeight);
+    void removeForBlock(const CBlock& block, unsigned int nBlockHeight, DisconnectedBlockTransactions* disconnectpool);
 
     void clear();
     void _clear() EXCLUSIVE_LOCKS_REQUIRED(cs); //lock free
@@ -699,7 +700,7 @@ public:
         return totalTxSize;
     }
 
-    bool exists(const uint256& hash) const
+    bool exists(const uint256& hash) const // MW: TODO - Is there an efficient way to check if the MWEB tx already exists?
     {
         LOCK(cs);
         return (mapTx.count(hash) != 0);

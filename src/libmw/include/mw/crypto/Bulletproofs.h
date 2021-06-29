@@ -6,7 +6,6 @@
 #include <mw/models/crypto/RangeProof.h>
 #include <mw/models/crypto/RewoundProof.h>
 #include <mw/models/crypto/SecretKey.h>
-#include <vector>
 #include <memory>
 
 class Bulletproofs

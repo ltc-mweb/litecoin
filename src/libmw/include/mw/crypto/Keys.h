@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mw/crypto/Crypto.h>
+#include <mw/crypto/PublicKeys.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
@@ -18,25 +18,25 @@ public:
 
     static Keys From(const SecretKey& secret_key)
     {
-        return Keys(Crypto::CalculatePublicKey(secret_key.GetBigInt()));
+        return Keys(PublicKey::From(secret_key));
     }
 
     static Keys Random()
     {
-        return Keys(Crypto::CalculatePublicKey(Random::CSPRNG<32>().GetBigInt()));
+        return Keys(PublicKey::From(Random::CSPRNG<32>()));
     }
 
     const PublicKey& PubKey() const noexcept { return m_pubkey; }
 
     Keys& Add(const PublicKey& public_key)
     {
-        m_pubkey = Crypto::AddPublicKeys({ m_pubkey, public_key });
+        m_pubkey = PublicKeys::Add({m_pubkey, public_key});
         return *this;
     }
 
     Keys& Add(const SecretKey& secret_key)
     {
-        m_pubkey = Crypto::AddPublicKeys({ m_pubkey, Crypto::CalculatePublicKey(secret_key.GetBigInt()) });
+        m_pubkey = PublicKeys::Add({m_pubkey, PublicKey::From(secret_key)});
         return *this;
     }
 
@@ -44,13 +44,13 @@ public:
     {
         std::vector<PublicKey> pubkeys = public_keys;
         pubkeys.push_back(m_pubkey);
-        m_pubkey = Crypto::AddPublicKeys(pubkeys);
+        m_pubkey = PublicKeys::Add(pubkeys);
         return *this;
     }
 
     Keys& Mul(const SecretKey& secret_key)
     {
-        m_pubkey = Crypto::MultiplyKey(m_pubkey, secret_key);
+        m_pubkey = PublicKeys::MultiplyKey(m_pubkey, secret_key);
         return *this;
     }
 

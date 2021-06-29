@@ -2,16 +2,18 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
-#include <mw/crypto/Schnorr.h>
+#include <mw/crypto/Blinds.h>
 #include <mw/crypto/Bulletproofs.h>
+#include <mw/crypto/Hasher.h>
 #include <mw/crypto/Random.h>
+#include <mw/crypto/Schnorr.h>
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestOutput, BasicTestingSetup)
+#include <test_framework/Deserializer.h>
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestOutput, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(Create)
 {
@@ -24,13 +26,11 @@ BOOST_AUTO_TEST_CASE(Create)
     );
 
     // Build output
-    EOutputFeatures features = EOutputFeatures::DEFAULT_OUTPUT;
     uint64_t amount = 1'234'567;
     BlindingFactor blind;
     SecretKey sender_key = Random::CSPRNG<32>();
     Output output = Output::Create(
         blind,
-        features,
         sender_key,
         receiver_addr,
         amount
@@ -49,19 +49,8 @@ BOOST_AUTO_TEST_CASE(Create)
     BOOST_REQUIRE(Schnorr::BatchVerify({ signed_msg }));
 
     // Getters
-    BOOST_REQUIRE(!output.IsPeggedIn());
     BOOST_REQUIRE(output.GetCommitment() == expected_commit);
-    BOOST_REQUIRE(output.GetFeatures() == features);
-    BOOST_REQUIRE(output.ToOutputId() == OutputId(
-        expected_commit,
-        features,
-        output.GetReceiverPubKey(),
-        output.GetKeyExchangePubKey(),
-        output.GetViewTag(),
-        output.GetMaskedValue(),
-        output.GetMaskedNonce(),
-        output.GetSenderPubKey()
-    ));
+    BOOST_REQUIRE(output.ToOutputId() == OutputId(expected_commit, output.GetOutputMessage()));
 
     //
     // Test Restoring Output
@@ -91,7 +80,10 @@ BOOST_AUTO_TEST_CASE(Create)
         BOOST_REQUIRE(output.Ke() == receiver_addr.B().Mul(s));
 
         // Make sure receiver can generate the spend key
-        SecretKey spend_key = Crypto::AddPrivateKeys(b, Hashed(EHashTag::OUT_KEY, t));
+        SecretKey spend_key = Blinds()
+            .Add(b)
+            .Add(Hashed(EHashTag::OUT_KEY, t))
+            .ToKey();
         BOOST_REQUIRE(output.GetReceiverPubKey() == PublicKey::From(spend_key));
     }
 }

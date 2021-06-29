@@ -14,7 +14,6 @@
 #include <script/standard.h>
 #include <util/strencodings.h>
 #include <bech32.h>
-#include <chainparams.h>
 
 uint256 CBlockHeader::GetHash() const
 {
@@ -44,43 +43,35 @@ std::string CBlock::ToString() const
     return s.str();
 }
 
-std::vector<PegInCoin> CBlock::GetPegInCoins() const noexcept
+CTransactionRef CBlock::GetHogEx() const noexcept
 {
-    if (!HasHogEx()) {
-        return {};
+    if (vtx.size() >= 2 && vtx.back()->IsHogEx()) {
+        assert(!vtx.back()->vout.empty());
+        return vtx.back();
     }
 
-    std::vector<PegInCoin> pegins;
+    return nullptr;
+}
 
-    // MW: TODO - Alternatively, we could just loop through the inputs on the HogEx transaction
-    for (const CTransactionRef& pTx : vtx) {
-        for (const CTxOut& output : pTx->vout) {
-            int version;
-            std::vector<uint8_t> program;
-            if (output.scriptPubKey.IsWitnessProgram(version, program)) {
-                if (version == Consensus::Mimblewimble::WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-                    pegins.push_back(PegInCoin(output.nValue, Commitment{std::move(program)}));
-                }
+uint256 CBlock::GetMWEBHash() const noexcept
+{
+    auto pHogEx = GetHogEx();
+    if (pHogEx != nullptr) {
+        int version;
+        std::vector<unsigned char> program;
+        if (pHogEx->vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
+            if (program.size() == WITNESS_MWEB_HEADERHASH_SIZE && version == MWEB_WITNESS_VERSION) {
+                return uint256(program);
             }
         }
     }
 
-    return pegins;
+    return uint256();
 }
 
-std::vector<PegOutCoin> CBlock::GetPegOutCoins() const noexcept
+// The amount of the first output in the HogEx transaction.
+CAmount CBlock::GetMWEBAmount() const noexcept
 {
-    if (!HasHogEx()) {
-        return {};
-    }
-
-    std::vector<PegOutCoin> pegouts;
-
-    const CTransactionRef& pHogEx = vtx.back();
-    for (size_t i = 1; i < pHogEx->vout.size(); i++) {
-        const CScript& pubkey = pHogEx->vout[i].scriptPubKey;
-        pegouts.push_back(PegOutCoin(pHogEx->vout[i].nValue, {pubkey.begin(), pubkey.end()}));
-    }
-
-    return pegouts;
+    auto pHogEx = GetHogEx();
+    return pHogEx ? pHogEx->vout.front().nValue : 0;
 }

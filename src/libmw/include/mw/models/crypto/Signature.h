@@ -4,9 +4,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/BigInteger.h>
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
 
 class Signature :
     public Traits::IPrintable,
@@ -51,16 +50,7 @@ public:
     //
     // Serialization/Deserialization
     //
-    Serializer& Serialize(Serializer& serializer) const noexcept final
-    {
-        return m_bytes.Serialize(serializer);
-    }
-
-    static Signature Deserialize(Deserializer& deserializer)
-    {
-        return Signature(BigInt<SIZE>::Deserialize(deserializer));
-    }
-
+    IMPL_SERIALIZABLE(Signature);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

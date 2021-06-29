@@ -11,7 +11,7 @@
 bool CCoinsView::GetCoin(const COutPoint &outpoint, Coin &coin) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
-bool CCoinsView::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) { return false; }
+bool CCoinsView::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 
 bool CCoinsView::HaveCoin(const OutputIndex& index) const
@@ -30,14 +30,14 @@ bool CCoinsViewBacked::HaveCoin(const OutputIndex& index) const { return base->H
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetHeadBlocks(); }
 void CCoinsViewBacked::SetBackend(CCoinsView& viewIn) { base = &viewIn; }
-bool CCoinsViewBacked::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) { return base->BatchWrite(mapCoins, hashBlock, derivedView); }
+bool CCoinsViewBacked::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) { return base->BatchWrite(mapCoins, hashBlock, derivedView); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 mw::ICoinsView::Ptr CCoinsViewBacked::GetMWView() const { return base->GetMWView(); }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
-CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0), mw_view(baseIn->GetMWView() ? std::make_shared<mw::CoinsViewCache>(baseIn->GetMWView()) : nullptr) {}
+CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0), mweb_view(baseIn->GetMWView() ? std::make_shared<mw::CoinsViewCache>(baseIn->GetMWView()) : nullptr) {}
 
 size_t CCoinsViewCache::DynamicMemoryUsage() const {
     return memusage::DynamicUsage(cacheCoins) + cachedCoinsUsage;
@@ -155,14 +155,14 @@ uint256 CCoinsViewCache::GetBestBlock() const {
 
 void CCoinsViewCache::SetBackend(CCoinsView& viewIn) {
     base = &viewIn;
-    mw_view = viewIn.GetMWView() ? std::make_shared<mw::CoinsViewCache>(viewIn.GetMWView()) : nullptr;
+    mweb_view = viewIn.GetMWView() ? std::make_shared<mw::CoinsViewCache>(viewIn.GetMWView()) : nullptr;
 }
 
 void CCoinsViewCache::SetBestBlock(const uint256 &hashBlockIn) {
     hashBlock = hashBlockIn;
 }
 
-bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn, const mw::ICoinsView::Ptr& derivedView) {
+bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn, const mw::CoinsViewCache::Ptr& derivedView) {
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); it = mapCoins.erase(it)) {
         // Ignore non-dirty entries (optimization).
         if (!(it->second.flags & CCoinsCacheEntry::DIRTY)) {
@@ -218,15 +218,14 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
     }
 
     // MWEB: Flushes mw coins
-    auto mweb_cache_view = dynamic_cast<mw::CoinsViewCache*>(derivedView.get());
-    mweb_cache_view->Flush(nullptr);
+    derivedView->Flush(nullptr);
 
     hashBlock = hashBlockIn;
     return true;
 }
 
 bool CCoinsViewCache::Flush() {
-    bool fOk = base->BatchWrite(cacheCoins, hashBlock, mw_view);
+    bool fOk = base->BatchWrite(cacheCoins, hashBlock, mweb_view);
     cacheCoins.clear();
     cachedCoinsUsage = 0;
     return fOk;
@@ -241,7 +240,7 @@ void CCoinsViewCache::Uncache(const OutputIndex& coin)
             cacheCoins.erase(it);
         }
     } else {
-        // MW: TODO - libmw::node::Uncache(GetMWView(), boost::get<Commitment>(coin));
+        // MW: TODO - Do we need to do anything here?
     }
 }
 

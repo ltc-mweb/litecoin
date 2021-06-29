@@ -113,7 +113,7 @@ txnouttype Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned 
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_V0_SCRIPTHASH;
         }
-        if (witnessversion == Consensus::Mimblewimble::WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_PEGIN_SIZE) {
+        if (witnessversion == MWEB_WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_PEGIN_SIZE) {
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_MWEB_PEGIN;
         }
@@ -197,11 +197,9 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
         unk.length = vSolutions[1].size();
         addressRet = unk;
         return true;
-    } else if (whichType == TX_WITNESS_MWEB_PEGIN) {
-        // MW: TODO - I have no idea how to handle this. Looking up the matching peg-in output would be too slow.
-        return false;
     }
-    // Multisig txns have more than one address...
+
+    // Multisig txns have more than one address and MWEB addresses aren't known.
     return false;
 }
 

@@ -2,18 +2,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/db/LeafDB.h>
 
-#include <test_framework/DBWrapper.h>
+#include <test_framework/TestMWEB.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestLeafDB, BasicTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(TestLeafDB, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(LeafDBTest)
 {
-    auto pDatabase = std::make_shared<TestDBWrapper>();
+    auto pDatabase = GetDB();
+
     LeafDB ldb('L', pDatabase.get());
 
     auto leaf1 = mmr::Leaf::Create(mmr::LeafIndex::At(0), { 0, 1, 2 });
@@ -36,11 +34,13 @@ BOOST_AUTO_TEST_CASE(LeafDBTest)
 
     std::vector<uint8_t> data;
     BOOST_REQUIRE(pDatabase->Read("L" + std::to_string(leaf1.GetLeafIndex().Get()), data));
-    BOOST_REQUIRE(data == leaf1.vec());
+    BOOST_REQUIRE(data == std::vector<uint8_t>({3, 0, 1, 2}));
+
     BOOST_REQUIRE(pDatabase->Read("L" + std::to_string(leaf2.GetLeafIndex().Get()), data));
-    BOOST_REQUIRE(data == leaf2.vec());
+    BOOST_REQUIRE(data == std::vector<uint8_t>({3, 1, 2, 3}));
+
     BOOST_REQUIRE(pDatabase->Read("L" + std::to_string(leaf3.GetLeafIndex().Get()), data));
-    BOOST_REQUIRE(data == leaf3.vec());
+    BOOST_REQUIRE(data == std::vector<uint8_t>({3, 2, 3, 4}));
 
     ldb.Remove({leaf2.GetLeafIndex()});
     BOOST_REQUIRE(ldb.Get(mmr::LeafIndex::At(1)) == nullptr);

@@ -433,7 +433,7 @@ bool CreateTransactionEx(
 
                 if (ContainsPegIn(mweb_type, setCoins)) {
                     CScript dummy_pegin_script;
-                    dummy_pegin_script << CScript::EncodeOP_N(Consensus::Mimblewimble::WITNESS_VERSION);
+                    dummy_pegin_script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
                     dummy_pegin_script << std::vector<uint8_t>(33);
                     txNew.vout.push_back(CTxOut(0, dummy_pegin_script));
                 }

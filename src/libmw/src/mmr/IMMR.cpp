@@ -1,19 +1,20 @@
 #include <mw/mmr/MMR.h>
+#include <mw/mmr/MMRUtil.h>
 
 using namespace mmr;
 
 mw::Hash IMMR::Root() const
 {
-    const uint64_t size = GetNextLeafIdx().GetPosition();
-    if (size == 0) {
+    const uint64_t num_nodes = mmr::LeafIndex::At(GetNumLeaves()).GetPosition();
+    if (num_nodes == 0) {
         return mw::Hash{};
     }
 
     // Find the "peaks"
     std::vector<uint64_t> peakIndices;
 
-    uint64_t peakSize = BitUtil::FillOnesToRight(size);
-    uint64_t numLeft = size;
+    uint64_t peakSize = BitUtil::FillOnesToRight(num_nodes);
+    uint64_t numLeft = num_nodes;
     uint64_t sumPrevPeaks = 0;
     while (peakSize != 0) {
         if (numLeft >= peakSize) {
@@ -34,7 +35,7 @@ mw::Hash IMMR::Root() const
         if (hash.IsZero()) {
             hash = peakHash;
         } else {
-            hash = Node::CreateParent(Index::At(size), peakHash, hash).GetHash();
+            hash = MMRUtil::CalcParentHash(Index::At(num_nodes), peakHash, hash);
         }
     }
 

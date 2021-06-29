@@ -10,10 +10,6 @@ void BlockValidator::Validate(
 {
     assert(pBlock != nullptr);
 
-    if (pBlock->WasValidated()) {
-        return;
-    }
-
     if (pBlock->GetHash() != mweb_hash) {
         ThrowValidation(EConsensusError::HASH_MISMATCH);
     }
@@ -22,15 +18,13 @@ void BlockValidator::Validate(
 
     ValidatePegInCoins(pBlock, pegInCoins);
     ValidatePegOutCoins(pBlock, pegOutCoins);
-
-    pBlock->MarkAsValidated();
 }
 
 void BlockValidator::ValidatePegInCoins(
     const mw::Block::CPtr& pBlock,
     const std::vector<PegInCoin>& pegInCoins)
 {
-    std::unordered_map<Commitment, uint64_t> pegInAmounts;
+    std::unordered_map<Commitment, CAmount> pegInAmounts;
     std::for_each(
         pegInCoins.cbegin(), pegInCoins.cend(),
         [&pegInAmounts](const PegInCoin& coin) {
@@ -51,23 +45,11 @@ void BlockValidator::ValidatePegInCoins(
     }
 }
 
-namespace std
-{
-    template<>
-    struct hash<std::vector<uint8_t>>
-    {
-        size_t operator()(const std::vector<uint8_t>& scriptPubKey) const
-        {
-            return boost::hash_value(scriptPubKey);
-        }
-    };
-}
-
 void BlockValidator::ValidatePegOutCoins(
     const mw::Block::CPtr& pBlock,
     const std::vector<PegOutCoin>& pegOutCoins)
 {
-    std::unordered_map<std::vector<uint8_t>, uint64_t> pegOutAmounts;
+    std::map<CScript, CAmount> pegOutAmounts;
     std::for_each(
         pegOutCoins.cbegin(), pegOutCoins.cend(),
         [&pegOutAmounts](const PegOutCoin& coin) {

@@ -1,8 +1,8 @@
 #include <mw/crypto/Bulletproofs.h>
-#include "BulletproofsCache.h"
 #include "Context.h"
 #include "ConversionUtil.h"
 
+#include <caches/Cache.h>
 #include <mw/crypto/Random.h>
 #include <mw/exceptions/CryptoException.h>
 #include <mw/util/VectorUtil.h>
@@ -12,7 +12,7 @@ static constexpr size_t SCRATCH_SPACE_SIZE = 256 * MAX_WIDTH;
 static constexpr size_t PROOF_LEN = 675;
 static constexpr size_t NUM_BITS_PROVEN = 64;
 
-static BulletProofsCache CACHE;
+static Locked<LRUCache<Commitment, ProofData>> CACHE(std::make_shared<LRUCache<Commitment, ProofData>>(3000));
 static Locked<Context> BP_CONTEXT(std::make_shared<Context>());
 
 bool Bulletproofs::BatchVerify(const std::vector<ProofData>& proofs)
@@ -31,8 +31,9 @@ bool Bulletproofs::BatchVerify(const std::vector<ProofData>& proofs)
 
     for (const auto& proof : proofs)
     {
-        if (!CACHE.Contains(proof)) {
-            secpCommitments.push_back(ConversionUtil(BP_CONTEXT).ToSecp256k1(proof.commitment));
+        auto cache_writer = CACHE.Write();
+        if (!cache_writer->Cached(proof.commitment) || proof != cache_writer->Get(proof.commitment)) {
+            secpCommitments.push_back(ConversionUtil::ToSecp256k1(proof.commitment));
             bulletproofPointers.emplace_back(proof.pRangeProof->data());
 
             if (!proof.extraData.empty()) {
@@ -80,9 +81,10 @@ bool Bulletproofs::BatchVerify(const std::vector<ProofData>& proofs)
     secp256k1_scratch_space_destroy(pScratchSpace);
 
     if (result == 1) {
+        auto cache_writer = CACHE.Write();
         for (const auto& proof : proofs)
         {
-            CACHE.Add(proof);
+            cache_writer->Put(proof.commitment, proof);
         }
     }
 
@@ -100,8 +102,8 @@ RangeProof::CPtr Bulletproofs::Generate(
     auto contextWriter = BP_CONTEXT.Write();
     secp256k1_context* pContext = contextWriter->Randomized();
 
-    std::vector<uint8_t> proofBytes(RangeProof::MAX_SIZE, 0);
-    size_t proofLen = RangeProof::MAX_SIZE;
+    std::vector<uint8_t> proofBytes(RangeProof::SIZE, 0);
+    size_t proofLen = RangeProof::SIZE;
 
     secp256k1_scratch_space* pScratchSpace = secp256k1_scratch_space_create(pContext, SCRATCH_SPACE_SIZE);
 
@@ -144,7 +146,7 @@ std::unique_ptr<RewoundProof> Bulletproofs::Rewind(
     const std::vector<uint8_t>& extraData,
     const SecretKey& nonce)
 {
-    secp256k1_pedersen_commitment secpCommitment = ConversionUtil(BP_CONTEXT).ToSecp256k1(commitment);
+    secp256k1_pedersen_commitment secpCommitment = ConversionUtil::ToSecp256k1(commitment);
 
     uint64_t value;
     SecretKey blindingFactor;

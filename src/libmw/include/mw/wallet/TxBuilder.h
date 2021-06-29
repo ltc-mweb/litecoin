@@ -11,7 +11,7 @@ class TxBuilder
     struct Outputs
     {
         BlindingFactor total_blind;
-        BlindingFactor total_key;
+        SecretKey total_key;
         std::vector<Output> outputs;
     };
 
@@ -20,8 +20,8 @@ public:
         const std::vector<mw::Coin>& input_coins,
         const std::vector<mw::Recipient>& recipients,
         const std::vector<PegOutCoin>& pegouts,
-        const boost::optional<uint64_t>& pegin_amount,
-        const uint64_t fee
+        const boost::optional<CAmount>& pegin_amount,
+        const CAmount fee
     );
 
 private:

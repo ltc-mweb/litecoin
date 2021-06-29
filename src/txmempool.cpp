@@ -22,7 +22,7 @@
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                                  int64_t _nTime, unsigned int _entryHeight,
                                  bool _spendsCoinbase, int64_t _sigOpsCost, LockPoints lp)
-    : tx(_tx), nFee(_nFee), nTxWeight(GetTransactionWeight(*tx)), mweb_weight(tx->m_mwtx.GetMWEBWeight()), nUsageSize(RecursiveDynamicUsage(tx)), nTime(_nTime), entryHeight(_entryHeight),
+    : tx(_tx), nFee(_nFee), nTxWeight(GetTransactionWeight(*tx)), mweb_weight(tx->mweb_tx.GetMWEBWeight()), nUsageSize(RecursiveDynamicUsage(tx)), nTime(_nTime), entryHeight(_entryHeight),
     spendsCoinbase(_spendsCoinbase), sigOpCost(_sigOpsCost), lockPoints(lp)
 {
     nCountWithDescendants = 1;
@@ -53,20 +53,7 @@ void CTxMemPoolEntry::UpdateLockPoints(const LockPoints& lp)
 
 size_t CTxMemPoolEntry::GetTxSize() const
 {
-    if (tx->vin.empty() && tx->vout.empty() && tx->HasMWData()) {
-        return 0;
-    }
-
-    // MW: TODO - Verify this logic. Maybe just use max input & output weights rather than building the actual pegouts?
-    // Move this to a reusable location
-    size_t weight = nTxWeight + (GetTransactionInputWeight(CTxIn()) * tx->m_mwtx.GetPegIns().size());
-
-    for (const PegOutCoin& pegout : tx->m_mwtx.GetPegOuts()) {
-        CTxOut pegout_output(pegout.GetAmount(), CScript(pegout.GetScriptPubKey()));
-        weight += (::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR);
-    }
-
-    return GetVirtualTransactionSize(weight, sigOpCost);
+    return GetVirtualTransactionSize(nTxWeight, sigOpCost);
 }
 
 // Update the given tx for any in-mempool descendants.
@@ -415,11 +402,13 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
             if (parentIter != mapTxOutputs_MWEB.end()) {
                 setParentTransactions.insert(parentIter->second->GetHash());
             }
+        } else {
+            setParentTransactions.insert(input.GetTxIn().prevout.hash);
         }
     }
 
     // MWEB: Add transaction to mapTxOutputs_MWEB for each output
-    for (const Commitment& output_commit : tx.m_mwtx.GetOutputCommits()) {
+    for (const Commitment& output_commit : tx.mweb_tx.GetOutputCommits()) {
         mapTxOutputs_MWEB.insert(std::make_pair(output_commit, &tx));
     }
 
@@ -453,7 +442,7 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
         mapNextTx.erase(txin.GetIndex());
 
     // MWEB: Remove transaction from mapTxOutputs_MWEB for each output
-    for (const Commitment& output_commit : it->GetTx().m_mwtx.GetOutputCommits()) {
+    for (const Commitment& output_commit : it->GetTx().mweb_tx.GetOutputCommits()) {
         mapTxOutputs_MWEB.erase(output_commit);
     }
 
@@ -593,21 +582,40 @@ void CTxMemPool::removeConflicts(const CTransaction &tx)
 /**
  * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
  */
-void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight)
+void CTxMemPool::removeForBlock(const CBlock& block, unsigned int nBlockHeight, DisconnectedBlockTransactions* disconnectpool)
 {
     LOCK(cs);
     std::vector<const CTxMemPoolEntry*> entries;
-    for (const auto& tx : vtx)
+    for (const auto& tx : block.vtx)
     {
-        uint256 hash = tx->GetHash();
-
-        indexed_transaction_set::iterator i = mapTx.find(hash);
+        indexed_transaction_set::iterator i = mapTx.find(tx->GetHash());
         if (i != mapTx.end())
             entries.push_back(&*i);
     }
+
+    // MWEB: Check for transactions with kernels included in the block
+    std::vector<CTransactionRef> txs = block.vtx;
+    if (!block.mweb_block.IsNull()) {
+        auto block_kernels = block.mweb_block.GetKernelHashes();
+        for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
+            if (!it->GetTx().HasMWEBTx()) continue;
+
+            const auto& tx_kernels = it->GetTx().mweb_tx.m_transaction->GetKernels();
+            bool remove_tx = std::any_of(tx_kernels.begin(), tx_kernels.end(),
+                [&block_kernels](const Kernel& tx_kernel) {
+                    return block_kernels.count(tx_kernel.GetHash()) != 0;
+                }
+            );
+            if (remove_tx) {
+                entries.push_back(&*it);
+                txs.push_back(it->GetSharedTx());
+            }
+        }
+    }
+
     // Before the txs in the new block have been removed from the mempool, update policy estimates
     if (minerPolicyEstimator) {minerPolicyEstimator->processBlock(nBlockHeight, entries);}
-    for (const auto& tx : vtx)
+    for (const auto& tx : txs)
     {
         txiter it = mapTx.find(tx->GetHash());
         if (it != mapTx.end()) {
@@ -618,44 +626,13 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
         removeConflicts(*tx);
         ClearPrioritisation(tx->GetHash());
     }
+
     lastRollingFeeUpdate = GetTime();
     blockSinceLastRollingFeeBump = true;
-}
 
-/**
- * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
- */
-void CTxMemPool::removeForMWBlock(const MWEB::Block& mwBlock, unsigned int nBlockHeight) // MW: TODO - Can we combine this with removeForBlock?
-{
-    LOCK(cs);
-
-    std::vector<const CTxMemPoolEntry*> entries;
-    setEntries stage;
-
-    auto blockKernelHashes = mwBlock.GetKernelHashes();
-
-    for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
-        if (!it->GetTx().HasMWData()) continue;
-
-        auto txKernelHashes = it->GetTx().m_mwtx.GetKernelHashes();
-        std::vector<mw::Hash> commonKernelHashes;
-        std::set_intersection(blockKernelHashes.begin(), blockKernelHashes.end(),
-                              txKernelHashes.begin(), txKernelHashes.end(),
-                              std::back_inserter(commonKernelHashes));
-
-        if (commonKernelHashes.size()) {
-            entries.push_back(&*it);
-            stage.insert(it);
-        }
+    if (disconnectpool) {
+        disconnectpool->removeForBlock(txs);
     }
-
-    // Before the txs in the new block have been removed from the mempool, update policy estimates
-    if (minerPolicyEstimator) minerPolicyEstimator->processBlock(nBlockHeight, entries);
-
-    RemoveStaged(stage, true, MemPoolRemovalReason::BLOCK);
-
-    lastRollingFeeUpdate = GetTime();
-    blockSinceLastRollingFeeBump = true;
 }
 
 void CTxMemPool::_clear()

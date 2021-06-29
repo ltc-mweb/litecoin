@@ -1,24 +1,27 @@
 #pragma once
 
 #include <mw/common/Macros.h>
+#include <mw/crypto/Pedersen.h>
 #include <mw/models/block/Header.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/consensus/Aggregation.h>
 #include <mw/mmr/MMR.h>
 #include <mw/mmr/LeafSet.h>
-#include <mw/mmr/backends/VectorBackend.h>
 
 #include <test_framework/models/MinedBlock.h>
 #include <test_framework/models/Tx.h>
 #include <test_framework/TestLeafSet.h>
 
-#include <iostream>
+#include <mweb/mweb_db.h>
 
 TEST_NAMESPACE
 
 class Miner
 {
 public:
+    Miner(const FilePath& datadir)
+        : m_datadir(datadir) { }
+
     MinedBlock MineBlock(const uint64_t height, const std::vector<Tx>& txs)
     {
         mw::Transaction::CPtr pTransaction = std::make_shared<const mw::Transaction>();
@@ -34,7 +37,7 @@ public:
 
         auto kernel_offset = pTransaction->GetKernelOffset();
         if (!m_blocks.empty()) {
-            kernel_offset = Crypto::AddBlindingFactors({ kernel_offset, m_blocks.back().GetKernelOffset() });
+            kernel_offset = Pedersen::AddBlindingFactors({ kernel_offset, m_blocks.back().GetKernelOffset() });
         }
 
         auto owner_offset = pTransaction->GetOwnerOffset();
@@ -45,16 +48,14 @@ public:
 
         auto pHeader = std::make_shared<mw::Header>(
             height,
-            outputMMR.Root(),
-            kernelMMR.Root(),
+            outputMMR->Root(),
+            kernelMMR->Root(),
             pLeafSet->Root(),
             std::move(kernel_offset),
             std::move(owner_offset),
-            outputMMR.GetNumLeaves(),
-            kernelMMR.GetNumLeaves()
+            outputMMR->GetNumLeaves(),
+            kernelMMR->GetNumLeaves()
         );
-
-        std::cout << "Mined Block: " << pHeader->GetHeight() << " - " << pHeader->Format() << std::endl;
 
         MinedBlock minedBlock(
             std::make_shared<mw::Block>(pHeader, pTransaction->GetBody()),
@@ -71,25 +72,17 @@ public:
     }
 
 private:
-    mmr::MMR GetKernelMMR(const std::vector<Kernel>& additionalKernels = {})
+    IMMR::Ptr GetKernelMMR(const std::vector<Kernel>& tx_kernels)
     {
-        std::vector<Kernel> kernels;
-        for (const auto& block : m_blocks) {
-            const auto& blockKernels = block.GetBlock()->GetKernels();
-            std::copy(blockKernels.cbegin(), blockKernels.cend(), std::back_inserter(kernels));
+        MemMMR::Ptr pKernelMMR = std::make_shared<MemMMR>();
+        for (const Kernel& kernel : tx_kernels) {
+            pKernelMMR->Add(kernel.Serialized());
         }
 
-        kernels.insert(kernels.end(), additionalKernels.cbegin(), additionalKernels.cend());
-
-        auto mmr = mmr::MMR(std::make_shared<mmr::VectorBackend>());
-        for (const Kernel& kernel : kernels) {
-            mmr.Add(kernel.Serialized());
-        }
-
-        return mmr;
+        return pKernelMMR;
     }
 
-    mmr::MMR GetOutputMMR(const std::vector<Output>& additionalOutputs = {})
+    IMMR::Ptr GetOutputMMR(const std::vector<Output>& additionalOutputs = {})
     {
         std::vector<Output> outputs;
         for (const auto& block : m_blocks) {
@@ -99,12 +92,12 @@ private:
 
         std::copy(additionalOutputs.cbegin(), additionalOutputs.cend(), std::back_inserter(outputs));
 
-        auto mmr = mmr::MMR(std::make_shared<mmr::VectorBackend>());
+        MemMMR::Ptr pOutputMMR = std::make_shared<MemMMR>();
         for (const Output& output : outputs) {
-            mmr.Add(output.ToOutputId().Serialized());
+            pOutputMMR->Add(output.ToOutputId().Serialized());
         }
 
-        return mmr;
+        return pOutputMMR;
     }
 
     TestLeafSet::Ptr GetLeafSet(const std::vector<Input>& additionalInputs = {}, const std::vector<Output>& additionalOutputs = {})
@@ -134,9 +127,11 @@ private:
 
         blockInfos.push_back(blockInfo);
 
-        return TestLeafSet::Create(blockInfos);
+        return TestLeafSet::Create(m_datadir, blockInfos);
     }
 
+    FilePath m_datadir;
+    uint32_t m_fileIndex;
     std::vector<MinedBlock> m_blocks;
 };
 

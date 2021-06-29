@@ -508,7 +508,7 @@ static void UpdateMempoolForReorg(DisconnectedBlockTransactions &disconnectpool,
     while (it != disconnectpool.queuedTx.get<insertion_order>().rend()) {
         // ignore validation errors in resurrected transactions
         CValidationState stateDummy;
-        if (!fAddToMempool || (*it)->IsCoinBase() ||
+        if (!fAddToMempool || (*it)->IsCoinBase() || (*it)->IsHogEx() ||
             !AcceptToMemoryPool(mempool, stateDummy, *it, nullptr /* pfMissingInputs */,
                                 nullptr /* plTxnReplaced */, true /* bypass_limits */, 0 /* nAbsurdFee */)) {
             // If the transaction doesn't make it in to the mempool, remove any
@@ -581,7 +581,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         *pfMissingInputs = false;
     }
 
-    if (!CheckTransaction(tx, state, false))
+    if (!CheckTransaction(tx, state))
         return false; // state filled in by CheckTransaction
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -722,7 +722,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
 
         // Keep track of transactions that spend a coinbase, which we re-scan
         // during reorgs to ensure COINBASE_MATURITY is still met.
-        // MW: TODO - Also check if spends peg-in
         bool fSpendsCoinbase = false;
         for (const CTxIn &txin : tx.vin) {
             const Coin &coin = view.AccessCoin(txin.prevout);
@@ -1649,7 +1648,12 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     }
 
     if (blockUndo.mwundo != nullptr) {
-        mw::Node::DisconnectBlock(blockUndo.mwundo, view.GetMWView());
+        try {
+            view.GetMWEBCacheView()->UndoBlock(blockUndo.mwundo);
+        } catch (const std::exception& e) {
+            error("DisconnectBlock(): Failed to disconnect MWEB block");
+            return DISCONNECT_FAILED;
+        }
     }
 
     // move best block pointer to prevout block
@@ -2018,15 +2022,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
             }
 
-            // MWEB: For HogEx transaction, the fee must not be greater than the total fee of the extension block.
-            if (tx.IsHogEx()) {
-                CAmount mweb_fee = block.mwBlock.GetTotalFee();
-                if (txfee > mweb_fee) {
-                    return state.DoS(100, error("%s: HogEx fee does not match MWEB fee.", __func__),
-                        REJECT_INVALID, "bad-txns-mweb-fee-mismatch");
-                }
-            }
-
             // Check that transaction is BIP68 final
             // BIP68 lock checks (as opposed to nLockTime checks) must
             // be in ConnectBlock because they require the UTXO set
@@ -2083,42 +2078,20 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
 
     // MWEB: Check activation
-    const bool mw_enabled = IsMimblewimbleEnabled(pindex->pprev, chainparams.GetConsensus());
-    if (mw_enabled && block.mwBlock.IsNull()) {
-        return state.DoS(100, error("ConnectBlock(): Mimblewimble activated, but no MWEB included"),
-            REJECT_INVALID, "missing-mweb");
-    } else if (!mw_enabled && !block.mwBlock.IsNull()) {
-        return state.DoS(100, error("ConnectBlock(): Mimblewimble not activated, but MWEB included"),
-            REJECT_INVALID, "unexpected-mweb");
-    }
-
-    // MWEB: Connect block to chain
-    if (!block.mwBlock.IsNull()) {
-        // MW: TODO - Check HogEx transaction: `new value == (prev value + pegins) - (pegouts + fees)`
-        CAmount mweb_amount = pindex->pprev->mweb_amount + block.mwBlock.GetSupplyChange();
-        if (mweb_amount != block.GetMWEBAmount()) {
-            LogPrintf("prev_mweb_amount: %d, supply_change: %d, block_mweb_amount: %d\n", pindex->pprev->mweb_amount, block.mwBlock.GetSupplyChange(), block.GetMWEBAmount());
-            return state.DoS(100, error("ConnectBlock(): HogEx amount does not match expected MWEB amount"),
-                REJECT_INVALID, "mweb-amount-mismatch");
-        }
-
-        try {
-            blockundo.mwundo = mw::Node::ConnectBlock(block.mwBlock.m_block, view.GetMWView());
-        } catch (const std::exception& e) {
-            return state.DoS(100, error("ConnectBlock(): Failed to connect mw block: %s", e.what()),
-                REJECT_INVALID, "mw-connect-failed");
-        }
+    if (!MWEB::Node::ConnectBlock(block, chainparams.GetConsensus(), pindex->pprev, blockundo, *view.GetMWEBCacheView(), state)) {
+        return false;
     }
 
     if (fJustCheck)
         return true;
 
-    if (!block.mwBlock.IsNull()) {
+    // MWEB: Update BlockIndex
+    if (!block.mweb_block.IsNull()) {
         if ((pindex->nStatus & BLOCK_HAVE_MWEB) == 0) {
             pindex->nStatus |= BLOCK_HAVE_MWEB;
-            pindex->mweb_hash = block.GetMWEBHash();
+            pindex->mweb_header = block.mweb_block.GetMWEBHeader();
+            pindex->hogex_hash = block.GetHogEx()->GetHash();
             pindex->mweb_amount = block.GetMWEBAmount();
-            pindex->hogex_hash = block.GetHogExHash();
             setDirtyBlockIndex.insert(pindex);
         }
     }
@@ -2512,12 +2485,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     int64_t nTime5 = GetTimeMicros(); nTimeChainState += nTime5 - nTime4;
     LogPrint(BCLog::BENCH, "  - Writing chainstate: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime5 - nTime4) * MILLI, nTimeChainState * MICRO, nTimeChainState * MILLI / nBlocksTotal);
     // Remove conflicting transactions from the mempool.;
-    mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
-    disconnectpool.removeForBlock(blockConnecting.vtx); // MW: TODO - Do we have to do something with this?
-    // MWEB: Remove conflicting transactions from the mempool.
-    if (!blockConnecting.mwBlock.IsNull()) {
-        mempool.removeForMWBlock(blockConnecting.mwBlock, pindexNew->nHeight);
-    }
+    mempool.removeForBlock(blockConnecting, pindexNew->nHeight, &disconnectpool);
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
     UpdateTip(pindexNew, chainparams);
@@ -3200,7 +3168,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // checks that use witness data may be performed here.
 
     // Size limits
-    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MIMBLEWIMBLE) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
+    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-length", false, "size limits failed");
 
     // First transaction must be coinbase, the rest must not be
@@ -3212,7 +3180,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 
     // Check transactions
     for (const auto& tx : block.vtx)
-        if (!CheckTransaction(*tx, state, true))
+        if (!CheckTransaction(*tx, state))
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
 
@@ -3246,10 +3214,10 @@ bool IsNullDummyEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& 
     return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_SEGWIT, versionbitscache) == ThresholdState::ACTIVE);
 }
 
-bool IsMimblewimbleEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params)
+bool IsMWEBEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
-    return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_MW, versionbitscache) == ThresholdState::ACTIVE);
+    return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_MWEB, versionbitscache) == ThresholdState::ACTIVE);
 }
 
 // Compute at which vout of the block's coinbase transaction the witness
@@ -3445,24 +3413,8 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
-    if (IsMimblewimbleEnabled(pindexPrev, consensusParams)) {
-        if (block.mwBlock.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "mweb-missing", true, strprintf("%s : Mimblewimble activated but MWEB not found", __func__));
-        }
-    } else {
-        // No mw data is allowed in blocks that don't commit to mw data, as this would otherwise leave room for spam
-        if (!block.mwBlock.IsNull()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : Mimblewimble not activated, but MWEB found", __func__));
-        }
-    }
-
-    // Transactions in the mempool or broadcast via p2p may have mimblewimble transaction data attached.
-    // All mw tx data must be moved to the EB when it's mined in a block though.
-    // So at this point, no txs should contain mw data.
-    for (const auto& tx : block.vtx) {
-        if (tx->HasMWData()) {
-            return state.DoS(100, false, REJECT_INVALID, "unexpected-mw-data", true, strprintf("%s : Block contains transactions with mw data attached", __func__));
-        }
+    if (!MWEB::Node::ContextualCheckBlock(block, consensusParams, pindexPrev, state)) {
+        return false;
     }
 
     return true;
@@ -4542,7 +4494,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
     int nLoaded = 0;
     try {
         // This takes over fileIn and calls fclose() on it in the CBufferedFile destructor
-        CBufferedFile blkdat(fileIn, 2*MAX_BLOCK_SERIALIZED_SIZE, MAX_BLOCK_SERIALIZED_SIZE+8, SER_DISK, CLIENT_VERSION);
+        CBufferedFile blkdat(fileIn, 2 * MAX_BLOCK_SERIALIZED_SIZE_WITH_MWEB, MAX_BLOCK_SERIALIZED_SIZE_WITH_MWEB + 8, SER_DISK, CLIENT_VERSION);
         uint64_t nRewind = blkdat.GetPos();
         while (!blkdat.eof()) {
             boost::this_thread::interruption_point();

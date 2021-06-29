@@ -5,7 +5,7 @@
 
 namespace MWEB {
 
-class DBBatch : public mw::IDBBatch
+class DBBatch : public mw::DBBatch
 {
 public:
     DBBatch(CDBWrapper* pDB, const std::shared_ptr<CDBBatch>& pBatch)
@@ -31,7 +31,7 @@ private:
     std::shared_ptr<CDBBatch> m_pBatch;
 };
 
-class DBIterator : public mw::IDBIterator
+class DBIterator : public mw::DBIterator
 {
 public:
     DBIterator(CDBIterator* pIterator)
@@ -61,7 +61,7 @@ private:
     std::unique_ptr<CDBIterator> m_pIterator;
 };
 
-class DBWrapper : public mw::IDBWrapper
+class DBWrapper : public mw::DBWrapper
 {
 public:
     DBWrapper(CDBWrapper* pDB) : m_pDB(pDB) {}
@@ -71,14 +71,14 @@ public:
         return m_pDB->Read(key, value);
     }
 
-    std::unique_ptr<mw::IDBIterator> NewIterator() final
+    std::unique_ptr<mw::DBIterator> NewIterator() final
     {
-        return std::unique_ptr<mw::IDBIterator>(new MWEB::DBIterator(m_pDB->NewIterator()));
+        return std::unique_ptr<mw::DBIterator>(new MWEB::DBIterator(m_pDB->NewIterator()));
     }
 
-    std::unique_ptr<mw::IDBBatch> CreateBatch() final
+    std::unique_ptr<mw::DBBatch> CreateBatch() final
     {
-        return std::unique_ptr<mw::IDBBatch>(new MWEB::DBBatch(m_pDB, std::make_shared<CDBBatch>(*m_pDB)));
+        return std::unique_ptr<mw::DBBatch>(new MWEB::DBBatch(m_pDB, std::make_shared<CDBBatch>(*m_pDB)));
     }
 
 private:

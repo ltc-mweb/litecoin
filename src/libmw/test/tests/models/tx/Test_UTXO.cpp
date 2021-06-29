@@ -2,30 +2,28 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/models/wallet/StealthAddress.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestUTXO, BasicTestingSetup)
+#include <test_framework/Deserializer.h>
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestUTXO, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxUTXO)
 {
-    uint64_t amount = 12345;
+    CAmount amount = 12345;
     BlindingFactor blind;
     Output output = Output::Create(
         blind,
-        EOutputFeatures::DEFAULT_OUTPUT,
         Random::CSPRNG<32>(),
         StealthAddress::Random(),
         amount
     );
-    Commitment commit = Crypto::CommitBlinded(amount, blind);
+    Commitment commit = Commitment::Blinded(blind, amount);
 
-    uint64_t blockHeight = 20;
+    int32_t blockHeight = 20;
     mmr::LeafIndex leafIndex = mmr::LeafIndex::At(5);
     UTXO utxo{
         blockHeight,
@@ -40,9 +38,9 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
         std::vector<uint8_t> serialized = utxo.Serialized();
 
         Deserializer deserializer(serialized);
-        BOOST_REQUIRE(deserializer.Read<uint64_t>() == blockHeight);
+        BOOST_REQUIRE(deserializer.Read<int32_t>() == blockHeight);
         BOOST_REQUIRE(mmr::LeafIndex::At(deserializer.Read<uint64_t>()) == leafIndex);
-        BOOST_REQUIRE(Output::Deserialize(deserializer) == output);
+        BOOST_REQUIRE(deserializer.Read<Output>() == output);
     }
 
     //

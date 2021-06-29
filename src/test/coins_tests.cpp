@@ -36,13 +36,13 @@ class CCoinsViewTest : public CCoinsView
 {
     uint256 hashBestBlock_;
     std::map<COutPoint, Coin> map_;
-    mw::ICoinsView::Ptr mw_view_;
+    mw::ICoinsView::Ptr mweb_view_;
 
 public:
     CCoinsViewTest()
     {
-        mw_view_ = mw::Node::Init(
-            FilePath{GetDataDir().native()},
+        mweb_view_ = mw::Node::Init(
+            FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             nullptr
         );
@@ -64,7 +64,7 @@ public:
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }
 
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& mwView) override
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& mwView) override
     {
         for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); ) {
             if (it->second.flags & CCoinsCacheEntry::DIRTY) {
@@ -84,7 +84,7 @@ public:
     
     mw::ICoinsView::Ptr GetMWView() const override
     {
-        return mw_view_;
+        return mweb_view_;
     }
 };
 
@@ -603,11 +603,11 @@ void GetCoinsMapEntry(const CCoinsMap& map, CAmount& value, char& flags)
     }
 }
 
-void WriteCoinsViewEntry(CCoinsView& view, const mw::ICoinsView::Ptr& mw_view, CAmount value, char flags)
+void WriteCoinsViewEntry(CCoinsView& view, const mw::CoinsViewCache::Ptr& mweb_view, CAmount value, char flags)
 {
     CCoinsMap map;
     InsertCoinsMapEntry(map, value, flags);
-    BOOST_CHECK(view.BatchWrite(map, {}, mw_view));
+    BOOST_CHECK(view.BatchWrite(map, {}, mweb_view));
 }
 
 class SingleEntryCacheTest
@@ -616,19 +616,19 @@ public:
     SingleEntryCacheTest(CAmount base_value, CAmount cache_value, char cache_flags)
         : root(GetCoinsViewDB()), base(root.get()), cache(&base)
     {
-        WriteCoinsViewEntry(base, cache.GetMWView(), base_value, base_value == ABSENT ? NO_ENTRY : DIRTY);
+        WriteCoinsViewEntry(base, cache.GetMWEBCacheView(), base_value, base_value == ABSENT ? NO_ENTRY : DIRTY);
         cache.usage() += InsertCoinsMapEntry(cache.map(), cache_value, cache_flags);
     }
 
     static std::unique_ptr<CCoinsViewDB> GetCoinsViewDB()
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
-        mw::ICoinsView::Ptr mw_view = mw::Node::Init(
-            FilePath{GetDataDir().native()},
+        mw::ICoinsView::Ptr mweb_view = mw::Node::Init(
+            FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             nullptr
         );
-        root->SetMWView(mw_view);
+        root->SetMWView(mweb_view);
         return root;
     }
 

@@ -4,9 +4,8 @@
 #include "DBEntry.h"
 #include "OrderedMultimap.h"
 
+#include <mw/common/Traits.h>
 #include <mw/exceptions/DatabaseException.h>
-#include <mw/serialization/Serializer.h>
-#include <mw/traits/Serializable.h>
 #include <mw/interfaces/db_interface.h>
 #include <memory>
 #include <string>
@@ -18,7 +17,7 @@ class DBTransaction
 public:
     using UPtr = std::unique_ptr<DBTransaction>;
 
-    DBTransaction(mw::IDBWrapper* pDB, mw::IDBBatch* pBatch)
+    DBTransaction(mw::DBWrapper* pDB, mw::DBBatch* pBatch)
         : m_pDB(pDB), m_pBatch(pBatch) { }
 
     template<typename T,
@@ -29,10 +28,7 @@ public:
         {
             const std::string key = table.BuildKey(entry);
 
-            Serializer serializer;
-            serializer.Append(entry.item);
-
-            m_pBatch->Write(key, serializer.vec());
+            m_pBatch->Write(key, entry.item->Serialized());
             m_added.insert({ key, entry.item });
         }
 
@@ -58,8 +54,9 @@ public:
         const bool status = m_pDB->Read(table_key, entry);
         if (status)
         {
-            Deserializer deserializer(std::move(entry));
-            return std::make_unique<DBEntry<T>>(key, T::Deserialize(deserializer));
+            T item;
+            CDataStream(entry, SER_DISK, PROTOCOL_VERSION) >> item;
+            return std::make_unique<DBEntry<T>>(key, std::move(item));
         }
 
         return nullptr;
@@ -73,7 +70,7 @@ public:
     }
 
 private:
-    mw::IDBWrapper* m_pDB;
-    mw::IDBBatch* m_pBatch;
+    mw::DBWrapper* m_pDB;
+    mw::DBBatch* m_pBatch;
     OrderedMultimap<std::string, Traits::ISerializable> m_added;
 };

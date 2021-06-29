@@ -13,7 +13,7 @@ class CoinDB
 public:
 	using UPtr = std::unique_ptr<CoinDB>;
 
-	CoinDB(mw::IDBWrapper* pDBWrapper, mw::IDBBatch* pBatch = nullptr);
+	CoinDB(mw::DBWrapper* pDBWrapper, mw::DBBatch* pBatch = nullptr);
 	~CoinDB();
 
 	//

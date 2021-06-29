@@ -1,9 +1,8 @@
 #pragma once
 
+#include <mw/common/Traits.h>
 #include <mw/models/crypto/BigInteger.h>
 #include <mw/models/crypto/SecretKey.h>
-#include <mw/traits/Printable.h>
-#include <mw/traits/Serializable.h>
 #include <boost/functional/hash.hpp>
 
 class PublicKey :
@@ -18,7 +17,7 @@ public:
     PublicKey(BigInt<33>&& compressed) : m_compressed(std::move(compressed)) {}
     PublicKey(const BigInt<33>& compressed) : m_compressed(compressed) {}
     PublicKey(const PublicKey&) = default;
-    PublicKey(PublicKey&&) = default;
+    PublicKey(PublicKey&&) noexcept = default;
 
     //
     // Destructor
@@ -41,10 +40,13 @@ public:
     // Factory
     //
     static PublicKey From(const SecretKey& key);
+    static PublicKey From(const Commitment& commitment);
+    static PublicKey Random();
 
     const BigInt<33>& GetBigInt() const { return m_compressed; }
     std::array<uint8_t, 33> array() const { return m_compressed.ToArray(); }
     const std::vector<uint8_t>& vec() const { return m_compressed.vec(); }
+    const uint8_t& operator[](const size_t x) const { return m_compressed[x]; }
     const uint8_t* data() const { return m_compressed.data(); }
     uint8_t* data() { return m_compressed.data(); }
     size_t size() const { return m_compressed.size(); }
@@ -58,9 +60,10 @@ public:
     PublicKey Sub(const SecretKey& sub) const;
     PublicKey Sub(const PublicKey& sub) const;
 
-    Serializer& Serialize(Serializer& serializer) const noexcept final { return m_compressed.Serialize(serializer); }
-    static PublicKey Deserialize(Deserializer& deserializer) { return BigInt<33>::Deserialize(deserializer); }
-
+    //
+    // Serialization/Deserialization
+    //
+    IMPL_SERIALIZABLE(PublicKey);
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

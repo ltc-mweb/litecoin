@@ -2,6 +2,7 @@
 
 #include <mw/common/Macros.h>
 #include <mw/models/tx/Input.h>
+#include <mw/crypto/PublicKeys.h>
 #include <mw/crypto/Schnorr.h>
 
 TEST_NAMESPACE
@@ -17,14 +18,8 @@ public:
         const SecretKey& sender_privkey,
         const uint64_t amount)
     {
-        Commitment commitment = Crypto::CommitBlinded(
-            amount,
-            blindingFactor
-        );
-        Signature sig = Schnorr::Sign(
-            sender_privkey.data(),
-            InputMessage()
-        );
+        Commitment commitment = Commitment::Blinded(blindingFactor, amount);
+        Signature sig = Schnorr::Sign(sender_privkey.data(), InputMessage());
 
         return TxInput(
             blindingFactor,
@@ -32,7 +27,7 @@ public:
             amount,
             Input{
                 std::move(commitment),
-                Crypto::CalculatePublicKey(sender_privkey.GetBigInt()),
+                PublicKey::From(sender_privkey),
                 std::move(sig)
             }
         );

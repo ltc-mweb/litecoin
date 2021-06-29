@@ -27,13 +27,6 @@ A header-only implementation of the C\+\+17 std::filesystem standard, but made c
 While boost\:\:filesystem is already pulled in by litecoin, I was uncomfortable with its API and its handling of unicode conversions.
 Someone more familiar with boost::filesystem should be able to eliminate the need for this dependency.
 
-### litecoin/
-Contains utilities and basic cryptography libraries pulled from the litecoin repo.
-
-These libraries are vendored like this as a temporary hack while libmw was being developed in a separate repo.
-Now that libmw is being included in the main codebase, there's no longer a reason to copy these files here.
-This directory should be removed before the first release.
-
 ### secp256k1-zkp/
 The elliptic curve cryptography, including schnorr, musig, pedersen, and bulletproofs modules.
 
@@ -48,19 +41,5 @@ Otherwise, we'll have 2 versions to maintain, and will very likely have namespac
 
 ## include/
 
-### libmw/
-This is the bridge between the internal libmw code and the existing litecoin code.
 
-##### interfaces/
-The interfaces defined here are implemented in the litecoin code and used in libmw as an alternative to callbacks.
-They provide a way for the libmw code to query and update state without requiring a physical dependency on the stateful code.
-
-###### chain_interface.h
-Provides a read-only way to iterate over the current chain state.
-The iterator begins at the first block since MWEB activation, and ends with the chain tip.
-This is useful when validating the past MWEB state after performing a fast-sync to the horizon.
-
-###### db_interface.h
-Provides access to litecoin's leveldb instance.
-Lookup is possibly by exact key, or through sequential iteration of the keys.
-A batch object is also provided for updating or erasing values.
+## src/

@@ -6,6 +6,7 @@
 #ifndef BITCOIN_KEYSTORE_H
 #define BITCOIN_KEYSTORE_H
 
+#include <mw/wallet/Keychain.h>
 #include <key.h>
 #include <pubkey.h>
 #include <script/script.h>
@@ -36,6 +37,8 @@ public:
     virtual bool RemoveWatchOnly(const CScript &dest) =0;
     virtual bool HaveWatchOnly(const CScript &dest) const =0;
     virtual bool HaveWatchOnly() const =0;
+
+    virtual mw::Keychain::Ptr GetMWEBKeychain() const { return nullptr; }
 };
 
 /** Basic key store, that keeps keys in an address->secret map */

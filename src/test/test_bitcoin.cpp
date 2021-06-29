@@ -83,12 +83,12 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         pblocktree.reset(new CBlockTreeDB(1 << 20, true));
         pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
 
-        mw::ICoinsView::Ptr mw_view = mw::Node::Init(
-            FilePath{GetDataDir().native()},
+        mw::ICoinsView::Ptr mweb_view = mw::Node::Init(
+            FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())
         );
-        pcoinsdbview->SetMWView(mw_view);
+        pcoinsdbview->SetMWView(mweb_view);
 
         pcoinsTip.reset(new CCoinsViewCache(pcoinsdbview.get()));
         if (!LoadGenesisBlock(chainparams)) {

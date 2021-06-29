@@ -2,20 +2,18 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/test/unit_test.hpp>
-#include <test/test_bitcoin.h>
-
 #include <mw/crypto/Bulletproofs.h>
-#include <mw/crypto/Crypto.h>
 #include <mw/crypto/Random.h>
 
-BOOST_FIXTURE_TEST_SUITE(TestRangeProofs, BasicTestingSetup)
+#include <test_framework/TestMWEB.h>
+
+BOOST_FIXTURE_TEST_SUITE(TestRangeProofs, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(RangeProofs)
 {
     const uint64_t value = 123;
     BlindingFactor blind = Random::CSPRNG<32>();
-    Commitment commit = Crypto::CommitBlinded(value, blind);
+    Commitment commit = Commitment::Blinded(blind, value);
     SecretKey nonce = Random::CSPRNG<32>();
     SecretKey nonce2 = Random::CSPRNG<32>();
     ProofMessage message = Random::CSPRNG<20>().GetBigInt();

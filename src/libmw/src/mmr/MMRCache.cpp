@@ -1,27 +1,24 @@
 #include <mw/mmr/MMR.h>
+#include <mw/mmr/MMRUtil.h>
 
 using namespace mmr;
 
-LeafIndex MMRCache::AddLeaf(std::vector<uint8_t>&& data)
+LeafIndex MMRCache::AddLeaf(const Leaf& leaf)
 {
-    LeafIndex leafIdx = LeafIndex::At(m_firstLeaf.Get() + m_leaves.size());
-    Leaf leaf = Leaf::Create(leafIdx, std::move(data));
-
     m_nodes.push_back(leaf.GetHash());
 
     auto rightHash = leaf.GetHash();
     auto nextIdx = leaf.GetNodeIndex().GetNext();
     while (!nextIdx.IsLeaf()) {
         const mw::Hash leftHash = GetHash(nextIdx.GetLeftChild());
-        const Node node = Node::CreateParent(nextIdx, leftHash, rightHash);
+        rightHash = MMRUtil::CalcParentHash(nextIdx, leftHash, rightHash);
 
-        m_nodes.push_back(node.GetHash());
-        rightHash = node.GetHash();
+        m_nodes.push_back(rightHash);
         nextIdx = nextIdx.GetNext();
     }
 
-    m_leaves.push_back(std::move(leaf));
-    return leafIdx;
+    m_leaves.push_back(leaf);
+    return leaf.GetLeafIndex();
 }
 
 Leaf MMRCache::GetLeaf(const LeafIndex& leafIdx) const
@@ -88,7 +85,7 @@ void MMRCache::BatchWrite(
     const uint32_t /*index*/,
     const LeafIndex& firstLeafIdx,
     const std::vector<Leaf>& leaves,
-    const std::unique_ptr<mw::IDBBatch>&)
+    const std::unique_ptr<mw::DBBatch>&)
 {
     LOG_TRACE_F("MMRCache: Writing batch {}", firstLeafIdx.Get());
     Rewind(firstLeafIdx.Get());
@@ -97,7 +94,7 @@ void MMRCache::BatchWrite(
     }
 }
 
-void MMRCache::Flush(const uint32_t file_index, const std::unique_ptr<mw::IDBBatch>& pBatch)
+void MMRCache::Flush(const uint32_t file_index, const std::unique_ptr<mw::DBBatch>& pBatch)
 {
     LOG_TRACE_F(
         "MMRCache: Flushing {} leaves at {} with file index {}",
