@@ -78,7 +78,6 @@ void CoinsViewDB::Compact() const
                                 .GetLatest();
     if (current_mmr_info) {
         m_pLeafSet->Cleanup(current_mmr_info->index);
-        m_pKernelMMR->Cleanup(current_mmr_info->index);
         m_pOutputPMMR->Cleanup(current_mmr_info->index);
     }
 }

@@ -47,15 +47,14 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
     auto block_builder = std::make_shared<mw::BlockBuilder>(152, cached_view);
 
     test::Tx builder_tx1 = test::Tx::CreatePegIn(150);
-    PegInCoin builder_tx1_pegin{ 150, builder_tx1.GetKernels().front().GetCommitment() };
     bool tx1_status = block_builder->AddTransaction(
         builder_tx1.GetTransaction(),
-        { builder_tx1_pegin }
+        { builder_tx1.GetPegInCoin() }
     );
-    BOOST_REQUIRE(tx1_status);
+    BOOST_CHECK(tx1_status);
 
     mw::Block::Ptr built_block = block_builder->BuildBlock();
-    BOOST_REQUIRE(built_block->GetKernels().front() == builder_tx1.GetKernels().front());
+    BOOST_CHECK(built_block->GetKernels().front() == builder_tx1.GetKernels().front());
     BlockValidator().Validate(built_block, built_block->GetHash(), { builder_tx1.GetPegInCoin() }, {});
 }
 

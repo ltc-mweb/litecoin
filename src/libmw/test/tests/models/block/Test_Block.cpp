@@ -4,6 +4,7 @@
 
 #include <mw/models/block/Block.h>
 #include <mw/consensus/Aggregation.h>
+#include <mw/mmr/MMR.h>
 #include <test_framework/models/Tx.h>
 
 #include <test_framework/TestMWEB.h>
@@ -19,10 +20,15 @@ BOOST_AUTO_TEST_CASE(Block)
         tx2.GetTransaction()
     });
 
+    MemMMR kernel_mmr;
+    for (const Kernel& kernel : pTransaction->GetKernels()) {
+        kernel_mmr.Add(kernel);
+    }
+
     mw::Header::CPtr pHeader = std::make_shared<mw::Header>(
         100,
         mw::Hash::FromHex("000102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20"),
-        mw::Hash::FromHex("001102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20"),
+        kernel_mmr.Root(),
         mw::Hash::FromHex("002102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20"),
         BlindingFactor(pTransaction->GetKernelOffset()),
         BlindingFactor(pTransaction->GetOwnerOffset()),

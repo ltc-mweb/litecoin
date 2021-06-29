@@ -22,14 +22,12 @@ mw::CoinsViewDB::Ptr Node::Init(
     auto pLeafSet = LeafSet::Open(datadir, file_index);
     auto pPruneList = PruneList::Open(datadir, compact_index);
 
-    MMR::Ptr pKernelsMMR = MMR::Open('K', datadir, file_index, pDBWrapper, nullptr);
     MMR::Ptr pOutputMMR = MMR::Open('O', datadir, file_index, pDBWrapper, pPruneList);
 
     return std::make_shared<mw::CoinsViewDB>(
         pBestHeader,
         pDBWrapper,
         pLeafSet,
-        pKernelsMMR,
         pOutputMMR
     );
 }

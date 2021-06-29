@@ -72,33 +72,17 @@ public:
     }
 
 private:
-    MMR::Ptr GetKernelMMR(const std::vector<Kernel>& additionalKernels = {})
+    IMMR::Ptr GetKernelMMR(const std::vector<Kernel>& tx_kernels)
     {
-        std::vector<Kernel> kernels;
-        for (const auto& block : m_blocks) {
-            const auto& blockKernels = block.GetBlock()->GetKernels();
-            std::copy(blockKernels.cbegin(), blockKernels.cend(), std::back_inserter(kernels));
+        MemMMR::Ptr pKernelMMR = std::make_shared<MemMMR>();
+        for (const Kernel& kernel : tx_kernels) {
+            pKernelMMR->Add(kernel.Serialized());
         }
 
-        kernels.insert(kernels.end(), additionalKernels.cbegin(), additionalKernels.cend());
-
-        FilePath temp_dir = m_datadir.GetChild(Random::CSPRNG<6>().GetBigInt().ToHex());
-        auto pWrapper = std::make_unique<CDBWrapper>(temp_dir.ToBoost(), 1 << 10);
-        auto mmr = MMR::Open(
-            'k',
-            m_datadir.GetChild("miner_mmr"),
-            m_fileIndex++,
-            std::make_shared<MWEB::DBWrapper>(pWrapper.get()),
-            nullptr
-        );
-        for (const Kernel& kernel : kernels) {
-            mmr->Add(kernel.Serialized());
-        }
-
-        return mmr;
+        return pKernelMMR;
     }
 
-    MMR::Ptr GetOutputMMR(const std::vector<Output>& additionalOutputs = {})
+    IMMR::Ptr GetOutputMMR(const std::vector<Output>& additionalOutputs = {})
     {
         std::vector<Output> outputs;
         for (const auto& block : m_blocks) {
@@ -108,20 +92,12 @@ private:
 
         std::copy(additionalOutputs.cbegin(), additionalOutputs.cend(), std::back_inserter(outputs));
 
-        FilePath temp_dir = m_datadir.GetChild(Random::CSPRNG<6>().GetBigInt().ToHex());
-        auto pWrapper = std::make_unique<CDBWrapper>(temp_dir.ToBoost(), 1 << 10);
-        auto mmr = MMR::Open(
-            'o',
-            m_datadir.GetChild("miner_mmr"),
-            m_fileIndex++,
-            std::make_shared<MWEB::DBWrapper>(pWrapper.get()),
-            nullptr
-        );
+        MemMMR::Ptr pOutputMMR = std::make_shared<MemMMR>();
         for (const Output& output : outputs) {
-            mmr->Add(output.ToOutputId().Serialized());
+            pOutputMMR->Add(output.ToOutputId().Serialized());
         }
 
-        return mmr;
+        return pOutputMMR;
     }
 
     TestLeafSet::Ptr GetLeafSet(const std::vector<Input>& additionalInputs = {}, const std::vector<Output>& additionalOutputs = {})

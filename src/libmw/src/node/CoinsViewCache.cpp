@@ -13,7 +13,6 @@ CoinsViewCache::CoinsViewCache(const ICoinsView::Ptr& pBase)
     : ICoinsView(pBase->GetBestHeader(), pBase->GetDatabase()),
       m_pBase(pBase),
       m_pLeafSet(std::make_unique<LeafSetCache>(pBase->GetLeafSet())),
-      m_pKernelMMR(std::make_unique<MMRCache>(pBase->GetKernelMMR())),
       m_pOutputPMMR(std::make_unique<MMRCache>(pBase->GetOutputPMMR())),
       m_pUpdates(std::make_shared<CoinsViewUpdates>()) {}
 
@@ -44,11 +43,6 @@ mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::CPtr& pBlock)
     BlindingFactor prev_offset = pPreviousHeader != nullptr ? pPreviousHeader->GetKernelOffset() : BlindingFactor();
     KernelSumValidator::ValidateForBlock(pBlock->GetTxBody(), pBlock->GetKernelOffset(), prev_offset);
 
-    std::for_each(
-        pBlock->GetKernels().cbegin(), pBlock->GetKernels().cend(),
-        [this](const Kernel& kernel) { m_pKernelMMR->Add(kernel); }
-    );
-
     std::vector<UTXO> coinsSpent;
     std::for_each(
         pBlock->GetInputs().cbegin(), pBlock->GetInputs().cend(),
@@ -67,7 +61,13 @@ mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::CPtr& pBlock)
         }
     );
 
-    ValidateMMRs(pBlock->GetHeader());
+    auto pHeader = pBlock->GetHeader();
+    if (pHeader->GetOutputRoot() != GetOutputPMMR()->Root()
+        || pHeader->GetNumTXOs() != GetOutputPMMR()->GetNumLeaves()
+        || pHeader->GetLeafsetRoot() != GetLeafSet()->Root())
+    {
+        ThrowValidation(EConsensusError::MMR_MISMATCH);
+    }
 
     return std::make_shared<mw::BlockUndo>(pPreviousHeader, std::move(coinsSpent), std::move(coinsAdded));
 }
@@ -89,19 +89,22 @@ void CoinsViewCache::UndoBlock(const mw::BlockUndo::CPtr& pUndo)
     auto pHeader = pUndo->GetPreviousHeader();
     if (pHeader == nullptr) {
         m_pLeafSet->Rewind(0, {});
-        m_pKernelMMR->Rewind(0);
         m_pOutputPMMR->Rewind(0);
         SetBestHeader(nullptr);
         return;
     }
 
     m_pLeafSet->Rewind(pHeader->GetNumTXOs(), leavesToAdd);
-    m_pKernelMMR->Rewind(pHeader->GetNumKernels());
     m_pOutputPMMR->Rewind(pHeader->GetNumTXOs());
     SetBestHeader(pHeader);
 
     // Sanity check to make sure rewind applied successfully
-    ValidateMMRs(pHeader);
+    if (pHeader->GetOutputRoot() != GetOutputPMMR()->Root()
+        || pHeader->GetNumTXOs() != GetOutputPMMR()->GetNumLeaves()
+        || pHeader->GetLeafsetRoot() != GetLeafSet()->Root())
+    {
+        ThrowValidation(EConsensusError::MMR_MISMATCH);
+    }
 }
 
 mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions)
@@ -110,9 +113,10 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
 
     auto pTransaction = Aggregation::Aggregate(transactions);
 
+    MemMMR::Ptr pKernelMMR = std::make_shared<MemMMR>();
     std::for_each(
         pTransaction->GetKernels().cbegin(), pTransaction->GetKernels().cend(),
-        [this](const Kernel& kernel) { m_pKernelMMR->Add(kernel); }
+        [&pKernelMMR](const Kernel& kernel) { pKernelMMR->Add(kernel); }
     );
 
     std::for_each(
@@ -126,10 +130,10 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
     );
 
     const uint64_t output_mmr_size = m_pOutputPMMR->GetNumLeaves();
-    const uint64_t kernel_mmr_size = m_pKernelMMR->GetNumLeaves();
+    const uint64_t kernel_mmr_size = pKernelMMR->GetNumLeaves();
 
     mw::Hash output_root = m_pOutputPMMR->Root();
-    mw::Hash kernel_root = m_pKernelMMR->Root();
+    mw::Hash kernel_root = pKernelMMR->Root();
     mw::Hash leafset_root = m_pLeafSet->Root();
 
     BlindingFactor kernel_offset = pTransaction->GetKernelOffset();
@@ -225,7 +229,6 @@ void CoinsViewCache::Flush(const std::unique_ptr<mw::DBBatch>& pBatch)
     }
 
     m_pLeafSet->Flush(mmr_info.index);
-    m_pKernelMMR->Flush(mmr_info.index, pBatch);
     m_pOutputPMMR->Flush(mmr_info.index, pBatch);
 
     if (!m_pBase->IsCache()) {

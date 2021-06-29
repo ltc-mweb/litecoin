@@ -48,7 +48,6 @@ public:
     ) = 0;
 
     virtual ILeafSet::Ptr GetLeafSet() const noexcept = 0;
-    virtual IMMR::Ptr GetKernelMMR() const noexcept = 0;
     virtual IMMR::Ptr GetOutputPMMR() const noexcept = 0;
 
     /// <summary>
@@ -70,9 +69,6 @@ public:
     /// Cleanup any old MMR files that no longer reflect the latest flushed state.
     /// </summary>
     virtual void Compact() const = 0;
-    
-protected:
-    void ValidateMMRs(const mw::Header::CPtr& pHeader) const;
 
 private:
     mw::Header::CPtr m_pHeader;
@@ -125,7 +121,6 @@ public:
     bool HasCoinInCache(const Commitment& commitment) const noexcept final;
 
     ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
-    IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
     IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
 private:
@@ -135,7 +130,6 @@ private:
     ICoinsView::Ptr m_pBase;
 
     LeafSetCache::Ptr m_pLeafSet;
-    MMRCache::Ptr m_pKernelMMR;
     MMRCache::Ptr m_pOutputPMMR;
 
     std::shared_ptr<CoinsViewUpdates> m_pUpdates;
@@ -148,11 +142,9 @@ public:
         const mw::Header::CPtr& pBestHeader,
         const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
         const LeafSet::Ptr& pLeafSet,
-        const MMR::Ptr& pKernelMMR,
         const MMR::Ptr& pOutputPMMR
     ) : ICoinsView(pBestHeader, pDBWrapper),
         m_pLeafSet(pLeafSet),
-        m_pKernelMMR(pKernelMMR),
         m_pOutputPMMR(pOutputPMMR) { }
 
     bool IsCache() const noexcept final { return false; }
@@ -166,7 +158,6 @@ public:
     void Compact() const final;
 
     ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
-    IMMR::Ptr GetKernelMMR() const noexcept final { return m_pKernelMMR; }
     IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
     bool HasCoinInCache(const Commitment& commitment) const noexcept final { return false; }
@@ -178,7 +169,6 @@ private:
     std::vector<UTXO::CPtr> GetUTXOs(const CoinDB& coinDB, const Commitment& commitment) const;
 
     LeafSet::Ptr m_pLeafSet;
-    MMR::Ptr m_pKernelMMR;
     MMR::Ptr m_pOutputPMMR;
 };
 

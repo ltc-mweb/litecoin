@@ -12,6 +12,7 @@
 #include <mw/models/crypto/Hash.h>
 #include <mw/mmr/LeafIndex.h>
 #include <mw/mmr/Leaf.h>
+#include <mw/mmr/MMRUtil.h>
 #include <mw/mmr/PruneList.h>
 #include <mw/interfaces/db_interface.h>
 
@@ -96,6 +97,63 @@ public:
         const std::vector<mmr::Leaf>& leaves,
         const std::unique_ptr<mw::DBBatch>& pBatch
     ) = 0;
+};
+
+/// <summary>
+/// Memory-only MMR with no pruning or file I/O.
+/// </summary>
+class MemMMR : public IMMR
+{
+public:
+    using Ptr = std::shared_ptr<MemMMR>;
+
+    virtual ~MemMMR() = default;
+
+    mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) final
+    {
+        m_leaves.push_back(leaf);
+        m_hashes.push_back(leaf.GetHash());
+
+        auto nextIdx = leaf.GetNodeIndex().GetNext();
+        while (!nextIdx.IsLeaf()) {
+            mw::Hash leftHash = GetHash(nextIdx.GetLeftChild());
+            m_hashes.push_back(MMRUtil::CalcParentHash(nextIdx, leftHash, m_hashes.back()));
+            nextIdx = nextIdx.GetNext();
+        }
+
+        return leaf.GetLeafIndex();
+    }
+
+    mmr::Leaf GetLeaf(const mmr::LeafIndex& leafIdx) const final
+    {
+        assert(leafIdx.Get() < m_leaves.size());
+        return m_leaves[leafIdx.Get()];
+    }
+
+    mw::Hash GetHash(const mmr::Index& idx) const final
+    {
+        assert(idx.GetPosition() < m_hashes.size());
+        return m_hashes[idx.GetPosition()];
+    }
+
+    mmr::LeafIndex GetNextLeafIdx() const noexcept final { return mmr::LeafIndex::At(GetNumLeaves()); }
+    uint64_t GetNumLeaves() const noexcept final { return m_leaves.size(); }
+    void Rewind(const uint64_t numLeaves) final
+    {
+        assert(numLeaves <= m_leaves.size());
+        m_leaves.resize(numLeaves);
+        m_hashes.resize(GetNextLeafIdx().GetPosition());
+    }
+
+    void BatchWrite(
+        const uint32_t,
+        const mmr::LeafIndex&,
+        const std::vector<mmr::Leaf>&,
+        const std::unique_ptr<mw::DBBatch>&) final {}
+
+private:
+    std::vector<mw::Hash> m_hashes;
+    std::vector<mmr::Leaf> m_leaves;
 };
 
 class MMR : public IMMR
