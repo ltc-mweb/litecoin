@@ -11,7 +11,7 @@
 bool CCoinsView::GetCoin(const COutPoint &outpoint, Coin &coin) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
-bool CCoinsView::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) { return false; }
+bool CCoinsView::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 
 bool CCoinsView::HaveCoin(const OutputIndex& index) const
@@ -30,7 +30,7 @@ bool CCoinsViewBacked::HaveCoin(const OutputIndex& index) const { return base->H
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetHeadBlocks(); }
 void CCoinsViewBacked::SetBackend(CCoinsView& viewIn) { base = &viewIn; }
-bool CCoinsViewBacked::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) { return base->BatchWrite(mapCoins, hashBlock, derivedView); }
+bool CCoinsViewBacked::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) { return base->BatchWrite(mapCoins, hashBlock, derivedView); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 mw::ICoinsView::Ptr CCoinsViewBacked::GetMWView() const { return base->GetMWView(); }
@@ -162,7 +162,7 @@ void CCoinsViewCache::SetBestBlock(const uint256 &hashBlockIn) {
     hashBlock = hashBlockIn;
 }
 
-bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn, const mw::ICoinsView::Ptr& derivedView) {
+bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn, const mw::CoinsViewCache::Ptr& derivedView) {
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); it = mapCoins.erase(it)) {
         // Ignore non-dirty entries (optimization).
         if (!(it->second.flags & CCoinsCacheEntry::DIRTY)) {
@@ -218,7 +218,7 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
     }
 
     // MWEB: Flushes mw coins
-    GetMWEBCacheView()->Flush(nullptr);
+    derivedView->Flush(nullptr);
 
     hashBlock = hashBlockIn;
     return true;

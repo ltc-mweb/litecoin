@@ -64,7 +64,7 @@ public:
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }
 
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& mwView) override
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& mwView) override
     {
         for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); ) {
             if (it->second.flags & CCoinsCacheEntry::DIRTY) {
@@ -603,7 +603,7 @@ void GetCoinsMapEntry(const CCoinsMap& map, CAmount& value, char& flags)
     }
 }
 
-void WriteCoinsViewEntry(CCoinsView& view, const mw::ICoinsView::Ptr& mweb_view, CAmount value, char flags)
+void WriteCoinsViewEntry(CCoinsView& view, const mw::CoinsViewCache::Ptr& mweb_view, CAmount value, char flags)
 {
     CCoinsMap map;
     InsertCoinsMapEntry(map, value, flags);
@@ -616,7 +616,7 @@ public:
     SingleEntryCacheTest(CAmount base_value, CAmount cache_value, char cache_flags)
         : root(GetCoinsViewDB()), base(root.get()), cache(&base)
     {
-        WriteCoinsViewEntry(base, cache.GetMWView(), base_value, base_value == ABSENT ? NO_ENTRY : DIRTY);
+        WriteCoinsViewEntry(base, cache.GetMWEBCacheView(), base_value, base_value == ABSENT ? NO_ENTRY : DIRTY);
         cache.usage() += InsertCoinsMapEntry(cache.map(), cache_value, cache_flags);
     }
 

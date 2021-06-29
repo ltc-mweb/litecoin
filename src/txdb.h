@@ -55,7 +55,7 @@ public:
     bool HaveCoin(const OutputIndex& index) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::ICoinsView::Ptr& derivedView) override;
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     CDBWrapper* GetDB() noexcept { return &db; }
     void SetMWView(const mw::ICoinsView::Ptr& view) { mweb_view = view; }
