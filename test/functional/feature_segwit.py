@@ -49,17 +49,20 @@ class SegWitTest(BitcoinTestFramework):
             [
                 "-rpcserialversion=0",
                 "-vbparams=segwit:0:999999999999",
+                "-vbparams=mweb:0:0",
                 "-addresstype=legacy",
             ],
             [
                 "-blockversion=4",
                 "-rpcserialversion=1",
                 "-vbparams=segwit:0:999999999999",
+                "-vbparams=mweb:0:0",
                 "-addresstype=legacy",
             ],
             [
                 "-blockversion=536870915",
                 "-vbparams=segwit:0:999999999999",
+                "-vbparams=mweb:0:0",
                 "-addresstype=legacy",
             ],
         ]
