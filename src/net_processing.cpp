@@ -243,7 +243,7 @@ struct CNodeState {
     bool fHaveMW;
     //! Whether this peer wants witnesses in cmpctblocks/blocktxns
     bool fWantsCmpctWitness;
-    //! Whether this peer wants MW transactions in cmpctblocks/blocktxns
+    //! Whether this peer wants MWEB transactions in cmpctblocks/blocktxns
     bool fWantsCmpctMWEB;
     /**
      * If we've announced NODE_WITNESS to this peer: whether the peer sends witnesses in cmpctblocks/blocktxns,
@@ -968,9 +968,14 @@ void PeerLogicValidation::NewPoWValidBlock(const CBlockIndex *pindex, const std:
                 (!mweb_enabled || state.fWantsCmpctMWEB) &&
                 !PeerHasHeader(&state, pindex) && PeerHasHeader(&state, pindex->pprev)) {
 
+            bool fPeerWantsWitness = State(pnode->GetId())->fWantsCmpctWitness;
+            bool fPeerWantsMWEB = State(pnode->GetId())->fWantsCmpctMWEB;
+            int nSendFlags = fPeerWantsWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
+            nSendFlags |= fPeerWantsMWEB ? 0 : SERIALIZE_NO_MWEB;
+
             LogPrint(BCLog::NET, "%s sending header-and-ids %s to peer=%d\n", "PeerLogicValidation::NewPoWValidBlock",
                     hashBlock.ToString(), pnode->GetId());
-            connman->PushMessage(pnode, msgMaker.Make(NetMsgType::CMPCTBLOCK, *pcmpctblock));
+            connman->PushMessage(pnode, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, *pcmpctblock));
             state.pindexBestHeaderSent = pindex;
         }
     });
@@ -2465,8 +2470,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             LOCK(cs_main);
             CBlockIndex* pTip = chainActive.Tip();
             assert(pTip);
-            if (IsMWEBEnabled(pTip->pprev, chainparams.GetConsensus()) && !State(pfrom->GetId())->fWantsCmpctMWEB) {
-                vRecv.SetVersion(vRecv.GetVersion() | SERIALIZE_NO_MWEB); // MWEB: This may already be set.
+            if (!IsMWEBEnabled(pTip->pprev, chainparams.GetConsensus()) && !State(pfrom->GetId())->fWantsCmpctMWEB) {
+                vRecv.SetVersion(vRecv.GetVersion() | SERIALIZE_NO_MWEB);
             }
         }
 
