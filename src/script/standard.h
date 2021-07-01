@@ -191,6 +191,8 @@ bool IsPegInOutput(const CTxOutput& output);
  */
 CScript GetScriptForWitness(const CScript& redeemscript);
 
+CScript GetScriptForPegin(const Commitment& commitment);
+
 class DestinationScript
 {
 public:

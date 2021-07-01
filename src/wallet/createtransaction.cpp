@@ -117,7 +117,6 @@ bool AddRecipientOutputs(
     bool fFirst = true;
     for (const auto& recipient : vecSend) {
         if (recipient.IsMWEB()) {
-            LogPrintf("Prefer MWEB\n");
             coin_selection_params.input_preference = InputPreference::PREFER_MWEB;
             continue;
         }
@@ -153,7 +152,6 @@ bool AddRecipientOutputs(
     return true;
 }
 
-
 bool SelectCoins(
     CWallet& wallet,
     const std::vector<COutputCoin>& vAvailableCoins,
@@ -185,16 +183,6 @@ bool SelectCoins(
         if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
             return true;
         }
-
-        params2.input_preference = InputPreference::MWEB_ONLY;
-        params2.change_type = OutputType::MWEB;
-
-        // Then try SelectCoins with MWEB_ONLY so we can avoid mixing input types.
-        if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-            return true;
-        }
-
-        // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
     } else if (coin_selection_params.input_preference == InputPreference::PREFER_MWEB) {
         CoinSelectionParams params2 = coin_selection_params;
         params2.input_preference = InputPreference::MWEB_ONLY;
@@ -204,29 +192,31 @@ bool SelectCoins(
         if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
             return true;
         }
-
-        params2.input_preference = InputPreference::LTC_ONLY;
-        params2.change_type = coin_selection_params.change_type;
-
-        // Then try SelectCoins with LTC_ONLY so we can avoid mixing input types.
-        if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params2, bnb_used)) {
-            return true;
-        }
-
-        // MW: TODO - Since the preferred method failed, we may have to add on an additional fee?
     }
 
     return wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
 }
 
-static bool IsChangeOnMWEB(const MWEB::TxType& mweb_type, const CCoinControl& coin_control)
+static bool IsChangeOnMWEB(const MWEB::Wallet& mweb_wallet, const MWEB::TxType& mweb_type, const std::vector<CRecipient>& vecSend, const CCoinControl& coin_control)
 {
     if (mweb_type == MWEB::TxType::MWEB_TO_MWEB || mweb_type == MWEB::TxType::PEGOUT) {
         return true;
     }
 
     if (mweb_type == MWEB::TxType::PEGIN) {
-        return coin_control.destChange.type() == typeid(CNoDestination)
+        // If you try pegging-in to only MWEB addresses belonging to others,
+        // you risk revealing the kernel blinding factor, allowing the receiver to malleate the kernel.
+        // To avoid this risk, include a change output so that kernel blind is not leaked.
+        bool pegin_change_required = true;
+        for (const CRecipient& recipient : vecSend) {
+            if (recipient.IsMWEB() && mweb_wallet.IsMine(recipient.GetMWEBAddress())) {
+                pegin_change_required = false;
+                break;
+            }
+        }
+
+        return pegin_change_required
+            || coin_control.destChange.type() == typeid(CNoDestination)
             || coin_control.destChange.type() == typeid(StealthAddress);
     }
 
@@ -384,7 +374,7 @@ bool CreateTransactionEx(
                 }
 
                 mweb_type = MWEB::GetTxType(vecSend, std::vector<CInputCoin>(setCoins.begin(), setCoins.end()));
-                change_on_mweb = IsChangeOnMWEB(mweb_type, coin_control);
+                change_on_mweb = IsChangeOnMWEB(*wallet.GetMWWallet(), mweb_type, vecSend, coin_control);
 
                 if (mweb_type != MWEB::TxType::LTC_TO_LTC) {
                     size_t mweb_outputs = 0;
@@ -432,11 +422,9 @@ bool CreateTransactionEx(
                     nChangePosInOut = -1;
                 }
 
+                // Add Dummy peg-in script
                 if (ContainsPegIn(mweb_type, setCoins)) {
-                    CScript dummy_pegin_script;
-                    dummy_pegin_script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
-                    dummy_pegin_script << std::vector<uint8_t>(33);
-                    txNew.vout.push_back(CTxOut(0, dummy_pegin_script));
+                    txNew.vout.push_back(CTxOut(0, GetScriptForPegin(Commitment())));
                 }
 
                 // Dummy fill vin for maximum size estimation

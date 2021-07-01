@@ -80,7 +80,7 @@ bool Transact::CreateTx(
         );
 
         CAmount change_amount = (pegin_amount.value_or(0) + GetMWEBInputAmount(selected_coins)) - (recipient_amount + mweb_fee);
-        if (change_amount <= 0) {
+        if (change_amount < 0) {
             return false;
         }
         StealthAddress change_address = mweb_wallet->GetStealthAddress(mw::CHANGE_INDEX);
@@ -142,11 +142,8 @@ bool Transact::UpdatePegInOutput(CMutableTransaction& transaction, const PegInCo
 {
     for (size_t i = 0; i < transaction.vout.size(); i++) {
         if (IsPegInOutput(CTransaction(transaction).GetOutput(i))) {
-            CScript pegin_script;
-            pegin_script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
-            pegin_script << pegin.GetCommitment().vec();
             transaction.vout[i].nValue = pegin.GetAmount();
-            transaction.vout[i].scriptPubKey = pegin_script;
+            transaction.vout[i].scriptPubKey = GetScriptForPegin(pegin.GetCommitment());
             return true;
         }
     }

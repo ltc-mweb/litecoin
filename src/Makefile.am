@@ -109,7 +109,6 @@ libmw_a_SOURCES = \
 	libmw/src/common/Logger.cpp \
 	libmw/src/crypto/Bulletproofs.cpp \
 	libmw/src/crypto/ConversionUtil.cpp \
-	libmw/src/crypto/Hasher.cpp \
 	libmw/src/crypto/MuSig.cpp \
 	libmw/src/crypto/Pedersen.cpp \
 	libmw/src/crypto/PublicKeys.cpp \
@@ -385,7 +384,7 @@ libbitcoin_wallet_tool_a_SOURCES = \
   $(BITCOIN_CORE_H)
 
 # crypto primitives library
-crypto_libbitcoin_crypto_base_a_CPPFLAGS = $(AM_CPPFLAGS) $(SSL_CFLAGS)
+crypto_libbitcoin_crypto_base_a_CPPFLAGS = $(AM_CPPFLAGS) $(SSL_CFLAGS) $(BITCOIN_INCLUDES)
 crypto_libbitcoin_crypto_base_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 crypto_libbitcoin_crypto_base_a_SOURCES = \
   crypto/aes.cpp \
@@ -409,7 +408,8 @@ crypto_libbitcoin_crypto_base_a_SOURCES = \
   crypto/sha512.cpp \
   crypto/sha512.h \
   crypto/siphash.cpp \
-  crypto/siphash.h
+  crypto/siphash.h \
+  libmw/src/crypto/Hasher.cpp
 
 if USE_ASM
 crypto_libbitcoin_crypto_base_a_SOURCES += crypto/sha256_sse4.cpp

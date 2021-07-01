@@ -45,6 +45,11 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     return rewound;
 }
 
+bool Wallet::IsMine(const StealthAddress& address) const
+{
+    return GetKeychain()->IsMine(address);
+}
+
 StealthAddress Wallet::GetStealthAddress(const uint32_t index)
 {
     return GetKeychain()->GetStealthAddress(index);

@@ -334,6 +334,14 @@ CScript GetScriptForWitness(const CScript& redeemscript)
     return GetScriptForDestination(WitnessV0ScriptHash(redeemscript));
 }
 
+CScript GetScriptForPegin(const Commitment& commitment)
+{
+    CScript script;
+    script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
+    script << commitment.vec();
+    return script;
+}
+
 bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
