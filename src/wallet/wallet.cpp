@@ -2259,7 +2259,7 @@ CAmount CWalletTx::GetFee(const isminefilter& filter) const
             }
         }
 
-        nFee = nDebit - nValueOut;
+        nFee = nValueOut - nDebit;
     }
 
     return nFee;

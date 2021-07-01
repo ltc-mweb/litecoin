@@ -26,7 +26,7 @@ Litecoin's leveldb instance is used to maintain an MMR Info table (prefix: "M") 
 Each time the PMMRs are flushed to disk, a new MMRInfo object is written to the DB and marked as the latest.
 
 ##### Leaves (leveldb)
-Litecoin's leveldb instance is used to maintain MMR leaf tables (prefix: 'K' for kernels, 'O' for outputs) to store uncompacted PMMR leaves consisting of the following data fields:
+Litecoin's leveldb instance is used to maintain MMR leaf tables (prefix: 'O' for outputs) to store uncompacted PMMR leaves consisting of the following data fields:
 
 * leaf_index (key) - The zero-based leaf position.
 * leaf - The raw leaf data committed to by the PMMR.
@@ -35,8 +35,8 @@ Leaves spent before the horizon will be removed during compaction.
 
 ##### MMR Hashes (file)
 
-Stored in file `<prefix><index>.dat` where `<prefix>` refers to 'K' for the kernel MMR and 'O' for the output PMMR, and `<index>` is a 6-digit number that matches the `index` value of the latest `MMRInfo` object.
-Example: If the latest `MMRInfo` object has an `index` of 123, the matching kernel MMR hash file will be named `K000123.dat`.
+Stored in file `<prefix><index>.dat` where `<prefix>` refers to 'O' for the output PMMR, and `<index>` is a 6-digit number that matches the `index` value of the latest `MMRInfo` object.
+Example: If the latest `MMRInfo` object has an `index` of 123, the matching output PMMR hash file will be named `O000123.dat`.
 
 The hash file consists of un-compacted leaf hashes and their parent hashes.
 
