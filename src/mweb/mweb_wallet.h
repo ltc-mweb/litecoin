@@ -34,6 +34,7 @@ public:
         const Commitment& output_commit,
         mw::Coin& coin
     );
+    bool IsMine(const StealthAddress& address) const;
     StealthAddress GetStealthAddress(const uint32_t index);
     StealthAddress GenerateNewAddress();
 

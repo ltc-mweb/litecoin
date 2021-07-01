@@ -65,9 +65,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
         boost::none
     );
 
-    // FUTURE: Only necessary when none of the addresses are owned by this wallet?
-    // MW: TODO - OwnerSignature won't be enough for peg-ins with no MWEB inputs or MWEB change.
-    // Would be better to just include change when none of the MWEB inputs are your previous change (i.e. self-generated blinds)
+    // MW: TODO - I'm no longer convinced this is even necessary.
     SecretKey owner_sig_key = Random::CSPRNG<32>();
     SignedMessage owner_sig = Schnorr::SignMessage(owner_sig_key, kernel.GetHash());
 

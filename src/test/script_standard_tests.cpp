@@ -370,6 +370,12 @@ BOOST_AUTO_TEST_CASE(script_standard_GetScriptFor_)
     expected << OP_0 << ToByteVector(scriptHash);
     result = GetScriptForWitness(witnessScript);
     BOOST_CHECK(result == expected);
+
+    Commitment commitment = Commitment::Random();
+    expected.clear();
+    expected << OP_9 << commitment.vec();
+    result = GetScriptForPegin(commitment);
+    BOOST_CHECK(result == expected);
 }
 
 BOOST_AUTO_TEST_CASE(script_standard_IsMine)
