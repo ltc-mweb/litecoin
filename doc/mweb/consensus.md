@@ -28,8 +28,8 @@
 
 #### PMMRs
 
-* After adding all kernels from a block to the end of the kernel MMR, the root shall match the header's kernel root.
-* After adding all kernels from a block to the end of the kernel MMR, the size shall match the header's kernel size.
+* After building an MMR with all of the kernels from a block, the root shall match the header's kernel root.
+* The number of kernels in a block shall match the header's kernel size.
 * After adding all outputs from a block to the end of the output MMR, the root shall match the header's output root.
 * After adding all outputs from a block to the end of the output MMR, the size shall match the header's output size.
 ---
@@ -74,7 +74,6 @@
   * The `scriptPubKey` shall be a valid `CScript` between 4 and 42 bytes, inclusive.
   * Total MWEB supply shall be reduced by the exact `amount` (in addition to any supply reduction from the `fee`)
   * Miners shall include an output in the block's `HogEx` transaction with the exact `amount` and `scriptPubKey`
-  * TBD: Maturity
 
 #### Pegging-In
 
@@ -86,10 +85,11 @@ TODO:
 
 * Outputs shall be counted as having a weight of 18.
 * Kernels shall be counted as having a weight of 2.
+  * The `scriptPubKey` shall be a valid `CScript` between 4 and 42 bytes, inclusive.
+  * Kernel `extra_data` shall not exceed 33 bytes. // TODO: Should adding `extra_data` just increase the weight instead?
+  * NOTE: Kernel maximum serialized size is 202 bytes
 * Signed owner messages shall be counted as having a weight of 1.
 * Extension blocks shall be capped at a maximum total weight of 21,000.
 * Inputs shall not contribute toward the block weight.
-* Kernel `extra_data` shall not exceed 33 bytes.
-  * TODO: Should adding `extra_data` just increase the weight instead?
 
 #### Horizon
