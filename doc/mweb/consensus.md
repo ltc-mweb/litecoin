@@ -30,30 +30,32 @@
 
 * After building an MMR with all of the kernels from a block, the root shall match the header's kernel root.
 * The number of kernels in a block shall match the header's kernel size.
-* After adding all outputs from a block to the end of the output MMR, the root shall match the header's output root.
-* After adding all outputs from a block to the end of the output MMR, the size shall match the header's output size.
+* After adding all outputs from a block to the end of the output PMMR, the root shall match the header's output root.
+* After adding all outputs from a block to the end of the output PMMR, the size shall match the header's output size.
 ---
 
 #### UTXO LeafSet
 
-* TODO
+* A simple bitset shall be created and maintained to keep track of which TXOs in the output PMMR remain unspent.
+* The bit positions shall map 1-to-1 to to PMMR leaf indices. A `0` at that bit position means spent, whereas a `1` means unspent. 
+  * Ex: If byte 0 bit 2 is a `1`, that means TXO at leaf index `2` is unspent. If byte 2 bit 1 is a `0`, the TXO at leaf index `17` has been spent. etc.
+* The hash of the serialized UTXO set after applying the transactions in a block shall match the header's UTXO leafset hash.
 ---
 
 #### Signatures
 
 * Each kernel shall have a valid signature of the `signature_message` for the kernel's `commitment`.
-  * TODO: Define`signature_message` serialization for each kernel type
+  * See [kernels.md](./kernels.md) for `signature_message` serialization format
 * Each input shall have a valid signature of the message "MWEB" for the input's `commitment`.
-* Each output shall have a valid signature of the `signature_message` for the output's `sender_pubkey`.
-  * `signature_message` is serialized as `[features, receiver_pubkey, pub_nonce, encrypted_data]`
+* Each output shall have a valid signature of the `output_message` for the output's `sender_pubkey`.
+  * `output_message` is serialized as `(features | receiver_pubkey |pub_nonce | encrypted_data)`
 * Each signed owner message shall be a valid signature of the hash of a kernel in the block.
 ---
 
 #### Bulletproofs
 
 * Each output shall be coupled with a bulletproof that proves the commitment is to a value in the range `[0, 2^64)`.
-* Each bulletproof shall commit to the `owner_data` using its `extra_commit` functionality.
-  * TODO: Define `owner_data` serialization
+* Each bulletproof shall commit to the `output_message` using its `extra_commit` functionality.
 ---
 
 #### Kernel Sums
@@ -74,11 +76,13 @@
   * The `scriptPubKey` shall be a valid `CScript` between 4 and 42 bytes, inclusive.
   * Total MWEB supply shall be reduced by the exact `amount` (in addition to any supply reduction from the `fee`)
   * Miners shall include an output in the block's `HogEx` transaction with the exact `amount` and `scriptPubKey`
+---
 
 #### Pegging-In
 
-TODO: 
-
+* Kernels may include an optional pegin `amount`
+  * Total MWEB supply shall be increase by the exact `amount`
+  * The peg-in kernel must have a corresponding pegin output on the canonical LTC side.
 ---
 
 #### Block Weight
@@ -91,5 +95,3 @@ TODO:
 * Signed owner messages shall be counted as having a weight of 1.
 * Extension blocks shall be capped at a maximum total weight of 21,000.
 * Inputs shall not contribute toward the block weight.
-
-#### Horizon

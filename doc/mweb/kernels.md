@@ -43,6 +43,12 @@ The kernel shall not be included in any block earlier than the lock height speci
 Kernels specifying the `EXTRA_DATA_FEATURE_BIT` shall contain a (u8) size field between 0 and 100, followed by the number of bytes specified.
 There are currently no consensus rules enforced on the contents of the data, though future soft-forks are likely to take advantage of this field.
 
+## Signature
+
+The kernel shall contain a valid signature for the kernel commitment. The signed message shall be for the feature byte followed by all included feature fields.
+
+*Example: If the kernel's feature byte is 0x03 (`FEE_FEATURE_BIT` | `PEGIN_FEATURE_BIT`), the message signed shall be: `(0x03 | VARINT(fee) | VARINT(pegin_amount))`*
+
 ## Soft Forks
 
 New features may be defined in the future via softfork. Consensus rules may be agreed upon for the currently undefined feature bits.
