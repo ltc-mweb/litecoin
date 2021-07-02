@@ -85,7 +85,6 @@ bool Keychain::IsSpendPubKey(const PublicKey& spend_pubkey, uint32_t& index_out)
 {
     // Ensure pubkey cache is fully populated
     while (m_pubkeys.size() <= ((size_t)m_addressIndexCounter + RESTORE_WINDOW)) {
-        LOG_INFO_F("Size: {}, Counter: {}", m_pubkeys.size(), m_addressIndexCounter);
         uint32_t pubkey_index = (uint32_t)m_pubkeys.size();
         PublicKey pubkey = PublicKey::From(GetSpendKey(pubkey_index));
 
