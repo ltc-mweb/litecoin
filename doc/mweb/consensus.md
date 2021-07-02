@@ -86,8 +86,8 @@ TODO:
 * Outputs shall be counted as having a weight of 18.
 * Kernels shall be counted as having a weight of 2.
   * The `scriptPubKey` shall be a valid `CScript` between 4 and 42 bytes, inclusive.
-  * Kernel `extra_data` shall not exceed 33 bytes. // TODO: Should adding `extra_data` just increase the weight instead?
-  * NOTE: Kernel maximum serialized size is 202 bytes
+  * Kernel `extra_data` shall not exceed 100 bytes.
+  * NOTE: Kernel maximum serialized size is 269 bytes
 * Signed owner messages shall be counted as having a weight of 1.
 * Extension blocks shall be capped at a maximum total weight of 21,000.
 * Inputs shall not contribute toward the block weight.

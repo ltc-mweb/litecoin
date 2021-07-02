@@ -2,15 +2,8 @@ name: ci
 on: [push, pull_request]
 jobs:
     mingw:
-        name: ${{ matrix.name }}
-        runs-on: ${{ matrix.os }}
-        strategy:
-            fail-fast: false
-            matrix:
-                name: [ubuntu]
-                include:
-                    - name: ubuntu
-                      os: ubuntu-18.04
+        name: Windows (MinGW)
+        runs-on: ubuntu-18.04
         steps:
             - name: Checkout litecoin
               uses: actions/checkout@v2
@@ -37,5 +30,5 @@ jobs:
               env:
                     GITHUB_RUN_ID: ${{ github.run_id }}    
               with:
-                    name: litecoin_${{ runner.os }}_${{ env.GITHUB_RUN_ID }}
+                    name: litecoin_windows_${{ env.GITHUB_RUN_ID }}
                     path: ${{ github.workspace }}/litecoin/litecoin-0.18.1-win64-setup.exe

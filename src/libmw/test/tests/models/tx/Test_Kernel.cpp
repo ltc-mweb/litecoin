@@ -61,17 +61,17 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
     PegOutCoin pegout(2000, CScript(Random::CSPRNG<30>().vec()));
     int32_t lock_height = 123456;
     Kernel standard_kernel(
-        Kernel::ALL_FEATURE_BITS,
+        Kernel::FEE_FEATURE_BIT | Kernel::PEGIN_FEATURE_BIT | Kernel::PEGOUT_FEATURE_BIT | Kernel::HEIGHT_LOCK_FEATURE_BIT,
         fee,
         pegin,
         boost::make_optional(PegOutCoin(2000, CScript(Random::CSPRNG<30>().vec()))),
         lock_height,
-        Random::CSPRNG<20>().vec(),
+        std::vector<uint8_t>{},
         Commitment::Random(),
         Signature(Random::CSPRNG<64>().GetBigInt())
     );
-    Kernel nonstandard_kernel(
-        Kernel::ALL_FEATURE_BITS | 0x20,
+    Kernel nonstandard_kernel1(
+        Kernel::ALL_FEATURE_BITS,
         fee,
         pegin,
         boost::make_optional(PegOutCoin(2000, CScript(Random::CSPRNG<30>().vec()))),
@@ -81,10 +81,20 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
         standard_kernel.GetSignature()
     );
 
-    BOOST_REQUIRE(standard_kernel.IsStandard());
-    BOOST_REQUIRE(!nonstandard_kernel.IsStandard());
-}
+    Kernel nonstandard_kernel2(
+        0x20,
+        boost::none,
+        boost::none,
+        boost::none,
+        boost::none,
+        std::vector<uint8_t>{},
+        standard_kernel.GetCommitment(),
+        standard_kernel.GetSignature()
+    );
 
-// MW: TODO - Test kernels with all feature bits
+    BOOST_REQUIRE(standard_kernel.IsStandard());
+    BOOST_REQUIRE(!nonstandard_kernel1.IsStandard());
+    BOOST_REQUIRE(!nonstandard_kernel2.IsStandard());
+}
 
 BOOST_AUTO_TEST_SUITE_END()
