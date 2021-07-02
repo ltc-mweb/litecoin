@@ -2,7 +2,7 @@
 
 #include <chain.h>
 #include <consensus/validation.h>
-#include <mw/node/Node.h>
+#include <mw/node/BlockValidator.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
@@ -58,8 +58,8 @@ bool Node::CheckBlock(const CBlock& block, CValidationState& state)
         pegouts.push_back(PegOutCoin(pHogEx->vout[i].nValue, {pubkey.begin(), pubkey.end()}));
     }
 
-    if (!mw::Node::ValidateBlock(block.mweb_block.m_block, mw::Hash(mweb256.begin()), pegins, pegouts)) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "mw::Node::ValidateBlock failed");
+    if (!BlockValidator::ValidateBlock(block.mweb_block.m_block, mw::Hash(mweb256.begin()), pegins, pegouts)) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-blk-mw", false, "BlockValidator::ValidateBlock failed");
     }
 
     return true;

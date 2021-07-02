@@ -122,8 +122,10 @@ libmw_a_SOURCES = \
 	libmw/src/mmr/Index.cpp \
 	libmw/src/mmr/LeafSet.cpp \
 	libmw/src/mmr/LeafSetCache.cpp \
-	libmw/src/mmr/MMR.cpp \
-	libmw/src/mmr/MMRCache.cpp \
+	libmw/src/mmr/MemMMR.cpp \
+	libmw/src/mmr/MMRUtil.cpp \
+	libmw/src/mmr/PMMRCache.cpp \
+	libmw/src/mmr/PMMR.cpp \
 	libmw/src/mmr/PruneList.cpp \
 	libmw/src/models/block/Block.cpp \
 	libmw/src/models/crypto/Commitment.cpp \
@@ -132,11 +134,10 @@ libmw_a_SOURCES = \
 	libmw/src/models/tx/Output.cpp \
 	libmw/src/models/tx/Transaction.cpp \
 	libmw/src/models/tx/TxBody.cpp \
-	libmw/src/node/validation/BlockValidator.cpp \
+	libmw/src/node/BlockValidator.cpp \
 	libmw/src/node/BlockBuilder.cpp \
 	libmw/src/node/CoinsViewCache.cpp \
 	libmw/src/node/CoinsViewDB.cpp \
-	libmw/src/node/Node.cpp \
 	libmw/src/wallet/Keychain.cpp \
 	libmw/src/wallet/TxBuilder.cpp
 

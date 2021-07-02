@@ -10,7 +10,7 @@
 #include <consensus/params.h>
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
-#include <mw/node/Node.h>
+#include <mw/node/CoinsView.h>
 #include <mweb/mweb_db.h>
 #include <miner.h>
 #include <net_processing.h>
@@ -83,7 +83,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         pblocktree.reset(new CBlockTreeDB(1 << 20, true));
         pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
 
-        mw::ICoinsView::Ptr mweb_view = mw::Node::Init(
+        mw::ICoinsView::Ptr mweb_view = mw::CoinsViewDB::Open(
             FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             std::make_shared<MWEB::DBWrapper>(pcoinsdbview->GetDB())

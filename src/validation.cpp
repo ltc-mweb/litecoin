@@ -17,7 +17,7 @@
 #include <cuckoocache.h>
 #include <hash.h>
 #include <index/txindex.h>
-#include <mw/node/Node.h>
+#include <mw/node/CoinsView.h>
 #include <mweb/mweb_node.h>
 #include <policy/fees.h>
 #include <policy/policy.h>

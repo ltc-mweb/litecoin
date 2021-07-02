@@ -1,12 +1,13 @@
 #include <mw/mmr/MMR.h>
 #include <mw/mmr/MMRUtil.h>
 #include <mw/mmr/PruneList.h>
+#include <mw/common/Logger.h>
 #include <mw/db/LeafDB.h>
 #include <mw/exceptions/NotFoundException.h>
 
 using namespace mmr;
 
-MMR::Ptr MMR::Open(
+PMMR::Ptr PMMR::Open(
     const char dbPrefix,
     const FilePath& mmr_dir,
     const uint32_t file_index,
@@ -16,7 +17,7 @@ MMR::Ptr MMR::Open(
     auto pHashFile = AppendOnlyFile::Load(
         GetPath(mmr_dir, dbPrefix, file_index)
     );
-    return std::make_shared<MMR>(
+    return std::make_shared<PMMR>(
         dbPrefix,
         mmr_dir,
         pHashFile,
@@ -25,12 +26,12 @@ MMR::Ptr MMR::Open(
     );
 }
 
-FilePath MMR::GetPath(const FilePath& dir, const char prefix, const uint32_t file_index)
+FilePath PMMR::GetPath(const FilePath& dir, const char prefix, const uint32_t file_index)
 {
     return dir.GetChild(StringUtil::Format("{}{:0>6}.dat", prefix, file_index));
 }
 
-LeafIndex MMR::AddLeaf(const mmr::Leaf& leaf)
+LeafIndex PMMR::AddLeaf(const mmr::Leaf& leaf)
 {
     m_leafMap[leaf.GetLeafIndex()] = m_leaves.size();
     m_leaves.push_back(leaf);
@@ -49,7 +50,7 @@ LeafIndex MMR::AddLeaf(const mmr::Leaf& leaf)
     return leaf.GetLeafIndex();
 }
 
-Leaf MMR::GetLeaf(const LeafIndex& idx) const
+Leaf PMMR::GetLeaf(const LeafIndex& idx) const
 {
     auto it = m_leafMap.find(idx);
     if (it != m_leafMap.end()) {
@@ -65,7 +66,7 @@ Leaf MMR::GetLeaf(const LeafIndex& idx) const
     return std::move(*pLeaf);
 }
 
-mw::Hash MMR::GetHash(const Index& idx) const
+mw::Hash PMMR::GetHash(const Index& idx) const
 {
     uint64_t pos = idx.GetPosition();
     if (m_pPruneList) {
@@ -75,7 +76,7 @@ mw::Hash MMR::GetHash(const Index& idx) const
     return mw::Hash(m_pHashFile->Read(pos * mw::Hash::size(), mw::Hash::size()));
 }
 
-uint64_t MMR::GetNumLeaves() const noexcept
+uint64_t PMMR::GetNumLeaves() const noexcept
 {
     uint64_t num_hashes = (m_pHashFile->GetSize() / mw::Hash::size());
     if (m_pPruneList) {
@@ -85,14 +86,14 @@ uint64_t MMR::GetNumLeaves() const noexcept
     return Index::At(num_hashes).GetLeafIndex();
 }
 
-uint64_t MMR::GetNumNodes() const noexcept
+uint64_t PMMR::GetNumNodes() const noexcept
 {
     return LeafIndex::At(GetNumLeaves()).GetPosition();
 }
 
-void MMR::Rewind(const uint64_t numLeaves)
+void PMMR::Rewind(const uint64_t numLeaves)
 {
-    LOG_TRACE_F("MMR: Rewinding to {}", numLeaves);
+    LOG_TRACE_F("Rewinding to {}", numLeaves);
 
     LeafIndex next_leaf_idx = LeafIndex::At(numLeaves);
     uint64_t pos = next_leaf_idx.GetPosition();
@@ -103,13 +104,13 @@ void MMR::Rewind(const uint64_t numLeaves)
     m_pHashFile->Rewind(pos * mw::Hash::size());
 }
 
-void MMR::BatchWrite(
+void PMMR::BatchWrite(
     const uint32_t file_index,
     const LeafIndex& firstLeafIdx,
     const std::vector<Leaf>& leaves,
     const std::unique_ptr<mw::DBBatch>& pBatch)
 {
-    LOG_TRACE_F("MMR: Writing batch {} with first leaf {}", file_index, firstLeafIdx.Get());
+    LOG_TRACE_F("Writing batch {} with first leaf {}", file_index, firstLeafIdx.Get());
 
     Rewind(firstLeafIdx.Get());
     for (const Leaf& leaf : leaves) {
@@ -126,7 +127,7 @@ void MMR::BatchWrite(
     m_leafMap.clear();
 }
 
-void MMR::Cleanup(const uint32_t current_file_index) const
+void PMMR::Cleanup(const uint32_t current_file_index) const
 {
     uint32_t file_index = current_file_index;
     while (file_index > 0) {

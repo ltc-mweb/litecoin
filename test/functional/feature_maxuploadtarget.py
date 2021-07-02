@@ -35,7 +35,7 @@ class MaxUploadTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 1
-        self.extra_args = [["-maxuploadtarget=800"]]
+        self.extra_args = [["-maxuploadtarget=800", "-vbparams=mweb:0:0"]]
 
         # Cache for utxos, as the listunspent may take a long time later in the test
         self.utxo_cache = []
@@ -86,7 +86,7 @@ class MaxUploadTest(BitcoinTestFramework):
         getdata_request.inv.append(CInv(2, big_old_block))
 
         max_bytes_per_day = 800*1024*1024
-        daily_buffer = 144 * 4000000
+        daily_buffer = 144 * 4000000 * 4
         max_bytes_available = max_bytes_per_day - daily_buffer
         success_count = max_bytes_available // old_block_size
 
@@ -142,7 +142,7 @@ class MaxUploadTest(BitcoinTestFramework):
         #stop and start node 0 with 1MB maxuploadtarget, whitelist 127.0.0.1
         self.log.info("Restarting nodes with -whitelist=127.0.0.1")
         self.stop_node(0)
-        self.start_node(0, ["-whitelist=127.0.0.1", "-maxuploadtarget=1"])
+        self.start_node(0, ["-whitelist=127.0.0.1", "-maxuploadtarget=4"])
 
         # Reconnect to self.nodes[0]
         self.nodes[0].add_p2p_connection(TestP2PConn())

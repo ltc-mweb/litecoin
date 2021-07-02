@@ -13,7 +13,7 @@ CoinsViewCache::CoinsViewCache(const ICoinsView::Ptr& pBase)
     : ICoinsView(pBase->GetBestHeader(), pBase->GetDatabase()),
       m_pBase(pBase),
       m_pLeafSet(std::make_unique<LeafSetCache>(pBase->GetLeafSet())),
-      m_pOutputPMMR(std::make_unique<MMRCache>(pBase->GetOutputPMMR())),
+      m_pOutputPMMR(std::make_unique<PMMRCache>(pBase->GetOutputPMMR())),
       m_pUpdates(std::make_shared<CoinsViewUpdates>()) {}
 
 std::vector<UTXO::CPtr> CoinsViewCache::GetUTXOs(const Commitment& commitment) const noexcept

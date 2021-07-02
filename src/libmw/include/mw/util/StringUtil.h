@@ -16,6 +16,7 @@
 #include <locale>
 #include <codecvt>
 #include <algorithm>
+#include <system_error>
 
 #include <util/strencodings.h>
 
@@ -34,8 +35,7 @@ public:
 
     static bool StartsWith(const std::string& value, const std::string& beginning)
     {
-        if (beginning.size() > value.size())
-        {
+        if (beginning.size() > value.size()) {
             return false;
         }
 
@@ -44,8 +44,7 @@ public:
 
     static bool EndsWith(const std::string& value, const std::string& ending)
     {
-        if (ending.size() > value.size())
-        {
+        if (ending.size() > value.size()) {
             return false;
         }
 
@@ -61,8 +60,7 @@ public:
         std::string::size_type pos = str.find_first_of(delimiter, lastPos);
 
         std::vector<std::string> tokens;
-        while (std::string::npos != pos || std::string::npos != lastPos)
-        {
+        while (std::string::npos != pos || std::string::npos != lastPos) {
             // Found a token, add it to the vector.
             tokens.push_back(str.substr(lastPos, pos - lastPos));
 
@@ -81,8 +79,7 @@ public:
         std::locale loc;
         std::string output = "";
 
-        for (char elem : str)
-        {
+        for (char elem : str) {
             output += std::tolower(elem, loc);
         }
 
@@ -156,8 +153,7 @@ private:
 
     static std::string ConvertArg(const std::shared_ptr<const Traits::IPrintable>& x)
     {
-        if (x == nullptr)
-        {
+        if (x == nullptr) {
             return "NULL";
         }
 
@@ -167,6 +163,11 @@ private:
     static std::string ConvertArg(const std::exception& e)
     {
         return std::string(e.what());
+    }
+
+    static std::string ConvertArg(const std::error_code& ec)
+    {
+        return std::to_string(ec.value()) + " - " + ec.message();
     }
 
     template <class T, typename SFINAE = std::enable_if_t<std::is_fundamental<T>::value>>

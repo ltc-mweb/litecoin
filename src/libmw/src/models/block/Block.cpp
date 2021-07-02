@@ -13,12 +13,12 @@ void mw::Block::Validate() const
 
     OwnerSumValidator::Validate(m_pHeader->GetOwnerOffset(), m_body);
 
-    MemMMR::Ptr pKernelMMR = std::make_shared<MemMMR>();
+    MemMMR kernel_mmr;
     std::for_each(
         GetKernels().cbegin(), GetKernels().cend(),
-        [&pKernelMMR](const Kernel& kernel) { pKernelMMR->Add(kernel); }
+        [&kernel_mmr](const Kernel& kernel) { kernel_mmr.Add(kernel); }
     );
-    if (m_pHeader->GetKernelRoot() != pKernelMMR->Root()) {
+    if (m_pHeader->GetKernelRoot() != kernel_mmr.Root()) {
         ThrowValidation(EConsensusError::MMR_MISMATCH);
     }
 }

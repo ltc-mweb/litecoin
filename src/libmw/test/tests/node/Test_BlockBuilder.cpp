@@ -3,20 +3,20 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/node/BlockBuilder.h>
-#include <mw/node/Node.h>
-#include <mw/node/validation/BlockValidator.h>
+#include <mw/node/CoinsView.h>
+#include <mw/node/BlockValidator.h>
 
 #include <test_framework/Miner.h>
 #include <test_framework/TestMWEB.h>
+
+using namespace mw;
 
 BOOST_FIXTURE_TEST_SUITE(TestBlockBuilder, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(BlockBuilder)
 {
-    auto pDatabase = GetDB();
-
-    mw::CoinsViewDB::Ptr db_view = mw::Node::Init(GetDataDir(), mw::Header::CPtr{nullptr}, pDatabase);
-    mw::CoinsViewCache::Ptr cached_view = std::make_shared<mw::CoinsViewCache>(db_view);
+    auto db_view = CoinsViewDB::Open(GetDataDir(), nullptr, GetDB());
+    auto cached_view = std::make_shared<CoinsViewCache>(db_view);
 
     test::Miner miner(GetDataDir());
 
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
     ///////////////////////
     // Flush View
     ///////////////////////
-    auto pBatch = pDatabase->CreateBatch();
+    auto pBatch = GetDB()->CreateBatch();
     cached_view->Flush(pBatch);
     pBatch->Commit();
 
@@ -55,7 +55,13 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
 
     mw::Block::Ptr built_block = block_builder->BuildBlock();
     BOOST_CHECK(built_block->GetKernels().front() == builder_tx1.GetKernels().front());
-    BlockValidator().Validate(built_block, built_block->GetHash(), { builder_tx1.GetPegInCoin() }, {});
+    bool block_valid = BlockValidator::ValidateBlock(
+        built_block,
+        built_block->GetHash(),
+        std::vector<PegInCoin>{ builder_tx1.GetPegInCoin() },
+        std::vector<PegOutCoin>{}
+    );
+    BOOST_CHECK(block_valid);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

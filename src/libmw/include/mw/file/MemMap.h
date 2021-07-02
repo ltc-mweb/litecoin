@@ -20,20 +20,18 @@
 class MemMap
 {
 public:
-    MemMap(const File& file) noexcept : m_file(file), m_mapped(false) { }
-    MemMap(File&& file) noexcept : m_file(std::move(file)), m_mapped(false) { }
+    MemMap(File file) noexcept
+        : m_file(std::move(file)), m_mapped(false) { }
 
     void Map()
     {
         assert(!m_mapped);
 
-        if (m_file.GetSize() > 0)
-        {
+        if (m_file.GetSize() > 0) {
             std::error_code error;
             m_mmap = mio::make_mmap_source(m_file.GetPath().ToString(), error);
-            if (error.value() > 0)
-            {
-                ThrowFile_F("Failed to mmap file: ({}) {}", error.value(), error.message());
+            if (error) {
+                ThrowFile_F("Failed to mmap file: {}", error);
             }
 
             m_mapped = true;
@@ -42,8 +40,7 @@ public:
 
     void Unmap()
     {
-        if (m_mapped)
-        {
+        if (m_mapped) {
             m_mmap.unmap();
             m_mapped = false;
         }

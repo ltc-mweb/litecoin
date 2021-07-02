@@ -3,10 +3,28 @@
 #include <mw/db/CoinDB.h>
 #include <mw/db/MMRInfoDB.h>
 #include <mw/exceptions/ValidationException.h>
+#include <mw/mmr/PruneList.h>
 
 #include "CoinActions.h"
 
 using namespace mw;
+
+CoinsViewDB::Ptr CoinsViewDB::Open(
+    const FilePath& datadir,
+    const mw::Header::CPtr& pBestHeader,
+    const mw::DBWrapper::Ptr& pDBWrapper)
+{
+    auto current_mmr_info = MMRInfoDB(pDBWrapper.get(), nullptr).GetLatest();
+    uint32_t file_index = current_mmr_info ? current_mmr_info->index : 0;
+    uint32_t compact_index = current_mmr_info ? current_mmr_info->compact_index : 0;
+
+    auto pLeafSet = LeafSet::Open(datadir, file_index);
+    auto pPruneList = PruneList::Open(datadir, compact_index);
+    auto pOutputMMR = PMMR::Open('O', datadir, file_index, pDBWrapper, pPruneList);
+    auto pView = new CoinsViewDB(pBestHeader, pDBWrapper, pLeafSet, pOutputMMR);
+
+    return std::shared_ptr<CoinsViewDB>(pView);
+}
 
 std::vector<UTXO::CPtr> CoinsViewDB::GetUTXOs(const Commitment& commitment) const
 {

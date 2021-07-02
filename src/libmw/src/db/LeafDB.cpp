@@ -15,6 +15,7 @@ std::unique_ptr<mmr::Leaf> LeafDB::Get(const mmr::LeafIndex& idx) const
     if (pVec == nullptr) {
         return nullptr;
     }
+
     return std::make_unique<mmr::Leaf>(mmr::Leaf::Create(idx, pVec->item->Get()));
 }
 
@@ -23,10 +24,10 @@ void LeafDB::Add(const std::vector<mmr::Leaf>& leaves)
     if (leaves.empty()) {
         return;
     }
+
     std::vector<DBEntry<SerializableVec>> entries;
     std::transform(
-        leaves.cbegin(), leaves.cend(),
-        std::back_inserter(entries),
+        leaves.cbegin(), leaves.cend(), std::back_inserter(entries),
         [](const mmr::Leaf& leaf) {
             return DBEntry<SerializableVec>(std::to_string(leaf.GetLeafIndex().Get()), leaf.vec());
         }

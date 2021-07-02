@@ -130,7 +130,7 @@ private:
     ICoinsView::Ptr m_pBase;
 
     LeafSetCache::Ptr m_pLeafSet;
-    MMRCache::Ptr m_pOutputPMMR;
+    PMMRCache::Ptr m_pOutputPMMR;
 
     std::shared_ptr<CoinsViewUpdates> m_pUpdates;
 };
@@ -138,14 +138,13 @@ private:
 class CoinsViewDB : public mw::ICoinsView
 {
 public:
-    CoinsViewDB(
+    using Ptr = std::shared_ptr<CoinsViewDB>;
+
+    static CoinsViewDB::Ptr Open(
+        const FilePath& datadir,
         const mw::Header::CPtr& pBestHeader,
-        const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
-        const LeafSet::Ptr& pLeafSet,
-        const MMR::Ptr& pOutputPMMR
-    ) : ICoinsView(pBestHeader, pDBWrapper),
-        m_pLeafSet(pLeafSet),
-        m_pOutputPMMR(pOutputPMMR) { }
+        const mw::DBWrapper::Ptr& pDBWrapper
+    );
 
     bool IsCache() const noexcept final { return false; }
 
@@ -163,13 +162,22 @@ public:
     bool HasCoinInCache(const Commitment& commitment) const noexcept final { return false; }
 
 private:
+    CoinsViewDB(
+        const mw::Header::CPtr& pBestHeader,
+        const mw::DBWrapper::Ptr& pDBWrapper,
+        const LeafSet::Ptr& pLeafSet,
+        const PMMR::Ptr& pOutputPMMR
+    ) : ICoinsView(pBestHeader, pDBWrapper),
+        m_pLeafSet(pLeafSet),
+        m_pOutputPMMR(pOutputPMMR) { }
+
     void AddUTXO(CoinDB& coinDB, const Output& output);
     void AddUTXO(CoinDB& coinDB, const UTXO::CPtr& pUTXO);
     void SpendUTXO(CoinDB& coinDB, const Commitment& commitment);
     std::vector<UTXO::CPtr> GetUTXOs(const CoinDB& coinDB, const Commitment& commitment) const;
 
     LeafSet::Ptr m_pLeafSet;
-    MMR::Ptr m_pOutputPMMR;
+    PMMR::Ptr m_pOutputPMMR;
 };
 
 END_NAMESPACE

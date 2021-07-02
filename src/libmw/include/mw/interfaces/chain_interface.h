@@ -8,7 +8,6 @@
 #include <mw/common/Macros.h>
 #include <mw/models/block/Block.h>
 
-
 MW_NAMESPACE
 
 /// <summary>

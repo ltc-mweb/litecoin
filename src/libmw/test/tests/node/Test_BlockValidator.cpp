@@ -2,14 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/node/Node.h>
+#include <mw/node/BlockValidator.h>
 
 #include <test_framework/Miner.h>
 #include <test_framework/TestMWEB.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestBlockValidator, MWEBTestingSetup)
 
-BOOST_AUTO_TEST_CASE(BlockValidator)
+BOOST_AUTO_TEST_CASE(BlockValidator_Test)
 {
     test::Miner miner(GetDataDir());
 
@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE(BlockValidator)
     std::vector<PegOutCoin> pegOutCoins;
     test::MinedBlock block_10 = miner.MineBlock(10, block_10_txs);
 
-    BOOST_REQUIRE(mw::Node::ValidateBlock(block_10.GetBlock(), block_10.GetHash(), pegInCoins, pegOutCoins));
+    BOOST_REQUIRE(BlockValidator::ValidateBlock(block_10.GetBlock(), block_10.GetHash(), pegInCoins, pegOutCoins));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

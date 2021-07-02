@@ -5,7 +5,7 @@
 #include <attributes.h>
 #include <coins.h>
 #include <consensus/validation.h>
-#include <mw/node/Node.h>
+#include <mw/node/CoinsView.h>
 #include <script/standard.h>
 #include <test/test_bitcoin.h>
 #include <uint256.h>
@@ -41,7 +41,7 @@ class CCoinsViewTest : public CCoinsView
 public:
     CCoinsViewTest()
     {
-        mweb_view_ = mw::Node::Init(
+        mweb_view_ = mw::CoinsViewDB::Open(
             FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             nullptr
@@ -623,7 +623,7 @@ public:
     static std::unique_ptr<CCoinsViewDB> GetCoinsViewDB()
     {
         std::unique_ptr<CCoinsViewDB> root(new CCoinsViewDB{1 << 20, false, false});
-        mw::ICoinsView::Ptr mweb_view = mw::Node::Init(
+        mw::ICoinsView::Ptr mweb_view = mw::CoinsViewDB::Open(
             FilePath{GetDataDir()},
             {nullptr}, // MW: TODO - Load this first
             nullptr

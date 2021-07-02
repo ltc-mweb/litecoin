@@ -17,16 +17,16 @@ struct MMRInfo : public Traits::ISerializable
     // Version byte that allows for future modifications to the MMRInfo schema.
     uint8_t version;
 
-    // File number of the MMR files.
+    // File number of the PMMR files.
     uint32_t index;
 
-    // Hash of latest header this MMR represents.
+    // Hash of latest header this PMMR represents.
     mw::Hash pruned;
 
     // File number of the PruneList bitset.
     uint32_t compact_index;
 
-    // Hash of the header this MMR was compacted for.
+    // Hash of the header this PMMR was compacted for.
     // You cannot rewind beyond this point.
     boost::optional<mw::Hash> compacted;
     

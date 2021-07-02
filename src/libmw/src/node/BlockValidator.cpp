@@ -1,6 +1,24 @@
-#include <mw/node/validation/BlockValidator.h>
+#include <mw/node/BlockValidator.h>
 #include <mw/exceptions/ValidationException.h>
 #include <unordered_map>
+
+bool BlockValidator::ValidateBlock(
+    const mw::Block::CPtr& pBlock,
+    const mw::Hash& mweb_hash,
+    const std::vector<PegInCoin>& pegInCoins,
+    const std::vector<PegOutCoin>& pegOutCoins) noexcept
+{
+    assert(pBlock != nullptr);
+
+    try {
+        BlockValidator().Validate(pBlock, mweb_hash, pegInCoins, pegOutCoins);
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR_F("Failed to validate {}. Error: {}", *pBlock, e);
+    }
+
+    return false;
+}
 
 void BlockValidator::Validate(
     const mw::Block::CPtr& pBlock,

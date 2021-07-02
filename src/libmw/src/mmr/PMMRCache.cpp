@@ -1,9 +1,10 @@
 #include <mw/mmr/MMR.h>
 #include <mw/mmr/MMRUtil.h>
+#include <mw/common/Logger.h>
 
 using namespace mmr;
 
-LeafIndex MMRCache::AddLeaf(const Leaf& leaf)
+LeafIndex PMMRCache::AddLeaf(const Leaf& leaf)
 {
     m_nodes.push_back(leaf.GetHash());
 
@@ -21,7 +22,7 @@ LeafIndex MMRCache::AddLeaf(const Leaf& leaf)
     return leaf.GetLeafIndex();
 }
 
-Leaf MMRCache::GetLeaf(const LeafIndex& leafIdx) const
+Leaf PMMRCache::GetLeaf(const LeafIndex& leafIdx) const
 {
     if (leafIdx < m_firstLeaf) {
         return m_pBase->GetLeaf(leafIdx);
@@ -35,7 +36,7 @@ Leaf MMRCache::GetLeaf(const LeafIndex& leafIdx) const
     return m_leaves[cacheIdx];
 }
 
-LeafIndex MMRCache::GetNextLeafIdx() const noexcept
+LeafIndex PMMRCache::GetNextLeafIdx() const noexcept
 {
     if (m_leaves.empty()) {
         return m_firstLeaf;
@@ -44,7 +45,7 @@ LeafIndex MMRCache::GetNextLeafIdx() const noexcept
     }
 }
 
-mw::Hash MMRCache::GetHash(const Index& idx) const
+mw::Hash PMMRCache::GetHash(const Index& idx) const
 {
     if (idx < m_firstLeaf.GetPosition()) {
         return m_pBase->GetHash(idx);
@@ -55,9 +56,9 @@ mw::Hash MMRCache::GetHash(const Index& idx) const
     }
 }
 
-void MMRCache::Rewind(const uint64_t numLeaves)
+void PMMRCache::Rewind(const uint64_t numLeaves)
 {
-    LOG_TRACE_F("MMRCache: Rewinding to {}", numLeaves);
+    LOG_TRACE_F("Rewinding to {}", numLeaves);
 
     LeafIndex nextLeaf = LeafIndex::At(numLeaves);
     if (nextLeaf <= m_firstLeaf) {
@@ -81,23 +82,23 @@ void MMRCache::Rewind(const uint64_t numLeaves)
     }
 }
 
-void MMRCache::BatchWrite(
+void PMMRCache::BatchWrite(
     const uint32_t /*index*/,
     const LeafIndex& firstLeafIdx,
     const std::vector<Leaf>& leaves,
     const std::unique_ptr<mw::DBBatch>&)
 {
-    LOG_TRACE_F("MMRCache: Writing batch {}", firstLeafIdx.Get());
+    LOG_TRACE_F("Writing batch {}", firstLeafIdx.Get());
     Rewind(firstLeafIdx.Get());
     for (const Leaf& leaf : leaves) {
         Add(leaf.vec());
     }
 }
 
-void MMRCache::Flush(const uint32_t file_index, const std::unique_ptr<mw::DBBatch>& pBatch)
+void PMMRCache::Flush(const uint32_t file_index, const std::unique_ptr<mw::DBBatch>& pBatch)
 {
     LOG_TRACE_F(
-        "MMRCache: Flushing {} leaves at {} with file index {}",
+        "Flushing {} leaves at {} with file index {}",
         m_leaves.size(),
         m_firstLeaf.Get(),
         file_index

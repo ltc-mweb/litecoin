@@ -4,8 +4,6 @@
 #include "DBTransaction.h"
 #include "DBEntry.h"
 
-#include <mw/file/FilePath.h>
-
 #include <mw/interfaces/db_interface.h>
 #include <vector>
 #include <cassert>
@@ -33,15 +31,13 @@ public:
     {
         if (!m_pDB) return nullptr;
 
-        if (m_pTx != nullptr)
-        {
+        if (m_pTx != nullptr) {
             return m_pTx->Get<T>(table, key);
         }
 
         std::vector<uint8_t> item_vec;
         const bool status = m_pDB->Read(table.BuildKey(key), item_vec);
-        if (status)
-        {
+        if (status) {
             T item;
             CDataStream(item_vec, SER_DISK, PROTOCOL_VERSION) >> item;
             return std::make_unique<DBEntry<T>>(key, std::move(item));
@@ -56,12 +52,9 @@ public:
     {
         assert(!entries.empty());
 
-        if (m_pTx != nullptr)
-        {
+        if (m_pTx != nullptr) {
             m_pTx->Put(table, entries);
-        }
-        else
-        {
+        } else {
             auto pBatch = m_pDB->CreateBatch();
             DBTransaction(m_pDB, pBatch.get()).Put(table, entries);
             pBatch->Commit();
@@ -70,12 +63,9 @@ public:
 
     void Delete(const DBTable& table, const std::string& key)
     {
-        if (m_pTx != nullptr)
-        {
+        if (m_pTx != nullptr) {
             m_pTx->Delete(table, key);
-        }
-        else
-        {
+        } else {
             auto pBatch = m_pDB->CreateBatch();
             DBTransaction(m_pDB, pBatch.get()).Delete(table, key);
             pBatch->Commit();

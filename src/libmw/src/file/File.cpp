@@ -58,32 +58,6 @@ void File::Truncate(const uint64_t size)
     }
 }
 
-void File::Rename(const std::string& filename)
-{
-    if (m_path.IsDirectory()) {
-        // FUTURE: Support renaming directories?
-        ThrowFile("Rename not implemented for directories");
-    }
-
-    const FilePath parent(m_path.GetParent());
-    if (parent == m_path) {
-        ThrowFile_F("Can't find parent path for {}", *this);
-    }
-
-    const FilePath destination = parent.GetChild(filename);
-    if (destination.Exists()) {
-        destination.Remove();
-    }
-
-    std::error_code ec;
-    ghc::filesystem::rename(m_path.m_path, destination.m_path, ec);
-    if (ec) {
-        ThrowFile_F("Failed to rename {} to {}", *this, destination);
-    }
-
-    m_path = destination;
-}
-
 std::vector<uint8_t> File::ReadBytes() const
 {
     std::error_code ec;

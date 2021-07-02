@@ -4,15 +4,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/common/Macros.h>
-#include <mw/common/Logger.h>
 #include <mw/common/Traits.h>
 #include <mw/file/AppendOnlyFile.h>
 #include <mw/file/FilePath.h>
 #include <mw/models/crypto/Hash.h>
 #include <mw/mmr/LeafIndex.h>
 #include <mw/mmr/Leaf.h>
-#include <mw/mmr/MMRUtil.h>
 #include <mw/mmr/PruneList.h>
 #include <mw/interfaces/db_interface.h>
 
@@ -85,7 +82,7 @@ public:
     /// <summary>
     /// Adds the given leaves to the MMR.
     /// This also updates the database and MMR files when the MMR is not a cache.
-    /// Typically, this is called from a derived MMRCache when its changes are being flushed/committed.
+    /// Typically, this is called from a derived PMMRCache when its changes are being flushed/committed.
     /// </summary>
     /// <param name="file_index">The index of the MMR files. This should be incremented with each write.</param>
     /// <param name="firstLeafIdx">The LeafIndex of the first leaf being added.</param>
@@ -107,43 +104,16 @@ class MemMMR : public IMMR
 public:
     using Ptr = std::shared_ptr<MemMMR>;
 
+    MemMMR() = default;
     virtual ~MemMMR() = default;
 
-    mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) final
-    {
-        m_leaves.push_back(leaf);
-        m_hashes.push_back(leaf.GetHash());
+    mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) final;
+    mmr::Leaf GetLeaf(const mmr::LeafIndex& leafIdx) const final;
+    mw::Hash GetHash(const mmr::Index& idx) const final;
 
-        auto nextIdx = leaf.GetNodeIndex().GetNext();
-        while (!nextIdx.IsLeaf()) {
-            mw::Hash leftHash = GetHash(nextIdx.GetLeftChild());
-            m_hashes.push_back(MMRUtil::CalcParentHash(nextIdx, leftHash, m_hashes.back()));
-            nextIdx = nextIdx.GetNext();
-        }
-
-        return leaf.GetLeafIndex();
-    }
-
-    mmr::Leaf GetLeaf(const mmr::LeafIndex& leafIdx) const final
-    {
-        assert(leafIdx.Get() < m_leaves.size());
-        return m_leaves[leafIdx.Get()];
-    }
-
-    mw::Hash GetHash(const mmr::Index& idx) const final
-    {
-        assert(idx.GetPosition() < m_hashes.size());
-        return m_hashes[idx.GetPosition()];
-    }
-
-    mmr::LeafIndex GetNextLeafIdx() const noexcept final { return mmr::LeafIndex::At(GetNumLeaves()); }
-    uint64_t GetNumLeaves() const noexcept final { return m_leaves.size(); }
-    void Rewind(const uint64_t numLeaves) final
-    {
-        assert(numLeaves <= m_leaves.size());
-        m_leaves.resize(numLeaves);
-        m_hashes.resize(GetNextLeafIdx().GetPosition());
-    }
+    mmr::LeafIndex GetNextLeafIdx() const noexcept final;
+    uint64_t GetNumLeaves() const noexcept final;
+    void Rewind(const uint64_t numLeaves) final;
 
     void BatchWrite(
         const uint32_t,
@@ -156,12 +126,12 @@ private:
     std::vector<mmr::Leaf> m_leaves;
 };
 
-class MMR : public IMMR
+class PMMR : public IMMR
 {
 public:
-    using Ptr = std::shared_ptr<MMR>;
+    using Ptr = std::shared_ptr<PMMR>;
 
-    static MMR::Ptr Open(
+    static PMMR::Ptr Open(
         const char dbPrefix,
         const FilePath& mmr_dir,
         const uint32_t file_index,
@@ -169,7 +139,7 @@ public:
         const std::shared_ptr<const PruneList>& pPruneList
     );
 
-    MMR(const char dbPrefix,
+    PMMR(const char dbPrefix,
         const FilePath& mmr_dir,
         const AppendOnlyFile::Ptr& pHashFile,
         const std::shared_ptr<mw::DBWrapper>& pDBWrapper,
@@ -181,7 +151,7 @@ public:
         m_pDatabase(pDBWrapper),
         m_pPruneList(pPruneList) { }
 
-    virtual ~MMR() = default;
+    virtual ~PMMR() = default;
 
     static FilePath GetPath(const FilePath& dir, const char prefix, const uint32_t file_index);
 
@@ -213,14 +183,14 @@ private:
     PruneList::CPtr m_pPruneList;
 };
 
-class MMRCache : public IMMR
+class PMMRCache : public IMMR
 {
 public:
-    using Ptr = std::shared_ptr<MMRCache>;
+    using Ptr = std::shared_ptr<PMMRCache>;
 
-    MMRCache(const IMMR::Ptr& pBacked)
+    PMMRCache(const IMMR::Ptr& pBacked)
         : m_pBase(pBacked), m_firstLeaf(pBacked->GetNextLeafIdx()){ }
-    virtual ~MMRCache() = default;
+    virtual ~PMMRCache() = default;
 
     mmr::LeafIndex AddLeaf(const mmr::Leaf& leaf) final;
 

@@ -24,8 +24,7 @@ public:
         typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::ISerializable, T>::value>>
     DBTransaction& Put(const DBTable& table, const std::vector<DBEntry<T>>& entries)
     {
-        for (const auto& entry : entries)
-        {
+        for (const auto& entry : entries) {
             const std::string key = table.BuildKey(entry);
 
             m_pBatch->Write(key, entry.item->Serialized());
@@ -41,19 +40,16 @@ public:
     {
         auto table_key = table.BuildKey(key);
         auto iter = m_added.find_last(table_key);
-        if (iter != nullptr)
-        {
+        if (iter != nullptr) {
             auto pObject = std::dynamic_pointer_cast<const T>(iter);
-            if (pObject != nullptr)
-            {
+            if (pObject != nullptr) {
                 return std::make_unique<DBEntry<T>>(key, pObject);
             }
         }
 
         std::vector<uint8_t> entry;
         const bool status = m_pDB->Read(table_key, entry);
-        if (status)
-        {
+        if (status) {
             T item;
             CDataStream(entry, SER_DISK, PROTOCOL_VERSION) >> item;
             return std::make_unique<DBEntry<T>>(key, std::move(item));

@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/node/CoinsView.h>
-#include <mw/node/Node.h>
+#include <mw/node/BlockValidator.h>
 
 #include <test_framework/Miner.h>
 #include <test_framework/TestMWEB.h>
@@ -14,7 +14,7 @@ BOOST_AUTO_TEST_CASE(MineChain)
 {
     auto pDatabase = GetDB();
 
-    auto pDBView = mw::Node::Init(GetDataDir(), nullptr, pDatabase);
+    auto pDBView = mw::CoinsViewDB::Open(GetDataDir(), nullptr, pDatabase);
     BOOST_REQUIRE(pDBView != nullptr);
 
     auto pCachedView = std::make_shared<mw::CoinsViewCache>(pDBView);
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(MineChain)
     ///////////////////////
     test::Tx block1_tx1 = test::Tx::CreatePegIn(1000);
     auto block1 = miner.MineBlock(150, { block1_tx1 });
-    BOOST_REQUIRE(mw::Node::ValidateBlock(block1.GetBlock(), block1.GetHash(), {block1_tx1.GetPegInCoin()}, {}));
+    BOOST_REQUIRE(BlockValidator::ValidateBlock(block1.GetBlock(), block1.GetHash(), {block1_tx1.GetPegInCoin()}, {}));
     pCachedView->ApplyBlock(block1.GetBlock());
 
     const auto& block1_tx1_output1 = block1_tx1.GetOutputs()[0];
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(MineChain)
     ///////////////////////
     test::Tx block2_tx1 = test::Tx::CreatePegIn(500);
     auto block2 = miner.MineBlock(151, { block2_tx1 });
-    BOOST_REQUIRE(mw::Node::ValidateBlock(block2.GetBlock(), block2.GetHash(), {block2_tx1.GetPegInCoin()}, {}));
+    BOOST_REQUIRE(BlockValidator::ValidateBlock(block2.GetBlock(), block2.GetHash(), {block2_tx1.GetPegInCoin()}, {}));
     pCachedView->ApplyBlock(block2.GetBlock());
 
     const auto& block2_tx1_output1 = block2_tx1.GetOutputs()[0];

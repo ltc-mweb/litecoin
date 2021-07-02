@@ -3,7 +3,6 @@
 #include <mw/file/File.h>
 #include <mw/file/FilePath.h>
 #include <mw/file/MemMap.h>
-#include <mw/common/Logger.h>
 
 class AppendOnlyFile
 {
