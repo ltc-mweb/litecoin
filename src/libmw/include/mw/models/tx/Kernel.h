@@ -7,7 +7,6 @@
 #include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/Signature.h>
 #include <mw/models/tx/PegOutCoin.h>
-#include <mw/models/tx/KernelType.h>
 #include <amount.h>
 #include <boost/optional.hpp>
 
@@ -76,7 +75,7 @@ public:
     const Signature& GetSignature() const noexcept { return m_signature; }
     const std::vector<uint8_t>& GetExtraData() const noexcept { return m_extraData; }
 
-    bool IsStandard() const noexcept { return m_features <= ALL_FEATURE_BITS; }
+    bool IsStandard() const noexcept { return m_features < EXTRA_DATA_FEATURE_BIT; }
 
     mw::Hash GetSignatureMessage() const;
     static mw::Hash GetSignatureMessage(
