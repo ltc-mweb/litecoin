@@ -133,6 +133,9 @@ public:
 
 typedef boost::variant<COutPoint, Commitment> OutputIndex;
 
+/// <summary>
+/// A generic transaction input that could either be an MWEB input commitment or a canonical CTxIn.
+/// </summary>
 class CTxInput
 {
 public:
@@ -214,6 +217,9 @@ public:
 
 class CTransaction;
 
+/// <summary>
+/// A generic transaction output that could either be an MWEB output commitment or a canonical CTxOut.
+/// </summary>
 class CTxOutput
 {
 public:
@@ -471,6 +477,10 @@ public:
     bool HasMWEBTx() const noexcept { return !mweb_tx.IsNull(); }
     bool IsHogEx() const noexcept { return m_hogEx; }
 
+    /// <summary>
+    /// Builds a vector of CTxInputs, starting with the canoncial inputs (CTxIn), followed by the MWEB input commitments.
+    /// </summary>
+    /// <returns>A vector of all of the transaction's inputs.</returns>
     std::vector<CTxInput> GetInputs() const noexcept
     {
         std::vector<CTxInput> inputs;
@@ -486,12 +496,22 @@ public:
         return inputs;
     }
 
+    /// <summary>
+    /// Constructs a CTxOutput for the specified canonical output.
+    /// </summary>
+    /// <param name="index">The index of the CTxOut. This must be a valid index.</param>
+    /// <returns>The CTxOutput object.</returns>
     CTxOutput GetOutput(const size_t index) const noexcept
     {
         assert(vout.size() > index);
         return CTxOutput{this, COutPoint(GetHash(), index), vout[index]};
     }
 
+    /// <summary>
+    /// Constructs a CTxOutput for the specified output.
+    /// </summary>
+    /// <param name="idx">The index of the output. This could either be an output Commitment or a valid canonical output index.</param>
+    /// <returns>The CTxOutput object.</returns>
     CTxOutput GetOutput(const OutputIndex& idx) const noexcept
     {
         if (idx.type() == typeid(Commitment)) {
@@ -503,6 +523,10 @@ public:
         }
     }
 
+    /// <summary>
+    /// Builds a vector of CTxOutputs, starting with the canoncial outputs (CTxOut), followed by the MWEB output commitments.
+    /// </summary>
+    /// <returns>A vector of all of the transaction's outputs.</returns>
     std::vector<CTxOutput> GetOutputs() const noexcept
     {
         std::vector<CTxOutput> outputs;

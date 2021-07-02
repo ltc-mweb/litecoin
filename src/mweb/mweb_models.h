@@ -15,6 +15,9 @@
 
 namespace MWEB {
 
+/// <summary>
+/// A convenience wrapper around a possibly-null extension block.
+/// </summary>
 struct Block {
     mw::Block::CPtr m_block;
 
@@ -24,7 +27,7 @@ struct Block {
 
     CAmount GetTotalFee() const noexcept
     {
-        return IsNull() ? 0 : CAmount(m_block->GetTotalFee());
+        return IsNull() ? 0 : m_block->GetTotalFee();
     }
 
     CAmount GetSupplyChange() const noexcept
@@ -96,6 +99,9 @@ struct Block {
     void SetNull() noexcept { m_block.reset(); }
 };
 
+/// <summary>
+/// A convenience wrapper around a possibly-null MWEB transcation.
+/// </summary>
 struct Tx {
     mw::Transaction::CPtr m_transaction;
 
