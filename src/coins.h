@@ -15,7 +15,6 @@
 #include <serialize.h>
 #include <uint256.h>
 
-#include <boost/variant.hpp>
 #include <assert.h>
 #include <stdint.h>
 
@@ -186,7 +185,8 @@ public:
 class CCoinsViewBacked : public CCoinsView
 {
 protected:
-    CCoinsView* base;
+    CCoinsView *base;
+
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;

@@ -9,7 +9,6 @@
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
 #include <consensus/validation.h>
-#include <logging.h>
 
 // TODO remove the following dependencies
 #include <chain.h>
@@ -162,7 +161,7 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
     return nSigOps;
 }
 
-bool CheckTransaction(const CTransaction& tx, CValidationState& state)
+bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fCheckDuplicateInputs)
 {
     // Basic checks that don't depend on any context
 
@@ -197,12 +196,14 @@ bool CheckTransaction(const CTransaction& tx, CValidationState& state)
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-txouttotal-toolarge");
     }
 
-    // Check for duplicate inputs
-    std::set<COutPoint> vInOutPoints;
-    for (const auto& txin : tx.vin)
-    {
-        if (!vInOutPoints.insert(txin.prevout).second)
-            return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
+    // Check for duplicate inputs - note that this check is slow so we skip it in CheckBlock
+    if (fCheckDuplicateInputs) {
+        std::set<COutPoint> vInOutPoints;
+        for (const auto& txin : tx.vin)
+        {
+            if (!vInOutPoints.insert(txin.prevout).second)
+                return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
+        }
     }
 
     if (tx.IsCoinBase())

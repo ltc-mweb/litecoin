@@ -585,12 +585,6 @@ template<typename Stream, typename T> void Serialize(Stream& os, const std::uniq
 template<typename Stream, typename T> void Unserialize(Stream& os, std::unique_ptr<const T>& p);
 
 /**
- * array
- */
-template<typename Stream, typename T, size_t S> void Serialize(Stream& os, const std::array<T, S>& item);
-template<typename Stream, typename T, size_t S> void Unserialize(Stream& is, std::array<T, S>& item);
-
-/**
  * optional
  */
 template<typename Stream, typename T> void Serialize(Stream& os, const boost::optional<T>& item);
@@ -919,27 +913,6 @@ void Unserialize(Stream& is, std::shared_ptr<const T>& p)
     is >> obj;
     p = std::make_shared<const T>(std::move(obj));
 }
-
-
-
-/**
- * array
- */
-template <typename Stream, typename T, size_t S>
-void Serialize(Stream& os, const std::array<T, S>& p)
-{
-    for (typename std::array<T, S>::const_iterator it = p.begin(); it != p.end(); ++it)
-        Serialize(os, (*it));
-}
-
-template <typename Stream, typename T, size_t S>
-void Unserialize(Stream& is, std::array<T, S>& p)
-{
-    for (size_t i = 0; i < S; i++) {
-        Unserialize(is, p[i]);
-    }
-}
-
 
 
 /**

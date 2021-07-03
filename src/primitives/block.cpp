@@ -10,10 +10,6 @@
 #include <util/strencodings.h>
 #include <crypto/common.h>
 #include <crypto/scrypt.h>
-#include <script/interpreter.h>
-#include <script/standard.h>
-#include <util/strencodings.h>
-#include <bech32.h>
 
 uint256 CBlockHeader::GetHash() const
 {

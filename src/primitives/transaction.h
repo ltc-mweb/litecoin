@@ -11,7 +11,6 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <uint256.h>
-#include <consensus/params.h>
 #include <mweb/mweb_models.h>
 #include <boost/variant.hpp>
 
@@ -481,66 +480,27 @@ public:
     /// Builds a vector of CTxInputs, starting with the canoncial inputs (CTxIn), followed by the MWEB input commitments.
     /// </summary>
     /// <returns>A vector of all of the transaction's inputs.</returns>
-    std::vector<CTxInput> GetInputs() const noexcept
-    {
-        std::vector<CTxInput> inputs;
-
-        for (const CTxIn& txin : vin) {
-            inputs.push_back(txin);
-        }
-
-        for (Commitment commit : mweb_tx.GetInputCommits()) {
-            inputs.push_back(std::move(commit));
-        }
-
-        return inputs;
-    }
+    std::vector<CTxInput> GetInputs() const noexcept;
 
     /// <summary>
     /// Constructs a CTxOutput for the specified canonical output.
     /// </summary>
     /// <param name="index">The index of the CTxOut. This must be a valid index.</param>
     /// <returns>The CTxOutput object.</returns>
-    CTxOutput GetOutput(const size_t index) const noexcept
-    {
-        assert(vout.size() > index);
-        return CTxOutput{this, COutPoint(GetHash(), index), vout[index]};
-    }
+    CTxOutput GetOutput(const size_t index) const noexcept;
 
     /// <summary>
     /// Constructs a CTxOutput for the specified output.
     /// </summary>
     /// <param name="idx">The index of the output. This could either be an output Commitment or a valid canonical output index.</param>
     /// <returns>The CTxOutput object.</returns>
-    CTxOutput GetOutput(const OutputIndex& idx) const noexcept
-    {
-        if (idx.type() == typeid(Commitment)) {
-            return CTxOutput{this, boost::get<Commitment>(idx)};
-        } else {
-            const COutPoint& outpoint = boost::get<COutPoint>(idx);
-            assert(vout.size() > outpoint.n);
-            return CTxOutput{this, outpoint, vout[outpoint.n]};
-        }
-    }
+    CTxOutput GetOutput(const OutputIndex& idx) const noexcept;
 
     /// <summary>
     /// Builds a vector of CTxOutputs, starting with the canoncial outputs (CTxOut), followed by the MWEB output commitments.
     /// </summary>
     /// <returns>A vector of all of the transaction's outputs.</returns>
-    std::vector<CTxOutput> GetOutputs() const noexcept
-    {
-        std::vector<CTxOutput> outputs;
-
-        for (size_t n = 0; n < vout.size(); n++) {
-            outputs.push_back(CTxOutput{this, COutPoint(GetHash(), n), vout[n]});
-        }
-
-        for (Commitment commit : mweb_tx.GetOutputCommits()) {
-            outputs.push_back(CTxOutput{this, std::move(commit)});
-        }
-
-        return outputs;
-    }
+    std::vector<CTxOutput> GetOutputs() const noexcept;
 };
 
 /** A mutable version of CTransaction. */

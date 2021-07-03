@@ -8,7 +8,6 @@
 
 #include <mw/models/wallet/StealthAddress.h>
 #include <script/interpreter.h>
-#include <pubkey.h>
 #include <uint256.h>
 
 #include <boost/variant.hpp>
