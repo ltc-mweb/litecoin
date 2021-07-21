@@ -14,6 +14,7 @@ class MWEBWeightTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.rpc_timeout = 120
         self.num_nodes = 3
+        self.extra_args = [["-spendzeroconfchange=0"]] * self.num_nodes
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -28,6 +29,11 @@ class MWEBWeightTest(BitcoinTestFramework):
         self.sync_all()
         self.nodes[1].generate(700)
         self.sync_all()
+
+        # Workaround for syncing issue
+        self.nodes[2].generate(1)
+        self.sync_all()
+
         self.nodes[2].generate(700)
         self.sync_all()
 
@@ -42,13 +48,10 @@ class MWEBWeightTest(BitcoinTestFramework):
 
         self.log.info("Create a block")
         self.nodes[1].generate(1)
+        self.sync_all()
 
         self.log.info("Check mempool is empty")
         assert_equal(len(self.nodes[1].getrawmempool()), 0)
-
-        self.log.info("Create some blocks")
-        self.nodes[1].generate(20)
-        self.sync_all()
 
         self.log.info("Check UTXOs have matured")
         utxos = self.nodes[0].listunspent(addresses=[addr])
@@ -63,13 +66,10 @@ class MWEBWeightTest(BitcoinTestFramework):
 
         self.log.info("Create a block")
         self.nodes[2].generate(1)
+        self.sync_all()
 
         self.log.info("Check mempool is not empty")
         assert_equal(len(self.nodes[2].getrawmempool()), 1)
-
-        self.log.info("Create some blocks")
-        self.nodes[2].generate(20)
-        self.sync_all()
 
         self.log.info("Check UTXOs have matured")
         utxos = self.nodes[0].listunspent(addresses=[addr])
