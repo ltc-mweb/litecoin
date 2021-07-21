@@ -73,28 +73,28 @@ BOOST_AUTO_TEST_CASE(streams_vector_reader)
     std::vector<unsigned char> vch = {1, 255, 3, 4, 5, 6};
 
     VectorReader reader(SER_NETWORK, INIT_PROTO_VERSION, vch, 0);
-    BOOST_CHECK_EQUAL(reader.size(), 6);
+    BOOST_CHECK_EQUAL(reader.size(), 6u);
     BOOST_CHECK(!reader.empty());
 
     // Read a single byte as an unsigned char.
     unsigned char a;
     reader >> a;
     BOOST_CHECK_EQUAL(a, 1);
-    BOOST_CHECK_EQUAL(reader.size(), 5);
+    BOOST_CHECK_EQUAL(reader.size(), 5u);
     BOOST_CHECK(!reader.empty());
 
     // Read a single byte as a signed char.
     signed char b;
     reader >> b;
     BOOST_CHECK_EQUAL(b, -1);
-    BOOST_CHECK_EQUAL(reader.size(), 4);
+    BOOST_CHECK_EQUAL(reader.size(), 4u);
     BOOST_CHECK(!reader.empty());
 
     // Read a 4 bytes as an unsigned int.
     unsigned int c;
     reader >> c;
-    BOOST_CHECK_EQUAL(c, 100992003); // 3,4,5,6 in little-endian base-256
-    BOOST_CHECK_EQUAL(reader.size(), 0);
+    BOOST_CHECK_EQUAL(c, 100992003u); // 3,4,5,6 in little-endian base-256
+    BOOST_CHECK_EQUAL(reader.size(), 0u);
     BOOST_CHECK(reader.empty());
 
     // Reading after end of byte vector throws an error.
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(streams_vector_reader)
     VectorReader new_reader(SER_NETWORK, INIT_PROTO_VERSION, vch, 0);
     new_reader >> d;
     BOOST_CHECK_EQUAL(d, 67370753); // 1,255,3,4 in little-endian base-256
-    BOOST_CHECK_EQUAL(new_reader.size(), 2);
+    BOOST_CHECK_EQUAL(new_reader.size(), 2u);
     BOOST_CHECK(!new_reader.empty());
 
     // Reading after end of byte vector throws an error even if the reader is
@@ -137,14 +137,14 @@ BOOST_AUTO_TEST_CASE(bitstream_reader_writer)
     BOOST_CHECK_EQUAL(serialized_int2, (uint16_t)0x1072); // NOTE: Serialized as LE
 
     BitStreamReader<CDataStream> bit_reader(data_copy);
-    BOOST_CHECK_EQUAL(bit_reader.Read(1), 0);
-    BOOST_CHECK_EQUAL(bit_reader.Read(2), 2);
-    BOOST_CHECK_EQUAL(bit_reader.Read(3), 6);
-    BOOST_CHECK_EQUAL(bit_reader.Read(4), 11);
-    BOOST_CHECK_EQUAL(bit_reader.Read(5), 1);
-    BOOST_CHECK_EQUAL(bit_reader.Read(6), 32);
-    BOOST_CHECK_EQUAL(bit_reader.Read(7), 7);
-    BOOST_CHECK_EQUAL(bit_reader.Read(16), 30497);
+    BOOST_CHECK_EQUAL(bit_reader.Read(1), 0u);
+    BOOST_CHECK_EQUAL(bit_reader.Read(2), 2u);
+    BOOST_CHECK_EQUAL(bit_reader.Read(3), 6u);
+    BOOST_CHECK_EQUAL(bit_reader.Read(4), 11u);
+    BOOST_CHECK_EQUAL(bit_reader.Read(5), 1u);
+    BOOST_CHECK_EQUAL(bit_reader.Read(6), 32u);
+    BOOST_CHECK_EQUAL(bit_reader.Read(7), 7u);
+    BOOST_CHECK_EQUAL(bit_reader.Read(16), 30497u);
     BOOST_CHECK_THROW(bit_reader.Read(8), std::ios_base::failure);
 }
 

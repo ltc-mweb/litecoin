@@ -4,7 +4,7 @@
 #include <txmempool.h>
 
 // Forward Declarations
-class CBlockTemplate;
+struct CBlockTemplate;
 
 namespace MWEB {
 

@@ -60,7 +60,6 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
 
 StealthAddress Keychain::GetStealthAddress(const uint32_t index) const
 {
-    assert(index < ULONG_MAX);
     m_addressIndexCounter = std::max(m_addressIndexCounter, index);
 
     PublicKey Bi = PublicKey::From(GetSpendKey(index));
@@ -71,8 +70,6 @@ StealthAddress Keychain::GetStealthAddress(const uint32_t index) const
 
 SecretKey Keychain::GetSpendKey(const uint32_t index) const
 {
-    assert(index < ULONG_MAX);
-
     SecretKey mi = Hasher(EHashTag::ADDRESS)
         .Append<uint32_t>(index)
         .Append(m_scanSecret)

@@ -162,6 +162,8 @@ bool SelectCoins(
     CoinSelectionParams& coin_selection_params,
     bool& bnb_used)
 {
+    LOCK(wallet.cs_wallet);
+
     // BnB only supported for non-MWEB.
     if (coin_selection_params.input_preference == InputPreference::PREFER_LTC && coin_selection_params.use_bnb) {
         CoinSelectionParams params2 = coin_selection_params;

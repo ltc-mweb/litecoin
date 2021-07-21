@@ -604,7 +604,7 @@ public:
     std::vector<CTxOutput> GetOutputs() const {
         std::vector<CTxOutput> outputs = tx->GetOutputs();
         if (mweb_wtx_info && mweb_wtx_info->received_coin) {
-            outputs.push_back(CTxOutput{tx.get(), mweb_wtx_info->received_coin->commitment});
+            outputs.push_back(CTxOutput{mweb_wtx_info->received_coin->commitment});
         }
 
         return outputs;

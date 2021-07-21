@@ -4470,6 +4470,7 @@ bool CWallet::ExtractOutputDestination(const CTxOutput& output, CTxDestination& 
 
 const CWalletTx* CWallet::FindWalletTx(const OutputIndex& output) const
 {
+    LOCK(cs_wallet);
     if (output.type() == typeid(Commitment)) {
         auto output_iter = mapOutputCommits.find(boost::get<Commitment>(output));
         if (output_iter != mapOutputCommits.end()) {
@@ -4490,6 +4491,7 @@ const CWalletTx* CWallet::FindWalletTx(const OutputIndex& output) const
 
 const CWalletTx* CWallet::FindPrevTx(const CTxInput& input) const
 {
+    LOCK(cs_wallet);
     if (input.IsMWEB()) {
         auto output_iter = mapOutputCommits.find(input.GetCommitment());
         if (output_iter != mapOutputCommits.end()) {
@@ -4510,6 +4512,7 @@ const CWalletTx* CWallet::FindPrevTx(const CTxInput& input) const
 
 CWalletTx* CWallet::FindPrevTx(const CTxInput& input)
 {
+    LOCK(cs_wallet);
     if (input.IsMWEB()) {
         auto output_iter = mapOutputCommits.find(input.GetCommitment());
         if (output_iter != mapOutputCommits.end()) {

@@ -42,14 +42,14 @@ BOOST_AUTO_TEST_CASE(gcsfilter_test)
 BOOST_AUTO_TEST_CASE(gcsfilter_default_constructor)
 {
     GCSFilter filter;
-    BOOST_CHECK_EQUAL(filter.GetN(), 0);
-    BOOST_CHECK_EQUAL(filter.GetEncoded().size(), 1);
+    BOOST_CHECK_EQUAL(filter.GetN(), 0u);
+    BOOST_CHECK_EQUAL(filter.GetEncoded().size(), 1u);
 
     const GCSFilter::Params& params = filter.GetParams();
-    BOOST_CHECK_EQUAL(params.m_siphash_k0, 0);
-    BOOST_CHECK_EQUAL(params.m_siphash_k1, 0);
-    BOOST_CHECK_EQUAL(params.m_P, 0);
-    BOOST_CHECK_EQUAL(params.m_M, 1);
+    BOOST_CHECK_EQUAL(params.m_siphash_k0, 0u);
+    BOOST_CHECK_EQUAL(params.m_siphash_k1, 0u);
+    BOOST_CHECK_EQUAL(params.m_P, 0u);
+    BOOST_CHECK_EQUAL(params.m_M, 1u);
 }
 
 BOOST_AUTO_TEST_CASE(blockfilter_basic_test)

@@ -223,10 +223,10 @@ class CTxOutput
 {
 public:
     CTxOutput() = default;
-    CTxOutput(const CTransaction* pTx, Commitment commitment)
-        : m_tx(pTx), m_idx(commitment), m_output(std::move(commitment)) {}
-    CTxOutput(const CTransaction* pTx, OutputIndex idx, CTxOut txout)
-        : m_tx(pTx), m_idx(std::move(idx)), m_output(std::move(txout)) {}
+    CTxOutput(Commitment commitment)
+        : m_idx(commitment), m_output(std::move(commitment)) {}
+    CTxOutput(OutputIndex idx, CTxOut txout)
+        : m_idx(std::move(idx)), m_output(std::move(txout)) {}
 
     bool IsMWEB() const noexcept { return m_output.type() == typeid(Commitment); }
 
@@ -251,7 +251,6 @@ public:
     }
 
 private:
-    const CTransaction* m_tx;
     OutputIndex m_idx;
     boost::variant<CTxOut, Commitment> m_output;
 };
