@@ -97,7 +97,7 @@ struct WalletTxInfo
 
             hash = SerializeHash(*this);
         } else {
-            bool received = received_coin.has_value();
+            bool received = !!received_coin;
             READWRITE(received);
 
             if (received) {
