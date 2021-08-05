@@ -2,7 +2,7 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-DIST_SUBDIRS = secp256k1 univalue
+DIST_SUBDIRS = secp256k1-zkp univalue
 
 AM_LDFLAGS = $(LIBTOOL_LDFLAGS) $(HARDENED_LDFLAGS) $(GPROF_LDFLAGS) $(SANITIZER_LDFLAGS)
 AM_CXXFLAGS = $(DEBUG_CXXFLAGS) $(HARDENED_CXXFLAGS) $(WARN_CXXFLAGS) $(NOWARN_CXXFLAGS) $(ERROR_CXXFLAGS) $(GPROF_CXXFLAGS) $(SANITIZER_CXXFLAGS)
@@ -20,8 +20,12 @@ else
 LIBUNIVALUE = $(UNIVALUE_LIBS)
 endif
 
-BITCOIN_INCLUDES=-I$(builddir) -I$(srcdir)/secp256k1/include $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS) $(CRYPTO_CFLAGS)
+BITCOIN_INCLUDES=-I$(builddir) $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS) $(CRYPTO_CFLAGS)
 
+BITCOIN_INCLUDES += -I$(srcdir)/secp256k1-zkp/include
+BITCOIN_INCLUDES += -I$(srcdir)/libmw/include
+BITCOIN_INCLUDES += -I$(srcdir)/libmw/deps/ghc/include
+BITCOIN_INCLUDES += -I$(srcdir)/libmw/deps/mio/include
 BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
 
 LIBBITCOIN_SERVER=libbitcoin_server.a
@@ -31,7 +35,8 @@ LIBBITCOIN_CLI=libbitcoin_cli.a
 LIBBITCOIN_UTIL=libbitcoin_util.a
 LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.a
 LIBBITCOINQT=qt/libbitcoinqt.a
-LIBSECP256K1=secp256k1/libsecp256k1.la
+LIBSECP256K1=secp256k1-zkp/libsecp256k1.la
+LIBMW=libmw.a
 
 if ENABLE_ZMQ
 LIBBITCOIN_ZMQ=libbitcoin_zmq.a
@@ -58,7 +63,7 @@ LIBBITCOIN_CRYPTO_SHANI = crypto/libbitcoin_crypto_shani.a
 LIBBITCOIN_CRYPTO += $(LIBBITCOIN_CRYPTO_SHANI)
 endif
 
-$(LIBSECP256K1): $(wildcard secp256k1/src/*.h) $(wildcard secp256k1/src/*.c) $(wildcard secp256k1/include/*)
+$(LIBSECP256K1): $(wildcard secp256k1-zkp/src/*.h) $(wildcard secp256k1-zkp/src/*.c) $(wildcard secp256k1-zkp/include/*)
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C $(@D) $(@F)
 
 # Make is not made aware of per-object dependencies to avoid limiting building parallelization
@@ -72,7 +77,8 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_ZMQ)
+  $(LIBBITCOIN_ZMQ) \
+  $(LIBMW)
 
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
 
@@ -100,6 +106,45 @@ if BUILD_BITCOIN_WALLET
   bin_PROGRAMS += litecoin-wallet
 endif
 endif
+
+LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/caches/include -I$(srcdir)/libmw/deps/crypto/include  -I$(srcdir)/libmw/deps/ghc/include -I$(srcdir)/libmw/deps/mio/include
+libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
+libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libmw_a_SOURCES = \
+	libmw/src/common/Logger.cpp \
+	libmw/src/crypto/Bulletproofs.cpp \
+	libmw/src/crypto/ConversionUtil.cpp \
+	libmw/src/crypto/MuSig.cpp \
+	libmw/src/crypto/Pedersen.cpp \
+	libmw/src/crypto/PublicKeys.cpp \
+	libmw/src/crypto/Schnorr.cpp \
+	libmw/src/db/CoinDB.cpp \
+	libmw/src/db/LeafDB.cpp \
+	libmw/src/db/MMRInfoDB.cpp \
+	libmw/src/file/File.cpp \
+	libmw/src/mmr/ILeafSet.cpp \
+	libmw/src/mmr/IMMR.cpp \
+	libmw/src/mmr/Index.cpp \
+	libmw/src/mmr/LeafSet.cpp \
+	libmw/src/mmr/LeafSetCache.cpp \
+	libmw/src/mmr/MemMMR.cpp \
+	libmw/src/mmr/MMRUtil.cpp \
+	libmw/src/mmr/PMMRCache.cpp \
+	libmw/src/mmr/PMMR.cpp \
+	libmw/src/mmr/PruneList.cpp \
+	libmw/src/models/block/Block.cpp \
+	libmw/src/models/crypto/Commitment.cpp \
+	libmw/src/models/crypto/PublicKey.cpp \
+	libmw/src/models/tx/Kernel.cpp \
+	libmw/src/models/tx/Output.cpp \
+	libmw/src/models/tx/Transaction.cpp \
+	libmw/src/models/tx/TxBody.cpp \
+	libmw/src/node/BlockValidator.cpp \
+	libmw/src/node/BlockBuilder.cpp \
+	libmw/src/node/CoinsViewCache.cpp \
+	libmw/src/node/CoinsViewDB.cpp \
+	libmw/src/wallet/Keychain.cpp \
+	libmw/src/wallet/TxBuilder.cpp
 
 .PHONY: FORCE check-symbols check-security
 # bitcoin core #
@@ -155,6 +200,10 @@ BITCOIN_CORE_H = \
   memusage.h \
   merkleblock.h \
   miner.h \
+  mweb/mweb_chain.h \
+  mweb/mweb_miner.h \
+  mweb/mweb_models.h \
+  mweb/mweb_node.h \
   net.h \
   net_permissions.h \
   net_processing.h \
@@ -280,7 +329,7 @@ libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 # Contains code accessing mempool and chain state that is meant to be separated
 # from wallet and gui code (see node/README.md). Shared code should go in
 # libbitcoin_common or libbitcoin_util libraries, instead.
-libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
+libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS) $(LIBMW_CPPFLAGS)
 libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_server_a_SOURCES = \
   addrdb.cpp \
@@ -301,6 +350,8 @@ libbitcoin_server_a_SOURCES = \
   interfaces/chain.cpp \
   interfaces/node.cpp \
   miner.cpp \
+  mweb/mweb_miner.cpp \
+  mweb/mweb_node.cpp \
   net.cpp \
   net_processing.cpp \
   node/coin.cpp \
@@ -388,7 +439,7 @@ libbitcoin_wallet_tool_a_SOURCES = \
   $(BITCOIN_CORE_H)
 
 # crypto primitives library
-crypto_libbitcoin_crypto_base_a_CPPFLAGS = $(AM_CPPFLAGS) $(SSL_CFLAGS)
+crypto_libbitcoin_crypto_base_a_CPPFLAGS = $(AM_CPPFLAGS) $(SSL_CFLAGS) $(BITCOIN_INCLUDES)
 crypto_libbitcoin_crypto_base_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 crypto_libbitcoin_crypto_base_a_SOURCES = \
   crypto/aes.cpp \
@@ -420,7 +471,8 @@ crypto_libbitcoin_crypto_base_a_SOURCES = \
   crypto/sha512.cpp \
   crypto/sha512.h \
   crypto/siphash.cpp \
-  crypto/siphash.h
+  crypto/siphash.h \
+  libmw/src/crypto/Hasher.cpp
 
 if USE_ASM
 crypto_libbitcoin_crypto_base_a_SOURCES += crypto/sha256_sse4.cpp
@@ -595,9 +647,10 @@ litecoin_bin_ldadd = \
   $(LIBLEVELDB) \
   $(LIBLEVELDB_SSE42) \
   $(LIBMEMENV) \
-  $(LIBSECP256K1)
+  $(LIBSECP256K1) \
+  $(LIBMW)
 
-litecoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(SQLITE_LIBS)
+litecoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(SQLITE_LIBS) $(MW_LIBS)
 
 litecoind_SOURCES = $(litecoin_daemon_sources)
 litecoind_CPPFLAGS = $(litecoin_bin_cppflags)
@@ -627,7 +680,7 @@ litecoin_cli_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
-litecoin_cli_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
+litecoin_cli_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS) $(MW_LIBS)
 #
 
 # bitcoin-tx binary #
@@ -646,10 +699,10 @@ litecoin_tx_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
-  $(LIBSECP256K1)
+  $(LIBSECP256K1) \
+  $(LIBMW)
 
-litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
-#
+litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS)
 
 # bitcoin-wallet binary #
 litecoin_wallet_SOURCES = bitcoin-wallet.cpp
@@ -666,15 +719,18 @@ endif
 # bitcoinconsensus library #
 if BUILD_BITCOIN_LIBS
 include_HEADERS = script/bitcoinconsensus.h
-libbitcoinconsensus_la_SOURCES = support/cleanse.cpp $(crypto_libbitcoin_crypto_base_a_SOURCES) $(libbitcoin_consensus_a_SOURCES)
+libbitcoinconsensus_la_SOURCES = \
+  $(crypto_libbitcoin_crypto_base_a_SOURCES) \
+  $(libbitcoin_consensus_a_SOURCES) \
+  support/cleanse.cpp
 
 if GLIBC_BACK_COMPAT
   libbitcoinconsensus_la_SOURCES += compat/glibc_compat.cpp
 endif
 
 libbitcoinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libbitcoinconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS)
-libbitcoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL $(SSL_CFLAGS)
+libbitcoinconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS) $(MW_LIBS)
+libbitcoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1-zkp/include -DBUILD_BITCOIN_INTERNAL $(SSL_CFLAGS) $(LIBMW_CPPFLAGS)
 libbitcoinconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
 endif
@@ -719,7 +775,7 @@ $(top_srcdir)/$(subdir)/config/bitcoin-config.h.in:  $(am__configure_deps)
 	$(AM_V_at)$(MAKE) -C $(top_srcdir) $(subdir)/config/bitcoin-config.h.in
 
 clean-local:
-	-$(MAKE) -C secp256k1 clean
+	-$(MAKE) -C secp256k1-zkp clean
 	-$(MAKE) -C univalue clean
 	-rm -f leveldb/*/*.gcda leveldb/*/*.gcno leveldb/helpers/memenv/*.gcda leveldb/helpers/memenv/*.gcno
 	-rm -f config.h

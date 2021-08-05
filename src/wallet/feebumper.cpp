@@ -83,7 +83,7 @@ static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wt
     isminefilter filter = wallet.GetLegacyScriptPubKeyMan() && wallet.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS) ? ISMINE_WATCH_ONLY : ISMINE_SPENDABLE;
     CAmount old_fee = wtx.GetDebit(filter) - wtx.tx->GetValueOut();
     const int64_t txSize = GetVirtualTransactionSize(*(wtx.tx));
-    CFeeRate nOldFeeRate(old_fee, txSize);
+    CFeeRate nOldFeeRate(old_fee, txSize, wtx.tx->mweb_tx.GetMWEBWeight());
     // Min total fee is old fee + relay fee
     CAmount minTotalFee = nOldFeeRate.GetFee(maxTxSize) + incrementalRelayFee.GetFee(maxTxSize);
 
@@ -117,7 +117,7 @@ static CFeeRate EstimateFeeRate(const CWallet& wallet, const CWalletTx& wtx, con
     // the tx fee/vsize, so it may have been rounded down. Add 1 satoshi to the
     // result.
     int64_t txSize = GetVirtualTransactionSize(*(wtx.tx));
-    CFeeRate feerate(old_fee, txSize);
+    CFeeRate feerate(old_fee, txSize, wtx.tx->mweb_tx.GetMWEBWeight());
     feerate += CFeeRate(1);
 
     // The node has a configurable incremental relay fee. Increment the fee by

@@ -78,7 +78,7 @@ dnl Require C++11 or C++17 compiler (no GNU extensions)
 if test "x$use_cxx17" = xyes -o "x$enable_fuzz" = xyes ; then
   AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
 else
-  AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])
+  AX_CXX_COMPILE_STDCXX([14], [noext], [mandatory])
 fi
 
 dnl Check if -latomic is required for <std::atomic>
@@ -428,7 +428,6 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
   AX_CHECK_COMPILE_FLAG([-Wdate-time],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wdate-time"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wconditional-uninitialized],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wconditional-uninitialized"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wsign-compare],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wsign-compare"],,[[$CXXFLAG_WERROR]])
-  AX_CHECK_COMPILE_FLAG([-Wduplicated-branches],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wduplicated-branches"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wduplicated-cond],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wduplicated-cond"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wlogical-op],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wlogical-op"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Woverloaded-virtual],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Woverloaded-virtual"],,[[$CXXFLAG_WERROR]])
@@ -445,6 +444,7 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
   AX_CHECK_COMPILE_FLAG([-Wdeprecated-register],[NOWARN_CXXFLAGS="$NOWARN_CXXFLAGS -Wno-deprecated-register"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough],[NOWARN_CXXFLAGS="$NOWARN_CXXFLAGS -Wno-implicit-fallthrough"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wdeprecated-copy],[NOWARN_CXXFLAGS="$NOWARN_CXXFLAGS -Wno-deprecated-copy"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wduplicated-branches],[NOWARN_CXXFLAGS="$NOWARN_CXXFLAGS -Wno-duplicated-branches"],,[[$CXXFLAG_WERROR]])
 fi
 
 dnl Don't allow extended (non-ASCII) symbols in identifiers. This is easier for code review.
@@ -1414,6 +1414,9 @@ if test "x$use_zmq" = xyes; then
   esac
 fi
 
+
+AC_CHECK_LIB([fmt],[main],MW_LIBS=-lfmt,AC_MSG_ERROR(libfmt missing))
+
 dnl univalue check
 
 need_bundled_univalue=yes
@@ -1720,6 +1723,7 @@ AC_SUBST(EVENT_LIBS)
 AC_SUBST(EVENT_PTHREADS_LIBS)
 AC_SUBST(ZMQ_LIBS)
 AC_SUBST(QR_LIBS)
+AC_SUBST(MW_LIBS)
 AC_SUBST(HAVE_GMTIME_R)
 AC_SUBST(HAVE_FDATASYNC)
 AC_SUBST(HAVE_FULLFSYNC)

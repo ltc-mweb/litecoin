@@ -6,6 +6,7 @@
 #ifndef BITCOIN_SCRIPT_STANDARD_H
 #define BITCOIN_SCRIPT_STANDARD_H
 
+#include <mw/models/wallet/StealthAddress.h>
 #include <script/interpreter.h>
 #include <uint256.h>
 
@@ -130,6 +131,7 @@ enum class TxoutType {
     WITNESS_V0_SCRIPTHASH,
     WITNESS_V0_KEYHASH,
     WITNESS_V1_TAPROOT,
+    WITNESS_MWEB_PEGIN, //!< Commitment value of the peg-in kernel
     WITNESS_UNKNOWN, //!< Only for Witness versions not already defined above
 };
 
@@ -211,7 +213,7 @@ struct WitnessUnknown
  *    (taproot outputs do not require their own type as long as no wallet support exists)
  *  A CTxDestination is the internal data type encoded in a bitcoin address
  */
-typedef boost::variant<CNoDestination, PKHash, ScriptHash, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown> CTxDestination;
+typedef boost::variant<CNoDestination, PKHash, ScriptHash, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown, StealthAddress> CTxDestination;
 
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);
@@ -265,4 +267,35 @@ CScript GetScriptForRawPubKey(const CPubKey& pubkey);
 /** Generate a multisig script. */
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 
+bool IsPegInOutput(const CTxOutput& output);
+
+CScript GetScriptForPegin(const Commitment& commitment);
+
+class DestinationScript
+{
+public:
+    DestinationScript() = default;
+    DestinationScript(CScript script)
+        : m_script(std::move(script)) { }
+    DestinationScript(StealthAddress address)
+        : m_script(std::move(address)) { }
+    DestinationScript(const CTxDestination& dest);
+
+    bool IsMWEB() const noexcept { return m_script.which() == 1; }
+
+    const CScript& GetScript() const noexcept
+    {
+        assert(m_script.which() == 0);
+        return boost::get<CScript>(m_script);
+    }
+
+    const StealthAddress& GetMWEBAddress() const noexcept
+    {
+        assert(m_script.which() == 1);
+        return boost::get<StealthAddress>(m_script);
+    }
+
+private:
+    boost::variant<CScript, StealthAddress> m_script;
+};
 #endif // BITCOIN_SCRIPT_STANDARD_H

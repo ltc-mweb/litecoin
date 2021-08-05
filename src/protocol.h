@@ -291,8 +291,11 @@ enum ServiceFlags : uint64_t {
     // serving the last 288 (2 day) blocks
     // See BIP159 for details on how this is implemented.
     NODE_NETWORK_LIMITED = (1 << 10),
+    // NODE_MWEB indicates that a node can be asked for blocks and transactions including
+    // MWEB data.
+    NODE_MWEB = (1 << 24)
 
-    // Bits 24-31 are reserved for temporary experiments. Just pick a bit that
+    // Bits 25-31 are reserved for temporary experiments. Just pick a bit that
     // isn't getting used, or one not being used much, and notify the
     // bitcoin-development mailing list. Remember that service bits are just
     // unauthenticated advertisements, so your code must be robust against
@@ -402,6 +405,7 @@ public:
 
 /** getdata message type flags */
 const uint32_t MSG_WITNESS_FLAG = 1 << 30;
+const uint32_t MSG_MWEB_FLAG = 1 << 29;
 const uint32_t MSG_TYPE_MASK = 0xffffffff >> 2;
 
 /** getdata / inv message types.
@@ -421,6 +425,8 @@ enum GetDataMsg : uint32_t {
     // MSG_FILTERED_WITNESS_BLOCK is defined in BIP144 as reserved for future
     // use and remains unused.
     // MSG_FILTERED_WITNESS_BLOCK = MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG,
+    MSG_MWEB_BLOCK = MSG_WITNESS_BLOCK | MSG_MWEB_FLAG,
+    MSG_MWEB_TX = MSG_WITNESS_TX | MSG_MWEB_FLAG,
 };
 
 /** inv message data */
@@ -441,18 +447,20 @@ public:
     bool IsMsgTx() const { return type == MSG_TX; }
     bool IsMsgBlk() const { return type == MSG_BLOCK; }
     bool IsMsgWtx() const { return type == MSG_WTX; }
+    bool IsMsgMWEBTx() const { return type == MSG_MWEB_TX; }
     bool IsMsgFilteredBlk() const { return type == MSG_FILTERED_BLOCK; }
     bool IsMsgCmpctBlk() const { return type == MSG_CMPCT_BLOCK; }
     bool IsMsgWitnessBlk() const { return type == MSG_WITNESS_BLOCK; }
+    bool IsMsgMWEBBlk() const { return type == MSG_MWEB_BLOCK; }
 
     // Combined-message helper methods
     bool IsGenTxMsg() const
     {
-        return type == MSG_TX || type == MSG_WTX || type == MSG_WITNESS_TX;
+        return type == MSG_TX || type == MSG_WTX || type == MSG_WITNESS_TX || type == MSG_MWEB_TX;
     }
     bool IsGenBlkMsg() const
     {
-        return type == MSG_BLOCK || type == MSG_FILTERED_BLOCK || type == MSG_CMPCT_BLOCK || type == MSG_WITNESS_BLOCK;
+        return type == MSG_BLOCK || type == MSG_FILTERED_BLOCK || type == MSG_CMPCT_BLOCK || type == MSG_WITNESS_BLOCK || type == MSG_MWEB_BLOCK;
     }
 
     uint32_t type;

@@ -1473,7 +1473,7 @@ BOOST_AUTO_TEST_CASE(script_HasValidOps)
 static CMutableTransaction TxFromHex(const std::string& str)
 {
     CMutableTransaction tx;
-    VectorReader(SER_DISK, SERIALIZE_TRANSACTION_NO_WITNESS, ParseHex(str), 0) >> tx;
+    VectorReader(SER_DISK, SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB, ParseHex(str), 0) >> tx;
     return tx;
 }
 

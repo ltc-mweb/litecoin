@@ -109,6 +109,12 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
         }
     }
 
+    // MWEB: Also check pegout scripts
+    std::vector<CTxOut> txouts = tx.vout;
+    for (const PegOutCoin& pegout : tx.mweb_tx.GetPegOuts()) {
+        txouts.push_back(CTxOut(pegout.GetAmount(), pegout.GetScriptPubKey()));
+    }
+
     unsigned int nDataOut = 0;
     TxoutType whichType;
     for (const CTxOut& txout : tx.vout) {
@@ -132,6 +138,14 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
     if (nDataOut > 1) {
         reason = "multi-op-return";
         return false;
+    }
+
+    // MWEB: Check MWEB transaction for non-standard kernel features
+    if (tx.HasMWEBTx()) {
+        if (!tx.mweb_tx.m_transaction->IsStandard()) {
+            reason = "non-standard-mweb-tx";
+            return false;
+        }
     }
 
     return true;
@@ -289,4 +303,9 @@ int64_t GetVirtualTransactionSize(const CTransaction& tx, int64_t nSigOpCost, un
 int64_t GetVirtualTransactionInputSize(const CTxIn& txin, int64_t nSigOpCost, unsigned int bytes_per_sigop)
 {
     return GetVirtualTransactionSize(GetTransactionInputWeight(txin), nSigOpCost, bytes_per_sigop);
+}
+
+int64_t GetMWEBWeight(size_t nOutputs, size_t nKernels, size_t nOwnerSigs)
+{
+    return (int64_t)Weight::Calculate(nKernels, nOwnerSigs, nOutputs);
 }

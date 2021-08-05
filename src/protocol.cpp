@@ -208,6 +208,7 @@ static std::string serviceFlagToStr(size_t bit)
     case NODE_WITNESS:         return "WITNESS";
     case NODE_COMPACT_FILTERS: return "COMPACT_FILTERS";
     case NODE_NETWORK_LIMITED: return "NETWORK_LIMITED";
+    case NODE_MWEB:            return "MWEB";
     // Not using default, so we get warned when a case is missing
     }
 
