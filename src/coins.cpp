@@ -166,6 +166,12 @@ uint256 CCoinsViewCache::GetBestBlock() const {
     return hashBlock;
 }
 
+
+void CCoinsViewCache::SetBackend(CCoinsView& viewIn) {
+    base = &viewIn;
+    mweb_view = viewIn.GetMWView() ? std::make_shared<mw::CoinsViewCache>(viewIn.GetMWView()) : nullptr;
+}
+
 void CCoinsViewCache::SetBestBlock(const uint256 &hashBlockIn) {
     hashBlock = hashBlockIn;
 }

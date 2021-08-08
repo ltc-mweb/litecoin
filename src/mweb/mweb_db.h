@@ -34,7 +34,7 @@ private:
 class DBIterator : public mw::DBIterator
 {
 public:
-    DBIterator(CDBIterator* pIterator)
+    explicit DBIterator(CDBIterator* pIterator)
         : m_pIterator(std::unique_ptr<CDBIterator>(pIterator)) {}
 
     void Seek(const std::string& key) final
@@ -64,7 +64,7 @@ private:
 class DBWrapper : public mw::DBWrapper
 {
 public:
-    DBWrapper(CDBWrapper* pDB) : m_pDB(pDB) {}
+    explicit DBWrapper(CDBWrapper* pDB) : m_pDB(pDB) {}
 
     bool Read(const std::string& key, std::vector<uint8_t>& value) const final
     {

@@ -81,7 +81,7 @@ public:
     using Ptr = std::shared_ptr<CoinsViewCache>;
     using CPtr = std::shared_ptr<const CoinsViewCache>;
 
-    CoinsViewCache(const ICoinsView::Ptr& pBase);
+    explicit CoinsViewCache(const ICoinsView::Ptr& pBase);
 
     bool IsCache() const noexcept final { return true; }
 

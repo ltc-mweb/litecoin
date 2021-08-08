@@ -452,7 +452,7 @@ namespace {
 class MemPoolAccept
 {
 public:
-    MemPoolAccept(CTxMemPool& mempool) : m_pool(mempool), m_view(&m_dummy), m_viewmempool(&::ChainstateActive().CoinsTip(), m_pool),
+    MemPoolAccept(CTxMemPool& mempool) : m_pool(mempool), m_dummy{}, m_view(&m_dummy), m_viewmempool(&::ChainstateActive().CoinsTip(), m_pool),
         m_limit_ancestors(gArgs.GetArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT)),
         m_limit_ancestor_size(gArgs.GetArg("-limitancestorsize", DEFAULT_ANCESTOR_SIZE_LIMIT)*1000),
         m_limit_descendants(gArgs.GetArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT)),
@@ -537,9 +537,9 @@ private:
 
 private:
     CTxMemPool& m_pool;
+    CCoinsView m_dummy;
     CCoinsViewCache m_view;
     CCoinsViewMemPool m_viewmempool;
-    CCoinsView m_dummy;
 
     // The package limits in effect at the time of invocation.
     const size_t m_limit_ancestors;

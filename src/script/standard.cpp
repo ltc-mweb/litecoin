@@ -336,6 +336,7 @@ CScript GetScriptForPegin(const Commitment& commitment)
     script << commitment.vec();
     return script;
 }
+
 bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
