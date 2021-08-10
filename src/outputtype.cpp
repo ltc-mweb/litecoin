@@ -18,8 +18,9 @@
 static const std::string OUTPUT_TYPE_STRING_LEGACY = "legacy";
 static const std::string OUTPUT_TYPE_STRING_P2SH_SEGWIT = "p2sh-segwit";
 static const std::string OUTPUT_TYPE_STRING_BECH32 = "bech32";
+static const std::string OUTPUT_TYPE_STRING_MWEB = "mweb";
 
-const std::array<OutputType, 3> OUTPUT_TYPES = {OutputType::LEGACY, OutputType::P2SH_SEGWIT, OutputType::BECH32};
+const std::array<OutputType, 4> OUTPUT_TYPES = {OutputType::LEGACY, OutputType::P2SH_SEGWIT, OutputType::BECH32, OutputType::MWEB};
 
 bool ParseOutputType(const std::string& type, OutputType& output_type)
 {
@@ -32,6 +33,9 @@ bool ParseOutputType(const std::string& type, OutputType& output_type)
     } else if (type == OUTPUT_TYPE_STRING_BECH32) {
         output_type = OutputType::BECH32;
         return true;
+    } else if (type == OUTPUT_TYPE_STRING_MWEB) {
+        output_type = OutputType::MWEB;
+        return true;
     }
     return false;
 }
@@ -42,6 +46,7 @@ const std::string& FormatOutputType(OutputType type)
     case OutputType::LEGACY: return OUTPUT_TYPE_STRING_LEGACY;
     case OutputType::P2SH_SEGWIT: return OUTPUT_TYPE_STRING_P2SH_SEGWIT;
     case OutputType::BECH32: return OUTPUT_TYPE_STRING_BECH32;
+    case OutputType::MWEB: return OUTPUT_TYPE_STRING_MWEB;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
@@ -61,6 +66,8 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
             return witdest;
         }
     }
+    case OutputType::MWEB:
+        return CNoDestination();
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
@@ -100,6 +107,8 @@ CTxDestination AddAndGetDestinationForScript(FillableSigningProvider& keystore, 
             return ScriptHash(witprog);
         }
     }
+    case OutputType::MWEB:
+        return CNoDestination();
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }

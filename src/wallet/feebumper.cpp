@@ -66,6 +66,7 @@ static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wt
     // in a rare situation where the mempool minimum fee increased significantly since the fee estimation just a
     // moment earlier. In this case, we report an error to the user, who may adjust the fee.
     CFeeRate minMempoolFeeRate = wallet.chain().mempoolMinFee();
+    const uint64_t mweb_weight = wtx.tx->mweb_tx.GetMWEBWeight();
 
     if (newFeerate.GetFeePerK() < minMempoolFeeRate.GetFeePerK()) {
         errors.push_back(strprintf(
@@ -75,7 +76,7 @@ static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wt
         return feebumper::Result::WALLET_ERROR;
     }
 
-    CAmount new_total_fee = newFeerate.GetFee(maxTxSize);
+    CAmount new_total_fee = newFeerate.GetTotalFee(maxTxSize, mweb_weight);
 
     CFeeRate incrementalRelayFee = std::max(wallet.chain().relayIncrementalFee(), CFeeRate(WALLET_INCREMENTAL_RELAY_FEE));
 
@@ -83,9 +84,9 @@ static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wt
     isminefilter filter = wallet.GetLegacyScriptPubKeyMan() && wallet.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS) ? ISMINE_WATCH_ONLY : ISMINE_SPENDABLE;
     CAmount old_fee = wtx.GetDebit(filter) - wtx.tx->GetValueOut();
     const int64_t txSize = GetVirtualTransactionSize(*(wtx.tx));
-    CFeeRate nOldFeeRate(old_fee, txSize, wtx.tx->mweb_tx.GetMWEBWeight());
+    CFeeRate nOldFeeRate(old_fee, txSize, mweb_weight);
     // Min total fee is old fee + relay fee
-    CAmount minTotalFee = nOldFeeRate.GetFee(maxTxSize) + incrementalRelayFee.GetFee(maxTxSize);
+    CAmount minTotalFee = nOldFeeRate.GetTotalFee(maxTxSize, mweb_weight) + incrementalRelayFee.GetFee(maxTxSize);
 
     if (new_total_fee < minTotalFee) {
         errors.push_back(strprintf(Untranslated("Insufficient total fee %s, must be at least %s (oldFee %s + incrementalFee %s)"),
@@ -93,7 +94,7 @@ static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wt
         return feebumper::Result::INVALID_PARAMETER;
     }
 
-    CAmount requiredFee = GetRequiredFee(wallet, maxTxSize);
+    CAmount requiredFee = GetRequiredFee(wallet, maxTxSize, mweb_weight);
     if (new_total_fee < requiredFee) {
         errors.push_back(strprintf(Untranslated("Insufficient total fee (cannot be less than required fee %s)"),
             FormatMoney(requiredFee)));

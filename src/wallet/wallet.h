@@ -757,6 +757,7 @@ struct CoinSelectionParams
     size_t tx_noinputs_size = 0;
     //! Indicate that we are subtracting the fee from outputs
     bool m_subtract_fee_outputs = false;
+    InputPreference input_preference = InputPreference::PREFER_LTC;
 
     CoinSelectionParams(bool use_bnb, size_t change_output_size, size_t change_spend_size, CFeeRate effective_feerate,
                         CFeeRate long_term_feerate, CFeeRate discard_feerate, size_t tx_noinputs_size) :

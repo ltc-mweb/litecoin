@@ -2433,7 +2433,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
 
         // Filter by the min conf specs and add to utxo_pool and calculate effective value
         for (OutputGroup& group : groups) {
-            if (!group.EligibleForSpending(eligibility_filter)) continue;
+            if (!group.EligibleForSpending(eligibility_filter, coin_selection_params.input_preference)) continue;
 
             if (coin_selection_params.m_subtract_fee_outputs) {
                 // Set the effective feerate to 0 as we don't want to use the effective value since the fees will be deducted from the output
@@ -2452,7 +2452,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
     } else {
         // Filter by the min conf specs and add to utxo_pool
         for (const OutputGroup& group : groups) {
-            if (!group.EligibleForSpending(eligibility_filter)) continue;
+            if (!group.EligibleForSpending(eligibility_filter, coin_selection_params.input_preference)) continue;
             utxo_pool.push_back(group);
         }
         bnb_used = false;
@@ -2511,15 +2511,15 @@ bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const
             }
             // Just to calculate the marginal byte size
             CInputCoin coin(wtx.tx, outpoint.n, wtx.GetSpendSize(outpoint.n, false));
-            nValueFromPresetInputs += coin.txout.nValue;
+            nValueFromPresetInputs += coin.GetAmount();
             if (coin.m_input_bytes <= 0) {
                 return false; // Not solvable, can't estimate size for fee
             }
-            coin.effective_value = coin.txout.nValue - coin.CalculateFee(coin_selection_params.m_effective_feerate);
+            coin.effective_value = coin.GetAmount() - coin.CalculateFee(coin_selection_params.m_effective_feerate);
             if (coin_selection_params.use_bnb) {
                 value_to_select -= coin.effective_value;
             } else {
-                value_to_select -= coin.txout.nValue;
+                value_to_select -= coin.GetAmount();
             }
             setPresetCoins.insert(coin);
         } else {
@@ -3031,7 +3031,9 @@ bool CWallet::CreateTransactionInternal(
                 // Dummy fill vin for maximum size estimation
                 //
                 for (const auto& coin : setCoins) {
-                    txNew.vin.push_back(CTxIn(coin.outpoint,CScript()));
+                    if (!coin.IsMWEB()) {
+                        txNew.vin.push_back(CTxIn(coin.GetOutpoint(), CScript()));
+                    }
                 }
 
                 nBytes = CalculateMaximumSignedTxSize(CTransaction(txNew), this, coin_control.fAllowWatchOnly);
@@ -3126,7 +3128,9 @@ bool CWallet::CreateTransactionInternal(
         // behavior."
         const uint32_t nSequence = coin_control.m_signal_bip125_rbf.get_value_or(m_signal_rbf) ? MAX_BIP125_RBF_SEQUENCE : (CTxIn::SEQUENCE_FINAL - 1);
         for (const auto& coin : selected_coins) {
-            txNew.vin.push_back(CTxIn(coin.outpoint, CScript(), nSequence));
+            if (!coin.IsMWEB()) {
+                txNew.vin.push_back(CTxIn(coin.GetOutpoint(), CScript(), nSequence));
+            }
         }
 
         if (sign && !SignTransaction(txNew)) {

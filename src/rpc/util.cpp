@@ -178,6 +178,10 @@ CPubKey AddrToPubKey(const FillableSigningProvider& keystore, const std::string&
 // Creates a multisig address from a given list of public keys, number of signatures required, and the address type
 CTxDestination AddAndGetMultisigDestination(const int required, const std::vector<CPubKey>& pubkeys, OutputType type, FillableSigningProvider& keystore, CScript& script_out)
 {
+    if (type == OutputType::MWEB) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "MWEB address type not supported for multi-sig");
+    }
+
     // Gather public keys
     if (required < 1) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "a multisignature address must require at least one key to redeem");

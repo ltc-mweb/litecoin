@@ -27,9 +27,9 @@ public:
         if (i >= tx->vout.size())
             throw std::out_of_range("The output index is out of range");
 
-        outpoint = COutPoint(tx->GetHash(), i);
-        txout = tx->vout[i];
-        effective_value = txout.nValue;
+        m_index = COutPoint(tx->GetHash(), i);
+        m_output = tx->vout[i];
+        effective_value = tx->vout[i].nValue;
     }
 
     CInputCoin(const CTransactionRef& tx, unsigned int i, int input_bytes) : CInputCoin(tx, i)
@@ -48,6 +48,12 @@ public:
     CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<mw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
     const OutputIndex& GetIndex() const noexcept { return m_index; }
 
+    const COutPoint& GetOutpoint() const noexcept
+    {
+        assert(!IsMWEB());
+        return boost::get<COutPoint>(m_index);
+    }
+
     mw::Coin GetMWEBCoin() const noexcept
     {
         assert(IsMWEB());
@@ -62,9 +68,7 @@ public:
 
         return m_input_bytes < 0 ? 0 : feerate.GetFee(m_input_bytes);
     }
-
-    COutPoint outpoint;
-    CTxOut txout;
+	
     CAmount effective_value;
     CAmount m_fee{0};
     CAmount m_long_term_fee{0};
@@ -73,15 +77,15 @@ public:
     int m_input_bytes{-1};
 
     bool operator<(const CInputCoin& rhs) const {
-        return outpoint < rhs.outpoint;
+        return m_index < rhs.m_index;
     }
 
     bool operator!=(const CInputCoin& rhs) const {
-        return outpoint != rhs.outpoint;
+        return m_index != rhs.m_index;
     }
 
     bool operator==(const CInputCoin& rhs) const {
-        return outpoint == rhs.outpoint;
+        return m_index == rhs.m_index;
     }
 
 private:
@@ -99,6 +103,17 @@ struct CoinEligibilityFilter
 
     CoinEligibilityFilter(int conf_mine, int conf_theirs, uint64_t max_ancestors) : conf_mine(conf_mine), conf_theirs(conf_theirs), max_ancestors(max_ancestors), max_descendants(max_ancestors) {}
     CoinEligibilityFilter(int conf_mine, int conf_theirs, uint64_t max_ancestors, uint64_t max_descendants) : conf_mine(conf_mine), conf_theirs(conf_theirs), max_ancestors(max_ancestors), max_descendants(max_descendants) {}
+};
+
+enum class InputPreference {
+    // Use MWEB inputs first (used during typicaly send to MWEB address)
+    PREFER_MWEB,
+    // Use canonical inputs first (used during typical send to LTC address)
+    PREFER_LTC,
+    // Only use MWEB inputs (used when explicitly pegging-out)
+    MWEB_ONLY,
+    // Only use canonical inputs (used when explicitly pegging-in)
+    LTC_ONLY
 };
 
 struct OutputGroup
@@ -127,7 +142,11 @@ struct OutputGroup
     }
     void Insert(const CInputCoin& output, int depth, bool from_me, size_t ancestors, size_t descendants);
     std::vector<CInputCoin>::iterator Discard(const CInputCoin& output);
-    bool EligibleForSpending(const CoinEligibilityFilter& eligibility_filter) const;
+    bool EligibleForSpending(const CoinEligibilityFilter& eligibility_filter, const InputPreference& input_preference) const;
+    bool IsMWEB() const noexcept
+    {
+        return !m_outputs.empty() && m_outputs.front().IsMWEB();
+    }
 
     //! Update the OutputGroup's fee, long_term_fee, and effective_value based on the given feerates
     void SetFees(const CFeeRate effective_feerate, const CFeeRate long_term_feerate);
