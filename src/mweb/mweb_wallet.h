@@ -76,36 +76,24 @@ struct WalletTxInfo
         hash = SerializeHash(*this);
     }
 
-
     SERIALIZE_METHODS(WalletTxInfo, obj)
     {
-        SER_READ(obj, {
-            bool received = false;
-            READWRITE(received);
+        bool received = !!obj.received_coin;
+        READWRITE(received);
 
-            if (received) {
-                mw::Coin coin;
-                READWRITE(coin);
-                obj.received_coin = boost::make_optional<mw::Coin>(std::move(coin));
-            } else {
-                Commitment input_commit;
-                READWRITE(input_commit);
-                obj.spent_input = boost::make_optional<Commitment>(std::move(input_commit));
-            }
+        if (received) {
+            mw::Coin coin;
+            SER_WRITE(obj, coin = *obj.received_coin);
+            READWRITE(coin);
+            SER_READ(obj, obj.received_coin = boost::make_optional<mw::Coin>(std::move(coin)));
+        } else {
+            Commitment input_commit;
+            SER_WRITE(obj, input_commit = *obj.spent_input);
+            READWRITE(input_commit);
+            SER_READ(obj, obj.spent_input = boost::make_optional<Commitment>(std::move(input_commit)));
+        }
 
-            obj.hash = SerializeHash(obj);
-        });
-
-        SER_WRITE(obj, {
-            bool received = obj.received_coin;
-            READWRITE(received);
-
-            if (received) {
-                READWRITE(*obj.received_coin);
-            } else {
-                READWRITE(*obj.spent_input);
-            }
-        });
+        SER_READ(obj, obj.hash = SerializeHash(obj));
     }
 
     static WalletTxInfo FromHex(const std::string& str)

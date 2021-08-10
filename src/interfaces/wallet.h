@@ -112,6 +112,9 @@ public:
     //! Get wallet address list.
     virtual std::vector<WalletAddress> getAddresses() = 0;
 
+    //! Look up destination for output, return whether found.
+    virtual bool extractOutputDestination(const CTxOutput& output, CTxDestination& dest) = 0;
+
     //! Add dest data.
     virtual bool addDestData(const CTxDestination& dest, const std::string& key, const std::string& value) = 0;
 
@@ -122,16 +125,16 @@ public:
     virtual std::vector<std::string> getDestValues(const std::string& prefix) = 0;
 
     //! Lock coin.
-    virtual void lockCoin(const COutPoint& output) = 0;
+    virtual void lockCoin(const OutputIndex& output) = 0;
 
     //! Unlock coin.
-    virtual void unlockCoin(const COutPoint& output) = 0;
+    virtual void unlockCoin(const OutputIndex& output) = 0;
 
     //! Return whether coin is locked.
-    virtual bool isLockedCoin(const COutPoint& output) = 0;
+    virtual bool isLockedCoin(const OutputIndex& output) = 0;
 
     //! List locked coins.
-    virtual void listLockedCoins(std::vector<COutPoint>& outputs) = 0;
+    virtual void listLockedCoins(std::vector<OutputIndex>& outputs) = 0;
 
     //! Create transaction.
     virtual CTransactionRef createTransaction(const std::vector<CRecipient>& recipients,
@@ -215,24 +218,27 @@ public:
     virtual CAmount getAvailableBalance(const CCoinControl& coin_control) = 0;
 
     //! Return whether transaction input belongs to wallet.
-    virtual isminetype txinIsMine(const CTxIn& txin) = 0;
+    virtual isminetype txinIsMine(const CTxInput& txin) = 0;
 
     //! Return whether transaction output belongs to wallet.
-    virtual isminetype txoutIsMine(const CTxOut& txout) = 0;
+    virtual isminetype txoutIsMine(const CTxOutput& txout) = 0;
+
+    //! Return the value of the output.
+    virtual CAmount getValue(const CTxOutput& txout) = 0;
 
     //! Return debit amount if transaction input belongs to wallet.
-    virtual CAmount getDebit(const CTxIn& txin, isminefilter filter) = 0;
+    virtual CAmount getDebit(const CTxInput& txin, isminefilter filter) = 0;
 
     //! Return credit amount if transaction input belongs to wallet.
-    virtual CAmount getCredit(const CTxOut& txout, isminefilter filter) = 0;
+    virtual CAmount getCredit(const CTxOutput& txout, isminefilter filter) = 0;
 
     //! Return AvailableCoins + LockedCoins grouped by wallet address.
     //! (put change in one group with wallet address)
-    using CoinsList = std::map<CTxDestination, std::vector<std::tuple<COutPoint, WalletTxOut>>>;
+    using CoinsList = std::map<CTxDestination, std::vector<std::tuple<OutputIndex, WalletTxOut>>>;
     virtual CoinsList listCoins() = 0;
 
     //! Return wallet transaction output information.
-    virtual std::vector<WalletTxOut> getCoins(const std::vector<COutPoint>& outputs) = 0;
+    virtual std::vector<WalletTxOut> getCoins(const std::vector<OutputIndex>& outputs) = 0;
 
     //! Get required fee.
     virtual CAmount getRequiredFee(unsigned int tx_bytes) = 0;
@@ -376,9 +382,13 @@ struct WalletTx
     CAmount credit;
     CAmount debit;
     CAmount change;
+    CAmount fee;
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;
+    uint256 wtx_hash;
+    std::vector<CTxInput> inputs;
+    std::vector<CTxOutput> outputs;
 };
 
 //! Updated transaction status.
@@ -399,7 +409,9 @@ struct WalletTxStatus
 //! Wallet transaction output.
 struct WalletTxOut
 {
-    CTxOut txout;
+    DestinationScript address;
+    OutputIndex output_index;
+    CAmount nValue;
     int64_t time;
     int depth_in_main_chain = -1;
     bool is_spent = false;

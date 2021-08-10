@@ -10,8 +10,9 @@
 #include <mw/models/tx/Transaction.h>
 #include <serialize.h>
 #include <tinyformat.h>
-#include <vector>
+
 #include <memory>
+#include <vector>
 
 namespace MWEB {
 

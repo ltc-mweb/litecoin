@@ -165,7 +165,7 @@ public:
  * when a scriptPubKey has been used. It also handles when and how to store a scriptPubKey
  * and its related scripts and keys, including encryption.
  */
-class ScriptPubKeyMan
+class ScriptPubKeyMan // MW: TODO - Create ScriptPubKeyMan for MWEB addresses?
 {
 protected:
     WalletStorage& m_storage;
@@ -351,6 +351,7 @@ public:
     using ScriptPubKeyMan::ScriptPubKeyMan;
 
     bool GetNewDestination(const OutputType type, CTxDestination& dest, std::string& error) override;
+    void SetMWEBIndexUsed(const uint32_t address_index);
     isminetype IsMine(const CScript& script) const override;
 
     bool CheckDecryptionKey(const CKeyingMaterial& master_key, bool accept_no_keys = false) override;

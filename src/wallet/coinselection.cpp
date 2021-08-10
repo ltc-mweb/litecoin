@@ -341,10 +341,10 @@ void OutputGroup::SetFees(const CFeeRate effective_feerate, const CFeeRate long_
     long_term_fee = 0;
     effective_value = 0;
     for (CInputCoin& coin : m_outputs) {
-        coin.m_fee = coin.m_input_bytes < 0 ? 0 : effective_feerate.GetFee(coin.m_input_bytes);
+        coin.m_fee = coin.CalculateFee(effective_feerate);
         fee += coin.m_fee;
 
-        coin.m_long_term_fee = coin.m_input_bytes < 0 ? 0 : long_term_feerate.GetFee(coin.m_input_bytes);
+        coin.m_long_term_fee = coin.CalculateFee(long_term_feerate);
         long_term_fee += coin.m_long_term_fee;
 
         coin.effective_value = coin.txout.nValue - coin.m_fee;

@@ -34,12 +34,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
 
     if (rewound) {
         m_coins[coin.commitment] = coin;
-
-        CHDChain hdChain = m_pWallet->GetHDChain();
-        if (coin.address_index >= hdChain.nMWEBIndexCounter) {
-            hdChain.nMWEBIndexCounter = (coin.address_index + 1);
-            m_pWallet->SetHDChain(hdChain, false);
-        }
+        m_pWallet->GetLegacyScriptPubKeyMan()->SetMWEBIndexUsed(coin.address_index);
     }
 
     return rewound;
@@ -57,11 +52,11 @@ StealthAddress Wallet::GetStealthAddress(const uint32_t index)
 
 StealthAddress Wallet::GenerateNewAddress()
 {
-    CHDChain hdChain = m_pWallet->GetHDChain();
-    StealthAddress address = GetStealthAddress(hdChain.nMWEBIndexCounter++);
-    m_pWallet->SetHDChain(hdChain, false);
-
-    return address;
+    const CHDChain& hdChain = m_pWallet->GetLegacyScriptPubKeyMan()->GetHDChain();
+    uint32_t mweb_index = hdChain.nMWEBIndexCounter + 1;
+    m_pWallet->GetLegacyScriptPubKeyMan()->SetMWEBIndexUsed(mweb_index);
+    
+    return GetStealthAddress(mweb_index);
 }
 
 CExtKey Wallet::GetHDKey(const std::string& bip32Path) const
@@ -79,7 +74,8 @@ CExtKey Wallet::GetHDKey(const std::string& bip32Path) const
 
     // Retrieve the HD seed
     CKey seed;
-    if (!m_pWallet->GetKey(m_pWallet->GetHDChain().seed_id, seed)) {
+    auto pk_man = m_pWallet->GetLegacyScriptPubKeyMan();
+    if (!pk_man->GetKey(pk_man->GetHDChain().seed_id, seed)) {
         throw std::runtime_error(std::string(__func__) + ": seed not found");
     }
 
@@ -131,7 +127,7 @@ const mw::Keychain::Ptr& Wallet::GetKeychain() const
         m_keychain = std::make_shared<mw::Keychain>(
             std::move(scan_secret),
             std::move(spend_secret),
-            m_pWallet->GetHDChain().nMWEBIndexCounter
+            m_pWallet->GetLegacyScriptPubKeyMan()->GetHDChain().nMWEBIndexCounter
         );
     }
 

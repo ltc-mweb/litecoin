@@ -6,6 +6,8 @@
 #define BITCOIN_WALLET_COINSELECTION_H
 
 #include <amount.h>
+#include <mw/models/wallet/Coin.h>
+#include <policy/feerate.h>
 #include <primitives/transaction.h>
 #include <random.h>
 
@@ -35,6 +37,32 @@ public:
         m_input_bytes = input_bytes;
     }
 
+    CInputCoin(const uint256& tx_hash, uint32_t i, const CAmount& nValue, const CScript& scriptPubKey)
+        : m_output(CTxOut(nValue, scriptPubKey)), m_index(COutPoint(tx_hash, i)) {}
+
+    explicit CInputCoin(const mw::Coin& coin)
+        : m_input_bytes(0), m_output(coin), m_index(coin.commitment) {}
+
+    bool IsMWEB() const noexcept { return m_output.type() == typeid(mw::Coin); }
+    CScript GetScriptPubKey() const noexcept { return IsMWEB() ? CScript() : boost::get<CTxOut>(m_output).scriptPubKey; }
+    CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<mw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
+    const OutputIndex& GetIndex() const noexcept { return m_index; }
+
+    mw::Coin GetMWEBCoin() const noexcept
+    {
+        assert(IsMWEB());
+        return boost::get<mw::Coin>(m_output);
+    }
+
+    CAmount CalculateFee(const CFeeRate& feerate) const noexcept
+    {
+        if (IsMWEB()) {
+            return 0;
+        }
+
+        return m_input_bytes < 0 ? 0 : feerate.GetFee(m_input_bytes);
+    }
+
     COutPoint outpoint;
     CTxOut txout;
     CAmount effective_value;
@@ -55,6 +83,11 @@ public:
     bool operator==(const CInputCoin& rhs) const {
         return outpoint == rhs.outpoint;
     }
+
+private:
+    boost::variant<CTxOut, mw::Coin> m_output;
+
+    OutputIndex m_index;
 };
 
 struct CoinEligibilityFilter

@@ -31,6 +31,19 @@ bool LegacyScriptPubKeyMan::GetNewDestination(const OutputType type, CTxDestinat
     return true;
 }
 
+void LegacyScriptPubKeyMan::SetMWEBIndexUsed(const uint32_t address_index)
+{
+    LOCK(cs_KeyStore);
+    if (address_index >= m_hd_chain.nMWEBIndexCounter) {
+        m_hd_chain.nMWEBIndexCounter = (address_index + 1);
+
+        // Update the chain
+        if (!WalletBatch(m_storage.GetDatabase()).WriteHDChain(m_hd_chain)) {
+            throw std::runtime_error(std::string(__func__) + ": writing chain failed");
+        }
+    }
+}
+
 typedef std::vector<unsigned char> valtype;
 
 namespace {

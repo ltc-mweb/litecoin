@@ -26,7 +26,7 @@ BOOST_FIXTURE_TEST_SUITE(coinselector_tests, WalletTestingSetup)
 
 typedef std::set<CInputCoin> CoinSet;
 
-static std::vector<COutput> vCoins;
+static std::vector<COutputCoin> vCoins;
 static NodeContext testNode;
 static auto testChain = interfaces::MakeChain(testNode);
 static CWallet testWallet(testChain.get(), "", CreateDummyWalletDatabase());
@@ -121,11 +121,11 @@ inline std::vector<OutputGroup>& GroupCoins(const std::vector<CInputCoin>& coins
     return static_groups;
 }
 
-inline std::vector<OutputGroup>& GroupCoins(const std::vector<COutput>& coins)
+inline std::vector<OutputGroup>& GroupCoins(const std::vector<COutputCoin>& coins)
 {
     static std::vector<OutputGroup> static_groups;
     static_groups.clear();
-    for (auto& coin : coins) static_groups.emplace_back(coin.GetInputCoin(), coin.nDepth, coin.tx->m_amounts[CWalletTx::DEBIT].m_cached[ISMINE_SPENDABLE] && coin.tx->m_amounts[CWalletTx::DEBIT].m_value[ISMINE_SPENDABLE] == 1 /* HACK: we can't figure out the is_me flag so we use the conditions defined above; perhaps set safe to false for !fIsFromMe in add_coin() */, 0, 0);
+    for (auto& coin : coins) static_groups.emplace_back(coin.GetInputCoin(), coin.GetDepth(), coin.GetWalletTx()->m_amounts[CWalletTx::DEBIT].m_cached[ISMINE_SPENDABLE] && coin.GetWalletTx()->m_amounts[CWalletTx::DEBIT].m_value[ISMINE_SPENDABLE] == 1 /* HACK: we can't figure out the is_me flag so we use the conditions defined above; perhaps set safe to false for !fIsFromMe in add_coin() */, 0, 0);
     return static_groups;
 }
 
@@ -274,13 +274,13 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     bool bnb_used;
     empty_wallet();
     add_coin(1);
-    vCoins.at(0).nInputBytes = 40; // Make sure that it has a negative effective value. The next check should assert if this somehow got through. Otherwise it will fail
+    boost::get<COutput>(vCoins.at(0).m_output).nInputBytes = 40; // Make sure that it has a negative effective value. The next check should assert if this somehow got through. Otherwise it will fail
     BOOST_CHECK(!testWallet.SelectCoinsMinConf( 1 * CENT, filter_standard, GroupCoins(vCoins), setCoinsRet, nValueRet, coin_selection_params_bnb, bnb_used));
 
     // Test fees subtracted from output:
     empty_wallet();
     add_coin(1 * CENT);
-    vCoins.at(0).nInputBytes = 40;
+    boost::get<COutput>(vCoins.at(0).m_output).nInputBytes = 40;
     BOOST_CHECK(!testWallet.SelectCoinsMinConf( 1 * CENT, filter_standard, GroupCoins(vCoins), setCoinsRet, nValueRet, coin_selection_params_bnb, bnb_used));
     coin_selection_params_bnb.m_subtract_fee_outputs = true;
     BOOST_CHECK(testWallet.SelectCoinsMinConf( 1 * CENT, filter_standard, GroupCoins(vCoins), setCoinsRet, nValueRet, coin_selection_params_bnb, bnb_used));
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
         add_coin(*wallet, 2 * CENT, 6 * 24, false, 0, true);
         CCoinControl coin_control;
         coin_control.fAllowOtherInputs = true;
-        coin_control.Select(COutPoint(vCoins.at(0).tx->GetHash(), vCoins.at(0).i));
+        coin_control.Select(vCoins.at(0).GetIndex());
         coin_selection_params_bnb.m_effective_feerate = CFeeRate(0);
         BOOST_CHECK(wallet->SelectCoins(vCoins, 10 * CENT, setCoinsRet, nValueRet, coin_control, coin_selection_params_bnb, bnb_used));
         BOOST_CHECK(bnb_used);

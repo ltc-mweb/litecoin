@@ -204,6 +204,8 @@ BITCOIN_CORE_H = \
   mweb/mweb_miner.h \
   mweb/mweb_models.h \
   mweb/mweb_node.h \
+  mweb/mweb_transact.h \
+  mweb/mweb_wallet.h \
   net.h \
   net_permissions.h \
   net_processing.h \
@@ -409,6 +411,8 @@ endif
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(SQLITE_CFLAGS)
 libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_wallet_a_SOURCES = \
+  mweb/mweb_transact.cpp \
+  mweb/mweb_wallet.cpp \
   interfaces/wallet.cpp \
   wallet/bdb.cpp \
   wallet/coincontrol.cpp \

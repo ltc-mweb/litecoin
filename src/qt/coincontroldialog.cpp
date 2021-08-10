@@ -382,7 +382,7 @@ void CoinControlDialog::viewItemChanged(QTreeWidgetItem* item, int column)
 // shows count of locked unspent outputs
 void CoinControlDialog::updateLabelLocked()
 {
-    std::vector<COutPoint> vOutpts;
+    std::vector<OutputIndex> vOutpts;
     model->wallet().listLockedCoins(vOutpts);
     if (vOutpts.size() > 0)
     {
@@ -421,7 +421,7 @@ void CoinControlDialog::updateLabels(CCoinControl& m_coin_control, WalletModel *
     unsigned int nQuantity      = 0;
     bool fWitness               = false;
 
-    std::vector<COutPoint> vCoinControl;
+    std::vector<OutputIndex> vCoinControl;
     m_coin_control.ListSelected(vCoinControl);
 
     size_t i = 0;
@@ -430,7 +430,7 @@ void CoinControlDialog::updateLabels(CCoinControl& m_coin_control, WalletModel *
 
         // unselect already spent, very unlikely scenario, this could happen
         // when selected are spent elsewhere, like rpc or another computer
-        const COutPoint& outpt = vCoinControl[i++];
+        const OutputIndex& outpt = vCoinControl[i++];
         if (out.is_spent)
         {
             m_coin_control.UnSelect(outpt);
@@ -441,29 +441,27 @@ void CoinControlDialog::updateLabels(CCoinControl& m_coin_control, WalletModel *
         nQuantity++;
 
         // Amount
-        nAmount += out.txout.nValue;
+        nAmount += out.nValue;
 
         // Bytes
-        CTxDestination address;
-        int witnessversion = 0;
-        std::vector<unsigned char> witnessprogram;
-        if (out.txout.scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram))
-        {
-            nBytesInputs += (32 + 4 + 1 + (107 / WITNESS_SCALE_FACTOR) + 4);
-            fWitness = true;
+        if (!out.address.IsMWEB()) {
+            const CScript& scriptPubKey = out.address.GetScript();
+            CTxDestination address;
+            int witnessversion = 0;
+            std::vector<unsigned char> witnessprogram;
+            if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
+                nBytesInputs += (32 + 4 + 1 + (107 / WITNESS_SCALE_FACTOR) + 4);
+                fWitness = true;
+            } else if (ExtractDestination(scriptPubKey, address)) {
+                CPubKey pubkey;
+                PKHash* pkhash = boost::get<PKHash>(&address);
+                if (pkhash && model->wallet().getPubKey(scriptPubKey, ToKeyID(*pkhash), pubkey)) {
+                    nBytesInputs += (pubkey.IsCompressed() ? 148 : 180);
+                } else
+                    nBytesInputs += 148; // in all error cases, simply assume 148 here
+            } else
+                nBytesInputs += 148;
         }
-        else if(ExtractDestination(out.txout.scriptPubKey, address))
-        {
-            CPubKey pubkey;
-            PKHash *pkhash = boost::get<PKHash>(&address);
-            if (pkhash && model->wallet().getPubKey(out.txout.scriptPubKey, ToKeyID(*pkhash), pubkey))
-            {
-                nBytesInputs += (pubkey.IsCompressed() ? 148 : 180);
-            }
-            else
-                nBytesInputs += 148; // in all error cases, simply assume 148 here
-        }
-        else nBytesInputs += 148;
     }
 
     // calculation
@@ -596,7 +594,7 @@ void CoinControlDialog::updateView()
     for (const auto& coins : model->wallet().listCoins()) {
         CCoinControlWidgetItem* itemWalletAddress{nullptr};
         QString sWalletAddress = QString::fromStdString(EncodeDestination(coins.first));
-        QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress);
+        QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress); // MW: TODO - Check if peg-in, change, etc.
         if (sWalletLabel.isEmpty())
             sWalletLabel = tr("(no label)");
 
@@ -618,9 +616,9 @@ void CoinControlDialog::updateView()
         CAmount nSum = 0;
         int nChildren = 0;
         for (const auto& outpair : coins.second) {
-            const COutPoint& output = std::get<0>(outpair);
+            const OutputIndex& output = std::get<0>(outpair);
             const interfaces::WalletTxOut& out = std::get<1>(outpair);
-            nSum += out.txout.nValue;
+            nSum += out.nValue;
             nChildren++;
 
             CCoinControlWidgetItem *itemOutput;
@@ -632,14 +630,24 @@ void CoinControlDialog::updateView()
             // address
             CTxDestination outputAddress;
             QString sAddress = "";
-            if(ExtractDestination(out.txout.scriptPubKey, outputAddress))
-            {
+            if (out.address.IsMWEB()) {
                 sAddress = QString::fromStdString(EncodeDestination(outputAddress));
+            } else {
+                // scriptpubkey index
+                CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+                stream << out.address.GetScript();
+                std::string script_hex = HexStr(std::vector<char>(stream.begin(), stream.end()));
+                itemOutput->setData(COLUMN_ADDRESS, PubKeyRole, QString::fromStdString(script_hex));
 
-                // if listMode or change => show bitcoin address. In tree mode, address is not shown again for direct wallet address outputs
-                if (!treeMode || (!(sAddress == sWalletAddress)))
-                    itemOutput->setText(COLUMN_ADDRESS, sAddress);
+                CTxDestination outputAddress;
+                if (ExtractDestination(out.address.GetScript(), outputAddress)) {
+                    sAddress = QString::fromStdString(EncodeDestination(outputAddress));
+                }
             }
+
+            // if listMode or change => show bitcoin address. In tree mode, address is not shown again for direct wallet address outputs
+            if (!treeMode || (!(sAddress == sWalletAddress)))
+                itemOutput->setText(COLUMN_ADDRESS, sAddress);
 
             // label
             if (!(sAddress == sWalletAddress)) // change
@@ -657,8 +665,8 @@ void CoinControlDialog::updateView()
             }
 
             // amount
-            itemOutput->setText(COLUMN_AMOUNT, BitcoinUnits::format(nDisplayUnit, out.txout.nValue));
-            itemOutput->setData(COLUMN_AMOUNT, Qt::UserRole, QVariant((qlonglong)out.txout.nValue)); // padding so that sorting works correctly
+            itemOutput->setText(COLUMN_AMOUNT, BitcoinUnits::format(nDisplayUnit, out.nValue));
+            itemOutput->setData(COLUMN_AMOUNT, Qt::UserRole, QVariant((qlonglong)out.nValue)); // padding so that sorting works correctly
 
             // date
             itemOutput->setText(COLUMN_DATE, GUIUtil::dateTimeStr(out.time));
@@ -668,11 +676,18 @@ void CoinControlDialog::updateView()
             itemOutput->setText(COLUMN_CONFIRMATIONS, QString::number(out.depth_in_main_chain));
             itemOutput->setData(COLUMN_CONFIRMATIONS, Qt::UserRole, QVariant((qlonglong)out.depth_in_main_chain));
 
-            // transaction hash
-            itemOutput->setData(COLUMN_ADDRESS, TxHashRole, QString::fromStdString(output.hash.GetHex()));
+            if (out.output_index.type() == typeid(COutPoint)) {
+                const COutPoint& outpoint = boost::get<COutPoint>(out.output_index);
 
-            // vout index
-            itemOutput->setData(COLUMN_ADDRESS, VOutRole, output.n);
+                // transaction hash
+                itemOutput->setData(COLUMN_ADDRESS, TxHashRole, QString::fromStdString(outpoint.hash.GetHex()));
+
+                // vout index
+                itemOutput->setData(COLUMN_ADDRESS, VOutRole, outpoint.n);
+            } else {
+                const Commitment& output_commit = boost::get<Commitment>(out.output_index);
+                itemOutput->setData(COLUMN_ADDRESS, CommitmentRole, QString::fromStdString(output_commit.ToHex()));
+            }
 
              // disable locked coins
             if (model->wallet().isLockedCoin(output))
