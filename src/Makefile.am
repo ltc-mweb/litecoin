@@ -298,12 +298,14 @@ BITCOIN_CORE_H = \
   wallet/coincontrol.h \
   wallet/coinselection.h \
   wallet/context.h \
+  wallet/createtransaction.h \
   wallet/crypter.h \
   wallet/db.h \
   wallet/feebumper.h \
   wallet/fees.h \
   wallet/ismine.h \
   wallet/load.h \
+  wallet/reserve.h \
   wallet/rpcwallet.h \
   wallet/salvage.h \
   wallet/scriptpubkeyman.h \
@@ -417,11 +419,13 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/bdb.cpp \
   wallet/coincontrol.cpp \
   wallet/context.cpp \
+  wallet/createtransaction.cpp \
   wallet/crypter.cpp \
   wallet/db.cpp \
   wallet/feebumper.cpp \
   wallet/fees.cpp \
   wallet/load.cpp \
+  wallet/reserve.cpp \
   wallet/rpcdump.cpp \
   wallet/rpcwallet.cpp \
   wallet/salvage.cpp \

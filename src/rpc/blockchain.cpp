@@ -137,6 +137,8 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
     result.pushKV("chainwork", blockindex->nChainWork.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
+    // MW: TODO - Include MWEB header
+
     if (blockindex->pprev)
         result.pushKV("previousblockhash", blockindex->pprev->GetBlockHash().GetHex());
     if (pnext)
@@ -181,6 +183,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("difficulty", GetDifficulty(blockindex));
     result.pushKV("chainwork", blockindex->nChainWork.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
+
+    // MW: TODO - Include MWEB block
 
     if (blockindex->pprev)
         result.pushKV("previousblockhash", blockindex->pprev->GetBlockHash().GetHex());
@@ -468,6 +472,67 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
     {
         if (pool.exists(txin.prevout.hash))
             setDepends.insert(txin.prevout.hash.ToString());
+    }
+
+    std::set<Commitment> input_commits = tx.mweb_tx.GetInputCommits();
+    uint256 created_tx_hash;
+    for (const Commitment& input_commit : input_commits) {
+        if (pool.GetCreatedTx(input_commit, created_tx_hash)) {
+            setDepends.insert(created_tx_hash.ToString());
+        }
+    }
+
+    if (tx.HasMWEBTx()) {
+        UniValue mweb_info(UniValue::VOBJ);
+
+        UniValue mweb_weight(UniValue::VOBJ);
+        mweb_weight.pushKV("base", (int)e.GetMWEBWeight());
+        mweb_weight.pushKV("ancestor", (int)e.GetMWEBWeightWithAncestors());
+        mweb_weight.pushKV("descendant", (int)e.GetMWEBWeightWithDescendants());
+        mweb_info.pushKV("weight", mweb_weight);
+
+        mweb_info.pushKV("fee", ValueFromAmount(tx.mweb_tx.GetFee()));
+        mweb_info.pushKV("lock_height", tx.mweb_tx.GetLockHeight());
+
+        // Pegins
+        UniValue pegins(UniValue::VARR);
+        for (const PegInCoin& pegin : tx.mweb_tx.GetPegIns()) {
+            UniValue pegin_uni(UniValue::VOBJ);
+            pegin_uni.pushKV("amount", pegin.GetAmount());
+            pegin_uni.pushKV("commitment", pegin.GetCommitment().ToHex());
+            pegins.push_back(pegin_uni);
+        }
+
+        mweb_info.pushKV("pegins", pegins);
+
+        // Pegouts
+        UniValue pegouts(UniValue::VARR);
+        for (const PegOutCoin& pegout : tx.mweb_tx.GetPegOuts()) {
+            UniValue pegout_uni(UniValue::VOBJ);
+            pegout_uni.pushKV("amount", pegout.GetAmount());
+            pegout_uni.pushKV("scriptpubkey", HexStr(pegout.GetScriptPubKey()));
+            pegouts.push_back(pegout_uni);
+        }
+
+        mweb_info.pushKV("pegouts", pegouts);
+
+        // Inputs
+        UniValue input_commits(UniValue::VARR);
+        for (const Commitment& input_commit : tx.mweb_tx.GetInputCommits()) {
+            input_commits.push_back(input_commit.ToHex());
+        }
+
+        mweb_info.pushKV("inputs", input_commits);
+
+        // Outputs
+        UniValue output_commits(UniValue::VARR);
+        for (const Commitment& output_commit : tx.mweb_tx.GetOutputCommits()) {
+            output_commits.push_back(output_commit.ToHex());
+        }
+
+        mweb_info.pushKV("outputs", output_commits);
+
+        info.pushKV("mweb", mweb_info);
     }
 
     UniValue depends(UniValue::VARR);

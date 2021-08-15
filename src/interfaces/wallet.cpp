@@ -23,6 +23,7 @@
 #include <wallet/fees.h>
 #include <wallet/ismine.h>
 #include <wallet/load.h>
+#include <wallet/reserve.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 
@@ -33,6 +34,50 @@
 
 namespace interfaces {
 namespace {
+
+//! Construct wallet TxOut struct.
+WalletTxOut MakeWalletTxOut(CWallet& wallet,
+    const CWalletTx& wtx,
+    const CTxOutput& output) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
+{
+    WalletTxOut result;
+    result.txout = output;
+    result.output_index = output.GetIndex();
+    result.time = wtx.GetTxTime();
+    result.depth_in_main_chain = wtx.GetDepthInMainChain();
+    result.is_spent = wallet.IsSpent(output.GetIndex());
+
+    if (output.IsMWEB()) {
+        mw::Coin coin;
+        if (wallet.GetCoin(output.GetCommitment(), coin)) {
+            result.address = wallet.GetMWWallet()->GetStealthAddress(coin.address_index);
+            result.nValue = coin.amount;
+        }
+    } else {
+        result.address = output.GetTxOut().scriptPubKey;
+        result.nValue = output.GetTxOut().nValue;
+    }
+
+    return result;
+}
+
+WalletTxOut MakeWalletTxOut(CWallet& wallet, const COutputCoin& coin)
+{
+    WalletTxOut result;
+    if (coin.IsMWEB()) {
+        result.txout = CTxOutput(boost::get<Commitment>(coin.GetIndex()));
+    } else {
+        assert(!coin.GetAddress().IsMWEB());
+        result.txout = CTxOutput(coin.GetIndex(), CTxOut(coin.GetValue(), coin.GetAddress().GetScript()));
+    }
+    result.address = coin.GetAddress();
+    result.output_index = coin.GetIndex();
+    result.nValue = coin.GetValue();
+    result.time = coin.GetTime();
+    result.depth_in_main_chain = coin.GetDepth();
+    result.is_spent = wallet.IsSpent(coin.GetIndex());
+    return result;
+}
 
 //! Construct wallet tx struct.
 WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
@@ -67,7 +112,12 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
     result.is_coinbase = wtx.IsCoinBase();
     result.wtx_hash = wtx.GetHash();
     result.inputs = std::move(inputs);
-    result.outputs = std::move(outputs);
+
+    result.outputs.reserve(outputs.size());
+    for (const CTxOutput& output : outputs) {
+        result.outputs.push_back(MakeWalletTxOut(wallet, wtx, output));
+    }
+
     return result;
 }
 
@@ -85,34 +135,6 @@ WalletTxStatus MakeWalletTxStatus(CWallet& wallet, const CWalletTx& wtx)
     result.is_abandoned = wtx.isAbandoned();
     result.is_coinbase = wtx.IsCoinBase();
     result.is_in_main_chain = wtx.IsInMainChain();
-    return result;
-}
-
-//! Construct wallet TxOut struct.
-WalletTxOut MakeWalletTxOut(CWallet& wallet,
-    const CWalletTx& wtx,
-    int n,
-    int depth) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
-{
-    WalletTxOut result;
-    result.address = wtx.tx->vout[n].scriptPubKey;
-    result.output_index = COutPoint(wtx.GetHash(), n);
-    result.nValue = wtx.tx->vout[n].nValue;
-    result.time = wtx.GetTxTime();
-    result.depth_in_main_chain = depth;
-    result.is_spent = wallet.IsSpent(COutPoint(wtx.GetHash(), n));
-    return result;
-}
-
-WalletTxOut MakeWalletTxOut(const COutputCoin& coin)
-{
-    WalletTxOut result;
-    result.address = coin.GetAddress();
-    result.output_index = coin.GetIndex();
-    result.nValue = coin.GetValue();
-    result.time = coin.GetTime();
-    result.depth_in_main_chain = coin.GetDepth();
-    result.is_spent = false;
     return result;
 }
 
@@ -142,6 +164,19 @@ public:
         LOCK(m_wallet->cs_wallet);
         std::string error;
         return m_wallet->GetNewDestination(type, label, dest, error);
+    }
+    std::shared_ptr<ReserveDestination> reserveNewDestination(CTxDestination& dest) override
+    {
+        LOCK(m_wallet->cs_wallet);
+
+        auto output_type = OutputType::BECH32;
+        auto reserve_dest = std::make_shared<ReserveDestination>(m_wallet.get(), output_type);
+        if (reserve_dest->GetReservedDestination(dest, true)) {
+            // MW: TODO - m_wallet->learnRelatedScripts(newKey, output_type);
+            return reserve_dest;
+        }
+
+        return nullptr;
     }
     bool getPubKey(const CScript& script, const CKeyID& address, CPubKey& pub_key) override
     {
@@ -229,6 +264,11 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetDestValues(prefix);
     }
+    bool findCoin(const Commitment& output_commit, mw::Coin& coin) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->GetCoin(output_commit, coin);
+    }
     void lockCoin(const OutputIndex& output) override
     {
         LOCK(m_wallet->cs_wallet);
@@ -267,9 +307,14 @@ public:
     }
     void commitTransaction(CTransactionRef tx,
         WalletValueMap value_map,
-        WalletOrderForm order_form) override
+        WalletOrderForm order_form,
+        const std::vector<ReserveDestination*>& reserved_keys) override
     {
         LOCK(m_wallet->cs_wallet);
+        for (ReserveDestination* reserved : reserved_keys) {
+            reserved->KeepDestination();
+        }
+
         m_wallet->CommitTransaction(std::move(tx), std::move(value_map), std::move(order_form));
     }
     bool transactionCanBeAbandoned(const uint256& txid) override { return m_wallet->TransactionCanBeAbandoned(txid); }
@@ -435,7 +480,7 @@ public:
         for (const auto& entry : m_wallet->ListCoins()) {
             auto& group = result[entry.first];
             for (const auto& coin : entry.second) {
-                group.emplace_back(coin.GetIndex(), MakeWalletTxOut(coin));
+                group.emplace_back(coin.GetIndex(), MakeWalletTxOut(*m_wallet, coin));
             }
         }
         return result;
@@ -445,21 +490,13 @@ public:
         LOCK(m_wallet->cs_wallet);
         std::vector<WalletTxOut> result;
         result.reserve(outputs.size());
-        for (const auto& output : outputs) {
+        for (const OutputIndex& output_idx : outputs) {
             result.emplace_back();
-            auto wtx = m_wallet->FindWalletTx(output);
+            auto wtx = m_wallet->FindWalletTx(output_idx);
             if (wtx != nullptr) {
                 int depth = wtx->GetDepthInMainChain();
                 if (depth >= 0) {
-                    if (output.type() == typeid(Commitment)) {
-                        mw::Coin coin;
-                        if (m_wallet->GetCoin(boost::get<Commitment>(output), coin)) {
-                            StealthAddress address = m_wallet->GetMWWallet()->GetStealthAddress(coin.address_index);
-                            result.back() = MakeWalletTxOut(MWOutput{coin, depth, wtx->GetTxTime(), address});
-                        }
-                    } else {
-                        result.back() = MakeWalletTxOut(*m_wallet, *wtx, boost::get<COutPoint>(output).n, depth);
-                    }
+                    result.back() = MakeWalletTxOut(*m_wallet, *wtx, wtx->tx->GetOutput(output_idx));
                 }
             }
         }
@@ -490,6 +527,10 @@ public:
         RemoveWallet(m_wallet, false /* load_on_start */);
     }
     bool isLegacy() override { return m_wallet->IsLegacy(); }
+    StealthAddress getPeginAddress() override
+    {
+        return m_wallet->GetMWWallet()->GetStealthAddress(mw::PEGIN_INDEX);
+    }
     std::unique_ptr<Handler> handleUnload(UnloadFn fn) override
     {
         return MakeHandler(m_wallet->NotifyUnload.connect(fn));

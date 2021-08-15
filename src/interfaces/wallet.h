@@ -7,6 +7,7 @@
 
 #include <amount.h>                    // For CAmount
 #include <interfaces/chain.h>          // For ChainClient
+#include <mw/models/wallet/Coin.h>
 #include <pubkey.h>                    // For CKeyID and CScriptID (definitions needed in CTxDestination instantiation)
 #include <script/standard.h>           // For CTxDestination
 #include <support/allocators/secure.h> // For SecureString
@@ -26,6 +27,7 @@ class CCoinControl;
 class CFeeRate;
 class CKey;
 class CWallet;
+class ReserveDestination;
 enum class FeeReason;
 enum class OutputType;
 enum class TransactionError;
@@ -85,6 +87,9 @@ public:
     // Get a new address.
     virtual bool getNewDestination(const OutputType type, const std::string label, CTxDestination& dest) = 0;
 
+    // Reserves a new key.
+    virtual std::shared_ptr<ReserveDestination> reserveNewDestination(CTxDestination& dest) = 0;
+
     //! Get public key.
     virtual bool getPubKey(const CScript& script, const CKeyID& address, CPubKey& pub_key) = 0;
 
@@ -124,6 +129,9 @@ public:
     //! Get dest values with prefix.
     virtual std::vector<std::string> getDestValues(const std::string& prefix) = 0;
 
+    //! Find MWEB coin with a matching output commitment.
+    virtual bool findCoin(const Commitment& output_commit, mw::Coin& coin) = 0;
+
     //! Lock coin.
     virtual void lockCoin(const OutputIndex& output) = 0;
 
@@ -147,7 +155,8 @@ public:
     //! Commit transaction.
     virtual void commitTransaction(CTransactionRef tx,
         WalletValueMap value_map,
-        WalletOrderForm order_form) = 0;
+        WalletOrderForm order_form,
+        const std::vector<ReserveDestination*>& reserved_keys) = 0;
 
     //! Return whether transaction can be abandoned.
     virtual bool transactionCanBeAbandoned(const uint256& txid) = 0;
@@ -274,6 +283,9 @@ public:
     //! Return whether is a legacy wallet
     virtual bool isLegacy() = 0;
 
+    // Get MWEB wallet.
+    virtual StealthAddress getPeginAddress() = 0;
+
     //! Register handler for unload message.
     using UnloadFn = std::function<void()>;
     virtual std::unique_ptr<Handler> handleUnload(UnloadFn fn) = 0;
@@ -372,6 +384,18 @@ struct WalletBalances
     }
 };
 
+//! Wallet transaction output.
+struct WalletTxOut
+{
+    CTxOutput txout;
+    DestinationAddr address;
+    OutputIndex output_index;
+    CAmount nValue;
+    int64_t time;
+    int depth_in_main_chain = -1;
+    bool is_spent = false;
+};
+
 // Wallet transaction information.
 struct WalletTx
 {
@@ -389,7 +413,7 @@ struct WalletTx
     bool is_coinbase;
     uint256 wtx_hash;
     std::vector<CTxInput> inputs;
-    std::vector<CTxOutput> outputs;
+    std::vector<WalletTxOut> outputs;
 };
 
 //! Updated transaction status.
@@ -405,17 +429,6 @@ struct WalletTxStatus
     bool is_abandoned;
     bool is_coinbase;
     bool is_in_main_chain;
-};
-
-//! Wallet transaction output.
-struct WalletTxOut
-{
-    DestinationScript address;
-    OutputIndex output_index;
-    CAmount nValue;
-    int64_t time;
-    int depth_in_main_chain = -1;
-    bool is_spent = false;
 };
 
 //! Return implementation of Wallet interface. This function is defined in

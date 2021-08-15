@@ -108,13 +108,6 @@ bool Wallet::GetCoin(const Commitment& output_commit, mw::Coin& coin) const
     return false;
 }
 
-void Wallet::DeleteCoins(const std::vector<mw::Coin>& coins)
-{
-    for (const auto& coin : coins) {
-        m_coins.erase(coin.commitment);
-    }
-}
-
 const mw::Keychain::Ptr& Wallet::GetKeychain() const
 {
     if (!m_keychain) {

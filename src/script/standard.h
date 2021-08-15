@@ -218,6 +218,9 @@ typedef boost::variant<CNoDestination, PKHash, ScriptHash, WitnessV0ScriptHash, 
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);
 
+/** Check whether a CTxDestination is a StealthAddress. */
+bool IsStealthAddress(const CTxDestination& dest);
+
 /** Get the name of a TxoutType as a string */
 std::string GetTxnOutputType(TxoutType t);
 
@@ -271,17 +274,18 @@ bool IsPegInOutput(const CTxOutput& output);
 
 CScript GetScriptForPegin(const Commitment& commitment);
 
-class DestinationScript
+class DestinationAddr
 {
 public:
-    DestinationScript() = default;
-    DestinationScript(CScript script)
+    DestinationAddr() = default;
+    DestinationAddr(CScript script)
         : m_script(std::move(script)) { }
-    DestinationScript(StealthAddress address)
+    DestinationAddr(StealthAddress address)
         : m_script(std::move(address)) { }
-    DestinationScript(const CTxDestination& dest);
+    DestinationAddr(const CTxDestination& dest);
 
     bool IsMWEB() const noexcept { return m_script.which() == 1; }
+    bool IsEmpty() const noexcept { return !IsMWEB() && GetScript().empty(); }
 
     const CScript& GetScript() const noexcept
     {
@@ -293,6 +297,15 @@ public:
     {
         assert(m_script.which() == 1);
         return boost::get<StealthAddress>(m_script);
+    }
+
+    bool ExtractDestination(CTxDestination& dest) const
+    {
+        if (IsMWEB()) {
+            dest = GetMWEBAddress();
+            return true;
+        }
+        return ::ExtractDestination(GetScript(), dest);
     }
 
 private:

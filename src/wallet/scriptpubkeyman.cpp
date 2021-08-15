@@ -1919,6 +1919,7 @@ bool DescriptorScriptPubKeyMan::SetupDescriptorGeneration(const CExtKey& master_
         desc_prefix = "wpkh(" + xpub + "/84'";
         break;
     }
+    // MW: TODO - Handle OutputType::MWEB
     } // no default case, so the compiler can warn about missing cases
     assert(!desc_prefix.empty());
 

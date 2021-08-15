@@ -361,7 +361,7 @@ static int64_t AddTx(ChainstateManager& chainman, CWallet& wallet, uint32_t lock
 
     // If transaction is already in map, to avoid inconsistencies, unconfirmation
     // is needed before confirm again with different block.
-    return wallet.AddToWallet(MakeTransactionRef(tx), confirm, [&](CWalletTx& wtx, bool /* new_tx */) {
+    return wallet.AddToWallet(MakeTransactionRef(tx), boost::none, confirm, [&](CWalletTx& wtx, bool /* new_tx */) {
         wtx.setUnconfirmed();
         return true;
     })->nTimeSmart;

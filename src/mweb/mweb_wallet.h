@@ -39,7 +39,6 @@ public:
     StealthAddress GenerateNewAddress();
 
     void LoadToWallet(const mw::Coin& coin);
-    void DeleteCoins(const std::vector<mw::Coin>& coins);
 
 private:
     CWallet* m_pWallet;

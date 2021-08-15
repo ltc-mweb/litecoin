@@ -341,6 +341,10 @@ bool IsValidDestination(const CTxDestination& dest) {
     return dest.which() != 0;
 }
 
+bool IsStealthAddress(const CTxDestination& dest) {
+    return dest.type() == typeid(StealthAddress);
+}
+
 bool IsPegInOutput(const CTxOutput& output)
 {
     if (!output.IsMWEB()) {
@@ -352,7 +356,7 @@ bool IsPegInOutput(const CTxOutput& output)
     return false;
 }
 
-DestinationScript::DestinationScript(const CTxDestination& dest)
+DestinationAddr::DestinationAddr(const CTxDestination& dest)
 {
     if (dest.type() == typeid(StealthAddress)) {
         m_script = boost::get<StealthAddress>(dest);

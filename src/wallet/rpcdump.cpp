@@ -373,7 +373,7 @@ RPCHelpMan importprunedfunds()
 
     CTransactionRef tx_ref = MakeTransactionRef(tx);
     if (pwallet->IsMine(*tx_ref)) {
-        pwallet->AddToWallet(std::move(tx_ref), confirm);
+        pwallet->AddToWallet(std::move(tx_ref), boost::none, confirm);
         return NullUniValue;
     }
 

@@ -106,7 +106,6 @@ class CScript;
 class CWalletTx;
 struct FeeCalculation;
 enum class FeeEstimateMode;
-class ReserveDestination;
 
 //! Default for -addresstype
 constexpr OutputType DEFAULT_ADDRESS_TYPE{OutputType::BECH32};
@@ -130,59 +129,6 @@ static const std::map<std::string,WalletFlags> WALLET_FLAG_MAP{
 };
 
 extern const std::map<uint64_t,std::string> WALLET_FLAG_CAVEATS;
-
-/** A wrapper to reserve an address from a wallet
- *
- * ReserveDestination is used to reserve an address.
- * It is currently only used inside of CreateTransaction.
- *
- * Instantiating a ReserveDestination does not reserve an address. To do so,
- * GetReservedDestination() needs to be called on the object. Once an address has been
- * reserved, call KeepDestination() on the ReserveDestination object to make sure it is not
- * returned. Call ReturnDestination() to return the address so it can be re-used (for
- * example, if the address was used in a new transaction
- * and that transaction was not completed and needed to be aborted).
- *
- * If an address is reserved and KeepDestination() is not called, then the address will be
- * returned when the ReserveDestination goes out of scope.
- */
-class ReserveDestination
-{
-protected:
-    //! The wallet to reserve from
-    const CWallet* const pwallet;
-    //! The ScriptPubKeyMan to reserve from. Based on type when GetReservedDestination is called
-    ScriptPubKeyMan* m_spk_man{nullptr};
-    OutputType const type;
-    //! The index of the address's key in the keypool
-    int64_t nIndex{-1};
-    //! The destination
-    CTxDestination address;
-    //! Whether this is from the internal (change output) keypool
-    bool fInternal{false};
-
-public:
-    //! Construct a ReserveDestination object. This does NOT reserve an address yet
-    explicit ReserveDestination(CWallet* pwallet, OutputType type)
-      : pwallet(pwallet)
-      , type(type) { }
-
-    ReserveDestination(const ReserveDestination&) = delete;
-    ReserveDestination& operator=(const ReserveDestination&) = delete;
-
-    //! Destructor. If a key has been reserved and not KeepKey'ed, it will be returned to the keypool
-    ~ReserveDestination()
-    {
-        ReturnDestination();
-    }
-
-    //! Reserve an address
-    bool GetReservedDestination(CTxDestination& pubkey, bool internal);
-    //! Return reserved address
-    void ReturnDestination();
-    //! Keep the address. Do not return it's key to the keypool when this object goes out of scope
-    void KeepDestination();
-};
 
 /** Address book data */
 class CAddressBookData
@@ -208,7 +154,7 @@ public:
 
 struct CRecipient
 {
-    DestinationScript receiver;
+    DestinationAddr receiver;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
 
@@ -359,11 +305,12 @@ public:
     mutable bool fInMempool;
     mutable CAmount nChangeCached;
 
-    CWalletTx(const CWallet* wallet, CTransactionRef arg)
+    CWalletTx(const CWallet* wallet, CTransactionRef arg, boost::optional<MWEB::WalletTxInfo> mweb_wtx_info_ = boost::none)
         : pwallet(wallet),
           tx(std::move(arg))
     {
         Init();
+        mweb_wtx_info = mweb_wtx_info_;
     }
 
     void Init()
@@ -694,7 +641,7 @@ struct COutputCoin {
         }
     }
 
-    DestinationScript GetAddress() const
+    DestinationAddr GetAddress() const
     {
         if (IsMWEB()) return boost::get<MWOutput>(m_output).address;
 
@@ -885,8 +832,6 @@ private:
 
     std::shared_ptr<MWEB::Wallet> mweb_wallet;
 
-    bool CreateTransactionInternal(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign);
-
 public:
     /*
      * Main wallet lock.
@@ -1061,7 +1006,7 @@ public:
     //! @return true if wtx is changed and needs to be saved to disk, otherwise false
     using UpdateWalletTxFn = std::function<bool(CWalletTx& wtx, bool new_tx)>;
 
-    CWalletTx* AddToWallet(CTransactionRef tx, const CWalletTx::Confirmation& confirm, const UpdateWalletTxFn& update_wtx=nullptr, bool fFlushOnClose=true);
+    CWalletTx* AddToWallet(CTransactionRef tx, const boost::optional<MWEB::WalletTxInfo>& mweb_wtx_info, const CWalletTx::Confirmation& confirm, const UpdateWalletTxFn& update_wtx = nullptr, bool fFlushOnClose = true);
     bool LoadToWallet(const uint256& hash, const UpdateWalletTxFn& fill_wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void transactionAddedToMempool(const CTransactionRef& tx, uint64_t mempool_sequence) override;
     void blockConnected(const CBlock& block, int height) override;
@@ -1098,8 +1043,6 @@ public:
     };
     Balance GetBalance(int min_depth = 0, bool avoid_reuse = true) const;
     CAmount GetAvailableBalance(const CCoinControl* coinControl = nullptr) const;
-
-    OutputType TransactionChangeType(const Optional<OutputType>& change_type, const std::vector<CRecipient>& vecSend);
 
     /**
      * Insert additional inputs into the transaction by

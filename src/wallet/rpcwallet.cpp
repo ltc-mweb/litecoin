@@ -238,7 +238,7 @@ static RPCHelpMan getnewaddress()
                 "so payments received with the address will be associated with 'label'.\n",
                 {
                     {"label", RPCArg::Type::STR, /* default */ "\"\"", "The label name for the address to be linked to. It can also be set to the empty string \"\" to represent the default label. The label does not need to exist, it will be created if there is no label by the given name."},
-                    {"address_type", RPCArg::Type::STR, /* default */ "set by -addresstype", "The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\"."},
+                    {"address_type", RPCArg::Type::STR, /* default */ "set by -addresstype", "The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\", and \"mweb\"."},
                 },
                 RPCResult{
                     RPCResult::Type::STR, "address", "The new litecoin address"
@@ -316,6 +316,10 @@ static RPCHelpMan getrawchangeaddress()
         }
     }
 
+    if (output_type == OutputType::MWEB) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "MWEB address type not yet supported for raw transactions");
+    }
+
     CTxDestination dest;
     std::string error;
     if (!pwallet->GetNewChangeDestination(output_type, dest, error)) {
@@ -380,7 +384,7 @@ void ParseRecipients(const UniValue& address_amounts, const UniValue& subtract_f
         }
         destinations.insert(dest);
 
-        CScript script_pub_key = GetScriptForDestination(dest);
+        DestinationAddr recipient_addr(dest);
         CAmount amount = AmountFromValue(address_amounts[i++]);
 
         bool subtract_fee = false;
@@ -391,7 +395,11 @@ void ParseRecipients(const UniValue& address_amounts, const UniValue& subtract_f
             }
         }
 
-        CRecipient recipient = {script_pub_key, amount, subtract_fee};
+        if (recipient_addr.IsMWEB() && !subtract_fee_outputs.empty()) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Subtract fee from amount not yet supported for MWEB transactions.");
+        }
+
+        CRecipient recipient = {recipient_addr, amount, subtract_fee};
         recipients.push_back(recipient);
     }
 }
@@ -665,8 +673,7 @@ static CAmount GetReceived(const CWallet& wallet, const UniValue& params, bool b
         if (!IsValidDestination(dest)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Litecoin address");
         }
-        CScript script_pub_key = GetScriptForDestination(dest);
-        if (!wallet.IsMine(script_pub_key)) {
+        if (!wallet.IsMine(dest)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Address not found in wallet");
         }
         address_set.insert(dest);
@@ -1753,9 +1760,9 @@ static RPCHelpMan gettransaction()
     CAmount nCredit = wtx.GetCredit(filter);
     CAmount nDebit = wtx.GetDebit(filter);
     CAmount nNet = nCredit - nDebit;
-    CAmount nFee = (wtx.IsFromMe(filter) ? wtx.tx->GetValueOut() - nDebit : 0);
+    CAmount nFee = wtx.GetFee(filter);
 
-    entry.pushKV("amount", ValueFromAmount(nNet - nFee));
+    entry.pushKV("amount", ValueFromAmount(nNet + nFee));
     if (wtx.IsFromMe(filter))
         entry.pushKV("fee", ValueFromAmount(nFee));
 

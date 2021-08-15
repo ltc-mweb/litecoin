@@ -32,7 +32,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
     CAmount nCredit = wtx.credit;
     CAmount nDebit = wtx.debit;
     CAmount nNet = nCredit - nDebit;
-    uint256 hash = wtx.tx->GetHash();
+    uint256 hash = wtx.wtx_hash;
     std::map<std::string, std::string> mapValue = wtx.value_map;
 
     if (nNet > 0 || wtx.is_coinbase)
@@ -40,9 +40,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         //
         // Credit
         //
-        for(unsigned int i = 0; i < wtx.tx->vout.size(); i++)
+        for(unsigned int i = 0; i < wtx.outputs.size(); i++)
         {
-            const CTxOut& txout = wtx.tx->vout[i];
+            const interfaces::WalletTxOut& txout = wtx.outputs[i];
             isminetype mine = wtx.txout_is_mine[i];
             if(mine)
             {
@@ -107,11 +107,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             //
             // Debit
             //
-            CAmount nTxFee = nDebit - wtx.tx->GetValueOut();
+            CAmount nTxFee = wtx.fee;
 
-            for (unsigned int nOut = 0; nOut < wtx.tx->vout.size(); nOut++)
+            for (unsigned int nOut = 0; nOut < wtx.outputs.size(); nOut++)
             {
-                const CTxOut& txout = wtx.tx->vout[nOut];
+                const interfaces::WalletTxOut& txout = wtx.outputs[nOut];
                 TransactionRecord sub(hash, nTime);
                 sub.idx = nOut;
                 sub.involvesWatchAddress = involvesWatchAddress;
