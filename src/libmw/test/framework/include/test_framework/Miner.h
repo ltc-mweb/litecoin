@@ -131,7 +131,6 @@ private:
     }
 
     FilePath m_datadir;
-    uint32_t m_fileIndex;
     std::vector<MinedBlock> m_blocks;
 };
 

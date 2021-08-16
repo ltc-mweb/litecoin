@@ -18,6 +18,7 @@ CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 bool CCoinsView::HaveCoin(const OutputIndex& index) const
 {
     if (index.type() == typeid(Commitment)) {
+        if (!GetMWView()) return false;
         return GetMWView()->HasCoin(boost::get<Commitment>(index));
     } else {
         Coin coin;

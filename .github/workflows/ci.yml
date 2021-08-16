@@ -1,0 +1,51 @@
+name: ci
+on: [push, pull_request]
+jobs:
+    ci:
+        name: ${{ matrix.name }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [ubuntu]
+                include:
+                    - name: ubuntu
+                      os: ubuntu-18.04
+        steps:
+            - name: Checkout litecoin
+              uses: actions/checkout@v2
+              with:
+                  path: litecoin
+                  repository: ltc-mweb/litecoin
+            - name: Install dependencies
+              run: |
+                sudo apt-get update --fix-missing
+                sudo apt-get install build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb-dev libdb++-dev libfmt-dev libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
+            - name: Install gcc 8
+              run: |
+                echo "Tag Name: ${{ steps.tagName.outputs.tag }}"
+                sudo apt install gcc-8 g++-8 libgflags-dev build-essential
+                echo "export CC=/usr/bin/gcc-8"
+                echo "export CXX=/usr/bin/g++-8"
+                sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 8
+                sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 8
+            - name: 'Build litecoin'
+              working-directory: litecoin
+              run: |
+                ./autogen.sh
+                ./configure --with-incompatible-bdb LDFLAGS="-static-libstdc++ -static-libgcc"
+                make -j8
+                mkdir -p dist
+                cp src/litecoind dist/litecoind
+                cp src/litecoin-cli dist/litecoin-cli
+                cp src/qt/litecoin-qt dist/litecoin-qt
+            - name: Upload artifact
+              uses: actions/upload-artifact@v2
+              env:
+                    GITHUB_RUN_ID: ${{ github.run_id }}    
+              with:
+                    name: litecoin_${{ runner.os }}_${{ env.GITHUB_RUN_ID }}
+                    path: |
+                        ${{ github.workspace }}/litecoin/dist/litecoind
+                        ${{ github.workspace }}/litecoin/dist/litecoin-cli
+                        ${{ github.workspace }}/litecoin/dist/litecoin-qt

@@ -18,6 +18,8 @@ class DBBatch
 public:
     using UPtr = std::unique_ptr<DBBatch>;
 
+    virtual ~DBBatch() = default;
+
     virtual void Write(const std::string& key, const std::vector<uint8_t>& value) = 0;
     virtual void Erase(const std::string& key) = 0;
     virtual void Commit() = 0;
@@ -38,6 +40,8 @@ class DBWrapper
 {
 public:
     using Ptr = std::shared_ptr<DBWrapper>;
+
+    virtual ~DBWrapper() = default;
 
     // MW: TODO - Should support serializable object instead of vector?
     virtual bool Read(const std::string& key, std::vector<uint8_t>& value) const = 0;
