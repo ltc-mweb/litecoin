@@ -607,11 +607,10 @@ if test x"$enable_experimental" = x"yes"; then
       AC_MSG_ERROR([Surjection proof module requires the rangeproof module. Use --enable-module-rangeproof to allow.])
     fi
   fi
-
+else
   if test x"$enable_module_extrakeys" = x"yes"; then
     AC_MSG_ERROR([extrakeys module is experimental. Use --enable-experimental to allow.])
   fi
-else
   if test x"$enable_module_ecdh" = x"yes"; then
     AC_MSG_ERROR([ECDH module is experimental. Use --enable-experimental to allow.])
   fi
@@ -675,16 +674,5 @@ dnl make sure nothing new is exported so that we don't break the cache
 PKGCONFIG_PATH_TEMP="$PKG_CONFIG_PATH"
 unset PKG_CONFIG_PATH
 PKG_CONFIG_PATH="$PKGCONFIG_PATH_TEMP"
-
-dnl build modules Grin needs by default
-
-AC_DEFINE(ENABLE_MODULE_ECDH, 1)
-AC_DEFINE(ENABLE_MODULE_GENERATOR, 1)
-AC_DEFINE(ENABLE_MODULE_RECOVERY, 1)
-AC_DEFINE(ENABLE_MODULE_RANGEPROOF, 1)
-AC_DEFINE(ENABLE_MODULE_BULLETPROOF, 1)
-AC_DEFINE(ENABLE_MODULE_AGGSIG, 1)
-AC_DEFINE(ENABLE_MODULE_SCHNORRSIG, 1)
-AC_DEFINE(ENABLE_MODULE_EXTRAKEYS, 1)
 
 AC_OUTPUT

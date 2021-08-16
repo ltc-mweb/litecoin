@@ -56,6 +56,7 @@ bool Schnorr::Verify(
 
     secp256k1_pubkey parsedPubKey = ConversionUtil::ToSecp256k1(sumPubKeys);
 
+    // MW: TODO - Switch to secp256k1_schnorrsig_verify
     const int verifyResult = secp256k1_aggsig_verify_single(
         SCHNORR_CONTEXT.Read()->Get(),
         signature.data(),
