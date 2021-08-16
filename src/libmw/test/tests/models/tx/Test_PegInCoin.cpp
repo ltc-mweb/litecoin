@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Random.h>
 #include <mw/models/tx/PegInCoin.h>
 
 #include <test_framework/TestMWEB.h>
@@ -12,7 +11,7 @@ BOOST_FIXTURE_TEST_SUITE(TestPegInCoin, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(TxPegInCoin)
 {
     CAmount amount = 123;
-    Commitment commit = Random::CSPRNG<33>().GetBigInt();
+    Commitment commit = Commitment::Random();
     PegInCoin pegInCoin(amount, commit);
 
     //

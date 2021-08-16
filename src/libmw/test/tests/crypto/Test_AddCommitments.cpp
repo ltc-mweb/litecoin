@@ -3,7 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/crypto/Pedersen.h>
-#include <mw/crypto/Random.h>
 
 #include <test_framework/TestMWEB.h>
 
@@ -13,7 +12,7 @@ BOOST_AUTO_TEST_CASE(AddCommitment)
 {
     // Test adding blinded commitment with transparent one
     {
-        BlindingFactor blind_a = Random::CSPRNG<32>().GetBigInt();
+        BlindingFactor blind_a = BlindingFactor::Random();
 
         Commitment commit_a = Commitment::Blinded(blind_a, 3);
         Commitment commit_b = Commitment::Transparent(2);
@@ -29,8 +28,8 @@ BOOST_AUTO_TEST_CASE(AddCommitment)
 
     // Test adding 2 blinded commitments
     {
-        BlindingFactor blind_a = Random::CSPRNG<32>().GetBigInt();
-        BlindingFactor blind_b = Random::CSPRNG<32>().GetBigInt();
+        BlindingFactor blind_a = BlindingFactor::Random();
+        BlindingFactor blind_b = BlindingFactor::Random();
 
         Commitment commit_a = Pedersen::Commit(3, blind_a);
         Commitment commit_b = Pedersen::Commit(2, blind_b);
@@ -46,8 +45,8 @@ BOOST_AUTO_TEST_CASE(AddCommitment)
 
     // Test adding negative blinded commitment
     {
-        BlindingFactor blind_a = Random::CSPRNG<32>().GetBigInt();
-        BlindingFactor blind_b = Random::CSPRNG<32>().GetBigInt();
+        BlindingFactor blind_a = BlindingFactor::Random();
+        BlindingFactor blind_b = BlindingFactor::Random();
 
         Commitment commit_a = Commitment::Blinded(blind_a, 3);
         Commitment commit_b = Commitment::Blinded(blind_b, 2);

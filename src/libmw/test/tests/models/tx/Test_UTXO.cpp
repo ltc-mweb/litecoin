@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Random.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/models/wallet/StealthAddress.h>
 
@@ -17,7 +16,7 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
     BlindingFactor blind;
     Output output = Output::Create(
         blind,
-        Random::CSPRNG<32>(),
+        SecretKey::Random(),
         StealthAddress::Random(),
         amount
     );

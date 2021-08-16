@@ -1,6 +1,5 @@
 #include <mw/models/crypto/PublicKey.h>
 #include <mw/models/crypto/SecretKey.h>
-#include <mw/crypto/Random.h>
 #include <mw/crypto/PublicKeys.h>
 
 PublicKey PublicKey::From(const SecretKey& key)
@@ -15,7 +14,7 @@ PublicKey PublicKey::From(const Commitment& commitment)
 
 PublicKey PublicKey::Random()
 {
-    return PublicKey::From(Random::CSPRNG<32>());
+    return PublicKey::From(SecretKey::Random());
 }
 
 PublicKey PublicKey::Mul(const SecretKey& mul) const

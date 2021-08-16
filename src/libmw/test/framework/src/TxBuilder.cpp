@@ -17,7 +17,7 @@ TxBuilder& TxBuilder::AddInput(const TxOutput& input)
 
 TxBuilder& TxBuilder::AddInput(const CAmount amount, const BlindingFactor& blind)
 {
-    return AddInput(amount, Random::CSPRNG<32>(), blind);
+    return AddInput(amount, SecretKey::Random(), blind);
 }
 
 TxBuilder& TxBuilder::AddInput(
@@ -38,7 +38,7 @@ TxBuilder& TxBuilder::AddInput(
 
 TxBuilder& TxBuilder::AddOutput(const CAmount amount)
 {
-    return AddOutput(amount, Random::CSPRNG<32>(), StealthAddress::Random());
+    return AddOutput(amount, SecretKey::Random(), StealthAddress::Random());
 }
 
 TxBuilder& TxBuilder::AddOutput(
@@ -57,7 +57,7 @@ TxBuilder& TxBuilder::AddOutput(
 
 TxBuilder& TxBuilder::AddOwnerSig(const Kernel& kernel)
 {
-    SecretKey offset = Random::CSPRNG<32>();
+    SecretKey offset = SecretKey::Random();
     m_ownerOffset.Sub(offset);
 
     mw::Hash msg_hash = kernel.GetHash();
@@ -68,7 +68,7 @@ TxBuilder& TxBuilder::AddOwnerSig(const Kernel& kernel)
 
 TxBuilder& TxBuilder::AddPlainKernel(const CAmount fee, const bool add_owner_sig)
 {
-    BlindingFactor kernel_excess = Random::CSPRNG<32>();
+    BlindingFactor kernel_excess = BlindingFactor::Random();
     m_kernelOffset.Sub(kernel_excess);
 
     Kernel kernel = Kernel::Create(kernel_excess, fee, boost::none, boost::none, boost::none);
@@ -84,13 +84,13 @@ TxBuilder& TxBuilder::AddPlainKernel(const CAmount fee, const bool add_owner_sig
 
 TxBuilder& TxBuilder::AddPeginKernel(const CAmount amount, const boost::optional<CAmount>& fee, const bool add_owner_sig)
 {
-    BlindingFactor kernel_excess = Random::CSPRNG<32>();
+    BlindingFactor kernel_excess = BlindingFactor::Random();
     m_kernelOffset.Sub(kernel_excess);
 
     Kernel kernel = Kernel::Create(kernel_excess, fee, amount, boost::none, boost::none);
 
     if (add_owner_sig) {
-        SecretKey offset = Random::CSPRNG<32>();
+        SecretKey offset = SecretKey::Random();
         m_ownerOffset.Sub(offset);
 
         mw::Hash msg_hash = kernel.GetHash();
@@ -105,14 +105,14 @@ TxBuilder& TxBuilder::AddPeginKernel(const CAmount amount, const boost::optional
 
 TxBuilder& TxBuilder::AddPegoutKernel(const CAmount amount, const CAmount fee, const bool add_owner_sig)
 {
-    BlindingFactor kernel_excess = Random::CSPRNG<32>();
+    BlindingFactor kernel_excess = BlindingFactor::Random();
     m_kernelOffset.Sub(kernel_excess);
-    std::vector<uint8_t> ltc_address = Random::CSPRNG<32>().vec();
+    std::vector<uint8_t> ltc_address = SecretKey::Random().vec();
 
     Kernel kernel = Kernel::Create(kernel_excess, fee, boost::none, PegOutCoin(amount, CScript(ltc_address.begin(), ltc_address.end())), boost::none);
 
     if (add_owner_sig) {
-        SecretKey offset = Random::CSPRNG<32>();
+        SecretKey offset = SecretKey::Random();
         m_ownerOffset.Sub(offset);
 
         mw::Hash msg_hash = kernel.GetHash();

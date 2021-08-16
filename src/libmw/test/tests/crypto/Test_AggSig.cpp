@@ -4,7 +4,6 @@
 
 #include <mw/crypto/MuSig.h>
 #include <mw/crypto/PublicKeys.h>
-#include <mw/crypto/Random.h>
 #include <mw/crypto/Schnorr.h>
 
 #include <test_framework/TestMWEB.h>
@@ -13,16 +12,16 @@ BOOST_FIXTURE_TEST_SUITE(TestAggSig, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(AggSigInteraction)
 {
-    mw::Hash message = Random::CSPRNG<32>().GetBigInt();
+    mw::Hash message = SecretKey::Random().GetBigInt();
 
     // Generate sender keypairs
-    SecretKey secretKeySender = Random::CSPRNG<32>();
+    SecretKey secretKeySender = SecretKey::Random();
     PublicKey publicKeySender = PublicKey::From(secretKeySender);
     SecretKey secretNonceSender = MuSig::GenerateSecureNonce();
     PublicKey publicNonceSender = PublicKey::From(secretNonceSender);
 
     // Generate receiver keypairs
-    SecretKey secretKeyReceiver = Random::CSPRNG<32>();
+    SecretKey secretKeyReceiver = SecretKey::Random();
     PublicKey publicKeyReceiver = PublicKey::From(secretKeyReceiver);
     SecretKey secretNonceReceiver = MuSig::GenerateSecureNonce();
     PublicKey publicNonceReceiver = PublicKey::From(secretNonceReceiver);
@@ -86,8 +85,8 @@ BOOST_AUTO_TEST_CASE(AggSigInteraction)
 
 BOOST_AUTO_TEST_CASE(SingleSchnorrSig)
 {
-    mw::Hash message = Random::CSPRNG<32>().GetBigInt();
-    SecretKey secret_key = Random::CSPRNG<32>();
+    mw::Hash message = SecretKey::Random().GetBigInt();
+    SecretKey secret_key = SecretKey::Random();
     PublicKey public_key = PublicKey::From(secret_key);
     Signature signature = Schnorr::Sign(secret_key.data(), message);
 

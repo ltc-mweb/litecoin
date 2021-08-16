@@ -3,7 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/crypto/Bulletproofs.h>
-#include <mw/crypto/Random.h>
 
 #include <test_framework/TestMWEB.h>
 
@@ -12,12 +11,12 @@ BOOST_FIXTURE_TEST_SUITE(TestRangeProofs, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(RangeProofs)
 {
     const uint64_t value = 123;
-    BlindingFactor blind = Random::CSPRNG<32>();
+    BlindingFactor blind = BlindingFactor::Random();
     Commitment commit = Commitment::Blinded(blind, value);
-    SecretKey nonce = Random::CSPRNG<32>();
-    SecretKey nonce2 = Random::CSPRNG<32>();
-    ProofMessage message = Random::CSPRNG<20>().GetBigInt();
-    std::vector<uint8_t> extraData = Random::CSPRNG<100>().vec();
+    SecretKey nonce = SecretKey::Random();
+    SecretKey nonce2 = SecretKey::Random();
+    ProofMessage message = secret_key_t<20>::Random().GetBigInt();
+    std::vector<uint8_t> extraData = secret_key_t<100>::Random().vec();
 
     // Create a RangeProof via Bulletproofs::Generate. Use the same value for privateNonce and rewindNonce.
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(

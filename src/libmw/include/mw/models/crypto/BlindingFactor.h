@@ -23,6 +23,11 @@ public:
     BlindingFactor(const BlindingFactor& other) = default;
     BlindingFactor(BlindingFactor&& other) noexcept = default;
 
+    static BlindingFactor Random()
+    {
+        return BlindingFactor(SecretKey::Random());
+    }
+
     //
     // Operators
     //

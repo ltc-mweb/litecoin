@@ -3,7 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/crypto/Schnorr.h>
-#include <mw/crypto/Random.h>
 #include <mw/models/tx/Kernel.h>
 
 #include <test_framework/TestMWEB.h>
@@ -13,7 +12,7 @@ BOOST_FIXTURE_TEST_SUITE(TestKernel, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(PlainKernel_Test)
 {
     CAmount fee = 1000;
-    BlindingFactor excess_blind(Random::CSPRNG<32>());
+    BlindingFactor excess_blind = BlindingFactor::Random();
     Kernel kernel = Kernel::Create(excess_blind, fee, boost::none, boost::none, boost::none);
 
     //
@@ -31,12 +30,10 @@ BOOST_AUTO_TEST_CASE(PlainKernel_Test)
     // Signature Message
     //
     {
-        mw::Hash hashed = kernel.GetSignatureMessage();
-        mw::Hash message_hash = Hasher()
-            .Append<uint8_t>(1)
-            .Append<CVarInt<VarIntMode::NONNEGATIVE_SIGNED, CAmount>>(VARINT_MODE(fee, VarIntMode::NONNEGATIVE_SIGNED))
-            .hash();
-        BOOST_REQUIRE(hashed == message_hash);
+        Hasher hasher;
+        hasher << uint8_t(1);
+        ::WriteVarInt<Hasher, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(hasher, fee);
+        BOOST_REQUIRE(kernel.GetSignatureMessage() == hasher.hash());
     }
 
     //
@@ -58,25 +55,28 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
 {
     CAmount fee = 1000;
     CAmount pegin = 10000;
-    PegOutCoin pegout(2000, CScript(Random::CSPRNG<30>().vec()));
+    std::vector<uint8_t> rand1 = secret_key_t<30>::Random().vec();
+    PegOutCoin pegout(2000, CScript(rand1.data(), rand1.data() + rand1.size()));
     int32_t lock_height = 123456;
+    std::vector<uint8_t> rand2 = secret_key_t<30>::Random().vec();
     Kernel standard_kernel(
         Kernel::FEE_FEATURE_BIT | Kernel::PEGIN_FEATURE_BIT | Kernel::PEGOUT_FEATURE_BIT | Kernel::HEIGHT_LOCK_FEATURE_BIT,
         fee,
         pegin,
-        boost::make_optional(PegOutCoin(2000, CScript(Random::CSPRNG<30>().vec()))),
+        boost::make_optional(PegOutCoin(2000, CScript(rand2.data(), rand2.data() + rand2.size()))),
         lock_height,
         std::vector<uint8_t>{},
         Commitment::Random(),
-        Signature(Random::CSPRNG<64>().GetBigInt())
+        Signature(SecretKey64::Random().GetBigInt())
     );
+    std::vector<uint8_t> rand3 = secret_key_t<30>::Random().vec();
     Kernel nonstandard_kernel1(
         Kernel::ALL_FEATURE_BITS,
         fee,
         pegin,
-        boost::make_optional(PegOutCoin(2000, CScript(Random::CSPRNG<30>().vec()))),
+        boost::make_optional(PegOutCoin(2000, CScript(rand3.data(), rand3.data() + rand3.size()))),
         lock_height,
-        Random::CSPRNG<20>().vec(),
+        secret_key_t<20>::Random().vec(),
         standard_kernel.GetCommitment(),
         standard_kernel.GetSignature()
     );

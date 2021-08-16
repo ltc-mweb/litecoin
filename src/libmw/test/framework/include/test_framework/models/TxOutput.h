@@ -4,7 +4,6 @@
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
 #include <mw/crypto/Bulletproofs.h>
-#include <mw/crypto/Random.h>
 
 TEST_NAMESPACE
 

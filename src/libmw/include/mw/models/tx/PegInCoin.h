@@ -2,6 +2,7 @@
 
 #include <mw/common/Traits.h>
 #include <mw/models/crypto/Commitment.h>
+#include <mw/util/StringUtil.h>
 #include <amount.h>
 
 //

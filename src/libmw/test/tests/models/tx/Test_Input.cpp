@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Random.h>
 #include <mw/models/tx/Input.h>
+#include <mw/models/crypto/SecretKey.h>
 
 #include <test_framework/TestMWEB.h>
 
@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(PlainTxInput)
 {
     Commitment commit = Commitment::Random();
     PublicKey pubkey = PublicKey::Random();
-    Signature signature(Random::CSPRNG<64>().GetBigInt());
+    Signature signature(SecretKey64::Random().GetBigInt());
     Input input(commit, pubkey, signature);
 
     //

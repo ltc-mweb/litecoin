@@ -4,7 +4,6 @@
 
 #include <mw/crypto/Blinds.h>
 #include <mw/crypto/Bulletproofs.h>
-#include <mw/crypto/Random.h>
 #include <mw/models/wallet/StealthAddress.h>
 
 TEST_NAMESPACE
@@ -22,7 +21,7 @@ public:
     TxBuilder& AddInput(const TxOutput& input);
     TxBuilder& AddInput(
         const CAmount amount,
-        const BlindingFactor& blind = Random::CSPRNG<32>()
+        const BlindingFactor& blind = BlindingFactor::Random()
     );
     TxBuilder& AddInput(
         const CAmount amount,

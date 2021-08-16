@@ -5,7 +5,6 @@
 #include <mw/consensus/KernelSumValidator.h>
 #include <mw/consensus/Aggregation.h>
 #include <mw/crypto/Pedersen.h>
-#include <mw/crypto/Random.h>
 #include <mw/node/CoinsView.h>
 
 #include <test_framework/TestMWEB.h>
@@ -94,7 +93,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlock)
         .Build().GetTransaction();
     KernelSumValidator::ValidateForTx(*tx3); // Sanity check
 
-    BlindingFactor prev_total_offset = Random::CSPRNG<32>();
+    BlindingFactor prev_total_offset = BlindingFactor::Random();
     mw::Transaction::CPtr pAggregated = Aggregation::Aggregate({ tx1, tx2, tx3 });
     KernelSumValidator::ValidateForTx(*pAggregated); // Sanity check
 
@@ -114,16 +113,16 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
     std::vector<Kernel> kernels;
 
     // Add inputs
-    BlindingFactor input1_bf = Random::CSPRNG<32>();
-    SecretKey input1_sender_key = Random::CSPRNG<32>();
+    BlindingFactor input1_bf = BlindingFactor::Random();
+    SecretKey input1_sender_key = SecretKey::Random();
     inputs.push_back(test::TxInput::Create(input1_bf, input1_sender_key, 5'000'000).GetInput());
 
-    BlindingFactor input2_bf = Random::CSPRNG<32>();
-    SecretKey input2_sender_key = Random::CSPRNG<32>();
+    BlindingFactor input2_bf = BlindingFactor::Random();
+    SecretKey input2_sender_key = SecretKey::Random();
     inputs.push_back(test::TxInput::Create(input2_bf, input2_sender_key, 6'000'000).GetInput());
 
     // Add outputs
-    SecretKey output1_sender_key = Random::CSPRNG<32>();
+    SecretKey output1_sender_key = SecretKey::Random();
     test::TxOutput output1 = test::TxOutput::Create(
         output1_sender_key,
         StealthAddress::Random(),
@@ -132,7 +131,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
     BlindingFactor output1_bf = output1.GetBlind();
     outputs.push_back(output1.GetOutput());
 
-    SecretKey output2_sender_key = Random::CSPRNG<32>();
+    SecretKey output2_sender_key = SecretKey::Random();
     test::TxOutput output2 = test::TxOutput::Create(
         output2_sender_key,
         StealthAddress::Random(),
@@ -143,7 +142,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
 
     // Kernel offset
     mw::Hash prev_total_offset = mw::Hash::FromHex("0123456789abcdef0123456789abcdef00000000000000000000000000000000");
-    BlindingFactor tx_offset = Random::CSPRNG<32>();
+    BlindingFactor tx_offset = BlindingFactor::Random();
     BlindingFactor total_offset = Blinds().Add(prev_total_offset).Add(tx_offset).Total();
 
     // Calculate kernel excess
@@ -162,7 +161,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
     // Create Transaction
     auto pTransaction = mw::Transaction::Create(
         tx_offset,
-        Random::CSPRNG<32>(),
+        BlindingFactor::Random(),
         inputs,
         outputs,
         kernels,

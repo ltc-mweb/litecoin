@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mw/crypto/PublicKeys.h>
-#include <mw/crypto/Random.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/PublicKey.h>
@@ -23,7 +22,7 @@ public:
 
     static Keys Random()
     {
-        return Keys(PublicKey::From(Random::CSPRNG<32>()));
+        return Keys(PublicKey::From(SecretKey::Random()));
     }
 
     const PublicKey& PubKey() const noexcept { return m_pubkey; }

@@ -3,7 +3,6 @@
 #include <mw/common/Macros.h>
 #include <mw/models/tx/Transaction.h>
 #include <mw/models/tx/PegInCoin.h>
-#include <mw/crypto/Random.h>
 #include <mw/crypto/Hasher.h>
 
 #include <test_framework/models/TxInput.h>

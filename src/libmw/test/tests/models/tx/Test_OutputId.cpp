@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <mw/crypto/Random.h>
 #include <mw/models/tx/Output.h>
 
 #include <test_framework/Deserializer.h>
@@ -12,13 +11,13 @@ BOOST_FIXTURE_TEST_SUITE(TestOutputId, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(TxOutputIdentifier)
 {
-    Commitment commit = Random::CSPRNG<33>().GetBigInt();
-    PublicKey receiverPubKey = Random::CSPRNG<33>().GetBigInt();
-    PublicKey exchangePubKey = Random::CSPRNG<33>().GetBigInt();
+    Commitment commit = Commitment::Random();
+    PublicKey receiverPubKey = PublicKey::Random();
+    PublicKey exchangePubKey = PublicKey::Random();
     uint8_t viewTag = 100;
     uint64_t maskedValue = 123456789;
-    BigInt<16> maskedNonce = Random::CSPRNG<16>().GetBigInt();
-    PublicKey senderPubKey = Random::CSPRNG<33>().GetBigInt();
+    BigInt<16> maskedNonce = secret_key_t<16>::Random().GetBigInt();
+    PublicKey senderPubKey = PublicKey::Random();
 
     OutputMessage message(
         receiverPubKey,

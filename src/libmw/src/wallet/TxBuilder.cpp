@@ -48,7 +48,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     // Total kernel offset is split between raw kernel_offset and the kernel's blinding factor.
     // sum(output.blind) - sum(input.blind) = kernel_offset + sum(kernel.blind)
     std::vector<BlindingFactor> input_blinds = GetBlindingFactors(input_coins);
-    BlindingFactor kernel_offset = Random::CSPRNG<32>();
+    BlindingFactor kernel_offset = BlindingFactor::Random();
     BlindingFactor kernel_blind = Blinds()
         .Add(outputs.total_blind)
         .Sub(input_blinds)
@@ -65,7 +65,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     );
 
     // MW: TODO - I'm no longer convinced this is even necessary.
-    SecretKey owner_sig_key = Random::CSPRNG<32>();
+    SecretKey owner_sig_key = SecretKey::Random();
     SignedMessage owner_sig = Schnorr::SignMessage(owner_sig_key, kernel.GetHash());
 
     // Total owner offset is split between raw owner_offset and the owner_sig's key.
@@ -97,7 +97,7 @@ TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& re
         recipients.cbegin(), recipients.cend(), std::back_inserter(outputs),
         [&output_blinds, &output_keys](const mw::Recipient& recipient) {
             BlindingFactor blind;
-            SecretKey ephemeral_key = Random::CSPRNG<32>();
+            SecretKey ephemeral_key = SecretKey::Random();
             Output output = Output::Create(
                 blind,
                 ephemeral_key,

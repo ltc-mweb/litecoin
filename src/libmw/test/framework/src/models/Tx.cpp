@@ -3,9 +3,9 @@
 
 test::Tx test::Tx::CreatePegIn(const CAmount amount, const CAmount fee)
 {
-    BlindingFactor txOffset = Random::CSPRNG<32>();
+    BlindingFactor txOffset = BlindingFactor::Random();
 
-    SecretKey sender_privkey = Random::CSPRNG<32>();
+    SecretKey sender_privkey = SecretKey::Random();
     test::TxOutput output = test::TxOutput::Create(
         sender_privkey,
         StealthAddress::Random(),

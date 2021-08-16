@@ -5,7 +5,6 @@
 #include <mw/crypto/Blinds.h>
 #include <mw/crypto/Bulletproofs.h>
 #include <mw/crypto/Hasher.h>
-#include <mw/crypto/Random.h>
 #include <mw/crypto/Schnorr.h>
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
@@ -18,8 +17,8 @@ BOOST_FIXTURE_TEST_SUITE(TestOutput, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(Create)
 {
     // Generate receiver addr
-    SecretKey a = Random::CSPRNG<32>();
-    SecretKey b = Random::CSPRNG<32>();
+    SecretKey a = SecretKey::Random();
+    SecretKey b = SecretKey::Random();
     StealthAddress receiver_addr = StealthAddress(
         PublicKey::From(a).Mul(b),
         PublicKey::From(b)
@@ -28,7 +27,7 @@ BOOST_AUTO_TEST_CASE(Create)
     // Build output
     uint64_t amount = 1'234'567;
     BlindingFactor blind;
-    SecretKey sender_key = Random::CSPRNG<32>();
+    SecretKey sender_key = SecretKey::Random();
     Output output = Output::Create(
         blind,
         sender_key,

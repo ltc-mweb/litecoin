@@ -3,7 +3,6 @@
 #include "ConversionUtil.h"
 
 #include <mw/common/Logger.h>
-#include <mw/crypto/Random.h>
 #include <mw/exceptions/CryptoException.h>
 #include <mw/util/VectorUtil.h>
 
@@ -12,11 +11,10 @@ static Locked<Context> MUSIG_CONTEXT(std::make_shared<Context>());
 SecretKey MuSig::GenerateSecureNonce()
 {
     SecretKey nonce;
-    const SecretKey seed = Random::CSPRNG<32>();
     const int result = secp256k1_aggsig_export_secnonce_single(
         MUSIG_CONTEXT.Read()->Get(),
         nonce.data(),
-        seed.data()
+        SecretKey::Random().data()
     );
     if (result != 1) {
         ThrowCrypto_F("secp256k1_aggsig_export_secnonce_single failed with error: {}", result);
@@ -35,8 +33,6 @@ CompactSignature MuSig::CalculatePartial(
     secp256k1_pubkey pubKeyForE = ConversionUtil::ToSecp256k1(sumPubKeys);
     secp256k1_pubkey pubNoncesForE = ConversionUtil::ToSecp256k1(sumPubNonces);
 
-    const SecretKey randomSeed = Random::CSPRNG<32>();
-
     secp256k1_ecdsa_signature signature;
     const int signedResult = secp256k1_aggsig_sign_single(
         MUSIG_CONTEXT.Write()->Randomized(),
@@ -48,7 +44,7 @@ CompactSignature MuSig::CalculatePartial(
         &pubNoncesForE,
         &pubNoncesForE,
         &pubKeyForE,
-        randomSeed.data()
+        SecretKey::Random().data()
     );
     if (signedResult != 1) {
         ThrowCrypto("Failed to calculate partial signature.");

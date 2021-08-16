@@ -1,7 +1,6 @@
 #include <mw/models/tx/Output.h>
 #include <mw/models/tx/OutputMask.h>
 #include <mw/models/wallet/StealthAddress.h>
-#include <mw/crypto/Random.h>
 #include <mw/crypto/Bulletproofs.h>
 #include <mw/crypto/Pedersen.h>
 #include <mw/crypto/Schnorr.h>
@@ -63,8 +62,8 @@ Output Output::Create(
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(
         value,
         SecretKey(blind_out.vec()),
-        Random::CSPRNG<32>(),
-        Random::CSPRNG<32>(),
+        SecretKey::Random(),
+        SecretKey::Random(),
         ProofMessage{},
         proof_data
     );

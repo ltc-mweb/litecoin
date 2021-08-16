@@ -6,7 +6,7 @@
 
 #include <mw/common/Traits.h>
 #include <mw/models/crypto/BigInteger.h>
-#include <support/allocators/secure.h>
+#include <random.h>
 
 template<size_t NUM_BYTES>
 class secret_key_t : public Traits::ISerializable
@@ -17,11 +17,23 @@ public:
     //
     secret_key_t() = default;
     secret_key_t(BigInt<NUM_BYTES>&& value) : m_value(std::move(value)) { }
-    secret_key_t(const SecureVector& bytes) : m_value(BigInt<NUM_BYTES>(bytes.data())) { }
     secret_key_t(std::vector<uint8_t>&& bytes) : m_value(BigInt<NUM_BYTES>(std::move(bytes))) { }
     secret_key_t(const std::array<uint8_t, NUM_BYTES>& bytes) : m_value(BigInt<NUM_BYTES>(bytes)) {}
     secret_key_t(std::array<uint8_t, NUM_BYTES>&& bytes) : m_value(BigInt<NUM_BYTES>(std::move(bytes))) { }
     secret_key_t(const uint8_t* bytes) : m_value(BigInt<NUM_BYTES>(bytes)) { }
+
+    static secret_key_t Random()
+    {
+        secret_key_t<NUM_BYTES> key;
+
+        size_t index = 0;
+        while (index < NUM_BYTES) {
+            size_t num_bytes = std::min(NUM_BYTES - index, (size_t)32);
+            GetStrongRandBytes(key.data() + index, num_bytes);
+            index += num_bytes;
+        }
+        return key;
+    }
 
     //
     // Destructor

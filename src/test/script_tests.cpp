@@ -1504,7 +1504,7 @@ static CScriptWitness ScriptWitnessFromJSON(const UniValue& univalue)
 BOOST_AUTO_TEST_CASE(script_mweb_pegin)
 {
     CScript script;
-    Commitment commitment(Random::CSPRNG<33>().GetBigInt());
+    Commitment commitment = Commitment::Random();
     script << OP_9 << commitment.vec();
 
     Commitment commitment2;
