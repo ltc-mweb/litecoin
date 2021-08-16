@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>850</width>
-    <height>526</height>
+    <height>593</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Send Coins</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,0,0">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0,0">
    <property name="bottomMargin">
     <number>8</number>
    </property>

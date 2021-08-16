@@ -342,6 +342,7 @@ libbitcoin_server_a_SOURCES = \
   blockencodings.cpp \
   blockfilter.cpp \
   chain.cpp \
+  consensus/tx_check.cpp \
   consensus/tx_verify.cpp \
   dbwrapper.cpp \
   flatfile.cpp \
@@ -514,7 +515,6 @@ libbitcoin_consensus_a_SOURCES = \
   consensus/merkle.cpp \
   consensus/merkle.h \
   consensus/params.h \
-  consensus/tx_check.cpp \
   consensus/validation.h \
   hash.cpp \
   hash.h \
