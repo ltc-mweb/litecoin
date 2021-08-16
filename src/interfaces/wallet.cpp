@@ -73,7 +73,7 @@ WalletTxOut MakeWalletTxOut(CWallet& wallet, const COutputCoin& coin)
     result.address = coin.GetAddress();
     result.output_index = coin.GetIndex();
     result.nValue = coin.GetValue();
-    result.time = coin.GetTime();
+    result.time = coin.GetWalletTx()->GetTxTime();
     result.depth_in_main_chain = coin.GetDepth();
     result.is_spent = wallet.IsSpent(coin.GetIndex());
     return result;

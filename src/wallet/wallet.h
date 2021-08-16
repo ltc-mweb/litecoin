@@ -608,8 +608,8 @@ public:
 struct MWOutput {
     mw::Coin coin;
     int nDepth;
-    int64_t nTime;
     StealthAddress address;
+    const CWalletTx* wtx;
 };
 
 struct COutputCoin {
@@ -657,12 +657,6 @@ struct COutputCoin {
         return out.tx->tx->vout[out.i].nValue;
     }
 
-    int64_t GetTime() const
-    {
-        if (IsMWEB()) return boost::get<MWOutput>(m_output).nTime;
-        return boost::get<COutput>(m_output).tx->GetTxTime();
-    }
-
     int GetDepth() const
     {
         if (IsMWEB()) return boost::get<MWOutput>(m_output).nDepth;
@@ -683,10 +677,9 @@ struct COutputCoin {
         return COutPoint(out.tx->GetHash(), out.i);
     }
 
-    // Returns nullptr for MWEB outputs
     const CWalletTx* GetWalletTx() const
     {
-        if (IsMWEB()) return nullptr;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).wtx;
         return boost::get<COutput>(m_output).tx;
     }
 

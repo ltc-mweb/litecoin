@@ -156,7 +156,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     int nPackagesSelected = 0;
     int nDescendantsUpdated = 0;
-    addPackageTxs(pblock, nPackagesSelected, nDescendantsUpdated);
+    addPackageTxs(nPackagesSelected, nDescendantsUpdated);
 
     if (fIncludeMWEB) {
         mweb_miner.AddHogExTransaction(pindexPrev, pblock, pblocktemplate.get(), nFees);
@@ -243,7 +243,7 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
     return true;
 }
 
-void BlockAssembler::AddToBlock(CBlock* const pblock, CTxMemPool::txiter iter)
+void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
     CTransactionRef pTx = iter->GetSharedTx();
     if (pTx->HasMWEBTx()) {
@@ -261,7 +261,7 @@ void BlockAssembler::AddToBlock(CBlock* const pblock, CTxMemPool::txiter iter)
         pTx = MakeTransactionRef(std::move(mutable_tx));
     }
 
-    pblock->vtx.emplace_back(pTx);
+    pblocktemplate->block.vtx.emplace_back(pTx);
     pblocktemplate->vTxFees.push_back(iter->GetFee());
     pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
     nBlockWeight += iter->GetTxWeight();
@@ -343,7 +343,7 @@ void BlockAssembler::SortForBlock(const CTxMemPool::setEntries& package, std::ve
 // Each time through the loop, we compare the best transaction in
 // mapModifiedTxs with the next transaction in the mempool to decide what
 // transaction package to work on next.
-void BlockAssembler::addPackageTxs(CBlock* const pblock, int& nPackagesSelected, int& nDescendantsUpdated)
+void BlockAssembler::addPackageTxs(int& nPackagesSelected, int& nDescendantsUpdated)
 {
     // mapModifiedTx will store sorted packages after they are modified
     // because some of their txs are already in the block
@@ -462,7 +462,7 @@ void BlockAssembler::addPackageTxs(CBlock* const pblock, int& nPackagesSelected,
         SortForBlock(ancestors, sortedEntries);
 
         for (size_t i=0; i<sortedEntries.size(); ++i) {
-            AddToBlock(pblock, sortedEntries[i]);
+            AddToBlock(sortedEntries[i]);
             // Erase from the modified set, if present
             mapModifiedTx.erase(sortedEntries[i]);
         }

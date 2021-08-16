@@ -1851,6 +1851,10 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
         nLocalServices = ServiceFlags(nLocalServices | NODE_WITNESS);
     }
 
+    if (chainparams.GetConsensus().vDeployments[Consensus::DEPLOYMENT_MWEB].nTimeout != 0) {
+        nLocalServices = ServiceFlags(nLocalServices | NODE_MWEB);
+    }
+
     // ********************************************************* Step 11: import blocks
 
     if (!CheckDiskSpace(GetDataDir())) {

@@ -641,7 +641,7 @@ static void MaybeSetPeerAsAnnouncingHeaderAndIDs(NodeId nodeid, CConnman& connma
         }
         connman.ForNode(nodeid, [&connman](CNode* pfrom) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
             AssertLockHeld(::cs_main);
-            uint64_t nCMPCTBLOCKVersion = (pfrom->GetLocalServices() & NODE_WITNESS) ? 2 : 1;
+            uint64_t nCMPCTBLOCKVersion = pfrom->GetCmpctBlockVersion();
             if (lNodesAnnouncingHeaderAndIDs.size() >= 3) {
                 // As per BIP152, we only get 3 of our peers to announce
                 // blocks using compact encodings.
@@ -1727,8 +1727,7 @@ void static ProcessGetData(CNode& pfrom, Peer& peer, const CChainParams& chainpa
         CTransactionRef tx = FindTxForGetData(mempool, pfrom, ToGenTxid(inv), mempool_req, now);
         if (tx) {
             // WTX and WITNESS_TX imply we serialize with witness
-            int nSendFlags = (inv.IsMsgTx() ? SERIALIZE_TRANSACTION_NO_WITNESS : 0);
-            nSendFlags |= (inv.type != MSG_MWEB_TX ? SERIALIZE_NO_MWEB : 0);
+            int nSendFlags = (inv.IsMsgTx() ? SERIALIZE_TRANSACTION_NO_WITNESS | SERIALIZE_NO_MWEB : (pfrom.SupportsMWEB() ? 0 : SERIALIZE_NO_MWEB));
             connman.PushMessage(&pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *tx));
             mempool.RemoveUnbroadcastTx(tx->GetHash());
             // As we're going to send tx, make sure its unconfirmed parents are made requestable.
@@ -4421,7 +4420,7 @@ bool PeerManager::SendMessages(CNode* pto)
                         CInv inv(state.m_wtxid_relay ? MSG_WTX : MSG_TX, hash);
                         pto->m_tx_relay->setInventoryTxToSend.erase(hash);
                         // Don't send transactions that peers will not put into their mempool
-                        if (txinfo.fee < filterrate.GetFee(txinfo.vsize)) {
+                        if (txinfo.fee < filterrate.GetTotalFee(txinfo.vsize, txinfo.mweb_weight)) {
                             continue;
                         }
                         if (pto->m_tx_relay->pfilter) {
@@ -4480,7 +4479,7 @@ bool PeerManager::SendMessages(CNode* pto)
                         auto txid = txinfo.tx->GetHash();
                         auto wtxid = txinfo.tx->GetWitnessHash();
                         // Peer told you to not send transactions at that feerate? Don't bother sending it.
-                        if (txinfo.fee < filterrate.GetFee(txinfo.vsize)) {
+                        if (txinfo.fee < filterrate.GetTotalFee(txinfo.vsize, txinfo.mweb_weight)) {
                             continue;
                         }
                         if (pto->m_tx_relay->pfilter && !pto->m_tx_relay->pfilter->IsRelevantAndUpdate(*txinfo.tx)) continue;

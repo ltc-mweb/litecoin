@@ -466,11 +466,11 @@ std::set<uint256> CWallet::GetConflicts(const uint256& txid) const
 
     std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range;
 
-    for (const CTxIn& txin : wtx.tx->vin)
+    for (const CTxInput& txin : wtx.GetInputs())
     {
-        if (mapTxSpends.count(txin.prevout) <= 1)
+        if (mapTxSpends.count(txin.GetIndex()) <= 1)
             continue;  // No conflict if zero or one spends
-        range = mapTxSpends.equal_range(txin.prevout);
+        range = mapTxSpends.equal_range(txin.GetIndex());
         for (TxSpends::const_iterator _it = range.first; _it != range.second; ++_it)
             result.insert(_it->second);
     }
@@ -575,8 +575,22 @@ void CWallet::AddToSpends(const uint256& wtxid)
     if (thisTx.IsCoinBase()) // Coinbases don't spend anything!
         return;
 
-    for (const CTxIn& txin : thisTx.tx->vin)
-        AddToSpends(txin.prevout, wtxid);
+    for (const CTxInput& input : thisTx.tx->GetInputs()) {
+        AddToSpends(input.GetIndex(), wtxid);
+    }
+}
+
+void CWallet::AddToOutputCommits(const CWalletTx& wtx)
+{
+    for (const Commitment& output_commit : wtx.tx->mweb_tx.GetOutputCommits()) {
+        mapOutputCommits.insert(std::make_pair(output_commit, wtx.GetHash()));
+    }
+    if (wtx.mweb_wtx_info) {
+        if (wtx.mweb_wtx_info->received_coin) {
+            const Commitment& output_commit = wtx.mweb_wtx_info->received_coin->commitment;
+            mapOutputCommits.insert(std::make_pair(output_commit, wtx.GetHash()));
+        }
+    }
 }
 
 bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
@@ -848,6 +862,8 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const boost::optional<MWEB::
 {
     LOCK(cs_wallet);
 
+    // MW: TODO - Check MWEB outputs, spends, etc. Also, generate hash from kernel(?) or output(?) if MWEB-to-MWEB
+
     WalletBatch batch(*database, fFlushOnClose);
 
     uint256 hash = CWalletTx(this, tx, mweb_wtx_info).GetHash();
@@ -876,6 +892,7 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const boost::optional<MWEB::
         wtx.m_it_wtxOrdered = wtxOrdered.insert(std::make_pair(wtx.nOrderPos, &wtx));
         wtx.nTimeSmart = ComputeTimeSmart(wtx);
         AddToSpends(hash);
+        AddToOutputCommits(wtx);
     }
 
     if (!fInsertedNew)
@@ -970,12 +987,12 @@ bool CWallet::LoadToWallet(const uint256& hash, const UpdateWalletTxFn& fill_wtx
         wtx.m_it_wtxOrdered = wtxOrdered.insert(std::make_pair(wtx.nOrderPos, &wtx));
     }
     AddToSpends(hash);
-    for (const CTxIn& txin : wtx.tx->vin) {
-        auto it = mapWallet.find(txin.prevout.hash);
-        if (it != mapWallet.end()) {
-            CWalletTx& prevtx = it->second;
-            if (prevtx.isConflicted()) {
-                MarkConflicted(prevtx.m_confirm.hashBlock, prevtx.m_confirm.block_height, wtx.GetHash());
+    AddToOutputCommits(wtx);
+    for (const CTxInput& txin : wtx.GetInputs()) {
+        CWalletTx* prevtx = FindPrevTx(txin);
+        if (prevtx != nullptr) {
+            if (prevtx->isConflicted()) {
+                MarkConflicted(prevtx->m_confirm.hashBlock, prevtx->m_confirm.block_height, wtx.GetHash());
             }
         }
     }
@@ -998,6 +1015,13 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::Co
                     }
                     range.first++;
                 }
+            }
+        }
+
+        mw::Coin mweb_coin;
+        for (const CTxOutput& txout : tx.GetOutputs()) {
+            if (txout.IsMWEB()) {
+                mweb_wallet->RewindOutput(tx.mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin);
             }
         }
 
@@ -1235,7 +1259,7 @@ void CWallet::blockConnected(const CBlock& block, int height)
             if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_commit, mweb_coin)) {
                 auto wtx = FindWalletTx(output_commit);
                 if (wtx != nullptr) {
-                    SyncTransaction(wtx->tx, {CWalletTx::Status::CONFIRMED, height, block_hash, 0});
+                    SyncTransaction(wtx->tx, {CWalletTx::Status::CONFIRMED, height, block_hash, wtx->m_confirm.nIndex});
                     transactionRemovedFromMempool(wtx->tx, MemPoolRemovalReason::BLOCK, 0 /* mempool_sequence */);
                 } else {
                     AddToWallet(
@@ -2414,7 +2438,7 @@ void CWallet::AvailableCoins(std::vector<COutputCoin>& vCoins, bool fOnlySafe, c
                 }
 
                 StealthAddress address = mweb_wallet->GetStealthAddress(coin.address_index);
-                vCoins.push_back(MWOutput{coin, nDepth, wtx.GetTxTime(), address});
+                vCoins.push_back(MWOutput{coin, nDepth, address, &wtx});
             } else {
                 size_t i = boost::get<COutPoint>(output.GetIndex()).n;
                 vCoins.push_back(COutput(&wtx, i, nDepth, spendable, solvable, safeTx, (coinControl && coinControl->fAllowWatchOnly)));
@@ -2447,13 +2471,10 @@ std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins() const
     AvailableCoins(availableCoins);
 
     for (const COutputCoin& coin : availableCoins) {
-        auto wtx = FindWalletTx(coin.GetIndex());
-        if (wtx != nullptr) {
-            CTxDestination address;
-            if ((coin.IsSpendable() || (IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS) && coin.IsSolvable())) &&
-                ExtractOutputDestination(FindNonChangeParentOutput(*wtx->tx, coin.GetIndex()), address)) {
-                result[address].emplace_back(std::move(coin));
-            }
+        CTxDestination address;
+        if ((coin.IsSpendable() || (IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS) && coin.IsSolvable())) &&
+            ExtractOutputDestination(FindNonChangeParentOutput(*coin.GetWalletTx()->tx, coin.GetIndex()), address)) {
+            result[address].emplace_back(std::move(coin));
         }
     }
 
@@ -2472,7 +2493,7 @@ std::map<CTxDestination, std::vector<COutputCoin>> CWallet::ListCoins() const
                     if (output_idx.type() == typeid(Commitment)) {
                         mw::Coin coin;
                         if (GetCoin(boost::get<Commitment>(output_idx), coin)) {
-                            result[address].emplace_back(MWOutput{coin, depth, wtx->GetTxTime(), boost::get<StealthAddress>(address)});
+                            result[address].emplace_back(MWOutput{coin, depth, boost::get<StealthAddress>(address), wtx});
                         }
                     } else {
                         result[address].emplace_back(
@@ -2843,6 +2864,13 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
     LOCK(cs_wallet);
     WalletLogPrintf("CommitTransaction:\n%s", tx->ToString()); /* Continued */
 
+    mw::Coin mweb_coin;
+    for (const CTxOutput& txout : tx->GetOutputs()) {
+        if (txout.IsMWEB()) {
+            mweb_wallet->RewindOutput(tx->mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin);
+        }
+    }
+
     // Add tx to wallet, because if it has change it's also ours,
     // otherwise just for transaction history.
     AddToWallet(tx, boost::none, {}, [&](CWalletTx& wtx, bool new_tx) {
@@ -2856,10 +2884,10 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
     });
 
     // Notify that old coins are spent
-    for (const CTxIn& txin : tx->vin) {
-        CWalletTx &coin = mapWallet.at(txin.prevout.hash);
-        coin.MarkDirty();
-        NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+    for (const CTxInput& txin : tx->GetInputs()) {
+        CWalletTx* coin = FindPrevTx(txin);
+        coin->MarkDirty();
+        NotifyTransactionChanged(this, coin->GetHash(), CT_UPDATED);
     }
 
     // Get the inserted-CWalletTx from mapWallet so that the
@@ -2914,8 +2942,8 @@ DBErrors CWallet::ZapSelectTx(std::vector<uint256>& vHashIn, std::vector<uint256
     for (const uint256& hash : vHashOut) {
         const auto& it = mapWallet.find(hash);
         wtxOrdered.erase(it->second.m_it_wtxOrdered);
-        for (const auto& txin : it->second.tx->vin)
-            mapTxSpends.erase(txin.prevout);
+        for (const auto& txin : it->second.GetInputs())
+            mapTxSpends.erase(txin.GetIndex());
         mapWallet.erase(it);
         NotifyTransactionChanged(this, hash, CT_DELETED);
     }
@@ -3877,34 +3905,32 @@ std::vector<OutputGroup> CWallet::GroupOutputs(const std::vector<COutputCoin>& o
     std::map<CTxDestination, OutputGroup> gmap;
     std::set<CTxDestination> full_groups;
 
-    for (const auto& output : outputs) {
+    for (const COutputCoin& output : outputs) {
         if (output.IsSpendable()) {
-            const CWalletTx* wtx = FindWalletTx(output.GetIndex());
-            if (wtx != nullptr) {
-                size_t ancestors, descendants;
-                chain().getTransactionAncestry(wtx->GetHash(), ancestors, descendants);
+            const CWalletTx *wtx = output.GetWalletTx();
+            size_t ancestors, descendants;
+            chain().getTransactionAncestry(wtx->GetHash(), ancestors, descendants);
 
-                CTxDestination dst;
-                if (!single_coin && output.GetDestination(dst)) {
-                    auto it = gmap.find(dst);
-                    if (it != gmap.end()) {
-                        // Limit output groups to no more than OUTPUT_GROUP_MAX_ENTRIES
-                        // number of entries, to protect against inadvertently creating
-                        // a too-large transaction when using -avoidpartialspends to
-                        // prevent breaking consensus or surprising users with a very
-                        // high amount of fees.
-                        if (it->second.m_outputs.size() >= OUTPUT_GROUP_MAX_ENTRIES) {
-                            groups.push_back(it->second);
-                            it->second = OutputGroup{};
-                            full_groups.insert(dst);
-                        }
-                        it->second.Insert(output.GetInputCoin(), output.GetDepth(), wtx->IsFromMe(ISMINE_ALL), ancestors, descendants);
-                    } else {
-                        gmap[dst].Insert(output.GetInputCoin(), output.GetDepth(), wtx->IsFromMe(ISMINE_ALL), ancestors, descendants);
+            CTxDestination dst;
+            if (!single_coin && output.GetDestination(dst)) {
+                auto it = gmap.find(dst);
+                if (it != gmap.end()) {
+                    // Limit output groups to no more than OUTPUT_GROUP_MAX_ENTRIES
+                    // number of entries, to protect against inadvertently creating
+                    // a too-large transaction when using -avoidpartialspends to
+                    // prevent breaking consensus or surprising users with a very
+                    // high amount of fees.
+                    if (it->second.m_outputs.size() >= OUTPUT_GROUP_MAX_ENTRIES) {
+                        groups.push_back(it->second);
+                        it->second = OutputGroup{};
+                        full_groups.insert(dst);
                     }
+                    it->second.Insert(output.GetInputCoin(), output.GetDepth(), wtx->IsFromMe(ISMINE_ALL), ancestors, descendants);
                 } else {
-                    groups.emplace_back(output.GetInputCoin(), output.GetDepth(), wtx->IsFromMe(ISMINE_ALL), ancestors, descendants);
+                    gmap[dst].Insert(output.GetInputCoin(), output.GetDepth(), wtx->IsFromMe(ISMINE_ALL), ancestors, descendants);
                 }
+            } else {
+                groups.emplace_back(output.GetInputCoin(), output.GetDepth(), wtx->IsFromMe(ISMINE_ALL), ancestors, descendants);
             }
         }
     }

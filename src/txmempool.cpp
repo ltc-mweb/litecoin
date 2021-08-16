@@ -139,14 +139,16 @@ void CTxMemPool::UpdateTransactionsFromBlock(const std::vector<uint256> &vHashes
             const auto epoch = GetFreshEpoch();
 	        for (const CTxOutput& output : it->GetTx().GetOutputs()) {
 	            auto iter = mapNextTx.find(output.GetIndex());
-                const uint256 &childHash = iter->second->GetHash();
-                txiter childIter = mapTx.find(childHash);
-                assert(childIter != mapTx.end());
-                // We can skip updating entries we've encountered before or that
-                // are in the block (which are already accounted for).
-                if (!visited(childIter) && !setAlreadyIncluded.count(childHash)) {
-                    UpdateChild(it, childIter, true);
-                    UpdateParent(childIter, it, true);
+                if (iter != mapNextTx.end()) {
+                    const uint256& childHash = iter->second->GetHash();
+                    txiter childIter = mapTx.find(childHash);
+                    assert(childIter != mapTx.end());
+                    // We can skip updating entries we've encountered before or that
+                    // are in the block (which are already accounted for).
+                    if (!visited(childIter) && !setAlreadyIncluded.count(childHash)) {
+                        UpdateChild(it, childIter, true);
+                        UpdateParent(childIter, it, true);
+                    }
                 }
             }
         } // release epoch guard for UpdateForDescendants
@@ -323,7 +325,7 @@ void CTxMemPool::UpdateForRemoveFromMempool(const setEntries &entriesToRemove, b
 void CTxMemPoolEntry::UpdateDescendantState(int64_t modifySize, CAmount modifyFee, int64_t modifyCount, int64_t modifyMWEBWeight)
 {
     nSizeWithDescendants += modifySize;
-    assert(int64_t(nSizeWithDescendants) > 0);
+    assert(int64_t(nSizeWithDescendants) >= 0);
     nModFeesWithDescendants += modifyFee;
     nCountWithDescendants += modifyCount;
     assert(int64_t(nCountWithDescendants) > 0);
@@ -334,7 +336,7 @@ void CTxMemPoolEntry::UpdateDescendantState(int64_t modifySize, CAmount modifyFe
 void CTxMemPoolEntry::UpdateAncestorState(int64_t modifySize, CAmount modifyFee, int64_t modifyCount, int64_t modifySigOps, int64_t modifyMWEBWeight)
 {
     nSizeWithAncestors += modifySize;
-    assert(int64_t(nSizeWithAncestors) > 0);
+    assert(int64_t(nSizeWithAncestors) >= 0);
     nModFeesWithAncestors += modifyFee;
     nCountWithAncestors += modifyCount;
     assert(int64_t(nCountWithAncestors) > 0);
@@ -510,30 +512,31 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx, MemPoolRemovalReaso
 {
     // Remove transaction from memory pool
     AssertLockHeld(cs);
-        setEntries txToRemove;
-        txiter origit = mapTx.find(origTx.GetHash());
-        if (origit != mapTx.end()) {
-            txToRemove.insert(origit);
-        } else {
-            // When recursively removing but origTx isn't in the mempool
-            // be sure to remove any children that are in the pool. This can
-            // happen during chain re-orgs if origTx isn't re-accepted into
-            // the mempool for any reason.
-            for (const CTxOutput& output : origTx.GetOutputs()) {
-                auto it = mapNextTx.find(output.GetIndex());
-                if (it == mapNextTx.end())
-                    continue;
-                txiter nextit = mapTx.find(it->second->GetHash());
-                assert(nextit != mapTx.end());
-                txToRemove.insert(nextit);
-            }
+    setEntries txToRemove;
+    txiter origit = mapTx.find(origTx.GetHash());
+    if (origit != mapTx.end()) {
+        txToRemove.insert(origit);
+    } else {
+        // When recursively removing but origTx isn't in the mempool
+        // be sure to remove any children that are in the pool. This can
+        // happen during chain re-orgs if origTx isn't re-accepted into
+        // the mempool for any reason.
+        for (const CTxOutput& output : origTx.GetOutputs()) {
+            auto it = mapNextTx.find(output.GetIndex());
+            if (it == mapNextTx.end())
+                continue;
+            txiter nextit = mapTx.find(it->second->GetHash());
+            assert(nextit != mapTx.end());
+            txToRemove.insert(nextit);
         }
-        setEntries setAllRemoves;
-        for (txiter it : txToRemove) {
-            CalculateDescendants(it, setAllRemoves);
-        }
+    }
+    setEntries setAllRemoves;
+    for (txiter it : txToRemove) {
+        CalculateDescendants(it, setAllRemoves);
+    }
 
-        RemoveStaged(setAllRemoves, false, reason);
+    RemoveStaged(setAllRemoves, false, reason);
+
 }
 
 void CTxMemPool::removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags)

@@ -90,7 +90,7 @@ static feebumper::Result CheckFeeRate(const CWallet& wallet, const CWalletTx& wt
 
     if (new_total_fee < minTotalFee) {
         errors.push_back(strprintf(Untranslated("Insufficient total fee %s, must be at least %s (oldFee %s + incrementalFee %s)"),
-            FormatMoney(new_total_fee), FormatMoney(minTotalFee), FormatMoney(nOldFeeRate.GetFee(maxTxSize)), FormatMoney(incrementalRelayFee.GetFee(maxTxSize))));
+            FormatMoney(new_total_fee), FormatMoney(minTotalFee), FormatMoney(nOldFeeRate.GetTotalFee(maxTxSize, mweb_weight)), FormatMoney(incrementalRelayFee.GetFee(maxTxSize))));
         return feebumper::Result::INVALID_PARAMETER;
     }
 

@@ -1760,9 +1760,9 @@ static RPCHelpMan gettransaction()
     CAmount nCredit = wtx.GetCredit(filter);
     CAmount nDebit = wtx.GetDebit(filter);
     CAmount nNet = nCredit - nDebit;
-    CAmount nFee = wtx.GetFee(filter);
+    CAmount nFee = -wtx.GetFee(filter);
 
-    entry.pushKV("amount", ValueFromAmount(nNet + nFee));
+    entry.pushKV("amount", ValueFromAmount(nNet - nFee));
     if (wtx.IsFromMe(filter))
         entry.pushKV("fee", ValueFromAmount(nFee));
 
@@ -3013,6 +3013,7 @@ static RPCHelpMan listunspent()
             continue;
 
         UniValue entry(UniValue::VOBJ);
+        entry.pushKV("txid", output_coin.GetWalletTx()->GetHash().GetHex());
         entry.pushKV("amount", ValueFromAmount(output_coin.GetValue()));
         entry.pushKV("confirmations", output_coin.GetDepth());
         entry.pushKV("spendable", output_coin.IsSpendable());
@@ -3033,7 +3034,6 @@ static RPCHelpMan listunspent()
         const COutput& out = boost::get<COutput>(output_coin.m_output);
         const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
 
-        entry.pushKV("txid", out.tx->GetHash().GetHex());
         entry.pushKV("vout", out.i);
         entry.pushKV("scriptPubKey", HexStr(scriptPubKey));
         entry.pushKV("solvable", out.fSolvable);

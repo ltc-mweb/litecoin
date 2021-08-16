@@ -447,7 +447,6 @@ public:
     bool IsMsgTx() const { return type == MSG_TX; }
     bool IsMsgBlk() const { return type == MSG_BLOCK; }
     bool IsMsgWtx() const { return type == MSG_WTX; }
-    bool IsMsgMWEBTx() const { return type == MSG_MWEB_TX; }
     bool IsMsgFilteredBlk() const { return type == MSG_FILTERED_BLOCK; }
     bool IsMsgCmpctBlk() const { return type == MSG_CMPCT_BLOCK; }
     bool IsMsgWitnessBlk() const { return type == MSG_WITNESS_BLOCK; }
