@@ -578,13 +578,13 @@ int64_t LegacyScriptPubKeyMan::GetOldestKeyPoolTime() const
 size_t LegacyScriptPubKeyMan::KeypoolCountExternalKeys() const
 {
     LOCK(cs_KeyStore);
-    return setExternalKeyPool.size() + set_pre_split_keypool.size() + set_mweb_keypool.size();
+    return setExternalKeyPool.size() + set_pre_split_keypool.size();
 }
 
 unsigned int LegacyScriptPubKeyMan::GetKeyPoolSize() const
 {
     LOCK(cs_KeyStore);
-    return setInternalKeyPool.size() + setExternalKeyPool.size() + set_pre_split_keypool.size() + set_mweb_keypool.size();
+    return setInternalKeyPool.size() + setExternalKeyPool.size() + set_pre_split_keypool.size();
 }
 
 int64_t LegacyScriptPubKeyMan::GetTimeFirstKey() const
