@@ -844,7 +844,7 @@ std::pair<int64_t, int64_t> ParseDescriptorRange(const UniValue& value)
     return {low, high};
 }
 
-std::vector<CScript> EvalDescriptorStringOrObject(const UniValue& scanobject, FlatSigningProvider& provider)
+std::vector<DestinationAddr> EvalDescriptorStringOrObject(const UniValue& scanobject, FlatSigningProvider& provider)
 {
     std::string desc_str;
     std::pair<int64_t, int64_t> range = {0, 1000};
@@ -871,9 +871,9 @@ std::vector<CScript> EvalDescriptorStringOrObject(const UniValue& scanobject, Fl
         range.first = 0;
         range.second = 0;
     }
-    std::vector<CScript> ret;
+    std::vector<DestinationAddr> ret;
     for (int i = range.first; i <= range.second; ++i) {
-        std::vector<CScript> scripts;
+        std::vector<DestinationAddr> scripts;
         if (!desc->Expand(i, provider, scripts, provider)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Cannot derive script without private keys: '%s'", desc_str));
         }

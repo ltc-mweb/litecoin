@@ -51,8 +51,10 @@ const std::string& FormatOutputType(OutputType type)
     assert(false);
 }
 
-CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
+CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type, const SecretKey& scan_secret)
 {
+    assert(type != OutputType::MWEB || !scan_secret.IsNull());
+
     switch (type) {
     case OutputType::LEGACY: return PKHash(key);
     case OutputType::P2SH_SEGWIT:
@@ -66,20 +68,28 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
             return witdest;
         }
     }
-    case OutputType::MWEB:
-        return CNoDestination();
+    case OutputType::MWEB: {
+        PublicKey spend_pubkey(key.data());
+        return StealthAddress(spend_pubkey.Mul(scan_secret), spend_pubkey);
+    }
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
 
-std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
+std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key, const SecretKey& scan_secret)
 {
     PKHash keyid(key);
     CTxDestination p2pkh{keyid};
     if (key.IsCompressed()) {
         CTxDestination segwit = WitnessV0KeyHash(keyid);
         CTxDestination p2sh = ScriptHash(GetScriptForDestination(segwit));
-        return Vector(std::move(p2pkh), std::move(p2sh), std::move(segwit));
+
+        if (!scan_secret.IsNull()) {
+            CTxDestination stealth = GetDestinationForKey(key, OutputType::MWEB, scan_secret);
+            return Vector(std::move(p2pkh), std::move(p2sh), std::move(segwit), std::move(stealth));
+        } else {
+            return Vector(std::move(p2pkh), std::move(p2sh), std::move(segwit));
+        }
     } else {
         return Vector(std::move(p2pkh));
     }
@@ -108,7 +118,7 @@ CTxDestination AddAndGetDestinationForScript(FillableSigningProvider& keystore, 
         }
     }
     case OutputType::MWEB:
-        return CNoDestination();
+        return CNoDestination(); // MW: TODO - Pass in scan_secret
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }

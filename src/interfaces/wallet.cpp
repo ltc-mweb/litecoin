@@ -94,14 +94,10 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
         result.txin_is_mine.emplace_back(wallet.IsMine(txin));
     }
     result.txout_is_mine.reserve(outputs.size());
-    result.txout_address.reserve(outputs.size());
     result.txout_address_is_mine.reserve(outputs.size());
     for (const auto& txout : outputs) {
         result.txout_is_mine.emplace_back(wallet.IsMine(txout));
-        result.txout_address.emplace_back();
-        result.txout_address_is_mine.emplace_back(wallet.ExtractOutputDestination(txout, result.txout_address.back()) ?
-                                                      wallet.IsMine(result.txout_address.back()) :
-                                                      ISMINE_NO);
+        result.txout_address_is_mine.emplace_back(wallet.IsMine(txout));
     }
     result.credit = wtx.GetCredit(ISMINE_ALL);
     result.debit = wtx.GetDebit(ISMINE_ALL);

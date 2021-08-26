@@ -5,6 +5,21 @@
 
 using namespace MWEB;
 
+std::vector<mw::Coin> Wallet::RewindOutputs(const CTransaction& tx)
+{
+    std::vector<mw::Coin> coins;
+    for (const CTxOutput& txout : tx.GetOutputs()) {
+        if (txout.IsMWEB()) {
+            mw::Coin mweb_coin;
+            if (RewindOutput(tx.mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin)) {
+                coins.push_back(mweb_coin);
+            }
+        }
+    }
+
+    return coins;
+}
+
 bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
         const Commitment& output_commit, mw::Coin& coin)
 {
@@ -12,13 +27,17 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
         return true;
     }
 
+    mw::Keychain::Ptr keychain = GetKeychain();
+    if (!keychain) {
+        return false;
+    }
+
     bool rewound = false;
     if (parent.type() == typeid(mw::Block::CPtr)) {
         const mw::Block::CPtr& block = boost::get<mw::Block::CPtr>(parent);
-
         for (const Output& output : block->GetOutputs()) {
             if (output.GetCommitment() == output_commit) {
-                rewound = GetKeychain()->RewindOutput(output, coin);
+                rewound = keychain->RewindOutput(output, coin);
                 break;
             }
         }
@@ -26,7 +45,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
         const mw::Transaction::CPtr& tx = boost::get<mw::Transaction::CPtr>(parent);
         for (const Output& output : tx->GetOutputs()) {
             if (output.GetCommitment() == output_commit) {
-                rewound = GetKeychain()->RewindOutput(output, coin);
+                rewound = keychain->RewindOutput(output, coin);
                 break;
             }
         }
@@ -34,66 +53,22 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
 
     if (rewound) {
         m_coins[coin.commitment] = coin;
-        m_pWallet->GetLegacyScriptPubKeyMan()->SetMWEBIndexUsed(coin.address_index);
+        WalletBatch(m_pWallet->GetDatabase()).WriteCoin(coin);
     }
 
     return rewound;
 }
 
-bool Wallet::IsMine(const StealthAddress& address) const
-{
-    return GetKeychain()->IsMine(address);
-}
-
 StealthAddress Wallet::GetStealthAddress(const uint32_t index)
 {
-    return GetKeychain()->GetStealthAddress(index);
-}
-
-StealthAddress Wallet::GenerateNewAddress()
-{
-    const CHDChain& hdChain = m_pWallet->GetLegacyScriptPubKeyMan()->GetHDChain();
-    uint32_t mweb_index = hdChain.nMWEBIndexCounter + 1;
-    m_pWallet->GetLegacyScriptPubKeyMan()->SetMWEBIndexUsed(mweb_index);
-    
-    return GetStealthAddress(mweb_index);
-}
-
-CExtKey Wallet::GetHDKey(const std::string& bip32Path) const
-{
-    // Currently, MWEB only supports HD wallets
-    if (!m_pWallet->IsHDEnabled()) {
-        throw std::runtime_error(std::string(__func__) + ": MWEB only supports HD wallets");
-    }
-
-    // Parse bip32 keypath
-    std::vector<uint32_t> keyPath;
-    if (!ParseHDKeypath(bip32Path, keyPath)) {
-        throw std::runtime_error(std::string(__func__) + ": failed to parse HD keypath - " + bip32Path);
-    }
-
-    // Retrieve the HD seed
-    CKey seed;
-    auto pk_man = m_pWallet->GetLegacyScriptPubKeyMan();
-    if (!pk_man->GetKey(pk_man->GetHDChain().seed_id, seed)) {
-        throw std::runtime_error(std::string(__func__) + ": seed not found");
-    }
-
-    // Derive key from path
-    CExtKey extKey;
-    extKey.SetSeed(seed.begin(), seed.size());
-
-    for (const uint32_t child : keyPath) {
-        CExtKey tempKey;
-        extKey.Derive(tempKey, child);
-        extKey = tempKey;
-    }
-
-    return extKey;
+    mw::Keychain::Ptr keychain = GetKeychain();
+    assert(keychain != nullptr);
+    return keychain->GetStealthAddress(index);
 }
 
 void Wallet::LoadToWallet(const mw::Coin& coin)
 {
+    LogPrintf("Coin %s loaded\n", coin.commitment.ToHex());
     m_coins[coin.commitment] = coin;
 }
 
@@ -108,21 +83,8 @@ bool Wallet::GetCoin(const Commitment& output_commit, mw::Coin& coin) const
     return false;
 }
 
-const mw::Keychain::Ptr& Wallet::GetKeychain() const
+mw::Keychain::Ptr Wallet::GetKeychain() const
 {
-    if (!m_keychain) {
-        // Scan secret key
-        SecretKey scan_secret(GetHDKey("m/1/0/100'").key.begin());
-
-        // Spend secret key
-        SecretKey spend_secret(GetHDKey("m/1/0/101'").key.begin());
-
-        m_keychain = std::make_shared<mw::Keychain>(
-            std::move(scan_secret),
-            std::move(spend_secret),
-            m_pWallet->GetLegacyScriptPubKeyMan()->GetHDChain().nMWEBIndexCounter
-        );
-    }
-
-    return m_keychain;
+    auto spk_man = m_pWallet->GetScriptPubKeyMan(OutputType::MWEB, false);
+    return spk_man ? spk_man->GetMWEBKeychain() : nullptr;
 }

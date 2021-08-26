@@ -284,18 +284,24 @@ public:
         : m_script(std::move(address)) { }
     DestinationAddr(const CTxDestination& dest);
 
-    bool IsMWEB() const noexcept { return m_script.which() == 1; }
+    bool operator==(const DestinationAddr& rhs) const noexcept { return this->m_script == rhs.m_script; }
+    bool operator<(const DestinationAddr& rhs) const noexcept { return this->m_script < rhs.m_script; }
+    bool operator<=(const DestinationAddr& rhs) const noexcept { return this->m_script <= rhs.m_script; }
+
+    std::string Encode() const;
+
+    bool IsMWEB() const noexcept { return m_script.type() == typeid(StealthAddress); }
     bool IsEmpty() const noexcept { return !IsMWEB() && GetScript().empty(); }
 
     const CScript& GetScript() const noexcept
     {
-        assert(m_script.which() == 0);
+        assert(m_script.type() == typeid(CScript));
         return boost::get<CScript>(m_script);
     }
 
     const StealthAddress& GetMWEBAddress() const noexcept
     {
-        assert(m_script.which() == 1);
+        assert(m_script.type() == typeid(StealthAddress));
         return boost::get<StealthAddress>(m_script);
     }
 

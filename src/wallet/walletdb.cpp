@@ -29,6 +29,7 @@ const std::string ACTIVEEXTERNALSPK{"activeexternalspk"};
 const std::string ACTIVEINTERNALSPK{"activeinternalspk"};
 const std::string BESTBLOCK_NOMERKLE{"bestblock_nomerkle"};
 const std::string BESTBLOCK{"bestblock"};
+const std::string COIN{"mweb_coin"};
 const std::string CRYPTED_KEY{"ckey"};
 const std::string CSCRIPT{"cscript"};
 const std::string DEFAULTKEY{"defaultkey"};
@@ -145,6 +146,12 @@ bool WalletBatch::WriteMasterKey(unsigned int nID, const CMasterKey& kMasterKey)
 bool WalletBatch::WriteCScript(const uint160& hash, const CScript& redeemScript)
 {
     return WriteIC(std::make_pair(DBKeys::CSCRIPT, hash), redeemScript, false);
+}
+
+bool WalletBatch::WriteCoin(const mw::Coin& coin)
+{
+    // MW: TODO - Handle multiple coins with matching commitments
+    return WriteIC(std::make_pair(DBKeys::COIN, coin.commitment), coin, true);
 }
 
 bool WalletBatch::WriteWatchOnly(const CScript &dest, const CKeyMetadata& keyMeta)
@@ -329,6 +336,11 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             if (!pwallet->LoadToWallet(hash, fill_wtx)) {
                 return false;
             }
+        } else if (strType == DBKeys::COIN) {
+            mw::Coin coin;
+            ssValue >> coin;
+            pwallet->GetMWWallet()->LoadToWallet(coin);
+            return true;
         } else if (strType == DBKeys::WATCHS) {
             wss.nWatchKeys++;
             CScript script;
@@ -497,8 +509,12 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                     chain.nVersion = CHDChain::VERSION_HD_BASE;
                     chain.seed_id = keyMeta.hd_seed_id;
                 }
-                if (internal) {
-                    chain.nVersion = CHDChain::VERSION_HD_CHAIN_SPLIT;
+
+                if (!!keyMeta.mweb_index) {
+                    chain.nVersion = CHDChain::VERSION_HD_MWEB;
+                    chain.nMWEBIndexCounter = std::max(chain.nMWEBIndexCounter, *keyMeta.mweb_index);
+                } else if (internal) {
+                    chain.nVersion = std::max(chain.nVersion, CHDChain::VERSION_HD_CHAIN_SPLIT);
                     chain.nInternalChainCounter = std::max(chain.nInternalChainCounter, index);
                 } else {
                     chain.nExternalChainCounter = std::max(chain.nExternalChainCounter, index);
@@ -806,6 +822,12 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
             LOCK(spk_man->cs_KeyStore);
             spk_man->UpdateTimeFirstKey(1);
         }
+    }
+
+    // MWEB: Load MWEB keychain
+    auto mweb_spk_man = pwallet->GetScriptPubKeyMan(OutputType::MWEB, false);
+    if (mweb_spk_man) {
+        mweb_spk_man->LoadMWEBKeychain();
     }
 
     for (const uint256& hash : wss.vWalletUpgrade)

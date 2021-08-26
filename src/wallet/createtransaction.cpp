@@ -237,7 +237,7 @@ bool SelectCoinsEx(
     return wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
 }
 
-static bool IsChangeOnMWEB(const MWEB::Wallet& mweb_wallet, const MWEB::TxType& mweb_type, const std::vector<CRecipient>& vecSend, const CCoinControl& coin_control)
+static bool IsChangeOnMWEB(const CWallet& wallet, const MWEB::TxType& mweb_type, const std::vector<CRecipient>& vecSend, const CCoinControl& coin_control)
 {
     if (mweb_type == MWEB::TxType::MWEB_TO_MWEB || mweb_type == MWEB::TxType::PEGOUT) {
         return true;
@@ -249,7 +249,7 @@ static bool IsChangeOnMWEB(const MWEB::Wallet& mweb_wallet, const MWEB::TxType& 
         // To avoid this risk, include a change output so that kernel blind is not leaked.
         bool pegin_change_required = true;
         for (const CRecipient& recipient : vecSend) {
-            if (recipient.IsMWEB() && mweb_wallet.IsMine(recipient.GetMWEBAddress())) {
+            if (recipient.IsMWEB() && wallet.IsMine(recipient.receiver)) {
                 pegin_change_required = false;
                 break;
             }
@@ -426,7 +426,7 @@ bool CreateTransactionEx(
                 }
 
                 mweb_type = MWEB::GetTxType(vecSend, std::vector<CInputCoin>(setCoins.begin(), setCoins.end()));
-                change_on_mweb = IsChangeOnMWEB(*wallet.GetMWWallet(), mweb_type, vecSend, coin_control);
+                change_on_mweb = IsChangeOnMWEB(wallet, mweb_type, vecSend, coin_control);
 
                 if (mweb_type != MWEB::TxType::LTC_TO_LTC) {
                     size_t mweb_outputs = 0;

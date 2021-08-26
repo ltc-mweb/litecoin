@@ -1030,7 +1030,7 @@ static RPCHelpMan addmultisigaddress()
     pwallet->SetAddressBook(dest, label, "send");
 
     // Make the descriptor
-    std::unique_ptr<Descriptor> descriptor = InferDescriptor(GetScriptForDestination(dest), spk_man);
+    std::unique_ptr<Descriptor> descriptor = InferDescriptor(DestinationAddr(dest), spk_man);
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("address", EncodeDestination(dest));

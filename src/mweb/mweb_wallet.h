@@ -20,30 +20,28 @@ namespace MWEB {
 
 class Wallet
 {
+    CWallet* m_pWallet;
+    std::map<Commitment, mw::Coin> m_coins;
+
 public:
     Wallet(CWallet* pWallet)
         : m_pWallet(pWallet) {}
 
-    const mw::Keychain::Ptr& GetKeychain() const;
-
-    CExtKey GetHDKey(const std::string& bip32Path) const;
+    bool IsSupported() const { return GetKeychain() != nullptr; }
     bool GetCoin(const Commitment& output_commit, mw::Coin& coin) const;
 
+    std::vector<mw::Coin> RewindOutputs(const CTransaction& tx);
     bool RewindOutput(
         const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
         const Commitment& output_commit,
         mw::Coin& coin
     );
-    bool IsMine(const StealthAddress& address) const;
     StealthAddress GetStealthAddress(const uint32_t index);
-    StealthAddress GenerateNewAddress();
 
     void LoadToWallet(const mw::Coin& coin);
 
 private:
-    CWallet* m_pWallet;
-    mutable mw::Keychain::Ptr m_keychain;
-    std::map<Commitment, mw::Coin> m_coins;
+    mw::Keychain::Ptr GetKeychain() const;
 };
 
 struct WalletTxInfo

@@ -34,7 +34,8 @@ void ReserveDestination::KeepDestination()
 void ReserveDestination::ReturnDestination()
 {
     if (nIndex != -1) {
-        m_spk_man->ReturnDestination(nIndex, fInternal, address);
+        KeyPurpose purpose = (type == OutputType::MWEB) ? KeyPurpose::MWEB : (fInternal ? KeyPurpose::INTERNAL : KeyPurpose::EXTERNAL);
+        m_spk_man->ReturnDestination(nIndex, purpose, address);
     }
     nIndex = -1;
     address = CNoDestination();

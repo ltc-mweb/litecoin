@@ -54,7 +54,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                 {
                     // Received by Bitcoin Address
                     sub.type = TransactionRecord::RecvWithAddress;
-                    sub.address = EncodeDestination(wtx.txout_address[i]);
+                    sub.address = txout.address.Encode();
                 }
                 else
                 {
@@ -93,9 +93,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         {
             // Payment to self
             std::string address;
-            for (auto it = wtx.txout_address.begin(); it != wtx.txout_address.end(); ++it) {
-                if (it != wtx.txout_address.begin()) address += ", ";
-                address += EncodeDestination(*it);
+            for (auto it = wtx.outputs.begin(); it != wtx.outputs.end(); ++it) {
+                if (it != wtx.outputs.begin()) address += ", ";
+                address += it->address.Encode();
             }
 
             CAmount nChange = wtx.change;
@@ -123,11 +123,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                     continue;
                 }
 
-                if (!boost::get<CNoDestination>(&wtx.txout_address[nOut]))
+                if (!txout.address.IsEmpty())
                 {
                     // Sent to Bitcoin Address
                     sub.type = TransactionRecord::SendToAddress;
-                    sub.address = EncodeDestination(wtx.txout_address[nOut]);
+                    sub.address = txout.address.Encode();
                 }
                 else
                 {

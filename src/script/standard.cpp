@@ -6,6 +6,7 @@
 #include <script/standard.h>
 
 #include <crypto/sha256.h>
+#include <key_io.h>
 #include <pubkey.h>
 #include <script/script.h>
 
@@ -363,4 +364,14 @@ DestinationAddr::DestinationAddr(const CTxDestination& dest)
     } else {
         m_script = GetScriptForDestination(dest);
     }
+}
+
+std::string DestinationAddr::Encode() const
+{
+    CTxDestination dest;
+    if (ExtractDestination(dest)) {
+        return EncodeDestination(dest);
+    }
+
+    return HexStr(GetScript());
 }

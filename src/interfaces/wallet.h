@@ -402,7 +402,6 @@ struct WalletTx
     CTransactionRef tx;
     std::vector<isminetype> txin_is_mine;
     std::vector<isminetype> txout_is_mine;
-    std::vector<CTxDestination> txout_address;
     std::vector<isminetype> txout_address_is_mine;
     CAmount credit;
     CAmount debit;

@@ -862,8 +862,6 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const boost::optional<MWEB::
 {
     LOCK(cs_wallet);
 
-    // MW: TODO - Check MWEB outputs, spends, etc. Also, generate hash from kernel(?) or output(?) if MWEB-to-MWEB
-
     WalletBatch batch(*database, fFlushOnClose);
 
     uint256 hash = CWalletTx(this, tx, mweb_wtx_info).GetHash();
@@ -1018,12 +1016,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::Co
             }
         }
 
-        mw::Coin mweb_coin;
-        for (const CTxOutput& txout : tx.GetOutputs()) {
-            if (txout.IsMWEB()) {
-                mweb_wallet->RewindOutput(tx.mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin);
-            }
-        }
+        mweb_wallet->RewindOutputs(tx);
 
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
@@ -1036,9 +1029,12 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::Co
              */
 
             // loop though all outputs
-            for (const CTxOut& txout : tx.vout) {
-                for (const auto& spk_man_pair : m_spk_managers) {
-                    spk_man_pair.second->MarkUnusedAddresses(txout.scriptPubKey);
+            for (const CTxOutput& txout : tx.GetOutputs()) {
+                DestinationAddr dest;
+                if (ExtractDestinationScript(txout, dest)) {
+                    for (const auto& spk_man_pair : m_spk_managers) {
+                        spk_man_pair.second->MarkUnusedAddresses(dest);
+                    }
                 }
             }
 
@@ -1382,20 +1378,16 @@ isminetype CWallet::IsMine(const CTxOutput& output) const
         return GetCoin(output.GetCommitment(), coin) ? ISMINE_SPENDABLE : ISMINE_NO;
     }
 
-    return IsMine(output.GetScriptPubKey());
+    return IsMine(DestinationAddr(output.GetScriptPubKey()));
 }
 
 isminetype CWallet::IsMine(const CTxDestination& dest) const
 {
     AssertLockHeld(cs_wallet);
-    if (dest.type() == typeid(StealthAddress)) {
-        return mweb_wallet->IsMine(boost::get<StealthAddress>(dest)) ? ISMINE_SPENDABLE : ISMINE_NO;
-    }
-
-    return IsMine(GetScriptForDestination(dest));
+    return IsMine(DestinationAddr(dest));
 }
 
-isminetype CWallet::IsMine(const CScript& script) const
+isminetype CWallet::IsMine(const DestinationAddr& script) const
 {
     AssertLockHeld(cs_wallet);
     isminetype result = ISMINE_NO;
@@ -1438,7 +1430,7 @@ bool CWallet::IsChange(const CScript& script) const
     // 'the change' will need to be implemented (maybe extend CWalletTx to remember
     // which output, if any, was change).
     AssertLockHeld(cs_wallet);
-    if (IsMine(script))
+    if (IsMine(DestinationAddr(script)))
     {
         CTxDestination address;
         if (!ExtractDestination(script, address))
@@ -1538,7 +1530,7 @@ bool CWallet::CanGetAddresses(bool internal) const
     if (m_spk_managers.empty()) return false;
     for (OutputType t : OUTPUT_TYPES) {
         auto spk_man = GetScriptPubKeyMan(t, internal);
-        if (spk_man && spk_man->CanGetAddresses(internal)) {
+        if (spk_man && spk_man->CanGetAddresses(t == OutputType::MWEB ? KeyPurpose::MWEB : (internal ? KeyPurpose::INTERNAL : KeyPurpose::EXTERNAL))) {
             return true;
         }
     }
@@ -1674,7 +1666,7 @@ bool CWallet::ImportPubKeys(const std::vector<CKeyID>& ordered_pubkeys, const st
     return spk_man->ImportPubKeys(ordered_pubkeys, pubkey_map, key_origins, add_keypool, internal, timestamp);
 }
 
-bool CWallet::ImportScriptPubKeys(const std::string& label, const std::set<CScript>& script_pub_keys, const bool have_solving_data, const bool apply_label, const int64_t timestamp)
+bool CWallet::ImportScriptPubKeys(const std::string& label, const std::set<DestinationAddr>& script_pub_keys, const bool have_solving_data, const bool apply_label, const int64_t timestamp)
 {
     auto spk_man = GetLegacyScriptPubKeyMan();
     if (!spk_man) {
@@ -1686,9 +1678,9 @@ bool CWallet::ImportScriptPubKeys(const std::string& label, const std::set<CScri
     }
     if (apply_label) {
         WalletBatch batch(*database);
-        for (const CScript& script : script_pub_keys) {
+        for (const DestinationAddr& script : script_pub_keys) {
             CTxDestination dest;
-            ExtractDestination(script, dest);
+            script.ExtractDestination(dest);
             if (IsValidDestination(dest)) {
                 SetAddressBookWithDB(batch, dest, label, "receive");
             }
@@ -1741,6 +1733,7 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
 
     // Compute fee:
     CAmount nDebit = GetDebit(filter);
+    // MW: TODO - Need to handle self-sends.
 
     LOCK(pwallet->cs_wallet);
     // Sent/received.
@@ -1779,7 +1772,6 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
         if (fIsMine & filter)
             listReceived.push_back(output);
     }
-
 }
 
 /**
@@ -2430,8 +2422,6 @@ void CWallet::AvailableCoins(std::vector<COutputCoin>& vCoins, bool fOnlySafe, c
             bool spendable = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (((mine & ISMINE_WATCH_ONLY) != ISMINE_NO) && (coinControl && coinControl->fAllowWatchOnly && solvable));
 
             if (output.IsMWEB()) {
-                // MW: TODO - Ensure MWEB has been activated
-
                 mw::Coin coin;
                 if (!GetCoin(output.GetCommitment(), coin)) {
                     continue;
@@ -2864,12 +2854,7 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
     LOCK(cs_wallet);
     WalletLogPrintf("CommitTransaction:\n%s", tx->ToString()); /* Continued */
 
-    mw::Coin mweb_coin;
-    for (const CTxOutput& txout : tx->GetOutputs()) {
-        if (txout.IsMWEB()) {
-            mweb_wallet->RewindOutput(tx->mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin);
-        }
-    }
+    mweb_wallet->RewindOutputs(*tx);
 
     // Add tx to wallet, because if it has change it's also ours,
     // otherwise just for transaction history.
@@ -3059,12 +3044,6 @@ bool CWallet::GetNewDestination(const OutputType type, const std::string label, 
     LOCK(cs_wallet);
     error.clear();
 
-    if (type == OutputType::MWEB) {
-        dest = mweb_wallet->GenerateNewAddress();
-        SetAddressBook(dest, label, "receive");
-        return true;
-    }
-
     bool result = false;
     auto spk_man = GetScriptPubKeyMan(type, false /* internal */);
     if (spk_man) {
@@ -3084,8 +3063,6 @@ bool CWallet::GetNewChangeDestination(const OutputType type, CTxDestination& des
 {
     LOCK(cs_wallet);
     error.clear();
-
-    // MW: TODO - Support OutputType::MWEB
 
     ReserveDestination reservedest(this, type);
     if (!reservedest.GetReservedDestination(dest, true)) {
@@ -3342,12 +3319,13 @@ void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t>& mapKeyBirth) const {
         if (wtx.m_confirm.status == CWalletTx::CONFIRMED) {
             // ... which are already in a block
             for (const CTxOutput& output : wtx.GetOutputs()) {
-                if (output.IsMWEB()) {
+                DestinationAddr dest;
+                if (!ExtractDestinationScript(output, dest)) {
                     continue;
                 }
 
                 // iterate over all their outputs
-                for (const auto& keyid : GetAffectedKeys(output.GetScriptPubKey(), *spk_man)) {
+                for (const auto& keyid : GetAffectedKeys(dest, *spk_man)) {
                     // ... and all their affected keys
                     auto rit = mapKeyFirstBlock.find(keyid);
                     if (rit != mapKeyFirstBlock.end() && wtx.m_confirm.block_height < rit->second->block_height) {
@@ -3866,14 +3844,16 @@ CKeyPool::CKeyPool()
     nTime = GetTime();
     fInternal = false;
     m_pre_split = false;
+    fMWEB = false;
 }
 
-CKeyPool::CKeyPool(const CPubKey& vchPubKeyIn, bool internalIn)
+CKeyPool::CKeyPool(const CPubKey& vchPubKeyIn, bool internalIn, bool mweb_in)
 {
     nTime = GetTime();
     vchPubKey = vchPubKeyIn;
     fInternal = internalIn;
     m_pre_split = false;
+    fMWEB = mweb_in;
 }
 
 int CWalletTx::GetDepthInMainChain() const
@@ -4261,7 +4241,7 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
         }
 
         CTxDestination dest;
-        if (!internal && ExtractDestination(script_pub_keys.at(0), dest)) {
+        if (!internal && script_pub_keys.at(0).ExtractDestination(dest)) {
             SetAddressBook(dest, label, "receive");
         }
     }
@@ -4285,7 +4265,7 @@ CAmount CWallet::GetValue(const CTxOutput& output) const
 {
     if (output.IsMWEB()) {
         mw::Coin coin;
-        if (GetCoin(output.GetCommitment(), coin)) { // MW: TODO - Need to find a place to store amounts for commitments sent to other wallets.
+        if (GetCoin(output.GetCommitment(), coin)) {
             return coin.amount;
         }
     } else {
@@ -4308,6 +4288,22 @@ bool CWallet::ExtractOutputDestination(const CTxOutput& output, CTxDestination& 
     } else {
         return ExtractDestination(output.GetScriptPubKey(), dest);
     }
+}
+
+bool CWallet::ExtractDestinationScript(const CTxOutput& output, DestinationAddr& dest) const
+{
+    if (output.IsMWEB()) {
+        mw::Coin coin;
+        if (!GetCoin(output.GetCommitment(), coin)) {
+            return false;
+        }
+
+        dest = mweb_wallet->GetStealthAddress(coin.address_index);
+    } else {
+        dest = DestinationAddr(output.GetScriptPubKey());
+    }
+
+    return true;
 }
 
 const CWalletTx* CWallet::FindWalletTx(const OutputIndex& output) const

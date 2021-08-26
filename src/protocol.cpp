@@ -5,6 +5,7 @@
 
 #include <protocol.h>
 
+#include <chainparams.h>
 #include <util/strencodings.h>
 #include <util/system.h>
 
@@ -136,10 +137,15 @@ bool CMessageHeader::IsCommandValid() const
 
 
 ServiceFlags GetDesirableServiceFlags(ServiceFlags services) {
-    if ((services & NODE_NETWORK_LIMITED) && g_initial_block_download_completed) {
-        return ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS | NODE_MWEB);
+    ServiceFlags mweb_flags = NODE_NONE;
+    if (Params().GetConsensus().vDeployments[Consensus::DEPLOYMENT_MWEB].nTimeout != 0) {
+        mweb_flags = NODE_MWEB;
     }
-    return ServiceFlags(NODE_NETWORK | NODE_WITNESS | NODE_MWEB);
+
+    if ((services & NODE_NETWORK_LIMITED) && g_initial_block_download_completed) {
+        return ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS | mweb_flags);
+    }
+    return ServiceFlags(NODE_NETWORK | NODE_WITNESS | mweb_flags);
 }
 
 void SetServiceFlagsIBDCache(bool state) {
