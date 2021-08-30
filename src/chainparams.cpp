@@ -464,6 +464,8 @@ public:
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
+        m_is_test_chain = true;
+        m_is_mockable_chain = false;
         consensus.fPowNoRetargeting = false;
 
         checkpointData = {{}};
