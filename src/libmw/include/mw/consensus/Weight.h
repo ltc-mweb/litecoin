@@ -5,11 +5,11 @@
 
 class Weight
 {
+public:
     static constexpr size_t KERNEL_WEIGHT = 2;
     static constexpr size_t OWNER_SIG_WEIGHT = 1;
     static constexpr size_t OUTPUT_WEIGHT = 18;
 
-public:
     struct Arguments
     {
         size_t num_kernels;

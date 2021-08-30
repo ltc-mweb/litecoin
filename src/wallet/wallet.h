@@ -690,24 +690,28 @@ struct CoinSelectionParams
 {
     bool use_bnb = true;
     size_t change_output_size = 0;
+    size_t mweb_change_output_weight = 0;
     size_t change_spend_size = 0;
     CFeeRate m_effective_feerate;
     CFeeRate m_long_term_feerate;
     CFeeRate m_discard_feerate;
     size_t tx_noinputs_size = 0;
+    size_t mweb_nochange_weight = 0;
     //! Indicate that we are subtracting the fee from outputs
     bool m_subtract_fee_outputs = false;
-    InputPreference input_preference = InputPreference::PREFER_LTC;
+    InputPreference input_preference = InputPreference::ANY;
 
-    CoinSelectionParams(bool use_bnb, size_t change_output_size, size_t change_spend_size, CFeeRate effective_feerate,
-                        CFeeRate long_term_feerate, CFeeRate discard_feerate, size_t tx_noinputs_size) :
+    CoinSelectionParams(bool use_bnb, size_t change_output_size, size_t mweb_change_output_weight, size_t change_spend_size, CFeeRate effective_feerate,
+                        CFeeRate long_term_feerate, CFeeRate discard_feerate, size_t tx_noinputs_size, size_t mweb_nochange_weight) :
         use_bnb(use_bnb),
         change_output_size(change_output_size),
+        mweb_change_output_weight(mweb_change_output_weight),
         change_spend_size(change_spend_size),
         m_effective_feerate(effective_feerate),
         m_long_term_feerate(long_term_feerate),
         m_discard_feerate(discard_feerate),
-        tx_noinputs_size(tx_noinputs_size)
+        tx_noinputs_size(tx_noinputs_size),
+        mweb_nochange_weight(mweb_nochange_weight)
     {}
     CoinSelectionParams() {}
 };

@@ -1213,7 +1213,7 @@ static UniValue ProcessImport(CWallet * const pwallet, const UniValue& data, con
         // Check whether we have any work to do
         for (const DestinationAddr& script : script_pub_keys) {
             if (pwallet->IsMine(script) & ISMINE_SPENDABLE) {
-                throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script (\"" + script.Encode() + "\")");
+                throw JSONRPCError(RPC_WALLET_ERROR, "The wallet already contains the private key for this address or script (\"" + (script.IsMWEB() ? script.Encode() : HexStr(script.GetScript())) + "\")");
             }
         }
 

@@ -97,7 +97,8 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
     result.txout_address_is_mine.reserve(outputs.size());
     for (const auto& txout : outputs) {
         result.txout_is_mine.emplace_back(wallet.IsMine(txout));
-        result.txout_address_is_mine.emplace_back(wallet.IsMine(txout));
+        CTxDestination dest;
+        result.txout_address_is_mine.emplace_back(wallet.ExtractOutputDestination(txout, dest) ? wallet.IsMine(dest) : ISMINE_NO); // MW: TODO - Is this correct?
     }
     result.credit = wtx.GetCredit(ISMINE_ALL);
     result.debit = wtx.GetDebit(ISMINE_ALL);

@@ -85,7 +85,7 @@ class CreateWalletTest(BitcoinTestFramework):
             }])
         else:
             w3.sethdseed()
-        assert_equal(w3.getwalletinfo()['keypoolsize'], 2)
+        assert_equal(w3.getwalletinfo()['keypoolsize'], 1)
         w3.getnewaddress()
         w3.getrawchangeaddress()
 

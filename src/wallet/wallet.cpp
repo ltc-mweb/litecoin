@@ -832,14 +832,15 @@ bool CWallet::IsSpentKey(const CTxOutput& output) const
     if (GetDestData(dest, "used", nullptr)) {
         return true;
     }
-    if (output.IsMWEB()) {
-        // MW: TODO - Check if StealthAddress was already used? or pub nonce already used?
+
+    DestinationAddr dest_addr;
+    if (!ExtractDestinationScript(output, dest_addr)) {
         return false;
     }
     if (IsLegacy()) {
         LegacyScriptPubKeyMan* spk_man = GetLegacyScriptPubKeyMan();
         assert(spk_man != nullptr);
-        for (const auto& keyid : GetAffectedKeys(output.GetScriptPubKey(), *spk_man)) {
+        for (const auto& keyid : GetAffectedKeys(dest_addr, *spk_man)) {
             WitnessV0KeyHash wpkh_dest(keyid);
             if (GetDestData(wpkh_dest, "used", nullptr)) {
                 return true;
@@ -2524,9 +2525,10 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
 
     std::vector<OutputGroup> utxo_pool;
     if (coin_selection_params.use_bnb) {
-        uint64_t mweb_weight = 0; // Currently, BnB is not used for MWEB transactions, so just set mweb_weight to 0 for now.
         // Calculate cost of change
-        CAmount cost_of_change = coin_selection_params.m_discard_feerate.GetTotalFee(coin_selection_params.change_spend_size, mweb_weight) + coin_selection_params.m_effective_feerate.GetTotalFee(coin_selection_params.change_output_size, mweb_weight);
+        size_t mweb_change_spend_weight = 0; // MWEB inputs are weightless
+        CAmount cost_of_change = coin_selection_params.m_discard_feerate.GetTotalFee(coin_selection_params.change_spend_size, mweb_change_spend_weight)
+            + coin_selection_params.m_effective_feerate.GetTotalFee(coin_selection_params.change_output_size, coin_selection_params.mweb_change_output_weight);
 
         // Filter by the min conf specs and add to utxo_pool and calculate effective value
         for (OutputGroup& group : groups) {
@@ -2543,7 +2545,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
             if (pos_group.effective_value > 0) utxo_pool.push_back(pos_group);
         }
         // Calculate the fees for things that aren't inputs
-        CAmount not_input_fees = coin_selection_params.m_effective_feerate.GetTotalFee(coin_selection_params.tx_noinputs_size, mweb_weight);
+        CAmount not_input_fees = coin_selection_params.m_effective_feerate.GetTotalFee(coin_selection_params.tx_noinputs_size, coin_selection_params.mweb_nochange_weight);
         bnb_used = true;
         return SelectCoinsBnB(utxo_pool, nTargetValue, cost_of_change, setCoinsRet, nValueRet, not_input_fees);
     } else {
@@ -3657,7 +3659,7 @@ std::shared_ptr<CWallet> CWallet::Create(interfaces::Chain& chain, const std::st
         if (nMaxFee > HIGH_MAX_TX_FEE) {
             warnings.push_back(_("-maxtxfee is set very high! Fees this large could be paid on a single transaction."));
         }
-        if (CFeeRate(nMaxFee, 1000, 0) < chain.relayMinFee()) {
+        if (CFeeRate(nMaxFee) < chain.relayMinFee()) {
             error = strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)"),
                 gArgs.GetArg("-maxtxfee", ""), chain.relayMinFee().ToString());
             return nullptr;

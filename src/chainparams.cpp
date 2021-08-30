@@ -464,7 +464,7 @@ public:
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
-        fMineBlocksOnDemand = false;
+        consensus.fPowNoRetargeting = false;
 
         checkpointData = {{}};
 
@@ -473,9 +473,6 @@ public:
             /* nTime    */ 1601424000,
             /* nTxCount */ 1,
             /* dTxRate  */ 0.02265200874042768};
-
-        /* enable fallback fee on testnet */
-        m_fallback_fee_enabled = true;
     }
 };
 

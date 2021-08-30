@@ -415,6 +415,8 @@ BOOST_AUTO_TEST_CASE(ismine_standard)
         result = keystore.GetLegacyScriptPubKeyMan()->IsMine(scriptPubKey);
         BOOST_CHECK_EQUAL(result, ISMINE_NO);
     }
+
+    // MW: TODO - Stealth addresses
 }
 
 BOOST_AUTO_TEST_SUITE_END()

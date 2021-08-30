@@ -35,10 +35,10 @@ static CAmount balance = 0;
 CoinEligibilityFilter filter_standard(1, 6, 0);
 CoinEligibilityFilter filter_confirmed(1, 1, 0);
 CoinEligibilityFilter filter_standard_extra(6, 6, 0);
-CoinSelectionParams coin_selection_params(/* use_bnb= */ false, /* change_output_size= */ 0,
+CoinSelectionParams coin_selection_params(/* use_bnb= */ false, /* change_output_size= */ 0, /* mweb_change_output_weight= */ 0,
                                           /* change_spend_size= */ 0, /* effective_feerate= */ CFeeRate(0),
                                           /* long_term_feerate= */ CFeeRate(0), /* discard_feerate= */ CFeeRate(0),
-                                          /* tx_no_inputs_size= */ 0);
+                                          /* tx_no_inputs_size= */ 0, /* mweb_no_change_weight= */ 0);
 
 static void add_coin(const CAmount& nValue, int nInput, std::vector<CInputCoin>& set)
 {
@@ -265,10 +265,10 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     }
 
     // Make sure that effective value is working in SelectCoinsMinConf when BnB is used
-    CoinSelectionParams coin_selection_params_bnb(/* use_bnb= */ true, /* change_output_size= */ 0,
+    CoinSelectionParams coin_selection_params_bnb(/* use_bnb= */ true, /* change_output_size= */ 0, /* mweb_change_output_weight= */ 0,
                                                   /* change_spend_size= */ 0, /* effective_feerate= */ CFeeRate(3000),
                                                   /* long_term_feerate= */ CFeeRate(1000), /* discard_feerate= */ CFeeRate(1000),
-                                                  /* tx_no_inputs_size= */ 0);
+                                                  /* tx_no_inputs_size= */ 0, /* mweb_no_change_weight= */ 0);
     CoinSet setCoinsRet;
     CAmount nValueRet;
     bool bnb_used;
@@ -638,14 +638,14 @@ BOOST_AUTO_TEST_CASE(SelectCoins_test)
         CAmount target = rand.randrange(balance - 1000) + 1000;
 
         // Perform selection
-        CoinSelectionParams coin_selection_params_knapsack(/* use_bnb= */ false, /* change_output_size= */ 34,
+        CoinSelectionParams coin_selection_params_knapsack(/* use_bnb= */ false, /* change_output_size= */ 34, /* mweb_change_output_weight= */ 0,
                                                            /* change_spend_size= */ 148, /* effective_feerate= */ CFeeRate(0),
                                                            /* long_term_feerate= */ CFeeRate(0), /* discard_feerate= */ CFeeRate(0),
-                                                           /* tx_no_inputs_size= */ 0);
-        CoinSelectionParams coin_selection_params_bnb(/* use_bnb= */ true, /* change_output_size= */ 34,
+                                                           /* tx_no_inputs_size= */ 0, /* mweb_no_change_weight= */ 0);
+        CoinSelectionParams coin_selection_params_bnb(/* use_bnb= */ true, /* change_output_size= */ 34, /* mweb_change_output_weight= */ 0,
                                                       /* change_spend_size= */ 148, /* effective_feerate= */ CFeeRate(0),
                                                       /* long_term_feerate= */ CFeeRate(0), /* discard_feerate= */ CFeeRate(0),
-                                                      /* tx_no_inputs_size= */ 0);
+                                                      /* tx_no_inputs_size= */ 0, /* mweb_no_change_weight= */ 0);
         CoinSet out_set;
         CAmount out_value = 0;
         bool bnb_used = false;

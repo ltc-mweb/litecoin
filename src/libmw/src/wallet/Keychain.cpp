@@ -1,10 +1,8 @@
 #include <mw/wallet/Keychain.h>
 #include <mw/crypto/Blinds.h>
 #include <mw/crypto/Hasher.h>
-#include <mw/common/Logger.h>
 #include <mw/models/tx/OutputMask.h>
-
-#define RESTORE_WINDOW 100
+#include <wallet/scriptpubkeyman.h>
 
 MW_NAMESPACE
 
@@ -18,10 +16,13 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
     PublicKey B = output.Ko().Sub(Hashed(EHashTag::OUT_KEY, t));
 
     // Check if B belongs to wallet
-    uint32_t index = 0;
-    if (!IsSpendPubKey(B, index)) {
+    StealthAddress address(B.Mul(m_scanSecret), B);
+    auto pMetadata = m_spk_man.GetMetadata(address);
+    if (!pMetadata || !pMetadata->mweb_index) {
         return false;
     }
+
+    uint32_t index = *pMetadata->mweb_index;
 
     // Calc blinding factor and unmask nonce and amount.
     OutputMask mask = OutputMask::FromShared(t);
@@ -60,8 +61,6 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
 
 StealthAddress Keychain::GetStealthAddress(const uint32_t index) const
 {
-    m_addressIndexCounter = std::max(m_addressIndexCounter, index);
-
     PublicKey Bi = PublicKey::From(GetSpendKey(index));
     PublicKey Ai = Bi.Mul(m_scanSecret);
 
@@ -76,35 +75,6 @@ SecretKey Keychain::GetSpendKey(const uint32_t index) const
         .hash();
 
     return Blinds().Add(m_spendSecret).Add(mi).ToKey();
-}
-
-bool Keychain::IsSpendPubKey(const PublicKey& spend_pubkey, uint32_t& index_out) const
-{
-    // Ensure pubkey cache is fully populated
-    while (m_pubkeys.size() <= ((size_t)m_addressIndexCounter + RESTORE_WINDOW)) {
-        uint32_t pubkey_index = (uint32_t)m_pubkeys.size();
-        PublicKey pubkey = PublicKey::From(GetSpendKey(pubkey_index));
-
-        m_pubkeys.insert({ std::move(pubkey), pubkey_index });
-    }
-
-    auto iter = m_pubkeys.find(spend_pubkey);
-    if (iter != m_pubkeys.end()) {
-        index_out = iter->second;
-        return true;
-    }
-
-    return false;
-}
-
-bool Keychain::IsMine(const StealthAddress& address) const
-{
-    uint32_t index;
-    if (IsSpendPubKey(address.GetSpendPubKey(), index)) {
-        return GetStealthAddress(index) == address;
-    }
-
-    return false;
 }
 
 END_NAMESPACE

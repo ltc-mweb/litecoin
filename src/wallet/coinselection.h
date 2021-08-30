@@ -106,10 +106,8 @@ struct CoinEligibilityFilter
 };
 
 enum class InputPreference {
-    // Use MWEB inputs first (used during typicaly send to MWEB address)
-    PREFER_MWEB,
-    // Use canonical inputs first (used during typical send to LTC address)
-    PREFER_LTC,
+    // Use LTC and MWEB inputs (MIXED)
+    ANY,
     // Only use MWEB inputs (used when explicitly pegging-out)
     MWEB_ONLY,
     // Only use canonical inputs (used when explicitly pegging-in)
