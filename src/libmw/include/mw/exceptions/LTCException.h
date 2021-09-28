@@ -8,7 +8,7 @@ class LTCException : public std::runtime_error
 public:
     ~LTCException() = default;
 
-    virtual const char* what() const throw()
+    const char* what() const noexcept override
     {
         return m_what.c_str();
     }
