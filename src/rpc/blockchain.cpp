@@ -264,9 +264,9 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
                 if (!kernel.GetExtraData().empty()) {
                     objKernel.pushKV("extra_data", HexStr(kernel.GetExtraData()));
                 }
-                outputs.push_back(objKernel);
+                kernels.push_back(objKernel);
             } else {
-                outputs.push_back(kernel.GetCommitment().ToHex());
+                kernels.push_back(kernel.GetCommitment().ToHex());
             }
         }
         mweb_block.pushKV("kernels", kernels);
