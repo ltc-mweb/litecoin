@@ -53,7 +53,7 @@ To create an output for value **v** to a receiver's stealth address (**A<sub>i</
 6. Calculate the key exchange pubkey **K<sub>e</sub>** = **s*B<sub>i</sub>**
 7. Derive the 64-byte mask **m** = `HASH64(`**e**`)`
 8. Encrypt the value using **v'** = **v** ⊕ **m[32,39]**
-9. Encrypt the nonce using **n'** = ""n** ⊕ **m[40,55]**
+9. Encrypt the nonce using **n'** = **n** ⊕ **m[40,55]**
 10. Calculate the commitment **C<sub>o</sub>** = `SWITCH(`**v**, **m[0,31]**`)`.
 11. Generate the rangeproof for **C<sub>o</sub>**, committing also to the `output_message`.
 12. Sign the `output_message` using the sender key **k<sub>s</sub>**.
