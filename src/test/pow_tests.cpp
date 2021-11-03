@@ -184,4 +184,9 @@ BOOST_AUTO_TEST_CASE(ChainParams_SIGNET_sanity)
     sanity_check_chainparams(*m_node.args, CBaseChainParams::SIGNET);
 }
 
+BOOST_AUTO_TEST_CASE(ChainParams_MWEBTEST_sanity)
+{
+    sanity_check_chainparams(*m_node.args, CBaseChainParams::MWEBTEST);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

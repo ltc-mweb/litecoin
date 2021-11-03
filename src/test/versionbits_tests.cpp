@@ -441,7 +441,7 @@ BOOST_AUTO_TEST_CASE(versionbits_computeblockversion)
 {
     // check that any deployment on any chain can conceivably reach both
     // ACTIVE and FAILED states in roughly the way we expect
-    for (const auto& chain_name : {CBaseChainParams::MAIN, CBaseChainParams::TESTNET, CBaseChainParams::SIGNET, CBaseChainParams::REGTEST}) {
+    for (const auto& chain_name : {CBaseChainParams::MAIN, CBaseChainParams::TESTNET, CBaseChainParams::SIGNET, CBaseChainParams::REGTEST, CBaseChainParams::MWEBTEST}) {
         const auto chainParams = CreateChainParams(*m_node.args, chain_name);
         for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; ++i) {
             check_computeblockversion(chainParams->GetConsensus(), static_cast<Consensus::DeploymentPos>(i));

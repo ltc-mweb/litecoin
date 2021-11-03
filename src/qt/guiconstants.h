@@ -48,6 +48,7 @@ static const int TOOLTIP_WRAP_THRESHOLD = 80;
 #define QAPP_APP_NAME_TESTNET "Liteocin-Qt-testnet"
 #define QAPP_APP_NAME_SIGNET "Litecoin-Qt-signet"
 #define QAPP_APP_NAME_REGTEST "Litecoin-Qt-regtest"
+#define QAPP_APP_NAME_MWEBTEST "Litecoin-Qt-mwebtest"
 
 /* One gigabyte (GB) in bytes */
 static constexpr uint64_t GB_BYTES{1000000000};

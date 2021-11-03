@@ -393,17 +393,17 @@ public:
     }
 };
 
-class CMWTestNetParams : public CChainParams
+class CMwebTestParams : public CChainParams
 {
 public:
-    CMWTestNetParams()
+    CMwebTestParams()
     {
         genesis = CreateGenesisBlock(1601450000, 1769047, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         //assert(consensus.hashGenesisBlock == uint256S("0x4966625a4b2851d9fdee139e56211a0d88575f59ed816ff5e6a63deb4e3e29a0"));
         //assert(genesis.hashMerkleRoot == uint256S("0x97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9"));
 
-        strNetworkID = CBaseChainParams::TESTNET;
+        strNetworkID = CBaseChainParams::MWEBTEST;
         consensus.nSubsidyHalvingInterval = 840000;
         consensus.BIP16Height = 0; // always enforce P2SH BIP16 on testnet
         consensus.BIP34Height = 756;
@@ -443,7 +443,7 @@ public:
         pchMessageStart[1] = 0xb3;
         pchMessageStart[2] = 0x47;
         pchMessageStart[3] = 0x81;
-        nDefaultPort = 29339;
+        nDefaultPort = 49339;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 2;
         m_assumed_chain_state_size = 1;
@@ -641,11 +641,13 @@ std::unique_ptr<const CChainParams> CreateChainParams(const ArgsManager& args, c
     if (chain == CBaseChainParams::MAIN) {
         return std::unique_ptr<CChainParams>(new CMainParams());
     } else if (chain == CBaseChainParams::TESTNET) {
-        return std::unique_ptr<CChainParams>(new CMWTestNetParams());
+        return std::unique_ptr<CChainParams>(new CTestNetParams());
     } else if (chain == CBaseChainParams::SIGNET) {
         return std::unique_ptr<CChainParams>(new SigNetParams(args));
     } else if (chain == CBaseChainParams::REGTEST) {
         return std::unique_ptr<CChainParams>(new CRegTestParams(args));
+    } else if (chain == CBaseChainParams::MWEBTEST) {
+        return std::unique_ptr<CChainParams>(new CMwebTestParams());
     }
     throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
 }

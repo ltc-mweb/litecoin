@@ -266,6 +266,7 @@ const std::list<SectionInfo> ArgsManager::GetUnrecognizedSections() const
         CBaseChainParams::REGTEST,
         CBaseChainParams::SIGNET,
         CBaseChainParams::TESTNET,
+        CBaseChainParams::MWEBTEST,
         CBaseChainParams::MAIN
     };
 
@@ -939,14 +940,20 @@ std::string ArgsManager::GetChainName() const
         return value.isNull() ? false : value.isBool() ? value.get_bool() : InterpretBool(value.get_str());
     };
 
+    const bool fMainNet = get_net("-mainnet");
+    const bool fMwebTest = get_net("-mwebtest");
     const bool fRegTest = get_net("-regtest");
     const bool fSigNet  = get_net("-signet");
     const bool fTestNet = get_net("-testnet");
     const bool is_chain_arg_set = IsArgSet("-chain");
 
-    if ((int)is_chain_arg_set + (int)fRegTest + (int)fSigNet + (int)fTestNet > 1) {
-        throw std::runtime_error("Invalid combination of -regtest, -signet, -testnet and -chain. Can use at most one.");
+    if ((int)is_chain_arg_set + (int)fMainNet + (int)fRegTest + (int)fSigNet + (int)fTestNet + (int)fMwebTest > 1) {
+        throw std::runtime_error("Invalid combination of -mainnet, -regtest, -signet, -testnet, -mwebtest and -chain. Can use at most one.");
     }
+    if (fMwebTest)
+        return CBaseChainParams::MWEBTEST;
+    if (fMainNet)
+        return CBaseChainParams::MAIN;
     if (fRegTest)
         return CBaseChainParams::REGTEST;
     if (fSigNet) {
@@ -955,7 +962,7 @@ std::string ArgsManager::GetChainName() const
     if (fTestNet)
         return CBaseChainParams::TESTNET;
 
-    return GetArg("-chain", CBaseChainParams::MAIN);
+    return GetArg("-chain", CBaseChainParams::MWEBTEST);
 }
 
 bool ArgsManager::UseDefaultSection(const std::string& arg) const
