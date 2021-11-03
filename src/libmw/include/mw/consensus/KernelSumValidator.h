@@ -83,7 +83,7 @@ private:
         Commitment sum_utxo_commitment = Pedersen::AddCommitments(output_commits, input_commits);
         if (coins_added > 0) {
             sum_utxo_commitment = Pedersen::AddCommitments(
-                { sum_utxo_commitment }, { Pedersen::CommitTransparent(coins_added) }
+                { sum_utxo_commitment }, { Commitment::Transparent(coins_added) }
             );
         } else if (coins_added < 0) {
             sum_utxo_commitment = Pedersen::AddCommitments(
