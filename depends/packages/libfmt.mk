@@ -9,7 +9,7 @@ $(package)_config_opts_x86_64_mingw32=-DCMAKE_TOOLCHAIN_FILE=$(BASEDIR)/cmake/mi
 endef
 
 define $(package)_config_cmds
-  cmake -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true $($(package)_config_opts) .
+  $($(package)_cmake) -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true
 endef
 
 define $(package)_build_cmds
