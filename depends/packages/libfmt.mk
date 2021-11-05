@@ -13,9 +13,9 @@ define $(package)_config_cmds
 endef
 
 define $(package)_build_cmds
-  $(MAKE) && \
-  mkdir -p $($(package)_staging_dir)$(host_prefix)/include && \
-  cp -a include/* $($(package)_staging_dir)$(host_prefix)/include/ && \
-  mkdir -p $($(package)_staging_dir)$(host_prefix)/lib && \
-  cp -a libfmt.a $($(package)_staging_dir)$(host_prefix)/lib/
+  $(MAKE)
+endef
+
+define $(package)_stage_cmds
+  $(MAKE) DESTDIR=$($(package)_staging_dir) install
 endef
