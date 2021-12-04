@@ -26,6 +26,7 @@ public:
     //
     static uint8_t CountBitsSet(const uint64_t input) noexcept
     {
+        // MW: TODO - use __popcnt64
         uint64_t n = input;
         uint8_t count = 0;
         while (n)
