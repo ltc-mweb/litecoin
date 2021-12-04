@@ -28,15 +28,15 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
         return false;
     }
 
-    // Verify pegin commitments are unique
-    std::unordered_set<Commitment> pegin_commitments;
+    // Verify pegin kernels are unique
+    std::unordered_set<mw::Hash> pegin_hashes;
     for (const PegInCoin& pegin : pegins) {
-        if (pegin_commitments.find(pegin.GetCommitment()) != pegin_commitments.end()) {
+        if (pegin_hashes.find(pegin.GetKernelHash()) != pegin_hashes.end()) {
             LOG_ERROR("Duplicate pegin commitments");
             return false;
         }
 
-        pegin_commitments.insert(pegin.GetCommitment());
+        pegin_hashes.insert(pegin.GetKernelHash());
     }
 
     // Verify pegin outputs are included
@@ -47,8 +47,8 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
     }
 
     for (const PegInCoin& pegin : pegin_coins) {
-        if (pegin_commitments.find(pegin.GetCommitment()) == pegin_commitments.end()) {
-            LOG_ERROR_F("Pegin commitment {} not found", pegin.GetCommitment());
+        if (pegin_hashes.find(pegin.GetKernelHash()) == pegin_hashes.end()) {
+            LOG_ERROR_F("Pegin kernel {} not found", pegin.GetKernelHash());
             return false;
         }
     }

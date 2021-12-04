@@ -330,11 +330,11 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys)
     return script;
 }
 
-CScript GetScriptForPegin(const Commitment& commitment)
+CScript GetScriptForPegin(const mw::Hash& kernel_hash)
 {
     CScript script;
     script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
-    script << commitment.vec();
+    script << kernel_hash.vec();
     return script;
 }
 

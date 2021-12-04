@@ -42,11 +42,11 @@ void BlockValidator::ValidatePegInCoins(
     const mw::Block::CPtr& pBlock,
     const std::vector<PegInCoin>& pegInCoins)
 {
-    std::unordered_map<Commitment, CAmount> pegInAmounts;
+    std::unordered_map<mw::Hash, CAmount> pegInAmounts;
     std::for_each(
         pegInCoins.cbegin(), pegInCoins.cend(),
         [&pegInAmounts](const PegInCoin& coin) {
-            pegInAmounts.insert({ coin.GetCommitment(), coin.GetAmount() });
+            pegInAmounts.insert({ coin.GetKernelHash(), coin.GetAmount() });
         }
     );
 
@@ -56,7 +56,7 @@ void BlockValidator::ValidatePegInCoins(
     }
 
     for (const auto& pegin : pegin_coins) {
-        auto pIter = pegInAmounts.find(pegin.GetCommitment());
+        auto pIter = pegInAmounts.find(pegin.GetKernelHash());
         if (pIter == pegInAmounts.end() || pegin.GetAmount() != pIter->second) {
             ThrowValidation(EConsensusError::PEGIN_MISMATCH);
         }

@@ -144,7 +144,7 @@ struct Tx {
         std::vector<PegInCoin> pegins;
         for (const Kernel& kernel : m_transaction->GetKernels()) {
             if (kernel.HasPegIn()) {
-                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetCommitment()});
+                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetHash()});
             }
         }
 

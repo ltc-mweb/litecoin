@@ -517,7 +517,7 @@ bool CreateTransactionEx(
 
                 // Add Dummy peg-in script
                 if (ContainsPegIn(mweb_type, setCoins)) {
-                    txNew.vout.push_back(CTxOut(0, GetScriptForPegin(Commitment())));
+                    txNew.vout.push_back(CTxOut(0, GetScriptForPegin(mw::Hash())));
                 }
 
                 // Dummy fill vin for maximum size estimation

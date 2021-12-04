@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mw/common/Traits.h>
-#include <mw/models/crypto/Commitment.h>
+#include <mw/models/crypto/Hash.h>
 #include <mw/util/StringUtil.h>
 #include <amount.h>
 
@@ -12,16 +12,16 @@ class PegInCoin : public Traits::ISerializable, public Traits::IPrintable
 {
 public:
     PegInCoin() = default;
-    PegInCoin(const CAmount amount, Commitment commitment)
-        : m_amount(amount), m_commitment(std::move(commitment)) { }
+    PegInCoin(const CAmount amount, mw::Hash kernel_hash)
+        : m_amount(amount), m_kernelHash(std::move(kernel_hash)) { }
 
     bool operator==(const PegInCoin& rhs) const noexcept
     {
-        return m_amount == rhs.m_amount && m_commitment == rhs.m_commitment;
+        return m_amount == rhs.m_amount && m_kernelHash == rhs.m_kernelHash;
     }
 
     CAmount GetAmount() const noexcept { return m_amount; }
-    const Commitment& GetCommitment() const noexcept { return m_commitment; }
+    const mw::Hash& GetKernelHash() const noexcept { return m_kernelHash; }
 
     //
     // Serialization/Deserialization
@@ -29,15 +29,15 @@ public:
     IMPL_SERIALIZABLE(PegInCoin, obj)
     {
         READWRITE(VARINT_MODE(obj.m_amount, VarIntMode::NONNEGATIVE_SIGNED));
-        READWRITE(obj.m_commitment);
+        READWRITE(obj.m_kernelHash);
     }
 
     std::string Format() const noexcept final
     {
-        return StringUtil::Format("PegInCoin(commitment: {}, amount: {})", m_commitment, m_amount);
+        return StringUtil::Format("PegInCoin(kernel_hash: {}, amount: {})", m_kernelHash, m_amount);
     }
 
 private:
     CAmount m_amount;
-    Commitment m_commitment;
+    mw::Hash m_kernelHash;
 };

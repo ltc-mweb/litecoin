@@ -11,7 +11,7 @@ std::vector<PegInCoin> TxBody::GetPegIns() const noexcept
     std::vector<PegInCoin> pegins;
     for (const Kernel& kernel : m_kernels) {
         if (kernel.HasPegIn()) {
-            pegins.push_back(PegInCoin(kernel.GetPegIn(), kernel.GetCommitment()));
+            pegins.push_back(PegInCoin(kernel.GetPegIn(), kernel.GetHash()));
         }
     }
 

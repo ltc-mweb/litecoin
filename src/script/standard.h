@@ -131,7 +131,7 @@ enum class TxoutType {
     WITNESS_V0_SCRIPTHASH,
     WITNESS_V0_KEYHASH,
     WITNESS_V1_TAPROOT,
-    WITNESS_MWEB_PEGIN, //!< Commitment value of the peg-in kernel
+    WITNESS_MWEB_PEGIN, //!< Hash of the peg-in kernel
     WITNESS_UNKNOWN, //!< Only for Witness versions not already defined above
 };
 
@@ -272,7 +272,7 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 
 bool IsPegInOutput(const CTxOutput& output);
 
-CScript GetScriptForPegin(const Commitment& commitment);
+CScript GetScriptForPegin(const mw::Hash& kernel_hash);
 
 class DestinationAddr
 {

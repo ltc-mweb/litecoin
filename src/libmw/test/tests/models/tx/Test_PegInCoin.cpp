@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <mw/models/tx/PegInCoin.h>
+#include <mw/models/crypto/SecretKey.h>
 
 #include <test_framework/TestMWEB.h>
 
@@ -11,8 +12,8 @@ BOOST_FIXTURE_TEST_SUITE(TestPegInCoin, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(TxPegInCoin)
 {
     CAmount amount = 123;
-    Commitment commit = Commitment::Random();
-    PegInCoin pegInCoin(amount, commit);
+    mw::Hash kernel_hash = SecretKey::Random().vec();
+    PegInCoin pegInCoin(amount, kernel_hash);
 
     //
     // Serialization
@@ -28,7 +29,7 @@ BOOST_AUTO_TEST_CASE(TxPegInCoin)
     //
     {
         BOOST_REQUIRE(pegInCoin.GetAmount() == amount);
-        BOOST_REQUIRE(pegInCoin.GetCommitment() == commit);
+        BOOST_REQUIRE(pegInCoin.GetKernelHash() == kernel_hash);
     }
 }
 

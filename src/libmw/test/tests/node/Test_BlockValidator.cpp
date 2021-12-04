@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test)
     };
 
     std::vector<PegInCoin> pegInCoins{
-        PegInCoin(5'000'000, block_10_txs[0].GetTransaction()->GetKernels()[0].GetCommitment())
+        PegInCoin(5'000'000, block_10_txs[0].GetTransaction()->GetKernels()[0].GetHash())
     };
     std::vector<PegOutCoin> pegOutCoins;
     test::MinedBlock block_10 = miner.MineBlock(10, block_10_txs);

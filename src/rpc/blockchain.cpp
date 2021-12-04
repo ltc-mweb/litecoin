@@ -587,7 +587,7 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
         for (const PegInCoin& pegin : tx.mweb_tx.GetPegIns()) {
             UniValue pegin_uni(UniValue::VOBJ);
             pegin_uni.pushKV("amount", pegin.GetAmount());
-            pegin_uni.pushKV("commitment", pegin.GetCommitment().ToHex());
+            pegin_uni.pushKV("kernel_hash", pegin.GetKernelHash().ToHex());
             pegins.push_back(pegin_uni);
         }
 

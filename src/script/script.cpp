@@ -234,13 +234,13 @@ bool CScript::IsWitnessProgram(int& version, std::vector<unsigned char>& program
     return false;
 }
 
-bool CScript::IsMWEBPegin(Commitment& commitment) const
+bool CScript::IsMWEBPegin(mw::Hash& kernel_hash) const
 {
     int version;
     std::vector<uint8_t> program;
     if (IsWitnessProgram(version, program)) {
         if (version == MWEB_WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-            commitment = Commitment(std::move(program));
+            kernel_hash = mw::Hash(std::move(program));
             return true;
         }
     }
