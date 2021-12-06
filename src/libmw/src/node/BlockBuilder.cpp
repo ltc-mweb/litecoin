@@ -32,7 +32,7 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
     std::unordered_set<mw::Hash> pegin_hashes;
     for (const PegInCoin& pegin : pegins) {
         if (pegin_hashes.find(pegin.GetKernelHash()) != pegin_hashes.end()) {
-            LOG_ERROR("Duplicate pegin commitments");
+            LOG_ERROR("Duplicate pegin kernels");
             return false;
         }
 

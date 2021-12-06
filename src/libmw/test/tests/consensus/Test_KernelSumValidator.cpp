@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
 
     // Add kernel
     const CAmount fee = 500'000;
-    kernels.push_back(Kernel::Create(excess, fee, boost::none, boost::none, boost::none));
+    kernels.push_back(Kernel::Create(excess, boost::none, fee, boost::none, boost::none, boost::none));
 
     // Create Transaction
     auto pTransaction = mw::Transaction::Create(
@@ -164,8 +164,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
         BlindingFactor::Random(),
         inputs,
         outputs,
-        kernels,
-        {}
+        kernels
     );
 
     KernelSumValidator::ValidateForBlock(pTransaction->GetBody(), total_offset, prev_total_offset);

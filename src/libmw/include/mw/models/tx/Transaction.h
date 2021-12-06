@@ -49,13 +49,11 @@ public:
         BlindingFactor owner_offset,
         std::vector<Input> inputs,
         std::vector<Output> outputs,
-        std::vector<Kernel> kernels,
-        std::vector<SignedMessage> owner_sigs)
+        std::vector<Kernel> kernels)
     {
         std::sort(inputs.begin(), inputs.end(), SortByCommitment);
         std::sort(outputs.begin(), outputs.end(), SortByCommitment);
         std::sort(kernels.begin(), kernels.end(), KernelSort);
-        std::sort(owner_sigs.begin(), owner_sigs.end(), SortByHash);
 
         return std::make_shared<mw::Transaction>(
             std::move(kernel_offset),
@@ -63,8 +61,7 @@ public:
             TxBody{
                 std::move(inputs),
                 std::move(outputs),
-                std::move(kernels),
-                std::move(owner_sigs)
+                std::move(kernels)
             }
         );
     }
@@ -92,7 +89,6 @@ public:
     const std::vector<Input>& GetInputs() const noexcept { return m_body.GetInputs(); }
     const std::vector<Output>& GetOutputs() const noexcept { return m_body.GetOutputs(); }
     const std::vector<Kernel>& GetKernels() const noexcept { return m_body.GetKernels(); }
-    const std::vector<SignedMessage>& GetOwnerSigs() const noexcept { return m_body.GetOwnerSigs(); }
     CAmount GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
     int32_t GetLockHeight() const noexcept { return m_body.GetLockHeight(); }
     uint64_t CalcWeight() const noexcept { return (uint64_t)Weight::Calculate(m_body); }

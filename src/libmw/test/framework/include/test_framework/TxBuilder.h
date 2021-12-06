@@ -36,11 +36,9 @@ public:
         const StealthAddress& receiver_addr
     );
 
-    TxBuilder& AddOwnerSig(const Kernel& kernel);
-
-    TxBuilder& AddPlainKernel(const CAmount fee, const bool add_owner_sig = false);
-    TxBuilder& AddPeginKernel(const CAmount amount, const boost::optional<CAmount>& fee = boost::none, const bool add_owner_sig = false);
-    TxBuilder& AddPegoutKernel(const CAmount amount, const CAmount fee, const bool add_owner_sig = false);
+    TxBuilder& AddPlainKernel(const CAmount fee, const bool add_stealth_excess = false);
+    TxBuilder& AddPeginKernel(const CAmount amount, const boost::optional<CAmount>& fee = boost::none, const bool add_stealth_excess = false);
+    TxBuilder& AddPegoutKernel(const CAmount amount, const CAmount fee, const bool add_stealth_excess = false);
 
     Tx Build();
 
@@ -52,7 +50,6 @@ private:
     std::vector<Input> m_inputs;
     std::vector<TxOutput> m_outputs;
     std::vector<Kernel> m_kernels;
-    std::vector<SignedMessage> m_ownerSigs;
 };
 
 END_NAMESPACE

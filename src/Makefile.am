@@ -118,6 +118,7 @@ libmw_a_SOURCES = \
 	libmw/src/crypto/Pedersen.cpp \
 	libmw/src/crypto/PublicKeys.cpp \
 	libmw/src/crypto/Schnorr.cpp \
+	libmw/src/crypto/SecretKeys.cpp \
 	libmw/src/db/CoinDB.cpp \
 	libmw/src/db/LeafDB.cpp \
 	libmw/src/db/MMRInfoDB.cpp \

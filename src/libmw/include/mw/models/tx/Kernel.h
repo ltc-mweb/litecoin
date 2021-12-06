@@ -6,6 +6,7 @@
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
 #include <mw/models/crypto/Signature.h>
+#include <mw/models/crypto/SignedMessage.h>
 #include <mw/models/tx/PegOutCoin.h>
 #include <amount.h>
 #include <boost/optional.hpp>
@@ -23,6 +24,7 @@ public:
         boost::optional<CAmount> pegin,
         boost::optional<PegOutCoin> pegout,
         boost::optional<int32_t> lockHeight,
+        boost::optional<PublicKey> stealthExcess,
         std::vector<uint8_t> extraData,
         Commitment excess,
         Signature signature
@@ -31,6 +33,7 @@ public:
         m_pegin(pegin),
         m_pegout(std::move(pegout)),
         m_lockHeight(lockHeight),
+        m_stealthExcess(std::move(stealthExcess)),
         m_extraData(std::move(extraData)),
         m_excess(std::move(excess)),
         m_signature(std::move(signature))
@@ -43,8 +46,9 @@ public:
         PEGIN_FEATURE_BIT = 0x02,
         PEGOUT_FEATURE_BIT = 0x04,
         HEIGHT_LOCK_FEATURE_BIT = 0x08,
-        EXTRA_DATA_FEATURE_BIT = 0x10,
-        ALL_FEATURE_BITS = FEE_FEATURE_BIT | PEGIN_FEATURE_BIT | PEGOUT_FEATURE_BIT | HEIGHT_LOCK_FEATURE_BIT | EXTRA_DATA_FEATURE_BIT
+        STEALTH_EXCESS_FEATURE_BIT = 0x10,
+        EXTRA_DATA_FEATURE_BIT = 0x20,
+        ALL_FEATURE_BITS = FEE_FEATURE_BIT | PEGIN_FEATURE_BIT | PEGOUT_FEATURE_BIT | HEIGHT_LOCK_FEATURE_BIT | STEALTH_EXCESS_FEATURE_BIT | EXTRA_DATA_FEATURE_BIT
     };
 
     //
@@ -52,6 +56,7 @@ public:
     //
     static Kernel Create(
         const BlindingFactor& blind,
+        const boost::optional<BlindingFactor>& stealth_blind,
         const boost::optional<CAmount>& fee,
         const boost::optional<CAmount>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
@@ -72,23 +77,25 @@ public:
     CAmount GetFee() const noexcept { return m_fee.value_or(0); }
     int32_t GetLockHeight() const noexcept { return m_lockHeight.value_or(0); }
     const Commitment& GetExcess() const noexcept { return m_excess; }
+    const PublicKey& GetStealthExcess() const noexcept { return m_stealthExcess.value(); }
     const Signature& GetSignature() const noexcept { return m_signature; }
     const std::vector<uint8_t>& GetExtraData() const noexcept { return m_extraData; }
 
     bool IsStandard() const noexcept { return m_features < EXTRA_DATA_FEATURE_BIT; }
 
-    mw::Hash GetSignatureMessage() const;
+    SignedMessage BuildSignedMsg() const;
     static mw::Hash GetSignatureMessage(
         const uint8_t features,
         const boost::optional<CAmount>& fee,
         const boost::optional<CAmount>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
         const boost::optional<int32_t>& lock_height,
-        const std::vector<uint8_t>& extra_data
+        const std::vector<uint8_t>& extra_data // MW: TODO - Include excess or stealth excess in message?
     );
 
     bool HasPegIn() const noexcept { return !!m_pegin; }
     bool HasPegOut() const noexcept { return !!m_pegout; }
+    bool HasStealthExcess() const noexcept { return !!m_stealthExcess; }
 
     CAmount GetPegIn() const noexcept { return m_pegin.value_or(0); }
     const boost::optional<PegOutCoin>& GetPegOut() const noexcept { return m_pegout; }
@@ -125,6 +132,10 @@ public:
             ::WriteVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s, m_lockHeight.value());
         }
 
+        if (m_stealthExcess) {
+            s << m_stealthExcess.value();
+        }
+
         if (!m_extraData.empty()) {
             s << m_extraData;
         }
@@ -155,6 +166,12 @@ public:
             m_lockHeight = ::ReadVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, int32_t>(s);
         }
 
+        if (m_features & STEALTH_EXCESS_FEATURE_BIT) {
+            PublicKey stealth_excess;
+            s >> stealth_excess;
+            m_stealthExcess = boost::make_optional(std::move(stealth_excess));
+        }
+
         if (m_features & EXTRA_DATA_FEATURE_BIT) {
             s >> m_extraData;
         }
@@ -176,6 +193,7 @@ private:
     boost::optional<CAmount> m_pegin;
     boost::optional<PegOutCoin> m_pegout;
     boost::optional<int32_t> m_lockHeight;
+    boost::optional<PublicKey> m_stealthExcess;
     std::vector<uint8_t> m_extraData;
 
     // Remainder of the sum of all transaction commitments. 

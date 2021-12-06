@@ -83,8 +83,7 @@ void TxBody::Validate() const
     // Verify inputs, outputs, kernels, and owner signatures are sorted
     if (!std::is_sorted(m_inputs.cbegin(), m_inputs.cend(), SortByCommitment)
         || !std::is_sorted(m_outputs.cbegin(), m_outputs.cend(), SortByCommitment)
-        || !std::is_sorted(m_kernels.cbegin(), m_kernels.cend(), KernelSort)
-        || !std::is_sorted(m_ownerSigs.cbegin(), m_ownerSigs.cend(), SortByHash))
+        || !std::is_sorted(m_kernels.cbegin(), m_kernels.cend(), KernelSort))
     {
         ThrowValidation(EConsensusError::NOT_SORTED);
     }
@@ -102,28 +101,9 @@ void TxBody::Validate() const
     }
 
     // Verify no duplicate kernel commitments
-    std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels);
+    std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels); // MW: TODO - Do we need unique stealth excesses? Unique aggregated commits?
     if (kernel_commits.size() != m_kernels.size()) {
         ThrowValidation(EConsensusError::DUPLICATES);
-    }
-
-    // Verify no duplicate owner signatures
-    std::vector<SignedMessage> owner_sigs = m_ownerSigs;
-    if (std::unique(owner_sigs.begin(), owner_sigs.end()) != owner_sigs.end()) {
-        ThrowValidation(EConsensusError::DUPLICATES);
-    }
-
-    // Verify kernel exists with matching hash for each owner sig
-    std::unordered_set<mw::Hash> kernel_hashes;
-    std::transform(
-        m_kernels.cbegin(), m_kernels.cend(), std::inserter(kernel_hashes, kernel_hashes.end()),
-        [](const Kernel& kernel) { return kernel.GetHash(); }
-    );
-
-    for (const auto& owner_sig : m_ownerSigs) {
-        if (kernel_hashes.find(owner_sig.GetMsgHash()) == kernel_hashes.end()) {
-            ThrowValidation(EConsensusError::KERNEL_MISSING);
-        }
     }
 
     //
@@ -132,10 +112,7 @@ void TxBody::Validate() const
     std::vector<SignedMessage> signatures;
     std::transform(
         m_kernels.cbegin(), m_kernels.cend(), std::back_inserter(signatures),
-        [](const Kernel& kernel) {
-            PublicKey public_key = PublicKey::From(kernel.GetCommitment());
-            return SignedMessage{ kernel.GetSignatureMessage(), public_key, kernel.GetSignature() };
-        }
+        [](const Kernel& kernel) { return kernel.BuildSignedMsg(); }
     );
 
     std::transform(
@@ -147,8 +124,6 @@ void TxBody::Validate() const
         m_outputs.cbegin(), m_outputs.cend(), std::back_inserter(signatures),
         [](const Output& output) { return output.BuildSignedMsg(); }
     );
-
-    signatures.insert(signatures.end(), m_ownerSigs.begin(), m_ownerSigs.end());
 
     if (!Schnorr::BatchVerify(signatures)) {
         ThrowValidation(EConsensusError::INVALID_SIG);

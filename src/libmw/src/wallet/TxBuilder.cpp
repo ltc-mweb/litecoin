@@ -55,18 +55,18 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
         .Sub(kernel_offset)
         .Total();
 
+    // MW: TODO - This is only needed for peg-ins or when no change
+    BlindingFactor stealth_blind = SecretKey::Random();
+
     // Create the kernel
     Kernel kernel = Kernel::Create(
         kernel_blind,
+        boost::make_optional(stealth_blind),
         fee,
         pegin_amount,
         pegouts.empty() ? boost::none : boost::make_optional(pegouts.front()),
         boost::none
     );
-
-    // MW: TODO - I'm no longer convinced this is even necessary.
-    SecretKey owner_sig_key = SecretKey::Random();
-    SignedMessage owner_sig = Schnorr::SignMessage(owner_sig_key, kernel.GetHash());
 
     // Total owner offset is split between raw owner_offset and the owner_sig's key.
     // sum(output.sender_key) - sum(input.key) = owner_offset + sum(owner_sig.key)
@@ -74,7 +74,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     BlindingFactor owner_offset = Blinds()
         .Add(outputs.total_key)
         .Sub(input_keys)
-        .Sub(owner_sig_key)
+        .Sub(stealth_blind)
         .Total();
 
     // Build the transaction
@@ -83,8 +83,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
         std::move(owner_offset),
         std::move(inputs),
         std::move(outputs.outputs),
-        std::vector<Kernel>{ std::move(kernel) },
-        std::vector<SignedMessage>{ std::move(owner_sig) }
+        std::vector<Kernel>{ std::move(kernel) }
     );
 }
 

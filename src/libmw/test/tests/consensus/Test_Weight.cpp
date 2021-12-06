@@ -13,15 +13,13 @@ BOOST_AUTO_TEST_CASE(ExceedsMaximum)
     std::vector<Input> inputs;
     std::vector<Output> outputs;
     std::vector<Kernel> kernels;
-    std::vector<SignedMessage> sigs;
 
     for (int i = 0; i < 1000; i++) {
         inputs.push_back(Input());
-        kernels.push_back(Kernel());
+        kernels.push_back(Kernel(0, boost::none, boost::none, boost::none, boost::none, PublicKey(), {}, Commitment(), Signature()));
         outputs.push_back(Output());
-        sigs.push_back(SignedMessage());
     }
-    TxBody tx1(inputs, outputs, kernels, sigs);
+    TxBody tx1(inputs, outputs, kernels);
 
     // 1,000 outputs - 1,000 kernels - 1,000 owner_sigs = 21,000 Weight
     BOOST_REQUIRE(Weight::Calculate(tx1) == 21'000);
@@ -30,7 +28,7 @@ BOOST_AUTO_TEST_CASE(ExceedsMaximum)
     // 1,000 outputs - 1,001 kernels - 1,000 owner_sigs = 21,002 Weight
     inputs.push_back(Input());
     kernels.push_back(Kernel());
-    TxBody tx2(inputs, outputs, kernels, sigs);
+    TxBody tx2(inputs, outputs, kernels);
     BOOST_REQUIRE(Weight::Calculate(tx2) == 21'002);
     BOOST_REQUIRE(Weight::ExceedsMaximum(tx2));
 }

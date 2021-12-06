@@ -306,7 +306,7 @@ static bool AttemptCoinSelection(
         CoinSelectionParams params_pegout = coin_selection_params;
         params_pegout.input_preference = InputPreference::ANY;
         params_pegout.mweb_change_output_weight = Weight::OUTPUT_WEIGHT;
-        params_pegout.mweb_nochange_weight = Weight::KERNEL_WEIGHT + Weight::OWNER_SIG_WEIGHT;
+        params_pegout.mweb_nochange_weight = Weight::KERNEL_WEIGHT + Weight::STEALTH_EXCESS_WEIGHT;
         params_pegout.change_output_size = 0;
         params_pegout.change_spend_size = 0;
 

@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel_Test)
 {
     CAmount fee = 1000;
     BlindingFactor excess_blind = BlindingFactor::Random();
-    Kernel kernel = Kernel::Create(excess_blind, fee, boost::none, boost::none, boost::none);
+    Kernel kernel = Kernel::Create(excess_blind, boost::none, fee, boost::none, boost::none, boost::none);
 
     //
     // Serialization
@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel_Test)
         Hasher hasher;
         hasher << uint8_t(1);
         ::WriteVarInt<Hasher, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(hasher, fee);
-        BOOST_REQUIRE(kernel.GetSignatureMessage() == hasher.hash());
+        BOOST_REQUIRE(kernel.BuildSignedMsg().GetMsgHash() == hasher.hash());
     }
 
     //
@@ -42,12 +42,13 @@ BOOST_AUTO_TEST_CASE(PlainKernel_Test)
     {
         BOOST_REQUIRE(!kernel.HasPegIn());
         BOOST_REQUIRE(!kernel.HasPegOut());
+        BOOST_REQUIRE(!kernel.HasStealthExcess());
         BOOST_REQUIRE(kernel.GetPegIn() == 0);
         BOOST_REQUIRE(kernel.GetPegOut() == boost::none);
         BOOST_REQUIRE(kernel.GetLockHeight() == 0);
         BOOST_REQUIRE(kernel.GetFee() == fee);
         BOOST_REQUIRE(kernel.GetCommitment() == Commitment::Blinded(excess_blind, 0));
-        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.GetSignatureMessage()));
+        BOOST_REQUIRE(kernel.GetSignature() == Schnorr::Sign(excess_blind.data(), kernel.BuildSignedMsg().GetMsgHash()));
     }
 }
 
@@ -60,11 +61,12 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
     int32_t lock_height = 123456;
     std::vector<uint8_t> rand2 = secret_key_t<30>::Random().vec();
     Kernel standard_kernel(
-        Kernel::FEE_FEATURE_BIT | Kernel::PEGIN_FEATURE_BIT | Kernel::PEGOUT_FEATURE_BIT | Kernel::HEIGHT_LOCK_FEATURE_BIT,
+        Kernel::FEE_FEATURE_BIT | Kernel::PEGIN_FEATURE_BIT | Kernel::PEGOUT_FEATURE_BIT | Kernel::HEIGHT_LOCK_FEATURE_BIT | Kernel::STEALTH_EXCESS_FEATURE_BIT,
         fee,
         pegin,
         boost::make_optional(PegOutCoin(2000, CScript(rand2.data(), rand2.data() + rand2.size()))),
         lock_height,
+        PublicKey::Random(),
         std::vector<uint8_t>{},
         Commitment::Random(),
         Signature(SecretKey64::Random().GetBigInt())
@@ -76,6 +78,7 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
         pegin,
         boost::make_optional(PegOutCoin(2000, CScript(rand3.data(), rand3.data() + rand3.size()))),
         lock_height,
+        PublicKey::Random(),
         secret_key_t<20>::Random().vec(),
         standard_kernel.GetCommitment(),
         standard_kernel.GetSignature()
@@ -87,6 +90,7 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
         boost::none,
         boost::none,
         boost::none,
+        PublicKey::Random(),
         std::vector<uint8_t>{},
         standard_kernel.GetCommitment(),
         standard_kernel.GetSignature()

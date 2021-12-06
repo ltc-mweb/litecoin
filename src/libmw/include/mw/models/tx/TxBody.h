@@ -6,7 +6,6 @@
 
 #include <mw/common/Logger.h>
 #include <mw/common/Traits.h>
-#include <mw/models/crypto/SignedMessage.h>
 #include <mw/models/tx/Input.h>
 #include <mw/models/tx/Output.h>
 #include <mw/models/tx/Kernel.h>
@@ -29,8 +28,8 @@ public:
     //
     // Constructors
     //
-    TxBody(std::vector<Input> inputs, std::vector<Output> outputs, std::vector<Kernel> kernels, std::vector<SignedMessage> ownerSigs)
-        : m_inputs(std::move(inputs)), m_outputs(std::move(outputs)), m_kernels(std::move(kernels)), m_ownerSigs(std::move(ownerSigs)) { }
+    TxBody(std::vector<Input> inputs, std::vector<Output> outputs, std::vector<Kernel> kernels)
+        : m_inputs(std::move(inputs)), m_outputs(std::move(outputs)), m_kernels(std::move(kernels)) { }
     TxBody(const TxBody& other) = default;
     TxBody(TxBody&& other) noexcept = default;
     TxBody() = default;
@@ -51,8 +50,7 @@ public:
         return
             m_inputs == rhs.m_inputs &&
             m_outputs == rhs.m_outputs &&
-            m_kernels == rhs.m_kernels &&
-            m_ownerSigs == rhs.m_ownerSigs;
+            m_kernels == rhs.m_kernels;
     }
 
     //
@@ -61,11 +59,21 @@ public:
     const std::vector<Input>& GetInputs() const noexcept { return m_inputs; }
     const std::vector<Output>& GetOutputs() const noexcept { return m_outputs; }
     const std::vector<Kernel>& GetKernels() const noexcept { return m_kernels; }
-    const std::vector<SignedMessage>& GetOwnerSigs() const noexcept { return m_ownerSigs; }
 
     std::vector<Commitment> GetKernelCommits() const noexcept { return Commitments::From(m_kernels); }
     std::vector<Commitment> GetInputCommits() const noexcept { return Commitments::From(m_inputs); }
     std::vector<Commitment> GetOutputCommits() const noexcept { return Commitments::From(m_outputs); }
+
+    std::vector<PublicKey> GetStealthExcesses() const noexcept {
+        std::vector<PublicKey> stealth_excesses;
+        for (const Kernel& kernel : m_kernels) {
+            if (kernel.HasStealthExcess()) {
+                stealth_excesses.push_back(kernel.GetStealthExcess());
+            }
+        }
+
+        return stealth_excesses;
+    }
 
     std::vector<PegInCoin> GetPegIns() const noexcept;
     CAmount GetPegInAmount() const noexcept;
@@ -79,7 +87,7 @@ public:
     //
     IMPL_SERIALIZABLE(TxBody, obj)
     {
-        READWRITE(obj.m_inputs, obj.m_outputs, obj.m_kernels, obj.m_ownerSigs);
+        READWRITE(obj.m_inputs, obj.m_outputs, obj.m_kernels);
     }
 
     void Validate() const;
@@ -93,7 +101,4 @@ private:
 
     // List of kernels that make up this transaction.
     std::vector<Kernel> m_kernels;
-
-    // The owner offset can be split into a raw private key diff & a pubkey/sig version.
-    std::vector<SignedMessage> m_ownerSigs;
 };

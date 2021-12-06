@@ -1,38 +1,75 @@
 #include <mw/models/tx/Kernel.h>
 #include <mw/crypto/Schnorr.h>
+#include <mw/crypto/SecretKeys.h>
 
 Kernel Kernel::Create(
     const BlindingFactor& blind,
+    const boost::optional<BlindingFactor>& stealth_blind,
     const boost::optional<CAmount>& fee,
     const boost::optional<CAmount>& pegin_amount,
     const boost::optional<PegOutCoin>& pegout,
     const boost::optional<int32_t>& lock_height)
 {
-    Commitment excess_commit = Commitment::Blinded(blind, 0);
-
     const uint8_t features_byte =
         (fee ? FEE_FEATURE_BIT : 0) |
         (pegin_amount ? PEGIN_FEATURE_BIT : 0) |
         (pegout ? PEGOUT_FEATURE_BIT : 0) |
-        (lock_height ? HEIGHT_LOCK_FEATURE_BIT : 0);
+        (lock_height ? HEIGHT_LOCK_FEATURE_BIT : 0) |
+        (stealth_blind ? STEALTH_EXCESS_FEATURE_BIT : 0);
     mw::Hash sig_message = Kernel::GetSignatureMessage(features_byte, fee, pegin_amount, pegout, lock_height, {});
-    Signature sig = Schnorr::Sign(blind.data(), sig_message);
 
+    SecretKey sig_key = blind.data();
+    Commitment excess_commit = Commitment::Blinded(blind, 0);
+    boost::optional<PublicKey> stealth_excess = boost::none;
+
+    if (stealth_blind) {
+        stealth_excess = PublicKey::From(stealth_blind.value().data());
+
+        Hasher h;
+        h << PublicKey::From(excess_commit) << stealth_excess.value();
+
+        sig_key = SecretKeys::From(sig_key)
+            .Mul(h.hash())
+            .Add(stealth_blind.value().data())
+            .Key();
+    }
+
+    Signature sig = Schnorr::Sign(sig_key.data(), sig_message);
     return Kernel(
         features_byte,
         fee,
         pegin_amount,
         pegout,
         lock_height,
+        std::move(stealth_excess),
         std::vector<uint8_t>{},
         std::move(excess_commit),
         std::move(sig)
     );
 }
 
-mw::Hash Kernel::GetSignatureMessage() const
+SignedMessage Kernel::BuildSignedMsg() const
 {
-    return Kernel::GetSignatureMessage(m_features, m_fee, m_pegin, m_pegout, m_lockHeight, m_extraData);
+    PublicKey public_key = PublicKey::From(GetExcess());
+    if (HasStealthExcess()) {
+        PublicKey stealth_excess = GetStealthExcess();
+
+        Hasher h;
+        h << public_key << stealth_excess;
+
+        public_key = public_key
+            .Mul(h.hash())
+            .Add(stealth_excess);
+    }
+
+    mw::Hash sig_message = Kernel::GetSignatureMessage(
+        m_features,
+        m_fee,
+        m_pegin,
+        m_pegout,
+        m_lockHeight,
+        m_extraData);
+    return SignedMessage{sig_message, public_key, GetSignature()};
 }
 
 mw::Hash Kernel::GetSignatureMessage(

@@ -44,12 +44,6 @@ BOOST_AUTO_TEST_CASE(Aggregate)
     BOOST_REQUIRE(pAggregated->GetKernels().size() == 2);
     BOOST_REQUIRE(pAggregated->GetKernels() == kernels);
 
-    std::vector<SignedMessage> owner_sigs = tx1->GetOwnerSigs();
-    owner_sigs.insert(owner_sigs.end(), tx2->GetOwnerSigs().begin(), tx2->GetOwnerSigs().end());
-    std::sort(owner_sigs.begin(), owner_sigs.end(), SortByHash);
-    BOOST_REQUIRE(pAggregated->GetOwnerSigs().size() == 2);
-    BOOST_REQUIRE(pAggregated->GetOwnerSigs() == owner_sigs);
-
     BlindingFactor kernel_offset = Blinds()
         .Add(tx1->GetKernelOffset())
         .Add(tx2->GetKernelOffset())

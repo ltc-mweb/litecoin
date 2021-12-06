@@ -25,7 +25,6 @@ public:
         std::vector<Kernel> kernels;
         std::vector<BlindingFactor> kernel_offsets;
         std::vector<BlindingFactor> owner_offsets;
-        std::vector<SignedMessage> owner_sigs;
 
         // collect all the inputs, outputs, kernels, and owner sigs from the txs
         for (const mw::Transaction::CPtr& pTransaction : transactions) {
@@ -47,12 +46,6 @@ public:
                 pTransaction->GetKernels().end()
             );
 
-            owner_sigs.insert(
-                owner_sigs.end(),
-                pTransaction->GetOwnerSigs().begin(),
-                pTransaction->GetOwnerSigs().end()
-            );
-
             kernel_offsets.push_back(pTransaction->GetKernelOffset());
             owner_offsets.push_back(pTransaction->GetOwnerOffset());
         }
@@ -67,8 +60,7 @@ public:
             std::move(owner_offset),
             std::move(inputs),
             std::move(outputs),
-            std::move(kernels),
-            std::move(owner_sigs)
+            std::move(kernels)
         );
     }
 };
