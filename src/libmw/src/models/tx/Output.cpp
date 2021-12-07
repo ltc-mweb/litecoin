@@ -45,6 +45,7 @@ Output Output::Create(
 
     // Sign the malleable output data
     mw::Hash sig_message = Hasher()
+        .Append(output_commit)
         .Append(Ko)
         .Append(Ke)
         .Append(t[0])
@@ -79,6 +80,7 @@ Output Output::Create(
 SignedMessage Output::BuildSignedMsg() const noexcept
 {
     mw::Hash hashed_msg = Hasher()
+        .Append(m_commitment)
         .Append(m_message.receiverPubKey)
         .Append(m_message.keyExchangePubKey)
         .Append(m_message.viewTag)
