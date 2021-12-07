@@ -114,12 +114,14 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
 
     // Add inputs
     BlindingFactor input1_bf = BlindingFactor::Random();
-    SecretKey input1_sender_key = SecretKey::Random();
-    inputs.push_back(test::TxInput::Create(input1_bf, input1_sender_key, 5'000'000).GetInput());
+    SecretKey input1_key = SecretKey::Random();
+    SecretKey input1_output_key = SecretKey::Random();
+    inputs.push_back(test::TxInput::Create(input1_bf, input1_key, input1_output_key, 5'000'000).GetInput());
 
     BlindingFactor input2_bf = BlindingFactor::Random();
-    SecretKey input2_sender_key = SecretKey::Random();
-    inputs.push_back(test::TxInput::Create(input2_bf, input2_sender_key, 6'000'000).GetInput());
+    SecretKey input2_key = SecretKey::Random();
+    SecretKey input2_output_key = SecretKey::Random();
+    inputs.push_back(test::TxInput::Create(input2_bf, input2_key, input2_output_key, 6'000'000).GetInput());
 
     // Add outputs
     SecretKey output1_sender_key = SecretKey::Random();

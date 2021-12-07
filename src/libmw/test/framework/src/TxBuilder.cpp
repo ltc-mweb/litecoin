@@ -28,10 +28,11 @@ TxBuilder& TxBuilder::AddInput(
     m_kernelOffset.Sub(blind);
     m_ownerOffset.Sub(privkey);
 
+    SecretKey input_key = SecretKey::Random();
+    m_ownerOffset.Add(input_key);
+
     Commitment commitment = Commitment::Blinded(blind, amount);
-    PublicKey pubkey = PublicKey::From(privkey);
-    Signature sig = Schnorr::Sign(privkey.data(), InputMessage());
-    m_inputs.push_back(Input{ std::move(commitment), std::move(pubkey), std::move(sig) });
+    m_inputs.push_back(Input::Create(commitment, input_key, privkey));
     m_amount += (int64_t)amount;
     return *this;
 }

@@ -136,6 +136,7 @@ libmw_a_SOURCES = \
 	libmw/src/models/block/Block.cpp \
 	libmw/src/models/crypto/Commitment.cpp \
 	libmw/src/models/crypto/PublicKey.cpp \
+	libmw/src/models/tx/Input.cpp \
 	libmw/src/models/tx/Kernel.cpp \
 	libmw/src/models/tx/Output.cpp \
 	libmw/src/models/tx/Transaction.cpp \

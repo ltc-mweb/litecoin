@@ -23,12 +23,6 @@ mw::Hash Hashed(const Traits::ISerializable& serializable)
     return Hashed(serializable.Serialized());
 }
 
-const mw::Hash& InputMessage()
-{
-    static const mw::Hash mweb_hash = Hashed({'M', 'W', 'E', 'B'});
-    return mweb_hash;
-}
-
 BigInt<64> Hash512(const Traits::ISerializable& serializable)
 {
     BigInt<64> ret;

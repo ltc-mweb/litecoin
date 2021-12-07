@@ -23,14 +23,22 @@ public:
     //
     // Constructors
     //
-    Input(Commitment commitment, PublicKey pubkey, Signature signature)
-        : m_commitment(std::move(commitment)), m_pubkey(std::move(pubkey)), m_signature(std::move(signature))
+    Input(Commitment commitment, PublicKey input_pubkey, PublicKey output_pubkey, Signature signature)
+        : m_commitment(std::move(commitment)),
+        m_inputPubKey(std::move(input_pubkey)),
+        m_outputPubKey(std::move(output_pubkey)),
+        m_signature(std::move(signature))
     {
         m_hash = Hashed(*this);
     }
     Input(const Input& input) = default;
     Input(Input&& input) noexcept = default;
     Input() = default;
+
+    //
+    // Factories
+    //
+    static Input Create(const Commitment& commitment, const SecretKey& input_key, const SecretKey& output_key);
 
     //
     // Destructor
@@ -49,13 +57,11 @@ public:
     // Getters
     //
     const Commitment& GetCommitment() const noexcept final { return m_commitment; }
-    const PublicKey& GetPubKey() const noexcept { return m_pubkey; }
+    const PublicKey& GetInputPubKey() const noexcept { return m_inputPubKey; }
+    const PublicKey& GetOutputPubKey() const noexcept { return m_outputPubKey; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
-    SignedMessage BuildSignedMsg() const noexcept
-    {
-        return SignedMessage{InputMessage(), GetPubKey(), GetSignature()};
-    }
+    SignedMessage BuildSignedMsg() const noexcept;
 
     //
     // Serialization/Deserialization
@@ -63,7 +69,8 @@ public:
     IMPL_SERIALIZABLE(Input, obj)
     {
         READWRITE(obj.m_commitment);
-        READWRITE(obj.m_pubkey);
+        READWRITE(obj.m_inputPubKey);
+        READWRITE(obj.m_outputPubKey);
         READWRITE(obj.m_signature);
         SER_READ(obj, obj.m_hash = Hashed(obj));
     }
@@ -77,8 +84,11 @@ private:
     // The commit referencing the output being spent.
     Commitment m_commitment;
 
-    // The sender's public key
-    PublicKey m_pubkey;
+    // The input pubkey.
+    PublicKey m_inputPubKey;
+
+    // The public key of the output being spent.
+    PublicKey m_outputPubKey;
 
     Signature m_signature;
 

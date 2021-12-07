@@ -31,7 +31,7 @@ Kernel Kernel::Create(
         sig_key = SecretKeys::From(sig_key)
             .Mul(h.hash())
             .Add(stealth_blind.value().data())
-            .Key();
+            .Total();
     }
 
     Signature sig = Schnorr::Sign(sig_key.data(), sig_message);

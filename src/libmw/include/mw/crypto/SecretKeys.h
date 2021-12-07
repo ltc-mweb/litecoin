@@ -12,7 +12,7 @@ public:
         return SecretKeys::From(SecretKey::Random());
     }
 
-    const SecretKey& Key() const noexcept { return m_key; }
+    const SecretKey& Total() const noexcept { return m_key; }
 
     SecretKeys& Add(const SecretKey& secret_key);
     SecretKeys& Mul(const SecretKey& secret_key);

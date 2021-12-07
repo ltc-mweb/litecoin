@@ -1,6 +1,6 @@
 #include <mw/models/block/Block.h>
 
-#include <mw/consensus/OwnerSumValidator.h>
+#include <mw/consensus/StealthSumValidator.h>
 #include <mw/mmr/MMR.h>
 
 void mw::Block::Validate() const
@@ -11,7 +11,7 @@ void mw::Block::Validate() const
 
     m_body.Validate();
 
-    OwnerSumValidator::Validate(m_pHeader->GetOwnerOffset(), m_body);
+    StealthSumValidator::Validate(m_pHeader->GetOwnerOffset(), m_body);
 
     MemMMR kernel_mmr;
     std::for_each(

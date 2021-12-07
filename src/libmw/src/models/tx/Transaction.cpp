@@ -1,6 +1,6 @@
 #include <mw/models/tx/Transaction.h>
 #include <mw/consensus/KernelSumValidator.h>
-#include <mw/consensus/OwnerSumValidator.h>
+#include <mw/consensus/StealthSumValidator.h>
 
 using namespace mw;
 
@@ -20,5 +20,5 @@ void Transaction::Validate() const
     m_body.Validate();
 
     KernelSumValidator::ValidateForTx(*this);
-    OwnerSumValidator::Validate(m_ownerOffset, m_body);
+    StealthSumValidator::Validate(m_ownerOffset, m_body);
 }

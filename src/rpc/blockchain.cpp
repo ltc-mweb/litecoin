@@ -226,7 +226,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
             if (txDetails) {
                 UniValue objInput(UniValue::VOBJ);
                 objInput.pushKV("commit", input.GetCommitment().ToHex());
-                objInput.pushKV("pubkey", input.GetPubKey().ToHex());
+                objInput.pushKV("input_pubkey", input.GetInputPubKey().ToHex());
+                objInput.pushKV("output_pubkey", input.GetOutputPubKey().ToHex());
                 objInput.pushKV("sig", input.GetSignature().ToHex());
                 inputs.push_back(objInput);
             } else {

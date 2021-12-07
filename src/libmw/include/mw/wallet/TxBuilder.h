@@ -9,6 +9,13 @@
 
 class TxBuilder
 {
+    struct Inputs
+    {
+        BlindingFactor total_blind;
+        SecretKey total_key;
+        std::vector<Input> inputs;
+    };
+
     struct Outputs
     {
         BlindingFactor total_blind;
@@ -26,10 +33,7 @@ public:
     );
 
 private:
+    static Inputs CreateInputs(const std::vector<mw::Coin>& input_coins);
     static Outputs CreateOutputs(const std::vector<mw::Recipient>& recipients);
-
-    static std::vector<BlindingFactor> GetBlindingFactors(const std::vector<mw::Coin>& coins);
-    static std::vector<SecretKey> GetKeys(const std::vector<mw::Coin>& coins);
     static CAmount TotalAmount(const std::vector<mw::Coin>& coins);
-    static std::vector<Input> SignInputs(const std::vector<mw::Coin>& input_coins);
 };

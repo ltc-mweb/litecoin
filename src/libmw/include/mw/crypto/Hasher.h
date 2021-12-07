@@ -72,5 +72,4 @@ mw::Hash Hashed(const EHashTag tag, const T& serializable)
 {
     return Hasher(tag).Append(serializable).hash();
 }
-extern const mw::Hash& InputMessage();
 extern BigInt<64> Hash512(const Traits::ISerializable& serializable);

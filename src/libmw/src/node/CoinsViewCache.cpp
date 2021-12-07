@@ -182,6 +182,7 @@ void CoinsViewCache::AddUTXO(const uint64_t header_height, const Output& output)
 
 UTXO CoinsViewCache::SpendUTXO(const Commitment& commitment)
 {
+    // MW: TODO - Check input pubkeys
     std::vector<UTXO::CPtr> utxos = GetUTXOs(commitment);
     if (utxos.empty() || !m_pLeafSet->Contains(utxos.back()->GetLeafIndex())) {
         ThrowValidation(EConsensusError::UTXO_MISSING);

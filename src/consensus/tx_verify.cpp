@@ -207,6 +207,12 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
                 return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-inputs-missing",
                     strprintf("%s: MWEB inputs missing", __func__));
             }
+
+            // MW: TODO - Test this
+            if (utxos.front()->GetOutput().GetReceiverPubKey() != input.GetOutputPubKey()) {
+                return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-input-mismatch",
+                                     strprintf("%s: MWEB input pubkey mismatch", __func__));
+            }
         }
 
         CAmount mweb_fee = tx.mweb_tx.GetFee();
