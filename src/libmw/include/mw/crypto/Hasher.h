@@ -9,10 +9,13 @@
 enum class EHashTag : char
 {
     ADDRESS = 'A',
-    SEND_KEY = 'S',
+    BLIND = 'B',
     DERIVE = 'D',
+    NONCE = 'N',
     OUT_KEY = 'O',
-    NONCE = 'N'
+    SEND_KEY = 'S',
+    NONCE_MASK = 'X',
+    VALUE_MASK = 'Y'
 };
 
 class Hasher
@@ -72,4 +75,3 @@ mw::Hash Hashed(const EHashTag tag, const T& serializable)
 {
     return Hasher(tag).Append(serializable).hash();
 }
-extern BigInt<64> Hash512(const Traits::ISerializable& serializable);

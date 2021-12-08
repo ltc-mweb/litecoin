@@ -62,10 +62,9 @@ BOOST_AUTO_TEST_CASE(Create)
         // Make sure B belongs to wallet
         BOOST_REQUIRE(receiver_addr.B() == output.Ko().Sub(Hashed(EHashTag::OUT_KEY, t)));
 
-        Deserializer hash64(Hash512(t).vec());
-        SecretKey r = hash64.Read<SecretKey>();
-        uint64_t value = output.GetMaskedValue() ^ hash64.Read<uint64_t>();
-        BigInt<16> n = output.GetMaskedNonce() ^ hash64.ReadVector(16);
+        SecretKey r = Hashed(EHashTag::BLIND, t);
+        uint64_t value = output.GetMaskedValue() ^ *((uint64_t*)Hashed(EHashTag::VALUE_MASK, t).data());
+        BigInt<16> n = output.GetMaskedNonce() ^ BigInt<16>(Hashed(EHashTag::NONCE_MASK, t).data());
 
         BOOST_REQUIRE(Commitment::Switch(r, value) == output.GetCommitment());
 

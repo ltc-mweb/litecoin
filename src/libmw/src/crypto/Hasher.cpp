@@ -1,5 +1,4 @@
 #include <mw/crypto/Hasher.h>
-#include <crypto/sha512.h>
 
 #define BLAKE3_NO_AVX512 1
 #define BLAKE3_NO_AVX2 1
@@ -21,15 +20,4 @@ mw::Hash Hashed(const std::vector<uint8_t>& serialized)
 mw::Hash Hashed(const Traits::ISerializable& serializable)
 {
     return Hashed(serializable.Serialized());
-}
-
-BigInt<64> Hash512(const Traits::ISerializable& serializable)
-{
-    BigInt<64> ret;
-
-    std::vector<uint8_t> serialized = serializable.Serialized();
-    CSHA512()
-        .Write(serialized.data(), serialized.size())
-        .Finalize(ret.data());
-    return ret;
 }
