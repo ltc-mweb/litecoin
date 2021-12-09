@@ -56,6 +56,7 @@ public:
     // Point Arithmetic
     //
     PublicKey Mul(const SecretKey& mul) const;
+    PublicKey Div(const SecretKey& div) const;
     PublicKey Add(const SecretKey& add) const;
     PublicKey Add(const PublicKey& add) const;
     PublicKey Sub(const SecretKey& sub) const;

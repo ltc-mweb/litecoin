@@ -22,6 +22,11 @@ PublicKey PublicKey::Mul(const SecretKey& mul) const
     return PublicKeys::MultiplyKey(*this, mul);
 }
 
+PublicKey PublicKey::Div(const SecretKey& div) const
+{
+    return PublicKeys::DivideKey(*this, div);
+}
+
 PublicKey PublicKey::Add(const SecretKey& add) const
 {
     return PublicKeys::Add({ *this, PublicKey::From(add) });

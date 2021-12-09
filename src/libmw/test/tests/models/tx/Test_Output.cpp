@@ -6,6 +6,7 @@
 #include <mw/crypto/Bulletproofs.h>
 #include <mw/crypto/Hasher.h>
 #include <mw/crypto/Schnorr.h>
+#include <mw/crypto/SecretKeys.h>
 #include <mw/models/tx/Output.h>
 #include <mw/models/wallet/StealthAddress.h>
 
@@ -16,12 +17,19 @@ BOOST_FIXTURE_TEST_SUITE(TestOutput, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(Create)
 {
-    // Generate receiver addr
+    // Generate receiver master keys
     SecretKey a = SecretKey::Random();
     SecretKey b = SecretKey::Random();
-    StealthAddress receiver_addr = StealthAddress(
-        PublicKey::From(a).Mul(b),
-        PublicKey::From(b)
+
+    PublicKey A = PublicKey::From(a);
+
+    // Generate receiver sub-address (i = 10)
+    SecretKey b_i = SecretKeys::From(b)
+        .Add(Hasher().Append(A).Append(10).Append(a).hash())
+        .Total();
+    StealthAddress receiver_subaddr(
+        PublicKey::From(b_i).Mul(a),
+        PublicKey::From(b_i)
     );
 
     // Build output
@@ -31,7 +39,7 @@ BOOST_AUTO_TEST_CASE(Create)
     Output output = Output::Create(
         blind,
         sender_key,
-        receiver_addr,
+        receiver_subaddr,
         amount
     );
     Commitment expected_commit = Commitment::Blinded(blind, amount);
@@ -60,7 +68,7 @@ BOOST_AUTO_TEST_CASE(Create)
         BOOST_REQUIRE(t[0] == output.GetViewTag());
 
         // Make sure B belongs to wallet
-        BOOST_REQUIRE(receiver_addr.B() == output.Ko().Sub(Hashed(EHashTag::OUT_KEY, t)));
+        BOOST_REQUIRE(receiver_subaddr.B() == output.Ko().Div(Hashed(EHashTag::OUT_KEY, t)));
 
         SecretKey r = Hashed(EHashTag::BLIND, t);
         uint64_t value = output.GetMaskedValue() ^ *((uint64_t*)Hashed(EHashTag::VALUE_MASK, t).data());
@@ -70,18 +78,17 @@ BOOST_AUTO_TEST_CASE(Create)
 
         // Calculate Carol's sending key 's' and check that s*B ?= Ke
         SecretKey s = Hasher(EHashTag::SEND_KEY)
-            .Append(receiver_addr.A())
-            .Append(receiver_addr.B())
+            .Append(receiver_subaddr.A())
+            .Append(receiver_subaddr.B())
             .Append(value)
             .Append(n)
             .hash();
-        BOOST_REQUIRE(output.Ke() == receiver_addr.B().Mul(s));
+        BOOST_REQUIRE(output.Ke() == receiver_subaddr.B().Mul(s));
 
         // Make sure receiver can generate the spend key
-        SecretKey spend_key = Blinds()
-            .Add(b)
-            .Add(Hashed(EHashTag::OUT_KEY, t))
-            .ToKey();
+        SecretKey spend_key = SecretKeys::From(b_i)
+            .Mul(Hashed(EHashTag::OUT_KEY, t))
+            .Total();
         BOOST_REQUIRE(output.GetReceiverPubKey() == PublicKey::From(spend_key));
     }
 }

@@ -27,9 +27,8 @@ Output Output::Create(
         .Append(receiver_addr.A().Mul(s))
         .hash();
 
-    // Construct one-time public key for receiver 'Ko' = H(T_outkey, t)*G + B
-    PublicKey Ko = PublicKey::From(Hashed(EHashTag::OUT_KEY, t))
-        .Add(receiver_addr.B());
+    // Construct one-time public key for receiver 'Ko' = H(T_outkey, t)*B
+    PublicKey Ko = receiver_addr.B().Mul(Hashed(EHashTag::OUT_KEY, t));
 
     // Key exchange public key 'Ke' = s*B
     PublicKey Ke = receiver_addr.B().Mul(s);

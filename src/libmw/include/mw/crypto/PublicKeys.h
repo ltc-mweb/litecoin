@@ -26,5 +26,13 @@ public:
         const std::vector<PublicKey>& subtract = {}
     );
 
+    //
+    // Multiplies the public key (curve point) by given scalar.
+    //
     static PublicKey MultiplyKey(const PublicKey& public_key, const SecretKey& mul);
+
+    //
+    // Multiplies the public key (curve point) by the inverse of the given scalar.
+    //
+    static PublicKey DivideKey(const PublicKey& public_key, const SecretKey& div);
 };

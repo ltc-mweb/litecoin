@@ -78,3 +78,24 @@ PublicKey PublicKeys::MultiplyKey(const PublicKey& public_key, const SecretKey& 
 
     return ConversionUtil::ToPublicKey(pubkey);
 }
+
+PublicKey PublicKeys::DivideKey(const PublicKey& public_key, const SecretKey& div)
+{
+    SecretKey inv = div;
+    const int inv_result = secp256k1_ec_privkey_tweak_inv(PUBKEY_CONTEXT.Read()->Get(), inv.data());
+    if (inv_result != 1) {
+        ThrowCrypto("secp256k1_ec_privkey_tweak_inv failed");
+    }
+
+    secp256k1_pubkey pubkey = ConversionUtil::ToSecp256k1(public_key);
+    const int mul_result = secp256k1_ec_pubkey_tweak_mul(
+        PUBKEY_CONTEXT.Read()->Get(),
+        &pubkey,
+        inv.data()
+    );
+    if (mul_result != 1) {
+        ThrowCrypto("secp256k1_ec_pubkey_tweak_mul failed");
+    }
+
+    return ConversionUtil::ToPublicKey(pubkey);
+}

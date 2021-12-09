@@ -13,10 +13,10 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
         return false;
     }
 
-    PublicKey B = output.Ko().Sub(Hashed(EHashTag::OUT_KEY, t));
+    PublicKey B_i = output.Ko().Div(Hashed(EHashTag::OUT_KEY, t));
 
-    // Check if B belongs to wallet
-    StealthAddress address(B.Mul(m_scanSecret), B);
+    // Check if B_i belongs to wallet
+    StealthAddress address(B_i.Mul(m_scanSecret), B_i);
     auto pMetadata = m_spk_man.GetMetadata(address);
     if (!pMetadata || !pMetadata->mweb_index) {
         return false;
