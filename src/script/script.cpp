@@ -236,6 +236,7 @@ bool CScript::IsWitnessProgram(int& version, std::vector<unsigned char>& program
 
 bool CScript::IsMWEBPegin(mw::Hash& kernel_hash) const
 {
+    // MW: TODO - This will also return true for HogEx. Should we use a different version for HogEx Hash?
     int version;
     std::vector<uint8_t> program;
     if (IsWitnessProgram(version, program)) {

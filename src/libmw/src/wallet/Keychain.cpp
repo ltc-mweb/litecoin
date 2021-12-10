@@ -1,6 +1,6 @@
 #include <mw/wallet/Keychain.h>
-#include <mw/crypto/Blinds.h>
 #include <mw/crypto/Hasher.h>
+#include <mw/crypto/SecretKeys.h>
 #include <mw/models/tx/OutputMask.h>
 #include <wallet/scriptpubkeyman.h>
 
@@ -36,19 +36,18 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
     // Calculate Carol's sending key 's' and check that s*B ?= Ke
     StealthAddress wallet_addr = GetStealthAddress(index);
     SecretKey s = Hasher(EHashTag::SEND_KEY)
-                      .Append(wallet_addr.A())
-                      .Append(wallet_addr.B())
-                      .Append(value)
-                      .Append(n)
-                      .hash();
+        .Append(wallet_addr.A())
+        .Append(wallet_addr.B())
+        .Append(value)
+        .Append(n)
+        .hash();
     if (output.Ke() != wallet_addr.B().Mul(s)) {
         return false;
     }
 
-    SecretKey private_key = Blinds()
-        .Add(Hashed(EHashTag::OUT_KEY, t))
-        .Add(GetSpendKey(index))
-        .ToKey();
+    SecretKey private_key = SecretKeys::From(GetSpendKey(index))
+        .Mul(Hashed(EHashTag::OUT_KEY, t))
+        .Total();
 
     coin.address_index = index;
     coin.key = boost::make_optional(std::move(private_key));
@@ -74,7 +73,7 @@ SecretKey Keychain::GetSpendKey(const uint32_t index) const
         .Append(m_scanSecret)
         .hash();
 
-    return Blinds().Add(m_spendSecret).Add(mi).ToKey();
+    return SecretKeys::From(m_spendSecret).Add(mi).Total();
 }
 
 END_NAMESPACE
