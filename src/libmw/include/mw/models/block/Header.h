@@ -29,11 +29,11 @@ public:
     Header() = default;
     Header(
         const int32_t height,
-        mw::Hash&& outputRoot,
-        mw::Hash&& kernelRoot,
-		mw::Hash&& leafsetRoot,
-        BlindingFactor&& kernelOffset,
-        BlindingFactor&& ownerOffset,
+        mw::Hash outputRoot,
+        mw::Hash kernelRoot,
+		mw::Hash leafsetRoot,
+        BlindingFactor kernelOffset,
+        BlindingFactor ownerOffset,
         const uint64_t outputMMRSize,
         const uint64_t kernelMMRSize
     )
@@ -101,6 +101,96 @@ private:
     uint64_t m_kernelMMRSize;
 
     mw::Hash m_hash;
+};
+
+class MutHeader
+{
+public:
+    //
+    // Constructors
+    //
+    MutHeader() = default;
+    MutHeader(const Header::CPtr& pHeader)
+        : m_height(pHeader->GetHeight()),
+          m_outputRoot(pHeader->GetOutputRoot()),
+          m_kernelRoot(pHeader->GetKernelRoot()),
+          m_leafsetRoot(pHeader->GetLeafsetRoot()),
+          m_kernelOffset(pHeader->GetKernelOffset()),
+          m_stealthOffset(pHeader->GetOwnerOffset()),
+          m_numOutputs(pHeader->GetNumTXOs()),
+          m_numKernels(pHeader->GetNumKernels()) { }
+
+    MutHeader& SetHeight(const int32_t height) noexcept
+    {
+        m_height = height;
+        return *this;
+    }
+
+    MutHeader& SetOutputRoot(const mw::Hash& output_root) noexcept
+    {
+        m_outputRoot = output_root;
+        return *this;
+    }
+
+    MutHeader& SetKernelRoot(const mw::Hash& kernel_root) noexcept
+    {
+        m_kernelRoot = kernel_root;
+        return *this;
+    }
+
+    MutHeader& SetLeafsetRoot(const mw::Hash& leafset_root) noexcept
+    {
+        m_leafsetRoot = leafset_root;
+        return *this;
+    }
+
+    MutHeader& SetKernelOffset(const mw::Hash& kernel_offset) noexcept
+    {
+        m_kernelOffset = kernel_offset;
+        return *this;
+    }
+
+    MutHeader& SetStealthOffset(const mw::Hash& stealth_offset) noexcept
+    {
+        m_stealthOffset = stealth_offset;
+        return *this;
+    }
+
+    MutHeader& SetNumOutputs(const uint64_t num_outputs) noexcept
+    {
+        m_numOutputs = num_outputs;
+        return *this;
+    }
+
+    MutHeader& SetNumKernels(const uint64_t num_kernels) noexcept
+    {
+        m_numKernels = num_kernels;
+        return *this;
+    }
+
+    Header::CPtr Build() const
+    {
+        return std::make_shared<mw::Header>(
+            m_height,
+            m_outputRoot,
+            m_kernelRoot,
+            m_leafsetRoot,
+            m_kernelOffset,
+            m_stealthOffset,
+            m_numOutputs,
+            m_numKernels
+        );
+    }
+
+private:
+    int32_t m_height;
+    mw::Hash m_outputRoot;
+    mw::Hash m_kernelRoot;
+    mw::Hash m_leafsetRoot;
+    BlindingFactor m_kernelOffset;
+    BlindingFactor m_stealthOffset;
+    uint64_t m_numOutputs;
+    uint64_t m_numKernels;
 };
 
 END_NAMESPACE

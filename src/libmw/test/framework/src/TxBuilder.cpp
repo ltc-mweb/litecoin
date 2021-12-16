@@ -5,7 +5,7 @@
 TEST_NAMESPACE
 
 TxBuilder::TxBuilder()
-    : m_amount{ 0 }, m_kernelOffset{}, m_ownerOffset{}, m_inputs{}, m_outputs{}, m_kernels{}
+    : m_amount{ 0 }, m_kernelOffset{}, m_stealthOffset{}, m_inputs{}, m_outputs{}, m_kernels{}
 {
 
 }
@@ -26,10 +26,10 @@ TxBuilder& TxBuilder::AddInput(
     const BlindingFactor& blind)
 {
     m_kernelOffset.Sub(blind);
-    m_ownerOffset.Sub(privkey);
+    m_stealthOffset.Sub(privkey);
 
     SecretKey input_key = SecretKey::Random();
-    m_ownerOffset.Add(input_key);
+    m_stealthOffset.Add(input_key);
 
     Commitment commitment = Commitment::Blinded(blind, amount);
     m_inputs.push_back(Input::Create(commitment, input_key, privkey));
@@ -49,7 +49,7 @@ TxBuilder& TxBuilder::AddOutput(
 {
     TxOutput output = TxOutput::Create(sender_privkey, receiver_addr, amount);
     m_kernelOffset.Add(output.GetBlind());
-    m_ownerOffset.Add(sender_privkey);
+    m_stealthOffset.Add(sender_privkey);
 
     m_outputs.push_back(std::move(output));
     m_amount -= (int64_t)amount;
@@ -61,14 +61,21 @@ TxBuilder& TxBuilder::AddPlainKernel(const CAmount fee, const bool add_stealth_e
     BlindingFactor kernel_excess = BlindingFactor::Random();
     m_kernelOffset.Sub(kernel_excess);
 
-    boost::optional<BlindingFactor> stealth_excess = boost::none;
+    boost::optional<SecretKey> stealth_excess = boost::none;
     if (add_stealth_excess) {
         SecretKey offset = SecretKey::Random();
-        m_ownerOffset.Sub(offset);
-        stealth_excess = boost::make_optional(offset);
+        m_stealthOffset.Sub(offset);
+        stealth_excess = boost::make_optional(std::move(offset));
     }
 
-    Kernel kernel = Kernel::Create(kernel_excess, stealth_excess, fee, boost::none, boost::none, boost::none);
+    Kernel kernel = Kernel::Create(
+        kernel_excess,
+        stealth_excess,
+        fee,
+        boost::none,
+        boost::none,
+        boost::none
+    );
 
     m_kernels.push_back(std::move(kernel));
     m_amount -= fee;
@@ -80,14 +87,20 @@ TxBuilder& TxBuilder::AddPeginKernel(const CAmount amount, const boost::optional
     BlindingFactor kernel_excess = BlindingFactor::Random();
     m_kernelOffset.Sub(kernel_excess);
 
-    boost::optional<BlindingFactor> stealth_excess = boost::none;
+    boost::optional<SecretKey> stealth_excess = boost::none;
     if (add_stealth_excess) {
-        BlindingFactor offset = BlindingFactor::Random();
-        m_ownerOffset.Sub(offset);
-        stealth_excess = boost::make_optional(offset);
+        stealth_excess = SecretKey::Random();
+        m_stealthOffset.Sub(stealth_excess.value());
     }
 
-    Kernel kernel = Kernel::Create(kernel_excess, stealth_excess, fee, amount, boost::none, boost::none);
+    Kernel kernel = Kernel::Create(
+        kernel_excess,
+        stealth_excess,
+        fee,
+        amount,
+        boost::none,
+        boost::none
+    );
 
     m_kernels.push_back(std::move(kernel));
     m_amount += amount;
@@ -100,14 +113,20 @@ TxBuilder& TxBuilder::AddPegoutKernel(const CAmount amount, const CAmount fee, c
     m_kernelOffset.Sub(kernel_excess);
     std::vector<uint8_t> ltc_address = SecretKey::Random().vec();
 
-    boost::optional<BlindingFactor> stealth_excess = boost::none;
+    boost::optional<SecretKey> stealth_excess = boost::none;
     if (add_stealth_excess) {
-        BlindingFactor offset = BlindingFactor::Random();
-        m_ownerOffset.Sub(offset);
-        stealth_excess = boost::make_optional(offset);
+        stealth_excess = SecretKey::Random();
+        m_stealthOffset.Sub(stealth_excess.value());
     }
 
-    Kernel kernel = Kernel::Create(kernel_excess, stealth_excess, fee, boost::none, PegOutCoin(amount, CScript(ltc_address.begin(), ltc_address.end())), boost::none);
+    Kernel kernel = Kernel::Create(
+        kernel_excess,
+        stealth_excess,
+        fee,
+        boost::none,
+        PegOutCoin(amount, CScript(ltc_address.begin(), ltc_address.end())),
+        boost::none
+    );
 
     m_kernels.push_back(std::move(kernel));
     m_amount -= amount + fee;
@@ -127,7 +146,7 @@ Tx TxBuilder::Build()
 
     auto pTransaction = mw::Transaction::Create(
         m_kernelOffset.Total(),
-        m_ownerOffset.Total(),
+        m_stealthOffset.Total(),
         m_inputs,
         outputs,
         m_kernels

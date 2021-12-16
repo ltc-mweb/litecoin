@@ -80,4 +80,50 @@ private:
     TxBody m_body;
 };
 
+class MutBlock
+{
+public:
+    //
+    // Constructors
+    //
+    MutBlock() = default;
+    MutBlock(const Block::CPtr& pBlock)
+        : m_header(pBlock->GetHeader()),
+          m_inputs(pBlock->GetInputs()),
+          m_outputs(pBlock->GetOutputs()),
+          m_kernels(pBlock->GetKernels()) {}
+
+    MutBlock& SetInputs(std::vector<Input> inputs) noexcept
+    {
+        m_inputs = std::move(inputs);
+        return *this;
+    }
+
+    MutBlock& SetOutputs(std::vector<Output> outputs) noexcept
+    {
+        m_outputs = std::move(outputs);
+        return *this;
+    }
+
+    MutBlock& SetKernels(std::vector<Kernel> kernels) noexcept
+    {
+        m_kernels = std::move(kernels);
+        return *this;
+    }
+
+    mw::Block::CPtr Build() const
+    {
+        return std::make_shared<mw::Block>(
+            m_header.Build(),
+            TxBody(m_inputs, m_outputs, m_kernels)
+        );
+    }
+
+private:
+    MutHeader m_header;
+    std::vector<Input> m_inputs;
+    std::vector<Output> m_outputs;
+    std::vector<Kernel> m_kernels;
+};
+
 END_NAMESPACE

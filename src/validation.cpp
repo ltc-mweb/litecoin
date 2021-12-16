@@ -629,7 +629,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
                 // unconfirmed ancestors anyway; doing otherwise is hopelessly
                 // insecure.
 
-                // MW: TODO - For now, we're just not allowing tx replacement for MWEB txs,
+                // MWEB: For now, we're just not allowing tx replacement for MWEB txs,
                 // but we'll want to eventually support some form of RBF
                 bool fReplacementOptOut = true;
                 for (const CTxIn &_txin : ptxConflicting->vin)
@@ -4765,7 +4765,7 @@ void LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, FlatFi
                     continue;
                 // read size
                 blkdat >> nSize;
-                if (nSize < 80 || nSize > MAX_BLOCK_SERIALIZED_SIZE)
+                if (nSize < 80 || nSize > MAX_BLOCK_SERIALIZED_SIZE_WITH_MWEB)
                     continue;
             } catch (const std::exception&) {
                 // no valid block header found; don't complain

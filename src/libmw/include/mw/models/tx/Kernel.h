@@ -5,6 +5,7 @@
 #include <mw/crypto/Hasher.h>
 #include <mw/models/crypto/BlindingFactor.h>
 #include <mw/models/crypto/Commitment.h>
+#include <mw/models/crypto/SecretKey.h>
 #include <mw/models/crypto/Signature.h>
 #include <mw/models/crypto/SignedMessage.h>
 #include <mw/models/tx/PegOutCoin.h>
@@ -56,7 +57,7 @@ public:
     //
     static Kernel Create(
         const BlindingFactor& blind,
-        const boost::optional<BlindingFactor>& stealth_blind,
+        const boost::optional<SecretKey>& stealth_blind,
         const boost::optional<CAmount>& fee,
         const boost::optional<CAmount>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
@@ -86,11 +87,13 @@ public:
     SignedMessage BuildSignedMsg() const;
     static mw::Hash GetSignatureMessage(
         const uint8_t features,
+        const Commitment& excess_commitment,
+        const boost::optional<PublicKey>& stealth_commitment,
         const boost::optional<CAmount>& fee,
         const boost::optional<CAmount>& pegin_amount,
         const boost::optional<PegOutCoin>& pegout,
         const boost::optional<int32_t>& lock_height,
-        const std::vector<uint8_t>& extra_data // MW: TODO - Include excess or stealth excess in message?
+        const std::vector<uint8_t>& extra_data
     );
 
     bool HasPegIn() const noexcept { return !!m_pegin; }

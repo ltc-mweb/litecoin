@@ -50,6 +50,7 @@ public:
     Commitment& operator=(const Commitment& other) = default;
     Commitment& operator=(Commitment&& other) noexcept = default;
     bool operator<(const Commitment& rhs) const noexcept { return m_bytes < rhs.GetBigInt(); }
+    bool operator>(const Commitment& rhs) const noexcept { return m_bytes > rhs.GetBigInt(); }
     bool operator!=(const Commitment& rhs) const noexcept { return m_bytes != rhs.GetBigInt(); }
     bool operator==(const Commitment& rhs) const noexcept { return m_bytes == rhs.GetBigInt(); }
 

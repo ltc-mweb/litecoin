@@ -344,9 +344,10 @@ BITCOIN_TESTS += \
   libmw/test/tests/models/tx/Test_TxBody.cpp \
   libmw/test/tests/models/tx/Test_UTXO.cpp \
   libmw/test/tests/node/Test_BlockBuilder.cpp \
+  libmw/test/tests/node/Test_BlockValidator.cpp \
+  libmw/test/tests/node/Test_CoinsView.cpp \
   libmw/test/tests/node/Test_MineChain.cpp \
-  libmw/test/tests/node/Test_Reorg.cpp \
-  libmw/test/tests/node/Test_BlockValidator.cpp
+  libmw/test/tests/node/Test_Reorg.cpp
 
 test_test_litecoin_SOURCES = $(BITCOIN_TEST_SUITE) $(BITCOIN_TESTS) $(JSON_TEST_FILES) $(RAW_TEST_FILES)
 test_test_litecoin_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(TESTDEFS) $(EVENT_CFLAGS) $(LIBMW_CPPFLAGS) -Ilibmw/test/framework/include

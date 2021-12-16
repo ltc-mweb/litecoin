@@ -48,6 +48,10 @@ mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::CPtr& pBlock)
         pBlock->GetInputs().cbegin(), pBlock->GetInputs().cend(),
         [this, &coinsSpent](const Input& input) {
             UTXO spentUTXO = SpendUTXO(input.GetCommitment());
+            if (spentUTXO.GetReceiverPubKey() != input.GetOutputPubKey()) {
+                ThrowValidation(EConsensusError::UTXO_MISMATCH);
+            }
+
             coinsSpent.push_back(std::move(spentUTXO));
         }
     );
@@ -126,7 +130,7 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
 
     std::for_each(
         pTransaction->GetInputs().cbegin(), pTransaction->GetInputs().cend(),
-        [this](const Input& input) { SpendUTXO(input.GetCommitment()); }
+        [this](const Input& input) { SpendUTXO(input.GetCommitment()); } // MW: TODO - Do we need to check the UTXO's receiver public key? Presumably, that was already done.
     );
 
     const uint64_t output_mmr_size = m_pOutputPMMR->GetNumLeaves();
@@ -182,7 +186,6 @@ void CoinsViewCache::AddUTXO(const uint64_t header_height, const Output& output)
 
 UTXO CoinsViewCache::SpendUTXO(const Commitment& commitment)
 {
-    // MW: TODO - Check input pubkeys
     std::vector<UTXO::CPtr> utxos = GetUTXOs(commitment);
     if (utxos.empty() || !m_pLeafSet->Contains(utxos.back()->GetLeafIndex())) {
         ThrowValidation(EConsensusError::UTXO_MISSING);

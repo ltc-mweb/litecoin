@@ -21,6 +21,7 @@ public:
     OutputId ToOutputId() const noexcept { return m_output.ToOutputId(); }
 
     const Commitment& GetCommitment() const noexcept { return m_output.GetCommitment(); }
+    const PublicKey& GetReceiverPubKey() const noexcept { return m_output.GetReceiverPubKey(); }
     const RangeProof::CPtr& GetRangeProof() const noexcept { return m_output.GetRangeProof(); }
     ProofData BuildProofData() const noexcept { return m_output.BuildProofData(); }
 

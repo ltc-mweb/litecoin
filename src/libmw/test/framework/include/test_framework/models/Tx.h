@@ -17,6 +17,7 @@ public:
         : m_pTransaction(pTransaction), m_outputs(outputs) { }
 
     static Tx CreatePegIn(const CAmount amount, const CAmount fee = 0);
+    static Tx CreatePegOut(const TxOutput& input, const CAmount fee = 0);
 
     const mw::Transaction::CPtr& GetTransaction() const noexcept { return m_pTransaction; }
     const std::vector<Kernel>& GetKernels() const noexcept { return m_pTransaction->GetKernels(); }
@@ -25,10 +26,19 @@ public:
     const BlindingFactor& GetKernelOffset() const noexcept { return m_pTransaction->GetKernelOffset(); }
     const BlindingFactor& GetOwnerOffset() const noexcept { return m_pTransaction->GetOwnerOffset(); }
 
+    std::vector<PegInCoin> GetPegIns() const noexcept { return m_pTransaction->GetPegIns(); }
+    std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_pTransaction->GetPegOuts(); }
+
     PegInCoin GetPegInCoin() const
     {
         const auto& kernel = m_pTransaction->GetKernels().front();
         return PegInCoin(kernel.GetPegIn(), kernel.GetHash());
+    }
+
+    PegOutCoin GetPegOutCoin() const
+    {
+        const auto& kernel = m_pTransaction->GetKernels().front();
+        return kernel.GetPegOut().value();
     }
 
 private:

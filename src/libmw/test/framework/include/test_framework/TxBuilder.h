@@ -45,7 +45,7 @@ public:
 private:
     CAmount m_amount;
     Blinds m_kernelOffset;
-    Blinds m_ownerOffset;
+    Blinds m_stealthOffset;
 
     std::vector<Input> m_inputs;
     std::vector<TxOutput> m_outputs;

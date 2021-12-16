@@ -32,6 +32,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel_Test)
     {
         Hasher hasher;
         hasher << uint8_t(1);
+        hasher << Commitment::Blinded(excess_blind, 0);
         ::WriteVarInt<Hasher, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(hasher, fee);
         BOOST_REQUIRE(kernel.BuildSignedMsg().GetMsgHash() == hasher.hash());
     }

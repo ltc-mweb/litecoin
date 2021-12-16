@@ -101,7 +101,7 @@ void TxBody::Validate() const
     }
 
     // Verify no duplicate kernel commitments
-    std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels); // MW: TODO - Do we need unique stealth excesses? Unique aggregated commits?
+    std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels);
     if (kernel_commits.size() != m_kernels.size()) {
         ThrowValidation(EConsensusError::DUPLICATES);
     }

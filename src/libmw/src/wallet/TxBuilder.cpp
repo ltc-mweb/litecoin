@@ -55,7 +55,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
         .Total();
 
     // MW: TODO - This is only needed for peg-ins or when no change
-    BlindingFactor stealth_blind = SecretKey::Random();
+    SecretKey stealth_blind = SecretKey::Random();
 
     // Create the kernel
     Kernel kernel = Kernel::Create(

@@ -23,15 +23,6 @@ public:
 
         std::unordered_map<Commitment, mmr::LeafIndex> unspentLeaves;
         for (const BlockInfo& block : blocks) {
-            for (const Commitment& input : block.inputs) {
-                auto iter = unspentLeaves.find(input);
-                if (iter == unspentLeaves.cend()) {
-                    throw std::runtime_error(StringUtil::Format("Unspent leaf not found with input commitment {}", input));
-                }
-
-                pLeafSet->Remove(iter->second);
-            }
-
             for (const Commitment& output : block.outputs) {
                 auto iter = unspentLeaves.find(output);
                 if (iter != unspentLeaves.cend()) {
@@ -41,6 +32,15 @@ public:
                 unspentLeaves.insert({ output, pTestLeafSet->m_nextLeafIdx });
                 pLeafSet->Add(pTestLeafSet->m_nextLeafIdx);
                 pTestLeafSet->m_nextLeafIdx = pTestLeafSet->m_nextLeafIdx.Next();
+            }
+
+            for (const Commitment& input : block.inputs) {
+                auto iter = unspentLeaves.find(input);
+                if (iter == unspentLeaves.cend()) {
+                    throw std::runtime_error(StringUtil::Format("Unspent leaf not found with input commitment {}", input));
+                }
+
+                pLeafSet->Remove(iter->second);
             }
         }
 

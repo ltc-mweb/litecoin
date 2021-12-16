@@ -1,22 +1,21 @@
 #include <test_framework/models/Tx.h>
+#include <test_framework/TxBuilder.h>
+#include <mw/crypto/Blinds.h>
+#include <mw/crypto/SecretKeys.h>
 #include <mw/crypto/Pedersen.h>
 
 test::Tx test::Tx::CreatePegIn(const CAmount amount, const CAmount fee)
 {
-    BlindingFactor txOffset = BlindingFactor::Random();
-    BlindingFactor stealth_offset = BlindingFactor::Random();
+    return test::TxBuilder()
+        .AddPeginKernel(amount, fee)
+        .AddOutput(amount, SecretKey::Random(), StealthAddress::Random()) // MW: TODO - Need actual stealth address keys to spend
+        .Build();
+}
 
-    SecretKey sender_privkey = SecretKey::Random();
-    test::TxOutput output = test::TxOutput::Create(
-        sender_privkey,
-        StealthAddress::Random(),
-        amount
-    );
-
-    BlindingFactor kernelBF = Pedersen::AddBlindingFactors({output.GetBlind()}, {txOffset});
-    BlindingFactor stealth_blind = Pedersen::AddBlindingFactors({sender_privkey}, {stealth_offset});
-    Kernel kernel = Kernel::Create(kernelBF, stealth_blind, fee, amount, boost::none, boost::none);
-
-    auto pTx = mw::Transaction::Create(txOffset, stealth_offset, {}, {output.GetOutput()}, {kernel});
-    return Tx{ pTx, { output } };
+test::Tx test::Tx::CreatePegOut(const test::TxOutput& input, const CAmount fee)
+{
+    return test::TxBuilder()
+        .AddInput(input)
+        .AddPegoutKernel(input.GetAmount() - fee, fee, true)
+        .Build();
 }

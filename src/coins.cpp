@@ -252,8 +252,6 @@ void CCoinsViewCache::Uncache(const OutputIndex& coin)
             cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
             cacheCoins.erase(it);
         }
-    } else {
-        // MW: TODO - Do we need to do anything here?
     }
 }
 

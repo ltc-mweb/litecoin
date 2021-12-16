@@ -6,25 +6,294 @@
 
 #include <test_framework/Miner.h>
 #include <test_framework/TestMWEB.h>
+#include <test_framework/TxBuilder.h>
 
 BOOST_FIXTURE_TEST_SUITE(TestBlockValidator, MWEBTestingSetup)
 
-BOOST_AUTO_TEST_CASE(BlockValidator_Test)
+// MW: TODO - Write tests for invalid blocks:
+// - Hash mismatch
+// - Pegin mismatch
+// - Pegout mismatch
+// - Num kernels mismatch
+// - Kernel root mismatch
+// - Invalid stealth excess sum
+// * Block weight
+// * Unsorted inputs
+// - Unsorted outputs
+// - Unsorted kernels
+// * Duplicate input commits
+// * Duplicate output commits
+// * Duplicate kernel commits
+// * Invalid input signature
+// * Invalid output signature
+// * Invalid kernel signature
+// * Invalid rangeproof
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_ValidBlock)
 {
     test::Miner miner(GetDataDir());
 
-    // Block 10
-    std::vector<test::Tx> block_10_txs{
-        test::Tx::CreatePegIn(5'000'000)
-    };
+    // Block 1 - 1 pegin & 1 pegout
+    test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+    test::Tx pegout_tx = test::Tx::CreatePegOut(pegin_tx.GetOutputs().front());
+    mw::Block::CPtr pBlock = miner.MineBlock(1, { pegin_tx, pegout_tx }).GetBlock();
 
-    std::vector<PegInCoin> pegInCoins{
-        PegInCoin(5'000'000, block_10_txs[0].GetTransaction()->GetKernels()[0].GetHash())
-    };
-    std::vector<PegOutCoin> pegOutCoins;
-    test::MinedBlock block_10 = miner.MineBlock(10, block_10_txs);
+    bool is_valid = BlockValidator::ValidateBlock(
+        pBlock,
+        pBlock->GetHash(),
+        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+        std::vector<PegOutCoin>{pegout_tx.GetPegOutCoin()}
+    );
+    BOOST_CHECK(is_valid);
 
-    BOOST_REQUIRE(BlockValidator::ValidateBlock(block_10.GetBlock(), block_10.GetHash(), pegInCoins, pegOutCoins));
+    // Block 2 - Empty
+    mw::Block::CPtr pEmptyBlock = miner.MineBlock(2).GetBlock();
+
+    is_valid = BlockValidator::ValidateBlock(
+        pEmptyBlock,
+        pEmptyBlock->GetHash(),
+        std::vector<PegInCoin>{},
+        std::vector<PegOutCoin>{}
+    );
+    BOOST_CHECK(is_valid);
+}
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_HashMismatch)
+{
+    test::Miner miner(GetDataDir());
+
+    test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+    mw::Block::CPtr pBlock = miner.MineBlock(1, { pegin_tx }).GetBlock();
+
+    bool is_valid = BlockValidator::ValidateBlock(
+        pBlock,
+        SecretKey::Random().GetBigInt(),
+        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+        std::vector<PegOutCoin>{}
+    );
+    BOOST_CHECK(!is_valid);
+}
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_PeginMismatch)
+{
+    test::Miner miner(GetDataDir());
+
+    {
+        test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+        mw::Block::CPtr pBlock = miner.MineBlock(1, {pegin_tx}).GetBlock();
+
+        bool is_valid = BlockValidator::ValidateBlock(
+            pBlock,
+            pBlock->GetHash(),
+            std::vector<PegInCoin>{},
+            std::vector<PegOutCoin>{}
+        );
+        BOOST_CHECK(!is_valid);
+    }
+
+    {
+        test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+        mw::Block::CPtr pBlock = miner.MineBlock(2, {}).GetBlock();
+
+        bool is_valid = BlockValidator::ValidateBlock(
+            pBlock,
+            pBlock->GetHash(),
+            std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+            std::vector<PegOutCoin>{}
+        );
+        BOOST_CHECK(!is_valid);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_PegoutMismatch)
+{
+    test::Miner miner(GetDataDir());
+
+    {
+        test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+        test::Tx pegout_tx = test::Tx::CreatePegOut(pegin_tx.GetOutputs().front());
+        mw::Block::CPtr pBlock = miner.MineBlock(1, {pegin_tx, pegout_tx}).GetBlock();
+
+        bool is_valid = BlockValidator::ValidateBlock(
+            pBlock,
+            pBlock->GetHash(),
+            std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+            std::vector<PegOutCoin>{}
+        );
+        BOOST_CHECK(!is_valid);
+    }
+    
+    {
+        test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+        test::Tx pegout_tx = test::Tx::CreatePegOut(pegin_tx.GetOutputs().front());
+        mw::Block::CPtr pBlock = miner.MineBlock(1, {pegin_tx}).GetBlock();
+
+        bool is_valid = BlockValidator::ValidateBlock(
+            pBlock,
+            pBlock->GetHash(),
+            std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+            std::vector<PegOutCoin>{pegout_tx.GetPegOutCoin()}
+        );
+        BOOST_CHECK(!is_valid);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_KernelMismatch)
+{
+    test::Miner miner(GetDataDir());
+
+    test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+    mw::Block::CPtr pBlock = miner.MineBlock(1, { pegin_tx }).GetBlock();
+
+    bool is_valid = BlockValidator::ValidateBlock(
+        pBlock,
+        pBlock->GetHash(),
+        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+        std::vector<PegOutCoin>{}
+    );
+    BOOST_CHECK(is_valid);
+    
+    // Kernel root mismatch
+    mw::Block::CPtr pBlockKernelRootMismatch = std::make_shared<mw::Block>(
+        mw::MutHeader(pBlock->GetHeader())
+            .SetKernelRoot(SecretKey::Random().GetBigInt())
+            .Build(),
+        pBlock->GetTxBody()
+    );
+
+    is_valid = BlockValidator::ValidateBlock(
+        pBlockKernelRootMismatch,
+        pBlockKernelRootMismatch->GetHash(),
+        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+        std::vector<PegOutCoin>{}
+    );
+    BOOST_CHECK(!is_valid);
+
+    
+    // Num kernels mismatch
+    mw::Block::CPtr pBlockNumKernelsMismatch = std::make_shared<mw::Block>(
+        mw::MutHeader(pBlock->GetHeader())
+            .SetNumKernels(10)
+            .Build(),
+        pBlock->GetTxBody()
+    );
+
+    is_valid = BlockValidator::ValidateBlock(
+        pBlockNumKernelsMismatch,
+        pBlockNumKernelsMismatch->GetHash(),
+        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+        std::vector<PegOutCoin>{}
+    );
+    BOOST_CHECK(!is_valid);
+}
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_InvalidStealthExcess)
+{
+    test::Miner miner(GetDataDir());
+
+    test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
+    mw::Block::CPtr pBlock = miner.MineBlock(1, {pegin_tx}).GetBlock();
+
+    bool is_valid = BlockValidator::ValidateBlock(
+        pBlock,
+        pBlock->GetHash(),
+        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+        std::vector<PegOutCoin>{});
+    BOOST_CHECK(is_valid);
+
+    // Stealth excess invalid
+    mw::Block::CPtr pBlockKernelRootMismatch = std::make_shared<mw::Block>(
+        mw::MutHeader(pBlock->GetHeader())
+            .SetStealthOffset(SecretKey::Random().GetBigInt())
+            .Build(),
+        pBlock->GetTxBody()
+    );
+
+    is_valid = BlockValidator::ValidateBlock(
+        pBlockKernelRootMismatch,
+        pBlockKernelRootMismatch->GetHash(),
+        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
+        std::vector<PegOutCoin>{}
+    );
+    BOOST_CHECK(!is_valid);
+}
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_OutputSorting)
+{
+    test::Miner miner(GetDataDir());
+
+    test::Tx tx = test::TxBuilder()
+        .AddPeginKernel(5'000'000)
+        .AddOutput(3'000'000, SecretKey::Random(), StealthAddress::Random())
+        .AddOutput(2'000'000, SecretKey::Random(), StealthAddress::Random())
+        .Build();
+    mw::Block::CPtr pBlock = miner.MineBlock(1, {tx}).GetBlock();
+
+    bool is_valid = BlockValidator::ValidateBlock(
+        pBlock,
+        pBlock->GetHash(),
+        tx.GetPegIns(),
+        tx.GetPegOuts()
+    );
+    BOOST_CHECK(is_valid);
+
+    // Swap outputs so they're no longer in order
+    std::vector<Output> outputs = pBlock->GetOutputs();
+    Output tmp = outputs[0];
+    outputs[0] = outputs[1];
+    outputs[1] = tmp;
+
+    BOOST_REQUIRE(outputs[0].GetCommitment() > outputs[1].GetCommitment());
+    mw::Block::CPtr pUnsortedBlock = mw::MutBlock(pBlock)
+        .SetOutputs(std::move(outputs))
+        .Build();
+
+    is_valid = BlockValidator::ValidateBlock(
+        pUnsortedBlock,
+        pUnsortedBlock->GetHash(),
+        tx.GetPegIns(),
+        tx.GetPegOuts()
+    );
+    BOOST_CHECK(!is_valid);
+}
+
+BOOST_AUTO_TEST_CASE(BlockValidator_Test_KernelSorting)
+{
+    test::Miner miner(GetDataDir());
+
+    test::Tx tx = test::TxBuilder()
+        .AddPeginKernel(5'000'000)
+        .AddPeginKernel(10'000'000)
+        .AddOutput(15'000'000, SecretKey::Random(), StealthAddress::Random())
+        .Build();
+    mw::Block::CPtr pBlock = miner.MineBlock(1, {tx}).GetBlock();
+
+    bool is_valid = BlockValidator::ValidateBlock(
+        pBlock,
+        pBlock->GetHash(),
+        tx.GetPegIns(),
+        tx.GetPegOuts()
+    );
+    BOOST_CHECK(is_valid);
+
+    // Swap kernels so they're no longer in order
+    std::vector<Kernel> kernels = pBlock->GetKernels();
+    Kernel tmp = kernels[0];
+    kernels[0] = kernels[1];
+    kernels[1] = tmp;
+
+    BOOST_REQUIRE(kernels[0].GetSupplyChange() < kernels[1].GetSupplyChange());
+    mw::Block::CPtr pUnsortedBlock = mw::MutBlock(pBlock)
+        .SetKernels(std::move(kernels))
+        .Build();
+
+    is_valid = BlockValidator::ValidateBlock(
+        pUnsortedBlock,
+        pUnsortedBlock->GetHash(),
+        tx.GetPegIns(),
+        tx.GetPegOuts()
+    );
+    BOOST_CHECK(!is_valid);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
