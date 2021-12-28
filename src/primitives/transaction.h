@@ -145,6 +145,11 @@ public:
         return IsMWEB() ? OutputIndex{GetCommitment()} : OutputIndex{GetTxIn().prevout};
     }
 
+    std::string ToString() const
+    {
+        return IsMWEB() ? GetCommitment().ToHex() : GetTxIn().ToString();
+    }
+
     const Commitment& GetCommitment() const noexcept
     {
         assert(IsMWEB());
@@ -221,6 +226,11 @@ public:
     bool IsMWEB() const noexcept { return m_output.type() == typeid(Commitment); }
 
     const OutputIndex& GetIndex() const noexcept { return m_idx; }
+
+    std::string ToString() const
+    {
+        return IsMWEB() ? GetCommitment().ToHex() : GetTxOut().ToString();
+    }
     
     const Commitment& GetCommitment() const noexcept
     {

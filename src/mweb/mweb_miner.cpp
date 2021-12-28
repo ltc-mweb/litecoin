@@ -108,7 +108,7 @@ bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<PegInCo
 
     for (const CTxOut& output : pTx->vout) {
         mw::Hash kernel_hash;
-        if (output.scriptPubKey.IsMWEBPegin(kernel_hash)) {
+        if (output.scriptPubKey.IsMWEBPegin(&kernel_hash)) {
             PegInCoin pegin(output.nValue, std::move(kernel_hash));
             if (pegin_set.erase(pegin) != 1) {
                 return false;

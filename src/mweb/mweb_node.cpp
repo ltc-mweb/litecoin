@@ -43,7 +43,7 @@ bool Node::CheckBlock(const CBlock& block, BlockValidationState& state)
     for (size_t i = 0; i < block.vtx.size() - 1; i++) {
         for (const CTxOut& out : block.vtx[i]->vout) {
             mw::Hash kernel_hash;
-            if (out.scriptPubKey.IsMWEBPegin(kernel_hash)) {
+            if (out.scriptPubKey.IsMWEBPegin(&kernel_hash)) {
                 pegins.push_back(PegInCoin{out.nValue, std::move(kernel_hash)});
             }
         }
@@ -99,8 +99,7 @@ bool Node::ContextualCheckBlock(const CBlock& block, const Consensus::Params& co
     for (size_t nTx = 1; nTx < block.vtx.size() - 1; nTx++) {
         const CTransactionRef& pTx = block.vtx[nTx];
         for (size_t nOut = 0; nOut < pTx->vout.size(); nOut++) {
-            mw::Hash kernel_hash;
-            if (pTx->vout[nOut].scriptPubKey.IsMWEBPegin(kernel_hash)) {
+            if (pTx->vout[nOut].scriptPubKey.IsMWEBPegin()) {
                 if (pHogEx->vin.size() <= next_pegin_idx) {
                     return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "pegins-missing", "Pegins missing from HogEx");
                 }
@@ -159,8 +158,7 @@ bool Node::CheckTransaction(const CTransaction& tx, TxValidationState& state)
 {
     if (tx.IsCoinBase() || tx.IsHogEx()) {
         for (size_t i = tx.IsHogEx() ? 1 : 0; i < tx.vout.size(); i++) {
-            mw::Hash kernel_hash;
-            if (tx.vout[i].scriptPubKey.IsMWEBPegin(kernel_hash)) {
+            if (tx.vout[i].scriptPubKey.IsMWEBPegin()) {
                 return state.Invalid(TxValidationResult::TX_CONSENSUS, strprintf("bad-%s-contains-pegin", tx.IsHogEx() ? "hogex" : "cb"));
             }
         }

@@ -1509,7 +1509,7 @@ BOOST_AUTO_TEST_CASE(script_mweb_pegin)
     script << OP_9 << kernel_hash.vec();
 
     mw::Hash kernel_hash2;
-    BOOST_CHECK(script.IsMWEBPegin(kernel_hash2));
+    BOOST_CHECK(script.IsMWEBPegin(&kernel_hash2));
     BOOST_CHECK(kernel_hash == kernel_hash2);
 }
 

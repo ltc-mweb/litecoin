@@ -89,17 +89,6 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
 
     WalletTx result;
     result.tx = wtx.tx;
-    result.txin_is_mine.reserve(inputs.size());
-    for (const auto& txin : inputs) {
-        result.txin_is_mine.emplace_back(wallet.IsMine(txin));
-    }
-    result.txout_is_mine.reserve(outputs.size());
-    result.txout_address_is_mine.reserve(outputs.size());
-    for (const auto& txout : outputs) {
-        result.txout_is_mine.emplace_back(wallet.IsMine(txout));
-        CTxDestination dest;
-        result.txout_address_is_mine.emplace_back(wallet.ExtractOutputDestination(txout, dest) ? wallet.IsMine(dest) : ISMINE_NO); // MW: TODO - Is this correct?
-    }
     result.credit = wtx.GetCredit(ISMINE_ALL);
     result.debit = wtx.GetDebit(ISMINE_ALL);
     result.change = wtx.GetChange();
@@ -110,9 +99,25 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
     result.wtx_hash = wtx.GetHash();
     result.inputs = std::move(inputs);
 
+    result.txin_is_mine.reserve(inputs.size());
+    for (const auto& txin : inputs) {
+        result.txin_is_mine.emplace_back(wallet.IsMine(txin));
+    }
+
+    result.txout_is_mine.reserve(outputs.size());
+    result.txout_address_is_mine.reserve(outputs.size());
     result.outputs.reserve(outputs.size());
-    for (const CTxOutput& output : outputs) {
-        result.outputs.push_back(MakeWalletTxOut(wallet, wtx, output));
+
+    for (const auto& txout : outputs) {
+        if (!txout.IsMWEB() && txout.GetScriptPubKey().IsMWEBPegin()) {
+            continue;
+        }
+
+        result.txout_is_mine.emplace_back(wallet.IsMine(txout));
+        CTxDestination dest;
+        result.txout_address_is_mine.emplace_back(wallet.ExtractOutputDestination(txout, dest) ? wallet.IsMine(dest) : ISMINE_NO);
+
+        result.outputs.push_back(MakeWalletTxOut(wallet, wtx, txout));
     }
 
     return result;
