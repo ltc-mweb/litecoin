@@ -84,9 +84,6 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
 {
     LOCK(wallet.cs_wallet);
 
-    std::vector<CTxInput> inputs = wtx.GetInputs();
-    std::vector<CTxOutput> outputs = wtx.GetOutputs();
-
     WalletTx result;
     result.tx = wtx.tx;
     result.credit = wtx.GetCredit(ISMINE_ALL);
@@ -97,13 +94,21 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
     result.value_map = wtx.mapValue;
     result.is_coinbase = wtx.IsCoinBase();
     result.wtx_hash = wtx.GetHash();
-    result.inputs = std::move(inputs);
 
-    result.txin_is_mine.reserve(inputs.size());
-    for (const auto& txin : inputs) {
+    //
+    // Inputs
+    //
+    result.inputs = wtx.GetInputs();
+    result.txin_is_mine.reserve(result.inputs.size());
+
+    for (const auto& txin : result.inputs) {
         result.txin_is_mine.emplace_back(wallet.IsMine(txin));
     }
 
+    //
+    // Outputs
+    //
+    std::vector<CTxOutput> outputs = wtx.GetOutputs();
     result.txout_is_mine.reserve(outputs.size());
     result.txout_address_is_mine.reserve(outputs.size());
     result.outputs.reserve(outputs.size());
