@@ -18,7 +18,7 @@ class StealthAddress;
 ////////////////////////////////////////
 // OUTPUT MESSAGE
 ////////////////////////////////////////
-class OutputMessage : public Traits::ISerializable, public Traits::IHashable
+class OutputMessage : public Traits::ISerializable, public Traits::IHashable // MW: TODO - Should we version these?
 {
 public:
     //
@@ -81,66 +81,12 @@ private:
 };
 
 ////////////////////////////////////////
-// OUTPUT IDENTIFIER
-////////////////////////////////////////
-class OutputId final : public Traits::ICommitted,
-                       public Traits::IHashable,
-                       public Traits::ISerializable
-{
-public:
-    //
-    // Constructors
-    //
-    OutputId(Commitment commitment, OutputMessage message)
-        : m_commitment(std::move(commitment)), m_message(std::move(message))
-    {
-        m_hash = Hashed(*this);
-    }
-    OutputId(const OutputId& output) = default;
-    OutputId(OutputId&& output) noexcept = default;
-    OutputId() = default;
-
-    //
-    // Operators
-    //
-    OutputId& operator=(const OutputId& OutputId) = default;
-    OutputId& operator=(OutputId&& OutputId) noexcept = default;
-    bool operator<(const OutputId& OutputId) const noexcept { return m_hash < OutputId.m_hash; }
-    bool operator==(const OutputId& OutputId) const noexcept { return m_hash == OutputId.m_hash; }
-
-    //
-    // Getters
-    //
-    const Commitment& GetCommitment() const noexcept final { return m_commitment; }
-
-    //
-    // Serialization/Deserialization
-    //
-    IMPL_SERIALIZABLE(OutputId, obj)
-    {
-        READWRITE(obj.m_commitment);
-        READWRITE(obj.m_message);
-        SER_READ(obj, obj.m_hash = Hashed(obj));
-    }
-
-    //
-    // Traits
-    //
-    const mw::Hash& GetHash() const noexcept final { return m_hash; }
-
-private:
-    Commitment m_commitment;
-    OutputMessage m_message;
-
-    mw::Hash m_hash;
-};
-
-////////////////////////////////////////
 // OUTPUT
 ////////////////////////////////////////
 class Output :
     public Traits::ICommitted,
-    public Traits::ISerializable
+    public Traits::ISerializable,
+    public Traits::IHashable
 {
 public:
     //
@@ -149,15 +95,15 @@ public:
     Output(
         Commitment commitment,
         OutputMessage message,
-        Signature signature,
-        const RangeProof::CPtr& pProof
+        const RangeProof::CPtr& pProof,
+        Signature signature
     ) :
         m_commitment(std::move(commitment)),
         m_message(std::move(message)),
-        m_signature(std::move(signature)),
-        m_pProof(pProof)
+        m_pProof(pProof),
+        m_signature(std::move(signature))
     {
-        m_hash = Hashed(*this);
+        m_hash = ComputeHash();
     }
 
     Output(const Output& Output) = default;
@@ -208,10 +154,6 @@ public:
     SignedMessage BuildSignedMsg() const noexcept;
     ProofData BuildProofData() const noexcept;
 
-    OutputId ToOutputId() const noexcept {
-        return OutputId(m_commitment, m_message);
-    }
-
     //
     // Serialization/Deserialization
     //
@@ -219,19 +161,37 @@ public:
     {
         READWRITE(obj.m_commitment);
         READWRITE(obj.m_message);
-        READWRITE(obj.m_signature);
         READWRITE(obj.m_pProof);
-        SER_READ(obj, obj.m_hash = Hashed(obj));
+        READWRITE(obj.m_signature);
+        SER_READ(obj, obj.m_hash = obj.ComputeHash());
     }
 
+    //
+    // Traits
+    //
+    const mw::Hash& GetHash() const noexcept final { return m_hash; }
+
 private:
-    // The homomorphic commitment representing the output amount
+    //
+    // Outputs use a special serialization when hashing that only includes
+    // the hash of the rangeproof, instead of the full 675 byte rangeproof.
+    // 
+    // This will make some light client use cases more efficient.
+    //
+    mw::Hash ComputeHash() const noexcept
+    {
+        return Hasher()
+            .Append(m_commitment)
+            .Append(m_message.GetHash())
+            .Append(m_pProof->GetHash())
+            .Append(m_signature)
+            .hash();
+    }
+
     Commitment m_commitment;
     OutputMessage m_message;
-    Signature m_signature;
-
-    // A proof that the commitment is in the right range
     RangeProof::CPtr m_pProof;
+    Signature m_signature;
 
     mw::Hash m_hash;
 };

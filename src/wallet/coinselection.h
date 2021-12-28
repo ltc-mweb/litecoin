@@ -44,7 +44,6 @@ public:
         : m_input_bytes(0), m_output(coin), m_index(coin.commitment) {}
 
     bool IsMWEB() const noexcept { return m_output.type() == typeid(mw::Coin); }
-    CScript GetScriptPubKey() const noexcept { return IsMWEB() ? CScript() : boost::get<CTxOut>(m_output).scriptPubKey; }
     CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<mw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }
     const OutputIndex& GetIndex() const noexcept { return m_index; }
 

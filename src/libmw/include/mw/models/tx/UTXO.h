@@ -18,7 +18,6 @@ public:
     int32_t GetBlockHeight() const noexcept { return m_blockHeight; }
     const mmr::LeafIndex& GetLeafIndex() const noexcept { return m_leafIdx; }
     const Output& GetOutput() const noexcept { return m_output; }
-    OutputId ToOutputId() const noexcept { return m_output.ToOutputId(); }
 
     const Commitment& GetCommitment() const noexcept { return m_output.GetCommitment(); }
     const PublicKey& GetReceiverPubKey() const noexcept { return m_output.GetReceiverPubKey(); }

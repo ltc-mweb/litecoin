@@ -337,7 +337,6 @@ BITCOIN_TESTS += \
   libmw/test/tests/models/tx/Test_Input.cpp \
   libmw/test/tests/models/tx/Test_Kernel.cpp \
   libmw/test/tests/models/tx/Test_Output.cpp \
-  libmw/test/tests/models/tx/Test_OutputId.cpp \
   libmw/test/tests/models/tx/Test_PegInCoin.cpp \
   libmw/test/tests/models/tx/Test_PegOutCoin.cpp \
   libmw/test/tests/models/tx/Test_Transaction.cpp \

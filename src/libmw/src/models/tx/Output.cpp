@@ -42,21 +42,10 @@ Output Output::Create(
     // Commitment 'C' = r*G + v*H
     Commitment output_commit = Commitment::Blinded(blind_out, value);
 
-    // Sign the malleable output data
-    mw::Hash sig_message = Hasher()
-        .Append(output_commit)
-        .Append(Ko)
-        .Append(Ke)
-        .Append(t[0])
-        .Append(mv)
-        .Append(mn)
-        .hash();
-    PublicKey sender_pubkey = Keys::From(sender_privkey).PubKey();
-    Signature signature = Schnorr::Sign(sender_privkey.data(), sig_message);
+    // Calculate the ephemeral send pubkey 'Ks' = ks*G
+    PublicKey Ks = Keys::From(sender_privkey).PubKey();
 
-    OutputMessage message{Ko, Ke, t[0], mv, mn, sender_pubkey};
-    std::vector<uint8_t> proof_data = message.Serialized();
-    proof_data.insert(proof_data.end(), signature.vec().begin(), signature.vec().end());
+    OutputMessage message{Ko, Ke, t[0], mv, mn, Ks};
 
     // Probably best to store sender_key so sender can identify all outputs they've sent?
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(
@@ -65,14 +54,22 @@ Output Output::Create(
         SecretKey::Random(),
         SecretKey::Random(),
         ProofMessage{},
-        proof_data
+        message.Serialized()
     );
+    
+    // Sign the output
+    mw::Hash sig_message = Hasher()
+        .Append(output_commit)
+        .Append(message)
+        .Append(pRangeProof->GetHash())
+        .hash();
+    Signature signature = Schnorr::Sign(sender_privkey.data(), sig_message);
 
     return Output{
         std::move(output_commit),
         std::move(message),
-        std::move(signature),
-        pRangeProof
+        pRangeProof,
+        std::move(signature)
     };
 }
 
@@ -80,19 +77,13 @@ SignedMessage Output::BuildSignedMsg() const noexcept
 {
     mw::Hash hashed_msg = Hasher()
         .Append(m_commitment)
-        .Append(m_message.receiverPubKey)
-        .Append(m_message.keyExchangePubKey)
-        .Append(m_message.viewTag)
-        .Append(m_message.maskedValue)
-        .Append(m_message.maskedNonce)
+        .Append(m_message)
+        .Append(m_pProof->GetHash())
         .hash();
     return SignedMessage{ std::move(hashed_msg), m_message.senderPubKey, m_signature };
 }
 
 ProofData Output::BuildProofData() const noexcept
 {
-    std::vector<uint8_t> message = m_message.Serialized();
-    message.insert(message.end(), m_signature.vec().begin(), m_signature.vec().end());
-
-    return ProofData{ m_commitment, m_pProof, std::move(message) };
+    return ProofData{ m_commitment, m_pProof, m_message.Serialized() };
 }

@@ -55,9 +55,17 @@ BOOST_AUTO_TEST_CASE(Create)
     BOOST_REQUIRE(signed_msg.GetPublicKey() == PublicKey::From(sender_key));
     BOOST_REQUIRE(Schnorr::BatchVerify({ signed_msg }));
 
+    // Verify Hash
+    mw::Hash expected_hash = Hasher()
+        .Append(output.GetCommitment())
+        .Append(output.GetOutputMessage().GetHash())
+        .Append(output.GetRangeProof()->GetHash())
+        .Append(output.GetSignature())
+        .hash();
+    BOOST_REQUIRE(output.GetHash() == expected_hash);
+
     // Getters
     BOOST_REQUIRE(output.GetCommitment() == expected_commit);
-    BOOST_REQUIRE(output.ToOutputId() == OutputId(expected_commit, output.GetOutputMessage()));
 
     //
     // Test Restoring Output

@@ -94,7 +94,7 @@ private:
 
         MemMMR::Ptr pOutputMMR = std::make_shared<MemMMR>();
         for (const Output& output : outputs) {
-            pOutputMMR->Add(output.ToOutputId().Serialized());
+            pOutputMMR->Add(output.GetHash());
         }
 
         return pOutputMMR;
