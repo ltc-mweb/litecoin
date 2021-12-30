@@ -108,20 +108,25 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
     //
     // Outputs
     //
+    auto is_address_mine = [&wallet](const CTxOutput& txout) -> isminetype {
+        CTxDestination dest;
+        return wallet.ExtractOutputDestination(txout, dest) ? wallet.IsMine(dest) : ISMINE_NO;
+    };
+
     std::vector<CTxOutput> outputs = wtx.GetOutputs();
     result.txout_is_mine.reserve(outputs.size());
     result.txout_address_is_mine.reserve(outputs.size());
     result.outputs.reserve(outputs.size());
 
     for (const auto& txout : outputs) {
+        // MWEB Peg-in output pubkey scripts are anyone-can-spend, so don't really have an owner.
+        // In order for peg-ins to your own address to show up as SendToSelf txs, we need to filter these out.
         if (!txout.IsMWEB() && txout.GetScriptPubKey().IsMWEBPegin()) {
             continue;
         }
 
         result.txout_is_mine.emplace_back(wallet.IsMine(txout));
-        CTxDestination dest;
-        result.txout_address_is_mine.emplace_back(wallet.ExtractOutputDestination(txout, dest) ? wallet.IsMine(dest) : ISMINE_NO);
-
+        result.txout_address_is_mine.emplace_back(is_address_mine(txout));
         result.outputs.push_back(MakeWalletTxOut(wallet, wtx, txout));
     }
 

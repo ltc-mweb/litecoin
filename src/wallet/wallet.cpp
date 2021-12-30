@@ -251,7 +251,11 @@ std::shared_ptr<CWallet> CreateWallet(interfaces::Chain& chain, const std::strin
     uint64_t wallet_creation_flags = options.create_flags;
     const SecureString& passphrase = options.create_passphrase;
 
-    if (wallet_creation_flags & WALLET_FLAG_DESCRIPTORS) options.require_format = DatabaseFormat::SQLITE;
+    if (wallet_creation_flags & WALLET_FLAG_DESCRIPTORS) {
+        error = Untranslated("Descriptor wallets not supported.") + Untranslated(" ") + error;
+        status = DatabaseStatus::FAILED_CREATE;
+        return nullptr;
+    }
 
     // Indicate that the wallet is actually supposed to be blank and not just blank to make it encrypted
     bool create_blank = (wallet_creation_flags & WALLET_FLAG_BLANK_WALLET);
@@ -2589,13 +2593,21 @@ bool CWallet::SelectCoins(const std::vector<COutputCoin>& vAvailableCoins, const
     for (const OutputIndex& idx : vPresetInputs)
     {
         if (idx.type() == typeid(Commitment)) {
-            mw::Coin coin;
-            if (!GetCoin(boost::get<Commitment>(idx), coin)) {
+            mw::Coin mweb_coin;
+            if (!GetCoin(boost::get<Commitment>(idx), mweb_coin)) {
                 return false;
             }
 
-            nValueFromPresetInputs += coin.amount;
-            setPresetCoins.insert(CInputCoin(coin));
+            CInputCoin coin(mweb_coin);
+            coin.effective_value = coin.GetAmount() - coin.CalculateFee(coin_selection_params.m_effective_feerate);
+            if (coin_selection_params.use_bnb) {
+                value_to_select -= coin.effective_value;
+            } else {
+                value_to_select -= coin.GetAmount();
+            }
+
+            nValueFromPresetInputs += coin.GetAmount();
+            setPresetCoins.insert(coin);
             continue;
         }
 

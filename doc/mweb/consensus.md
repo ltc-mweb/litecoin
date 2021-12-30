@@ -88,10 +88,8 @@
 #### Block Weight
 
 * Outputs shall be counted as having a weight of 18.
-* Kernels shall be counted as having a weight of 2.
+* Kernels shall be counted as having a weight of either 2 (without stealth excess) or 3 (with stealth excess).
   * The `scriptPubKey` shall be a valid `CScript` between 4 and 42 bytes, inclusive.
   * Kernel `extra_data` shall not exceed 100 bytes.
-  * NOTE: Kernel maximum serialized size is 269 bytes
-* Signed owner messages shall be counted as having a weight of 1.
 * Extension blocks shall be capped at a maximum total weight of 21,000.
 * Inputs shall not contribute toward the block weight.

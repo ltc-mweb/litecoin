@@ -239,11 +239,14 @@ static bool SelectCoinsEx(
     CoinSelectionParams& coin_selection_params,
     bool& bnb_used)
 {
+    nValueRet = 0;
     if (wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used)) {
         return true;
     }
 
-    if (coin_selection_params.use_bnb) {
+    nValueRet = 0;
+    if (bnb_used) {
+        bnb_used = false;
         coin_selection_params.use_bnb = false;
         return wallet.SelectCoins(vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, coin_selection_params, bnb_used);
     }
@@ -274,6 +277,7 @@ static bool AttemptCoinSelection(
         mweb_to_mweb.change_output_size = 0;
         mweb_to_mweb.change_spend_size = 0;
         mweb_to_mweb.tx_noinputs_size = 0;
+        bnb_used = false;
 
         if (SelectCoinsEx(wallet, vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, mweb_to_mweb, bnb_used)) {
             return true;
@@ -287,6 +291,7 @@ static bool AttemptCoinSelection(
         params_pegin.mweb_nochange_weight = Weight::Calculate(1, 1, recipients.size());
         params_pegin.change_output_size = change_on_mweb ? 0 : coin_selection_params.change_output_size;
         params_pegin.change_spend_size = change_on_mweb ? 0 : coin_selection_params.change_spend_size;
+        bnb_used = false;
 
         if (SelectCoinsEx(wallet, vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params_pegin, bnb_used)) {
             return std::any_of(setCoinsRet.cbegin(), setCoinsRet.cend(), is_ltc);
@@ -297,6 +302,7 @@ static bool AttemptCoinSelection(
         mweb_to_mweb.input_preference = InputPreference::LTC_ONLY;
         mweb_to_mweb.mweb_change_output_weight = 0;
         mweb_to_mweb.mweb_nochange_weight = 0;
+        bnb_used = false;
 
         if (SelectCoinsEx(wallet, vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, mweb_to_mweb, bnb_used)) {
             return true;
@@ -309,6 +315,7 @@ static bool AttemptCoinSelection(
         params_pegout.mweb_nochange_weight = Weight::KERNEL_WEIGHT + Weight::STEALTH_EXCESS_WEIGHT;
         params_pegout.change_output_size = 0;
         params_pegout.change_spend_size = 0;
+        bnb_used = false;
 
         if (SelectCoinsEx(wallet, vAvailableCoins, nTargetValue, setCoinsRet, nValueRet, coin_control, params_pegout, bnb_used)) {
             return std::any_of(setCoinsRet.cbegin(), setCoinsRet.cend(), is_mweb);
