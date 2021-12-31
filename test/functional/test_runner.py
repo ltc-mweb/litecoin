@@ -79,6 +79,7 @@ TEST_FRAMEWORK_MODULES = [
 EXTENDED_SCRIPTS = [
     # These tests are not run by default.
     # Longest test should go first, to favor running tests in parallel
+    'mweb_weight.py',
     'feature_pruning.py',
     'feature_dbcrash.py',
 ]
@@ -244,7 +245,6 @@ BASE_SCRIPTS = [
     'feature_dersig.py',
     'feature_cltv.py',
     'mweb_basic.py',
-    'mweb_weight.py',
     'rpc_uptime.py',
     'wallet_resendwallettransactions.py',
     'wallet_resendwallettransactions.py --descriptors',

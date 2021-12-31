@@ -73,7 +73,11 @@ static bool GetWalletAddressesForKey(LegacyScriptPubKeyMan* spk_man, const CWall
         }
     }
     if (!fLabelFound) {
-        strAddr = EncodeDestination(GetDestinationForKey(key.GetPubKey(), pwallet->m_default_address_type, spk_man->GetScanSecret()));
+        if (spk_man->mapKeyMetadata[keyid].hdKeypath.find('x') == 0) {
+            strAddr = EncodeDestination(GetDestinationForKey(key.GetPubKey(), OutputType::MWEB, spk_man->GetScanSecret()));
+        } else {
+            strAddr = EncodeDestination(GetDestinationForKey(key.GetPubKey(), pwallet->m_default_address_type, spk_man->GetScanSecret()));
+        }
     }
     return fLabelFound;
 }
@@ -820,7 +824,16 @@ RPCHelpMan dumpwallet()
             } else {
                 file << "change=1";
             }
-            file << strprintf(" # addr=%s%s\n", strAddr, (spk_man.mapKeyMetadata[keyid].has_key_origin ? " hdkeypath="+WriteHDKeypath(spk_man.mapKeyMetadata[keyid].key_origin.path) : ""));
+
+            file << strprintf(" # addr=%s", strAddr);
+
+            if (spk_man.mapKeyMetadata[keyid].hdKeypath.find('x') == 0) {
+                file << " hdkeypath=" << spk_man.mapKeyMetadata[keyid].hdKeypath;
+            } else if (spk_man.mapKeyMetadata[keyid].has_key_origin) {
+                file << " hdkeypath=" << WriteHDKeypath(spk_man.mapKeyMetadata[keyid].key_origin.path);
+            }
+
+            file << "\n";
         }
     }
     file << "\n";

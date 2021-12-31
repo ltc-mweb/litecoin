@@ -464,7 +464,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                 // See https://github.com/bitcoin/bitcoin/pull/12924
                 bool internal = false;
                 uint32_t index = 0;
-                if (keyMeta.hdKeypath != "s" && keyMeta.hdKeypath != "m") {
+                if (keyMeta.hdKeypath != "s" && keyMeta.hdKeypath != "m" && keyMeta.hdKeypath.find('x') != 0) {
                     std::vector<uint32_t> path;
                     if (keyMeta.has_key_origin) {
                         // We have a key origin, so pull it from its path vector

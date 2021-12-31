@@ -503,8 +503,8 @@ bool LegacyScriptPubKeyMan::Upgrade(int prev_version, int new_version, bilingual
         m_storage.SetMinVersion(FEATURE_PRE_SPLIT_KEYPOOL);
         split_upgrade = FEATURE_HD_SPLIT > prev_version;
         // Upgrade the HDChain
-        if (m_hd_chain.nVersion < CHDChain::VERSION_HD_CHAIN_SPLIT) {
-            m_hd_chain.nVersion = CHDChain::VERSION_HD_CHAIN_SPLIT;
+        if (m_hd_chain.nVersion < CHDChain::VERSION_HD_MWEB) {
+            m_hd_chain.nVersion = CHDChain::VERSION_HD_MWEB;
             if (!WalletBatch(m_storage.GetDatabase()).WriteHDChain(m_hd_chain)) {
                 throw std::runtime_error(std::string(__func__) + ": writing chain failed");
             }
@@ -1142,7 +1142,8 @@ void LegacyScriptPubKeyMan::DeriveNewChildKey(WalletBatch& batch, CKeyMetadata& 
             SecretKey spend_key = m_mwebKeychain->GetSpendKey(chain_counter);
             secret.Set(spend_key.vec().begin(), spend_key.vec().end(), true);
             metadata.mweb_index = chain_counter;
-            // MW: TODO - Need to set hdKeypath & key_origin or update everywhere that assumes it was populated
+            metadata.hdKeypath = "x/" + ToString(chain_counter);
+            metadata.key_origin.path.push_back(chain_counter);
         } else {
             CExtKey childKey; //key at m/0'/0'/<n>'
             chainChildKey.Derive(childKey, chain_counter | BIP32_HARDENED_KEY_LIMIT);
@@ -1158,11 +1159,9 @@ void LegacyScriptPubKeyMan::DeriveNewChildKey(WalletBatch& batch, CKeyMetadata& 
 
     metadata.hd_seed_id = hd_chain.seed_id;
 
-    if (purpose != KeyPurpose::MWEB) {
-        CKeyID master_id = masterKey.key.GetPubKey().GetID();
-        std::copy(master_id.begin(), master_id.begin() + 4, metadata.key_origin.fingerprint);
-        metadata.has_key_origin = true;
-    }
+    CKeyID master_id = masterKey.key.GetPubKey().GetID();
+    std::copy(master_id.begin(), master_id.begin() + 4, metadata.key_origin.fingerprint);
+    metadata.has_key_origin = true;
 
     // update the chain model in the database
     if (hd_chain.seed_id == m_hd_chain.seed_id && !batch.WriteHDChain(hd_chain))
@@ -1242,7 +1241,7 @@ void LegacyScriptPubKeyMan::SetHDSeed(const CPubKey& seed)
     // the child index counter in the database
     // as a hdchain object
     CHDChain newHdChain;
-    newHdChain.nVersion = m_storage.CanSupportFeature(FEATURE_HD_SPLIT) ? CHDChain::VERSION_HD_CHAIN_SPLIT : CHDChain::VERSION_HD_BASE;
+    newHdChain.nVersion = m_storage.CanSupportFeature(FEATURE_HD_SPLIT) ? CHDChain::VERSION_HD_MWEB : CHDChain::VERSION_HD_BASE;
     newHdChain.seed_id = seed.GetID();
     AddHDChain(newHdChain);
     LoadMWEBKeychain();
@@ -1735,50 +1734,15 @@ bool LegacyScriptPubKeyMan::LoadMWEBKeychain()
 
     CExtKey scanKey;
     chainChildKey.Derive(scanKey, BIP32_HARDENED_KEY_LIMIT);
-    CPubKey scanPubKey = scanKey.key.GetPubKey();
 
     CExtKey spendKey;
     chainChildKey.Derive(spendKey, BIP32_HARDENED_KEY_LIMIT + 1);
-    CPubKey spendPubKey = spendKey.key.GetPubKey();
-
-    if (!HaveKey(scanPubKey.GetID()) || !HaveKey(spendPubKey.GetID())) {
-        // Create CKeyMetadata for scan key
-        CKeyMetadata scan_metadata(GetTime());
-        scan_metadata.hd_seed_id = m_hd_chain.seed_id;
-        scan_metadata.hdKeypath = "m/0'/100'/0'";
-        scan_metadata.key_origin.path = {
-            BIP32_HARDENED_KEY_LIMIT,
-            (BIP32_HARDENED_KEY_LIMIT | (uint32_t)KeyPurpose::MWEB),
-            BIP32_HARDENED_KEY_LIMIT};
-
-        CKeyID master_id = masterKey.key.GetPubKey().GetID();
-        std::copy(master_id.begin(), master_id.begin() + 4, scan_metadata.key_origin.fingerprint);
-        scan_metadata.has_key_origin = true;
-
-        assert(scanKey.key.VerifyPubKey(scanPubKey));
-        assert(spendKey.key.VerifyPubKey(spendPubKey));
-
-        // Create CKeyMetadata for spend key
-        // Largely the same as scan, so just need to update key path.
-        CKeyMetadata spend_metadata = scan_metadata;
-        spend_metadata.hdKeypath = "m/0'/100'/1'";
-        scan_metadata.key_origin.path.back() += 1;
-
-        UpdateTimeFirstKey(scan_metadata.nCreateTime);
-
-        WalletBatch batch(m_storage.GetDatabase());
-        if (!AddKeyPubKeyWithDB(batch, scanKey.key, scanPubKey) || !AddKeyPubKeyWithDB(batch, spendKey.key, spendPubKey)) {
-            throw std::runtime_error(std::string(__func__) + ": failed to add MWEB keys");
-        }
-
-        mapKeyMetadata[scanPubKey.GetID()] = scan_metadata;
-        mapKeyMetadata[spendPubKey.GetID()] = spend_metadata;
-    }
 
     m_mwebKeychain = std::make_shared<mw::Keychain>(
         *this,
         SecretKey(scanKey.key.begin()),
-        SecretKey(spendKey.key.begin()));
+        SecretKey(spendKey.key.begin())
+    );
 
     // Mark change and peg-in addresses as used
     if (m_hd_chain.nMWEBIndexCounter == 0) {
