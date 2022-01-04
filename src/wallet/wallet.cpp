@@ -1425,8 +1425,12 @@ bool CWallet::IsChange(const CTxOutput& output) const
     return IsChange(output.GetScriptPubKey());
 }
 
-bool CWallet::IsChange(const CScript& script) const
+bool CWallet::IsChange(const DestinationAddr& script) const
 {
+    if (script.IsMWEB()) {
+        return GetMWWallet()->IsChange(script.GetMWEBAddress());
+    }
+
     // TODO: fix handling of 'change' outputs. The assumption is that any
     // payment to a script that is ours, but is not in the address book
     // is change. That assumption is likely to break when we implement multisignature
@@ -1435,10 +1439,10 @@ bool CWallet::IsChange(const CScript& script) const
     // 'the change' will need to be implemented (maybe extend CWalletTx to remember
     // which output, if any, was change).
     AssertLockHeld(cs_wallet);
-    if (IsMine(DestinationAddr(script)))
+    if (IsMine(script))
     {
         CTxDestination address;
-        if (!ExtractDestination(script, address))
+        if (!script.ExtractDestination(address))
             return true;
         if (!FindAddressBookEntry(address)) {
             return true;
@@ -4018,22 +4022,22 @@ ScriptPubKeyMan* CWallet::GetScriptPubKeyMan(const OutputType& type, bool intern
     return it->second;
 }
 
-std::set<ScriptPubKeyMan*> CWallet::GetScriptPubKeyMans(const CScript& script, SignatureData& sigdata) const
+std::set<ScriptPubKeyMan*> CWallet::GetScriptPubKeyMans(const DestinationAddr& dest_addr, SignatureData& sigdata) const
 {
     std::set<ScriptPubKeyMan*> spk_mans;
     for (const auto& spk_man_pair : m_spk_managers) {
-        if (spk_man_pair.second->CanProvide(script, sigdata)) {
+        if (spk_man_pair.second->CanProvide(dest_addr, sigdata)) {
             spk_mans.insert(spk_man_pair.second.get());
         }
     }
     return spk_mans;
 }
 
-ScriptPubKeyMan* CWallet::GetScriptPubKeyMan(const CScript& script) const
+ScriptPubKeyMan* CWallet::GetScriptPubKeyMan(const DestinationAddr& dest_addr) const
 {
     SignatureData sigdata;
     for (const auto& spk_man_pair : m_spk_managers) {
-        if (spk_man_pair.second->CanProvide(script, sigdata)) {
+        if (spk_man_pair.second->CanProvide(dest_addr, sigdata)) {
             return spk_man_pair.second.get();
         }
     }
@@ -4048,13 +4052,13 @@ ScriptPubKeyMan* CWallet::GetScriptPubKeyMan(const uint256& id) const
     return nullptr;
 }
 
-std::unique_ptr<SigningProvider> CWallet::GetSolvingProvider(const CScript& script) const
+std::unique_ptr<SigningProvider> CWallet::GetSolvingProvider(const DestinationAddr& script) const
 {
     SignatureData sigdata;
     return GetSolvingProvider(script, sigdata);
 }
 
-std::unique_ptr<SigningProvider> CWallet::GetSolvingProvider(const CScript& script, SignatureData& sigdata) const
+std::unique_ptr<SigningProvider> CWallet::GetSolvingProvider(const DestinationAddr& script, SignatureData& sigdata) const
 {
     for (const auto& spk_man_pair : m_spk_managers) {
         if (spk_man_pair.second->CanProvide(script, sigdata)) {

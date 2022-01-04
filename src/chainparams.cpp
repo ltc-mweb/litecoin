@@ -642,7 +642,7 @@ std::unique_ptr<const CChainParams> CreateChainParams(const ArgsManager& args, c
     if (chain == CBaseChainParams::MAIN) {
         return std::unique_ptr<CChainParams>(new CMainParams());
     } else if (chain == CBaseChainParams::TESTNET) {
-        return std::unique_ptr<CChainParams>(new CMWTestNetParams());
+        return std::unique_ptr<CChainParams>(new CTestNetParams());
     } else if (chain == CBaseChainParams::SIGNET) {
         return std::unique_ptr<CChainParams>(new SigNetParams(args));
     } else if (chain == CBaseChainParams::REGTEST) {

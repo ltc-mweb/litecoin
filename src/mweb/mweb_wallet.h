@@ -28,6 +28,7 @@ public:
         : m_pWallet(pWallet) {}
 
     bool IsSupported() const { return GetKeychain() != nullptr; }
+    bool IsChange(const StealthAddress& address) const;
     bool GetCoin(const Commitment& output_commit, mw::Coin& coin) const;
 
     std::vector<mw::Coin> RewindOutputs(const CTransaction& tx);
@@ -36,7 +37,7 @@ public:
         const Commitment& output_commit,
         mw::Coin& coin
     );
-    StealthAddress GetStealthAddress(const uint32_t index);
+    StealthAddress GetStealthAddress(const uint32_t index) const;
 
     void LoadToWallet(const mw::Coin& coin);
 

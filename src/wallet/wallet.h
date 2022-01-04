@@ -1158,7 +1158,7 @@ public:
     isminetype IsMine(const CTxOutput& output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     CAmount GetCredit(const CTxOutput& output, const isminefilter& filter) const;
     bool IsChange(const CTxOutput& output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    bool IsChange(const CScript& script) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool IsChange(const DestinationAddr& script) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     CAmount GetChange(const CTxOutput& output) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     bool IsMine(const CTransaction& tx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     /** should probably be renamed to IsRelevantToMe */
@@ -1313,16 +1313,16 @@ public:
     ScriptPubKeyMan* GetScriptPubKeyMan(const OutputType& type, bool internal) const;
 
     //! Get the ScriptPubKeyMan for a script
-    ScriptPubKeyMan* GetScriptPubKeyMan(const CScript& script) const;
+    ScriptPubKeyMan* GetScriptPubKeyMan(const DestinationAddr& dest_addr) const;
     //! Get the ScriptPubKeyMan by id
     ScriptPubKeyMan* GetScriptPubKeyMan(const uint256& id) const;
 
     //! Get all of the ScriptPubKeyMans for a script given additional information in sigdata (populated by e.g. a psbt)
-    std::set<ScriptPubKeyMan*> GetScriptPubKeyMans(const CScript& script, SignatureData& sigdata) const;
+    std::set<ScriptPubKeyMan*> GetScriptPubKeyMans(const DestinationAddr& dest_addr, SignatureData& sigdata) const;
 
     //! Get the SigningProvider for a script
-    std::unique_ptr<SigningProvider> GetSolvingProvider(const CScript& script) const;
-    std::unique_ptr<SigningProvider> GetSolvingProvider(const CScript& script, SignatureData& sigdata) const;
+    std::unique_ptr<SigningProvider> GetSolvingProvider(const DestinationAddr& script) const;
+    std::unique_ptr<SigningProvider> GetSolvingProvider(const DestinationAddr& script, SignatureData& sigdata) const;
 
     //! Get the LegacyScriptPubKeyMan which is used for all types, internal, and external.
     LegacyScriptPubKeyMan* GetLegacyScriptPubKeyMan() const;

@@ -595,14 +595,18 @@ int64_t LegacyScriptPubKeyMan::GetTimeFirstKey() const
     return nTimeFirstKey;
 }
 
-std::unique_ptr<SigningProvider> LegacyScriptPubKeyMan::GetSolvingProvider(const CScript& script) const
+std::unique_ptr<SigningProvider> LegacyScriptPubKeyMan::GetSolvingProvider(const DestinationAddr& dest_addr) const
 {
     return MakeUnique<LegacySigningProvider>(*this);
 }
 
-bool LegacyScriptPubKeyMan::CanProvide(const CScript& script, SignatureData& sigdata)
+bool LegacyScriptPubKeyMan::CanProvide(const DestinationAddr& dest_addr, SignatureData& sigdata)
 {
-    IsMineResult ismine = IsMineInner(*this, script, IsMineSigVersion::TOP, /* recurse_scripthash= */ false);
+    if (dest_addr.IsMWEB()) {
+        return IsMine(dest_addr) & isminetype::ISMINE_SPENDABLE;
+    }
+
+    IsMineResult ismine = IsMineInner(*this, dest_addr.GetScript(), IsMineSigVersion::TOP, /* recurse_scripthash= */ false);
     if (ismine == IsMineResult::SPENDABLE || ismine == IsMineResult::WATCH_ONLY) {
         // If ismine, it means we recognize keys or script ids in the script, or
         // are watching the script itself, and we can at least provide metadata
@@ -610,7 +614,7 @@ bool LegacyScriptPubKeyMan::CanProvide(const CScript& script, SignatureData& sig
         return true;
     } else {
         // If, given the stuff in sigdata, we could make a valid sigature, then we can provide for this script
-        ProduceSignature(*this, DUMMY_SIGNATURE_CREATOR, script, sigdata);
+        ProduceSignature(*this, DUMMY_SIGNATURE_CREATOR, dest_addr.GetScript(), sigdata);
         if (!sigdata.signatures.empty()) {
             // If we could make signatures, make sure we have a private key to actually make a signature
             bool has_privkeys = false;
@@ -1641,7 +1645,7 @@ bool LegacyScriptPubKeyMan::ImportPrivKeys(const std::map<CKeyID, CKey>& privkey
     return true;
 }
 
-bool LegacyScriptPubKeyMan::ImportPubKeys(const std::vector<CKeyID>& ordered_pubkeys, const std::map<CKeyID, CPubKey>& pubkey_map, const std::map<CKeyID, std::pair<CPubKey, KeyOriginInfo>>& key_origins, const bool add_keypool, const bool internal, const int64_t timestamp) // MW: TODO - Pass in KeyPurpose
+bool LegacyScriptPubKeyMan::ImportPubKeys(const std::vector<CKeyID>& ordered_pubkeys, const std::map<CKeyID, CPubKey>& pubkey_map, const std::map<CKeyID, std::pair<CPubKey, KeyOriginInfo>>& key_origins, const bool add_keypool, const bool internal, const int64_t timestamp)
 {
     WalletBatch batch(m_storage.GetDatabase());
     for (const auto& entry : key_origins) {
@@ -1677,11 +1681,11 @@ bool LegacyScriptPubKeyMan::ImportScriptPubKeys(const std::set<DestinationAddr>&
 {
     WalletBatch batch(m_storage.GetDatabase());
     for (const DestinationAddr& script : script_pub_keys) {
-        if (!have_solving_data || !IsMine(script)) { // Always call AddWatchOnly for non-solvable watch-only, so that watch timestamp gets updated
-            if (script.IsMWEB()) {
-                return false;
-            }
+        if (script.IsMWEB()) {
+            continue;
+        }
 
+        if (!have_solving_data || !IsMine(script)) { // Always call AddWatchOnly for non-solvable watch-only, so that watch timestamp gets updated
             if (!AddWatchOnlyWithDB(batch, script.GetScript(), timestamp)) {
                 return false;
             }
@@ -2208,14 +2212,18 @@ std::unique_ptr<FlatSigningProvider> DescriptorScriptPubKeyMan::GetSigningProvid
     return out_keys;
 }
 
-std::unique_ptr<SigningProvider> DescriptorScriptPubKeyMan::GetSolvingProvider(const CScript& script) const
+std::unique_ptr<SigningProvider> DescriptorScriptPubKeyMan::GetSolvingProvider(const DestinationAddr& dest_addr) const
 {
-    return GetSigningProvider(script, false);
+    if (dest_addr.IsMWEB()) {
+        return nullptr;
+    }
+
+    return GetSigningProvider(dest_addr.GetScript(), false);
 }
 
-bool DescriptorScriptPubKeyMan::CanProvide(const CScript& script, SignatureData& sigdata)
+bool DescriptorScriptPubKeyMan::CanProvide(const DestinationAddr& dest_addr, SignatureData& sigdata)
 {
-    return IsMine(script);
+    return IsMine(dest_addr);
 }
 
 bool DescriptorScriptPubKeyMan::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const

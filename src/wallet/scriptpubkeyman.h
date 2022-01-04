@@ -240,12 +240,12 @@ public:
 
     virtual std::unique_ptr<CKeyMetadata> GetMetadata(const CTxDestination& dest) const { return nullptr; }
 
-    virtual std::unique_ptr<SigningProvider> GetSolvingProvider(const CScript& script) const { return nullptr; }
+    virtual std::unique_ptr<SigningProvider> GetSolvingProvider(const DestinationAddr& dest_addr) const { return nullptr; }
 
     /** Whether this ScriptPubKeyMan can provide a SigningProvider (via GetSolvingProvider) that, combined with
       * sigdata, can produce solving data.
       */
-    virtual bool CanProvide(const CScript& script, SignatureData& sigdata) { return false; }
+    virtual bool CanProvide(const DestinationAddr& dest_addr, SignatureData& sigdata) { return false; }
 
     /** Creates new signatures and adds them to the transaction. Returns whether all inputs were signed */
     virtual bool SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const { return false; }
@@ -410,9 +410,9 @@ public:
 
     bool CanGetAddresses(const KeyPurpose purpose) const override;
 
-    std::unique_ptr<SigningProvider> GetSolvingProvider(const CScript& script) const override;
+    std::unique_ptr<SigningProvider> GetSolvingProvider(const DestinationAddr& dest_addr) const override;
 
-    bool CanProvide(const CScript& script, SignatureData& sigdata) override;
+    bool CanProvide(const DestinationAddr& dest_addr, SignatureData& sigdata) override;
 
     bool SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const override;
     SigningResult SignMessage(const std::string& message, const PKHash& pkhash, std::string& str_sig) const override;
@@ -618,9 +618,9 @@ public:
 
     bool CanGetAddresses(const KeyPurpose purpose) const override;
 
-    std::unique_ptr<SigningProvider> GetSolvingProvider(const CScript& script) const override;
+    std::unique_ptr<SigningProvider> GetSolvingProvider(const DestinationAddr& dest_addr) const override;
 
-    bool CanProvide(const CScript& script, SignatureData& sigdata) override;
+    bool CanProvide(const DestinationAddr& dest_addr, SignatureData& sigdata) override;
 
     bool SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const override;
     SigningResult SignMessage(const std::string& message, const PKHash& pkhash, std::string& str_sig) const override;

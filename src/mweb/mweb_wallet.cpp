@@ -59,7 +59,12 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     return rewound;
 }
 
-StealthAddress Wallet::GetStealthAddress(const uint32_t index)
+bool Wallet::IsChange(const StealthAddress& address) const
+{
+    return IsSupported() && address == GetStealthAddress(mw::CHANGE_INDEX);
+}
+
+StealthAddress Wallet::GetStealthAddress(const uint32_t index) const
 {
     mw::Keychain::Ptr keychain = GetKeychain();
     assert(keychain != nullptr);

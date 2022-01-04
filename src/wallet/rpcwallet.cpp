@@ -2144,6 +2144,7 @@ static RPCHelpMan encryptwallet()
         throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
     }
 
+    // MW: TODO - If an MWEB wallet was already generated, we need to fail until we're able to support multiple seeds.
     if (!pwallet->EncryptWallet(strWalletPass)) {
         throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: Failed to encrypt the wallet.");
     }
@@ -3876,19 +3877,22 @@ RPCHelpMan getaddressinfo()
     std::string currentAddress = EncodeDestination(dest);
     ret.pushKV("address", currentAddress);
 
-    CScript scriptPubKey = GetScriptForDestination(dest);
-    ret.pushKV("scriptPubKey", HexStr(scriptPubKey));
+    DestinationAddr dest_addr(dest);
 
-    std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(scriptPubKey);
+    if (!dest_addr.IsMWEB()) {
+        ret.pushKV("scriptPubKey", HexStr(dest_addr.GetScript()));
+    }
+
+    std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(dest_addr);
 
     isminetype mine = pwallet->IsMine(dest);
     ret.pushKV("ismine", bool(mine & ISMINE_SPENDABLE));
 
-    bool solvable = provider && IsSolvable(*provider, scriptPubKey);
+    bool solvable = provider && IsSolvable(*provider, dest_addr);
     ret.pushKV("solvable", solvable);
 
     if (solvable) {
-       ret.pushKV("desc", InferDescriptor(scriptPubKey, *provider)->ToString());
+       ret.pushKV("desc", InferDescriptor(dest_addr, *provider)->ToString());
     }
 
     ret.pushKV("iswatchonly", bool(mine & ISMINE_WATCH_ONLY));
@@ -3896,14 +3900,19 @@ RPCHelpMan getaddressinfo()
     UniValue detail = DescribeWalletAddress(pwallet, dest);
     ret.pushKVs(detail);
 
-    ret.pushKV("ischange", pwallet->IsChange(scriptPubKey));
+    ret.pushKV("ischange", pwallet->IsChange(dest_addr));
 
-    ScriptPubKeyMan* spk_man = pwallet->GetScriptPubKeyMan(scriptPubKey);
+    ScriptPubKeyMan* spk_man = pwallet->GetScriptPubKeyMan(dest_addr);
     if (spk_man) {
         if (const std::unique_ptr<CKeyMetadata> meta = spk_man->GetMetadata(dest)) {
             ret.pushKV("timestamp", meta->nCreateTime);
             if (meta->has_key_origin) {
-                ret.pushKV("hdkeypath", WriteHDKeypath(meta->key_origin.path));
+                if (!!meta->mweb_index) {
+                    ret.pushKV("hdkeypath", meta->hdKeypath);
+                } else {
+                    ret.pushKV("hdkeypath", WriteHDKeypath(meta->key_origin.path));
+                }
+
                 ret.pushKV("hdseedid", meta->hd_seed_id.GetHex());
                 ret.pushKV("hdmasterfingerprint", HexStr(meta->key_origin.fingerprint));
             }
