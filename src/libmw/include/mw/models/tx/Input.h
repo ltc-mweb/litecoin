@@ -23,8 +23,9 @@ public:
     //
     // Constructors
     //
-    Input(Commitment commitment, PublicKey input_pubkey, PublicKey output_pubkey, Signature signature)
-        : m_commitment(std::move(commitment)),
+    Input(mw::Hash output_hash, Commitment commitment, PublicKey input_pubkey, PublicKey output_pubkey, Signature signature)
+        : m_outputHash(std::move(output_hash)),
+        m_commitment(std::move(commitment)),
         m_inputPubKey(std::move(input_pubkey)),
         m_outputPubKey(std::move(output_pubkey)),
         m_signature(std::move(signature))
@@ -38,7 +39,7 @@ public:
     //
     // Factories
     //
-    static Input Create(const Commitment& commitment, const SecretKey& input_key, const SecretKey& output_key);
+    static Input Create(const mw::Hash& output_hash, const Commitment& commitment, const SecretKey& input_key, const SecretKey& output_key);
 
     //
     // Destructor
@@ -56,6 +57,7 @@ public:
     //
     // Getters
     //
+    const mw::Hash& GetOutputHash() const noexcept { return m_outputHash; }
     const Commitment& GetCommitment() const noexcept final { return m_commitment; }
     const PublicKey& GetInputPubKey() const noexcept { return m_inputPubKey; }
     const PublicKey& GetOutputPubKey() const noexcept { return m_outputPubKey; }
@@ -68,6 +70,7 @@ public:
     //
     IMPL_SERIALIZABLE(Input, obj)
     {
+        READWRITE(obj.m_outputHash);
         READWRITE(obj.m_commitment);
         READWRITE(obj.m_inputPubKey);
         READWRITE(obj.m_outputPubKey);
@@ -78,9 +81,12 @@ public:
     //
     // Traits
     //
-    const mw::Hash& GetHash() const noexcept final { return m_hash; }
+    const mw::Hash& GetHash() const noexcept final { return m_hash; } // MW: TODO - Can we remove this?
 
 private:
+    // The hash of the output being spent.
+    mw::Hash m_outputHash;
+
     // The commit referencing the output being spent.
     Commitment m_commitment;
 
@@ -94,3 +100,12 @@ private:
 
     mw::Hash m_hash;
 };
+
+// Sorts by output hash
+static const struct
+{
+    bool operator()(const Input& a, const Input& b) const
+    {
+        return a.GetOutputHash() < b.GetOutputHash();
+    }
+} InputSort;

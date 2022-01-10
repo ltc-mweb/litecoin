@@ -91,7 +91,7 @@ private:
         TxHashRole = Qt::UserRole,
         VOutRole,
         PubKeyRole,
-        CommitmentRole
+        MWEBOutRole
     };
 
     friend class CCoinControlWidgetItem;

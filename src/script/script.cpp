@@ -5,7 +5,7 @@
 
 #include <script/script.h>
 
-#include <mw/models/crypto/Commitment.h>
+#include <mw/models/crypto/Hash.h>
 #include <util/strencodings.h>
 
 #include <string>

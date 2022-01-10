@@ -11,7 +11,7 @@ std::vector<mw::Coin> Wallet::RewindOutputs(const CTransaction& tx)
     for (const CTxOutput& txout : tx.GetOutputs()) {
         if (txout.IsMWEB()) {
             mw::Coin mweb_coin;
-            if (RewindOutput(tx.mweb_tx.m_transaction, txout.GetCommitment(), mweb_coin)) {
+            if (RewindOutput(tx.mweb_tx.m_transaction, txout.ToMWEB(), mweb_coin)) {
                 coins.push_back(mweb_coin);
             }
         }
@@ -21,9 +21,9 @@ std::vector<mw::Coin> Wallet::RewindOutputs(const CTransaction& tx)
 }
 
 bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
-        const Commitment& output_commit, mw::Coin& coin)
+        const mw::Hash& output_hash, mw::Coin& coin)
 {
-    if (GetCoin(output_commit, coin)) {
+    if (GetCoin(output_hash, coin)) {
         return true;
     }
 
@@ -36,7 +36,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     if (parent.type() == typeid(mw::Block::CPtr)) {
         const mw::Block::CPtr& block = boost::get<mw::Block::CPtr>(parent);
         for (const Output& output : block->GetOutputs()) {
-            if (output.GetCommitment() == output_commit) {
+            if (output.GetHash() == output_hash) {
                 rewound = keychain->RewindOutput(output, coin);
                 break;
             }
@@ -44,7 +44,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     } else {
         const mw::Transaction::CPtr& tx = boost::get<mw::Transaction::CPtr>(parent);
         for (const Output& output : tx->GetOutputs()) {
-            if (output.GetCommitment() == output_commit) {
+            if (output.GetHash() == output_hash) {
                 rewound = keychain->RewindOutput(output, coin);
                 break;
             }
@@ -52,7 +52,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     }
 
     if (rewound) {
-        m_coins[coin.commitment] = coin;
+        m_coins[coin.hash] = coin;
         WalletBatch(m_pWallet->GetDatabase()).WriteCoin(coin);
     }
 
@@ -73,13 +73,12 @@ StealthAddress Wallet::GetStealthAddress(const uint32_t index) const
 
 void Wallet::LoadToWallet(const mw::Coin& coin)
 {
-    LogPrintf("Coin %s loaded\n", coin.commitment.ToHex());
-    m_coins[coin.commitment] = coin;
+    m_coins[coin.hash] = coin;
 }
 
-bool Wallet::GetCoin(const Commitment& output_commit, mw::Coin& coin) const
+bool Wallet::GetCoin(const mw::Hash& output_hash, mw::Coin& coin) const
 {
-    auto iter = m_coins.find(output_commit);
+    auto iter = m_coins.find(output_hash);
     if (iter != m_coins.end()) {
         coin = iter->second;
         return true;

@@ -28,6 +28,7 @@ public:
     uint64_t GetAmount() const noexcept { return m_amount; }
     const Output& GetOutput() const noexcept { return m_output; }
     const Commitment& GetCommitment() const noexcept { return m_output.GetCommitment(); }
+    const mw::Hash& GetHash() const noexcept { return m_output.GetHash(); }
 
 private:
     BlindingFactor m_blindingFactor;

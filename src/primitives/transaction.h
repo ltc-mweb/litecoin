@@ -12,6 +12,7 @@
 #include <serialize.h>
 #include <uint256.h>
 #include <mweb/mweb_models.h>
+#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
 #include <tuple>
@@ -126,34 +127,34 @@ public:
     std::string ToString() const;
 };
 
-typedef boost::variant<COutPoint, Commitment> OutputIndex;
+typedef boost::variant<COutPoint, mw::Hash> OutputIndex;
 
 /// <summary>
-/// A generic transaction input that could either be an MWEB input commitment or a canonical CTxIn.
+/// A generic transaction input that could either be an MWEB input hash or a canonical CTxIn.
 /// </summary>
 class CTxInput
 {
 public:
-    CTxInput(Commitment commitment)
-        : m_input(std::move(commitment)) {}
+    CTxInput(mw::Hash output_hash)
+        : m_input(std::move(output_hash)) {}
     CTxInput(CTxIn txin)
         : m_input(std::move(txin)) {}
 
-    bool IsMWEB() const noexcept { return m_input.type() == typeid(Commitment); }
+    bool IsMWEB() const noexcept { return m_input.type() == typeid(mw::Hash); }
     OutputIndex GetIndex() const noexcept
     {
-        return IsMWEB() ? OutputIndex{GetCommitment()} : OutputIndex{GetTxIn().prevout};
+        return IsMWEB() ? OutputIndex{ToMWEB()} : OutputIndex{GetTxIn().prevout};
     }
 
     std::string ToString() const
     {
-        return IsMWEB() ? GetCommitment().ToHex() : GetTxIn().ToString();
+        return IsMWEB() ? ToMWEB().ToHex() : GetTxIn().ToString();
     }
 
-    const Commitment& GetCommitment() const noexcept
+    const mw::Hash& ToMWEB() const noexcept
     {
         assert(IsMWEB());
-        return boost::get<Commitment>(m_input);
+        return boost::get<mw::Hash>(m_input);
     }
 
     const CTxIn& GetTxIn() const noexcept
@@ -163,7 +164,7 @@ public:
     }
 
 private:
-    boost::variant<CTxIn, Commitment> m_input;
+    boost::variant<CTxIn, mw::Hash> m_input;
 };
 
 /** An output of a transaction.  It contains the public key that the next input
@@ -212,36 +213,36 @@ public:
 class CTransaction;
 
 /// <summary>
-/// A generic transaction output that could either be an MWEB output commitment or a canonical CTxOut.
+/// A generic transaction output that could either be an MWEB output hash or a canonical CTxOut.
 /// </summary>
 class CTxOutput
 {
 public:
     CTxOutput() = default;
-    CTxOutput(Commitment commitment)
-        : m_idx(commitment), m_output(std::move(commitment)) {}
+    CTxOutput(mw::Hash output_hash)
+        : m_idx(output_hash), m_txout(boost::none) {}
     CTxOutput(OutputIndex idx, CTxOut txout)
-        : m_idx(std::move(idx)), m_output(std::move(txout)) {}
+        : m_idx(std::move(idx)), m_txout(std::move(txout)) {}
 
-    bool IsMWEB() const noexcept { return m_output.type() == typeid(Commitment); }
+    bool IsMWEB() const noexcept { return m_idx.type() == typeid(mw::Hash); }
 
     const OutputIndex& GetIndex() const noexcept { return m_idx; }
 
     std::string ToString() const
     {
-        return IsMWEB() ? GetCommitment().ToHex() : GetTxOut().ToString();
+        return IsMWEB() ? ToMWEB().ToHex() : GetTxOut().ToString();
     }
     
-    const Commitment& GetCommitment() const noexcept
+    const mw::Hash& ToMWEB() const noexcept
     {
         assert(IsMWEB());
-        return boost::get<Commitment>(m_output);
+        return boost::get<mw::Hash>(m_idx);
     }
 
     const CTxOut& GetTxOut() const noexcept
     {
-        assert(!IsMWEB());
-        return boost::get<CTxOut>(m_output);
+        assert(!IsMWEB() && !!m_txout);
+        return *m_txout;
     }
 
     const CScript& GetScriptPubKey() const noexcept
@@ -252,7 +253,7 @@ public:
 
 private:
     OutputIndex m_idx;
-    boost::variant<CTxOut, Commitment> m_output;
+    boost::optional<CTxOut> m_txout;
 };
 
 struct CMutableTransaction;
@@ -472,7 +473,7 @@ public:
     bool IsHogEx() const noexcept { return m_hogEx; }
 
     /// <summary>
-    /// Builds a vector of CTxInputs, starting with the canoncial inputs (CTxIn), followed by the MWEB input commitments.
+    /// Builds a vector of CTxInputs, starting with the canoncial inputs (CTxIn), followed by the MWEB input hashes.
     /// </summary>
     /// <returns>A vector of all of the transaction's inputs.</returns>
     std::vector<CTxInput> GetInputs() const noexcept;
@@ -487,12 +488,12 @@ public:
     /// <summary>
     /// Constructs a CTxOutput for the specified output.
     /// </summary>
-    /// <param name="idx">The index of the output. This could either be an output Commitment or a valid canonical output index.</param>
+    /// <param name="idx">The index of the output. This could either be an output hash or a valid canonical output index.</param>
     /// <returns>The CTxOutput object.</returns>
     CTxOutput GetOutput(const OutputIndex& idx) const noexcept;
 
     /// <summary>
-    /// Builds a vector of CTxOutputs, starting with the canoncial outputs (CTxOut), followed by the MWEB output commitments.
+    /// Builds a vector of CTxOutputs, starting with the canoncial outputs (CTxOut), followed by the MWEB output hashes.
     /// </summary>
     /// <returns>A vector of all of the transaction's outputs.</returns>
     std::vector<CTxOutput> GetOutputs() const noexcept;

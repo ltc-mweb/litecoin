@@ -8,7 +8,7 @@ In addition to extending the existing `CBlock` and `CBlockUndo` objects already 
 
 Litecoin's leveldb instance is used to maintain a UTXO table (prefix: 'U') with `UTXO` objects, consisting of the following data fields:
 
-* commitment (key) - The output commitment.
+* output_hash (key) - The hash of the output.
 * block_height - The block height the UTXO was included.
 * leaf_index - The index of the leaf in the output PMMR.
 * output - The full `Output` object, including the rangeproof and owner data.

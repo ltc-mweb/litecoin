@@ -46,32 +46,32 @@ struct Block {
         return IsNull() ? -1 : m_block->GetHeight();
     }
 
-    std::vector<Commitment> GetInputCommits() const
+    std::vector<mw::Hash> GetSpentHashes() const
     {
         if (IsNull()) {
-            return std::vector<Commitment>{};
+            return std::vector<mw::Hash>{};
         }
 
-        std::vector<Commitment> input_commits;
+        std::vector<mw::Hash> spent_hashes;
         for (const Input& input : m_block->GetInputs()) {
-            input_commits.push_back(input.GetCommitment());
+            spent_hashes.push_back(input.GetOutputHash());
         }
 
-        return input_commits;
+        return spent_hashes;
     }
 
-    std::vector<Commitment> GetOutputCommits() const
+    std::vector<mw::Hash> GetOutputHashes() const
     {
         if (IsNull()) {
-            return std::vector<Commitment>{};
+            return std::vector<mw::Hash>{};
         }
 
-        std::vector<Commitment> output_commits;
+        std::vector<mw::Hash> output_hashes;
         for (const Output& output : m_block->GetOutputs()) {
-            output_commits.push_back(output.GetCommitment());
+            output_hashes.push_back(output.GetHash());
         }
 
-        return output_commits;
+        return output_hashes;
     }
 
     std::set<mw::Hash> GetKernelHashes() const
@@ -107,32 +107,32 @@ struct Tx {
     Tx(const mw::Transaction::CPtr& tx)
         : m_transaction(tx) {}
 
-    std::set<Commitment> GetInputCommits() const noexcept
+    std::set<mw::Hash> GetSpentHashes() const noexcept
     {
         if (IsNull()) {
-            return std::set<Commitment>{};
+            return std::set<mw::Hash>{};
         }
 
-        std::set<Commitment> input_commits;
+        std::set<mw::Hash> spent_hashes;
         for (const Input& input : m_transaction->GetInputs()) {
-            input_commits.insert(input.GetCommitment());
+            spent_hashes.insert(input.GetOutputHash());
         }
 
-        return input_commits;
+        return spent_hashes;
     }
 
-    std::set<Commitment> GetOutputCommits() const noexcept
+    std::set<mw::Hash> GetOutputHashes() const noexcept
     {
         if (IsNull()) {
-            return std::set<Commitment>{};
+            return std::set<mw::Hash>{};
         }
 
-        std::set<Commitment> output_commits;
+        std::set<mw::Hash> output_hashes;
         for (const Output& output : m_transaction->GetOutputs()) {
-            output_commits.insert(output.GetCommitment());
+            output_hashes.insert(output.GetHash());
         }
 
-        return output_commits;
+        return output_hashes;
     }
 
     std::vector<PegInCoin> GetPegIns() const noexcept

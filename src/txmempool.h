@@ -613,9 +613,9 @@ public:
     std::map<OutputIndex, const CTransaction*> mapNextTx GUARDED_BY(cs);
 
     /**
-     * Maps output commitments to the transactions that create them.
+     * Maps output hashes to the transactions that create them.
      */
-    std::map<Commitment, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
+    std::map<mw::Hash, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
 	
     std::map<uint256, CAmount> mapDeltas;
 
@@ -762,7 +762,7 @@ public:
     }
     bool exists(const uint256& txid) const { return exists(GenTxid{false, txid}); }
 
-    bool GetCreatedTx(const Commitment& input, uint256& hash) const
+    bool GetCreatedTx(const mw::Hash& input, uint256& hash) const
     {
         LOCK(cs);
         auto iter = mapTxOutputs_MWEB.find(input);

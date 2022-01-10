@@ -26,19 +26,19 @@ CoinsViewDB::Ptr CoinsViewDB::Open(
     return std::shared_ptr<CoinsViewDB>(pView);
 }
 
-std::vector<UTXO::CPtr> CoinsViewDB::GetUTXOs(const Commitment& commitment) const
+std::vector<UTXO::CPtr> CoinsViewDB::GetUTXOs(const mw::Hash& output_hash) const
 {
     CoinDB coinDB(GetDatabase().get(), nullptr);
-    return GetUTXOs(coinDB, commitment);
+    return GetUTXOs(coinDB, output_hash);
 }
 
-std::vector<UTXO::CPtr> CoinsViewDB::GetUTXOs(const CoinDB& coinDB, const Commitment& commitment) const
+std::vector<UTXO::CPtr> CoinsViewDB::GetUTXOs(const CoinDB& coinDB, const mw::Hash& output_hash) const
 {
     std::vector<uint8_t> value;
 
-    auto utxos_by_commitment = coinDB.GetUTXOs({ commitment });
-    auto iter = utxos_by_commitment.find(commitment);
-    if (iter != utxos_by_commitment.cend()) {
+    auto utxos_by_hash = coinDB.GetUTXOs({output_hash});
+    auto iter = utxos_by_hash.find(output_hash);
+    if (iter != utxos_by_hash.cend()) {
         return { iter->second };
     }
 
@@ -55,21 +55,20 @@ void CoinsViewDB::AddUTXO(CoinDB& coinDB, const Output& output)
 
 void CoinsViewDB::AddUTXO(CoinDB& coinDB, const UTXO::CPtr& pUTXO)
 {
-    const Commitment& commitment = pUTXO->GetOutput().GetCommitment();
-    std::vector<UTXO::CPtr> utxos = GetUTXOs(coinDB, commitment);
+    std::vector<UTXO::CPtr> utxos = GetUTXOs(coinDB, pUTXO->GetOutputHash());
     utxos.push_back(pUTXO);
 
     coinDB.AddUTXOs(std::vector<UTXO::CPtr>{ pUTXO });
 }
 
-void CoinsViewDB::SpendUTXO(CoinDB& coinDB, const Commitment& commitment)
+void CoinsViewDB::SpendUTXO(CoinDB& coinDB, const mw::Hash& output_hash)
 {
-    std::vector<UTXO::CPtr> utxos = GetUTXOs(coinDB, commitment);
+    std::vector<UTXO::CPtr> utxos = GetUTXOs(coinDB, output_hash);
     if (utxos.empty()) {
 		ThrowValidation(EConsensusError::UTXO_MISSING);
     }
 
-    coinDB.RemoveUTXOs(std::vector<Commitment>{ commitment });
+    coinDB.RemoveUTXOs(std::vector<mw::Hash>{output_hash});
 }
 
 void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::DBBatch>& pBatch, const CoinsViewUpdates& updates, const mw::Header::CPtr& pHeader)
@@ -79,10 +78,10 @@ void CoinsViewDB::WriteBatch(const std::unique_ptr<mw::DBBatch>& pBatch, const C
 
     CoinDB coinDB(GetDatabase().get(), pBatch.get());
     for (const auto& actions : updates.GetActions()) {
-        const Commitment& commitment = actions.first;
+        const mw::Hash& output_hash = actions.first;
         for (const auto& action : actions.second) {
             if (action.IsSpend()) {
-                SpendUTXO(coinDB, commitment);
+                SpendUTXO(coinDB, output_hash);
             } else {
                 AddUTXO(coinDB, action.pUTXO);
             }

@@ -19,14 +19,12 @@ public:
     TxBuilder();
 
     TxBuilder& AddInput(const TxOutput& input);
-    TxBuilder& AddInput(
-        const CAmount amount,
-        const BlindingFactor& blind = BlindingFactor::Random()
-    );
+    TxBuilder& AddInput(const CAmount amount);
     TxBuilder& AddInput(
         const CAmount amount,
         const SecretKey& privkey,
-        const BlindingFactor& blind
+        const BlindingFactor& blind,
+        const mw::Hash& output_hash
     );
 
     TxBuilder& AddOutput(const CAmount amount);

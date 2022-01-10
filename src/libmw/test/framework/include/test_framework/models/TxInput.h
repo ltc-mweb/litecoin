@@ -18,6 +18,7 @@ public:
         const SecretKey& output_key,
         const uint64_t amount)
     {
+        mw::Hash output_hash = SecretKey::Random().GetBigInt();
         Commitment commitment = Commitment::Blinded(blindingFactor, amount);
 
         return TxInput(
@@ -25,7 +26,7 @@ public:
             input_key,
             output_key,
             amount,
-            Input::Create(commitment, input_key, output_key)
+            Input::Create(output_hash, commitment, input_key, output_key)
         );
     }
 

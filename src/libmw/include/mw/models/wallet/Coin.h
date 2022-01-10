@@ -38,8 +38,8 @@ struct Coin : public Traits::ISerializable {
     // Typically positive, but could be 0 in the future when we start using decoys to improve privacy.
     CAmount amount;
 
-    // The output commitment (v*H + r*G).
-    Commitment commitment;
+    // The output's hash.
+    mw::Hash hash;
 
     bool IsChange() const noexcept { return address_index == CHANGE_INDEX; }
     bool IsPegIn() const noexcept { return address_index == PEGIN_INDEX; }
@@ -50,7 +50,7 @@ struct Coin : public Traits::ISerializable {
         READWRITE(obj.key);
         READWRITE(obj.blind);
         READWRITE(VARINT_MODE(obj.amount, VarIntMode::NONNEGATIVE_SIGNED));
-        READWRITE(obj.commitment);
+        READWRITE(obj.hash);
     }
 };
 

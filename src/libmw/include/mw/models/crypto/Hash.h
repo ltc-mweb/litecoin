@@ -26,3 +26,19 @@ namespace std
         }
     };
 }
+
+class Hashes
+{
+public:
+    template <class T, typename SFINAE = typename std::enable_if_t<std::is_base_of<Traits::IHashable, T>::value>>
+    static std::vector<mw::Hash> From(const std::vector<T>& vec_hashable) noexcept
+    {
+        std::vector<mw::Hash> hashes;
+        std::transform(
+            vec_hashable.cbegin(), vec_hashable.cend(),
+            std::back_inserter(hashes),
+            [](const T& hashable) { return hashable.GetHash(); });
+
+        return hashes;
+    }
+};

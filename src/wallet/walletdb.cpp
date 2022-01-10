@@ -150,8 +150,8 @@ bool WalletBatch::WriteCScript(const uint160& hash, const CScript& redeemScript)
 
 bool WalletBatch::WriteCoin(const mw::Coin& coin)
 {
-    // MW: TODO - Handle multiple coins with matching commitments
-    return WriteIC(std::make_pair(DBKeys::COIN, coin.commitment), coin, true);
+    // MW: TODO - Handle multiple coins with matching hashes
+    return WriteIC(std::make_pair(DBKeys::COIN, coin.hash), coin, true);
 }
 
 bool WalletBatch::WriteWatchOnly(const CScript &dest, const CKeyMetadata& keyMeta)

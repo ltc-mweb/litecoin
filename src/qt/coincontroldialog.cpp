@@ -196,7 +196,7 @@ OutputIndex CoinControlDialog::BuildOutputIndex(QTreeWidgetItem* item)
     } else {
         assert(IsMWEB(item));
 
-        return Commitment::FromHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
+        return mw::Hash::FromHex(item->data(COLUMN_ADDRESS, MWEBOutRole).toString().toStdString());
     }
 }
 
@@ -265,7 +265,7 @@ void CoinControlDialog::copyTransactionHash()
     if (IsCanonical(contextMenuItem)) {
         GUIUtil::setClipboard(contextMenuItem->data(COLUMN_ADDRESS, TxHashRole).toString());
     } else if (IsMWEB(contextMenuItem)) {
-        GUIUtil::setClipboard(contextMenuItem->data(COLUMN_ADDRESS, CommitmentRole).toString());
+        GUIUtil::setClipboard(contextMenuItem->data(COLUMN_ADDRESS, MWEBOutRole).toString());
     }
 }
 
@@ -379,10 +379,10 @@ void CoinControlDialog::radioListMode(bool checked)
 CInputCoin CoinControlDialog::BuildInputCoin(QTreeWidgetItem* item)
 {
     if (IsMWEB(item)) {
-        Commitment output_commit = Commitment::FromHex(item->data(COLUMN_ADDRESS, CommitmentRole).toString().toStdString());
+        mw::Hash output_hash = mw::Hash::FromHex(item->data(COLUMN_ADDRESS, MWEBOutRole).toString().toStdString());
         
         mw::Coin coin;
-        bool found = model->wallet().findCoin(output_commit, coin);
+        bool found = model->wallet().findCoin(output_hash, coin);
         assert(found);
         return CInputCoin(coin);
     } else {
@@ -725,8 +725,8 @@ void CoinControlDialog::updateView()
                 // vout index
                 itemOutput->setData(COLUMN_ADDRESS, VOutRole, outpoint.n);
             } else {
-                const Commitment& output_commit = boost::get<Commitment>(out.output_index);
-                itemOutput->setData(COLUMN_ADDRESS, CommitmentRole, QString::fromStdString(output_commit.ToHex()));
+                const mw::Hash& output_hash = boost::get<mw::Hash>(out.output_index);
+                itemOutput->setData(COLUMN_ADDRESS, MWEBOutRole, QString::fromStdString(output_hash.ToHex()));
             }
 
              // disable locked coins
@@ -766,7 +766,7 @@ void CoinControlDialog::updateView()
 
 bool CoinControlDialog::IsMWEB(QTreeWidgetItem* item)
 {
-    return item->data(COLUMN_ADDRESS, CommitmentRole).toString().length() == 66;
+    return item->data(COLUMN_ADDRESS, MWEBOutRole).toString().length() == 64;
 }
 
 bool CoinControlDialog::IsCanonical(QTreeWidgetItem* item)

@@ -64,6 +64,18 @@ public:
     std::vector<Commitment> GetInputCommits() const noexcept { return Commitments::From(m_inputs); }
     std::vector<Commitment> GetOutputCommits() const noexcept { return Commitments::From(m_outputs); }
 
+    std::vector<mw::Hash> GetKernelHashes() const noexcept { return Hashes::From(m_kernels); }
+    std::vector<mw::Hash> GetSpentHashes() const noexcept
+    {
+        std::vector<mw::Hash> hashes;
+        std::transform(
+            m_inputs.cbegin(), m_inputs.cend(),
+            std::back_inserter(hashes),
+            [](const Input& input) { return input.GetOutputHash(); });
+        return hashes;
+    }
+    std::vector<mw::Hash> GetOutputHashes() const noexcept { return Hashes::From(m_outputs); }
+
     std::vector<PublicKey> GetStealthExcesses() const noexcept {
         std::vector<PublicKey> stealth_excesses;
         for (const Kernel& kernel : m_kernels) {

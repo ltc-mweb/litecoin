@@ -41,7 +41,7 @@ public:
         : m_output(CTxOut(nValue, scriptPubKey)), m_index(COutPoint(tx_hash, i)) {}
 
     explicit CInputCoin(const mw::Coin& coin)
-        : m_input_bytes(0), m_output(coin), m_index(coin.commitment) {}
+        : m_input_bytes(0), m_output(coin), m_index(coin.hash) {}
 
     bool IsMWEB() const noexcept { return m_output.type() == typeid(mw::Coin); }
     CAmount GetAmount() const noexcept { return IsMWEB() ? boost::get<mw::Coin>(m_output).amount : boost::get<CTxOut>(m_output).nValue; }

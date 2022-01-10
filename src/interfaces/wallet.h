@@ -129,8 +129,8 @@ public:
     //! Get dest values with prefix.
     virtual std::vector<std::string> getDestValues(const std::string& prefix) = 0;
 
-    //! Find MWEB coin with a matching output commitment.
-    virtual bool findCoin(const Commitment& output_commit, mw::Coin& coin) = 0;
+    //! Find MWEB coin with a matching output hash.
+    virtual bool findCoin(const mw::Hash& output_hash, mw::Coin& coin) = 0;
 
     //! Lock coin.
     virtual void lockCoin(const OutputIndex& output) = 0;

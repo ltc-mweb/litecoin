@@ -2,7 +2,7 @@
 #include <mw/crypto/Schnorr.h>
 #include <mw/crypto/SecretKeys.h>
 
-Input Input::Create(const Commitment& commitment, const SecretKey& input_key, const SecretKey& output_key)
+Input Input::Create(const mw::Hash& output_hash, const Commitment& commitment, const SecretKey& input_key, const SecretKey& output_key)
 {
     PublicKey input_pubkey = PublicKey::From(input_key);
     PublicKey output_pubkey = PublicKey::From(output_key);
@@ -19,10 +19,11 @@ Input Input::Create(const Commitment& commitment, const SecretKey& input_key, co
         .Total();
 
     return Input(
+        output_hash,
         commitment,
         std::move(input_pubkey),
         std::move(output_pubkey),
-        Schnorr::Sign(sig_key.data(), Hashed(commitment))
+        Schnorr::Sign(sig_key.data(), output_hash)
     );
 }
 
@@ -38,5 +39,5 @@ SignedMessage Input::BuildSignedMsg() const noexcept
         .Mul(key_hash)
         .Add(GetInputPubKey());
 
-    return SignedMessage{Hashed(GetCommitment()), public_key, GetSignature()};
+    return SignedMessage{GetOutputHash(), public_key, GetSignature()};
 }

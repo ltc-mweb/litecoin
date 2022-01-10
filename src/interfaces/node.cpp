@@ -230,9 +230,9 @@ public:
     {
         LOCK(::cs_main);
 
-        if (index.type() == typeid(Commitment)) {
+        if (index.type() == typeid(mw::Hash)) {
             if (::ChainstateActive().CoinsTip().HaveCoin(index)) {
-                output = CTxOutput{boost::get<Commitment>(index)};
+                output = CTxOutput{boost::get<mw::Hash>(index)};
                 return true;
             }
         } else {

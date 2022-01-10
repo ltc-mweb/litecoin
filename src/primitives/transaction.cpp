@@ -145,8 +145,8 @@ std::vector<CTxInput> CTransaction::GetInputs() const noexcept
         inputs.push_back(txin);
     }
 
-    for (Commitment commit : mweb_tx.GetInputCommits()) {
-        inputs.push_back(std::move(commit));
+    for (const mw::Hash& spent_hash : mweb_tx.GetSpentHashes()) {
+        inputs.push_back(spent_hash);
     }
 
     return inputs;
@@ -160,8 +160,8 @@ CTxOutput CTransaction::GetOutput(const size_t index) const noexcept
 
 CTxOutput CTransaction::GetOutput(const OutputIndex& idx) const noexcept
 {
-    if (idx.type() == typeid(Commitment)) {
-        return CTxOutput{boost::get<Commitment>(idx)};
+    if (idx.type() == typeid(mw::Hash)) {
+        return CTxOutput{boost::get<mw::Hash>(idx)};
     } else {
         const COutPoint& outpoint = boost::get<COutPoint>(idx);
         assert(vout.size() > outpoint.n);
@@ -177,8 +177,8 @@ std::vector<CTxOutput> CTransaction::GetOutputs() const noexcept
         outputs.push_back(CTxOutput{COutPoint(GetHash(), n), vout[n]});
     }
 
-    for (Commitment commit : mweb_tx.GetOutputCommits()) {
-        outputs.push_back(CTxOutput{std::move(commit)});
+    for (const mw::Hash& out_hash : mweb_tx.GetOutputHashes()) {
+        outputs.push_back(CTxOutput{std::move(out_hash)});
     }
 
     return outputs;

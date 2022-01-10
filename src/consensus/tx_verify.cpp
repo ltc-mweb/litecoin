@@ -202,7 +202,7 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
     // MWEB
     if (tx.HasMWEBTx()) {
         for (const Input& input : tx.mweb_tx.m_transaction->GetInputs()) {
-            auto utxos = inputs.GetMWView()->GetUTXOs(input.GetCommitment());
+            auto utxos = inputs.GetMWView()->GetUTXOs(input.GetOutputHash());
             if (utxos.empty()) {
                 return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-inputs-missing",
                     strprintf("%s: MWEB inputs missing", __func__));

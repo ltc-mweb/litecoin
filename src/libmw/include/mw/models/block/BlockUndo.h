@@ -15,7 +15,7 @@ public:
     //
     // Constructors
     //
-    BlockUndo(const mw::Header::CPtr& pPrevHeader, std::vector<UTXO>&& coinsSpent, std::vector<Commitment>&& coinsAdded)
+    BlockUndo(const mw::Header::CPtr& pPrevHeader, std::vector<UTXO>&& coinsSpent, std::vector<mw::Hash>&& coinsAdded)
         : m_pPrevHeader(pPrevHeader), m_coinsSpent(std::move(coinsSpent)), m_coinsAdded(std::move(coinsAdded)) { }
     BlockUndo(const BlockUndo& other) = default;
     BlockUndo(BlockUndo&& other) noexcept = default;
@@ -32,7 +32,7 @@ public:
     //
     const mw::Header::CPtr& GetPreviousHeader() const noexcept { return m_pPrevHeader; }
     const std::vector<UTXO>& GetCoinsSpent() const noexcept { return m_coinsSpent; }
-    const std::vector<Commitment>& GetCoinsAdded() const noexcept { return m_coinsAdded; }
+    const std::vector<mw::Hash>& GetCoinsAdded() const noexcept { return m_coinsAdded; }
 
     //
     // Serialization/Deserialization
@@ -45,7 +45,7 @@ public:
 private:
     Header::CPtr m_pPrevHeader;
     std::vector<UTXO> m_coinsSpent;
-    std::vector<Commitment> m_coinsAdded;
+    std::vector<mw::Hash> m_coinsAdded;
 };
 
 END_NAMESPACE

@@ -21,7 +21,7 @@ namespace MWEB {
 class Wallet
 {
     CWallet* m_pWallet;
-    std::map<Commitment, mw::Coin> m_coins;
+    std::map<mw::Hash, mw::Coin> m_coins;
 
 public:
     Wallet(CWallet* pWallet)
@@ -29,12 +29,12 @@ public:
 
     bool IsSupported() const { return GetKeychain() != nullptr; }
     bool IsChange(const StealthAddress& address) const;
-    bool GetCoin(const Commitment& output_commit, mw::Coin& coin) const;
+    bool GetCoin(const mw::Hash& output_hash, mw::Coin& coin) const;
 
     std::vector<mw::Coin> RewindOutputs(const CTransaction& tx);
     bool RewindOutput(
         const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
-        const Commitment& output_commit,
+        const mw::Hash& output_hash,
         mw::Coin& coin
     );
     StealthAddress GetStealthAddress(const uint32_t index) const;
@@ -56,8 +56,8 @@ struct WalletTxInfo
     // When connecting a block, if one of the wallet's coins is spent,
     // we check if we have a CWalletTx that spent it.
     // If none is found, then we assume it was spent by another wallet,
-    // so we create an empty Transaction and store the spent commitment here.
-    boost::optional<Commitment> spent_input;
+    // so we create an empty Transaction and store the spent hash here.
+    boost::optional<mw::Hash> spent_input;
 
     uint256 hash;
 
@@ -68,7 +68,7 @@ struct WalletTxInfo
     {
         hash = SerializeHash(*this);
     }
-    WalletTxInfo(Commitment spent)
+    WalletTxInfo(mw::Hash spent)
         : received_coin(boost::none), spent_input(std::move(spent))
     {
         hash = SerializeHash(*this);
@@ -85,10 +85,10 @@ struct WalletTxInfo
             READWRITE(coin);
             SER_READ(obj, obj.received_coin = boost::make_optional<mw::Coin>(std::move(coin)));
         } else {
-            Commitment input_commit;
-            SER_WRITE(obj, input_commit = *obj.spent_input);
-            READWRITE(input_commit);
-            SER_READ(obj, obj.spent_input = boost::make_optional<Commitment>(std::move(input_commit)));
+            mw::Hash out_hash;
+            SER_WRITE(obj, out_hash = *obj.spent_input);
+            READWRITE(out_hash);
+            SER_READ(obj, obj.spent_input = boost::make_optional<mw::Hash>(std::move(out_hash)));
         }
 
         SER_READ(obj, obj.hash = SerializeHash(obj));

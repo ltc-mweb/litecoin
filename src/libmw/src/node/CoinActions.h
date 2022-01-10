@@ -16,19 +16,19 @@ public:
 
     void AddUTXO(const UTXO::CPtr& pUTXO)
     {
-        AddAction(pUTXO->GetCommitment(), CoinAction{pUTXO});
+        AddAction(pUTXO->GetOutputHash(), CoinAction{pUTXO});
     }
 
-    void SpendUTXO(const Commitment& commitment)
+    void SpendUTXO(const mw::Hash& output_hash)
     {
-        AddAction(commitment, CoinAction{nullptr});
+        AddAction(output_hash, CoinAction{nullptr});
     }
 
-    const std::unordered_map<Commitment, std::vector<CoinAction>>& GetActions() const noexcept { return m_actions; }
+    const std::unordered_map<mw::Hash, std::vector<CoinAction>>& GetActions() const noexcept { return m_actions; }
 
-    std::vector<CoinAction> GetActions(const Commitment& commitment) const noexcept
+    std::vector<CoinAction> GetActions(const mw::Hash& output_hash) const noexcept
     {
-        auto iter = m_actions.find(commitment);
+        auto iter = m_actions.find(output_hash);
         if (iter != m_actions.cend()) {
             return iter->second;
         }
@@ -42,18 +42,18 @@ public:
     }
 
 private:
-    void AddAction(const Commitment& commitment, CoinAction&& action)
+    void AddAction(const mw::Hash& output_hash, CoinAction&& action)
     {
-        auto iter = m_actions.find(commitment);
+        auto iter = m_actions.find(output_hash);
         if (iter != m_actions.end()) {
             std::vector<CoinAction>& actions = iter->second;
             actions.emplace_back(std::move(action));
         } else {
             std::vector<CoinAction> actions;
             actions.emplace_back(std::move(action));
-            m_actions.insert({commitment, actions});
+            m_actions.insert({output_hash, actions});
         }
     }
 
-    std::unordered_map<Commitment, std::vector<CoinAction>> m_actions;
+    std::unordered_map<mw::Hash, std::vector<CoinAction>> m_actions;
 };

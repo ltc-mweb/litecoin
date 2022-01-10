@@ -62,16 +62,16 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
 
     // Make sure all inputs are available.
     for (const Input& input : pTransaction->GetInputs()) {
-        if (m_pCoinsView->GetUTXOs(input.GetCommitment()).empty()) {
-            LOG_ERROR_F("Input {} not found on chain", input.GetCommitment());
+        if (m_pCoinsView->GetUTXOs(input.GetOutputHash()).empty()) {
+            LOG_ERROR_F("Input {} not found on chain", input.GetOutputHash());
             return false;
         }
     }
 
     // Make sure no duplicate outputs already on chain.
     for (const Output& output : pTransaction->GetOutputs()) {
-        if (!m_pCoinsView->GetUTXOs(output.GetCommitment()).empty()) {
-            LOG_ERROR_F("Output {} already on chain", output.GetCommitment());
+        if (!m_pCoinsView->GetUTXOs(output.GetHash()).empty()) {
+            LOG_ERROR_F("Output {} already on chain", output.GetHash());
             return false;
         }
     }

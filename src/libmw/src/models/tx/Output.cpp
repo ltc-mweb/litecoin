@@ -77,7 +77,7 @@ SignedMessage Output::BuildSignedMsg() const noexcept
 {
     mw::Hash hashed_msg = Hasher()
         .Append(m_commitment)
-        .Append(m_message)
+        .Append(m_message) // MW: TODO - Use message hash instead?
         .Append(m_pProof->GetHash())
         .hash();
     return SignedMessage{ std::move(hashed_msg), m_message.senderPubKey, m_signature };

@@ -1340,7 +1340,7 @@ static void ListTransactions(const CWallet* const pwallet, const CWalletTx& wtx,
             if (s.index.type() == typeid(COutPoint)) {
                 entry.pushKV("vout", (int)boost::get<COutPoint>(s.index).n);
             } else {
-                entry.pushKV("commit", boost::get<Commitment>(s.index).ToHex());
+                entry.pushKV("mweb_out", boost::get<mw::Hash>(s.index).ToHex());
             }
 
             entry.pushKV("fee", ValueFromAmount(-nFee));
@@ -1389,7 +1389,7 @@ static void ListTransactions(const CWallet* const pwallet, const CWalletTx& wtx,
             if (r.index.type() == typeid(COutPoint)) {
                 entry.pushKV("vout", (int)boost::get<COutPoint>(r.index).n);
             } else {
-                entry.pushKV("commit", boost::get<Commitment>(r.index).ToHex());
+                entry.pushKV("mweb_out", boost::get<mw::Hash>(r.index).ToHex());
             }
 
             if (fLong)
@@ -2227,7 +2227,7 @@ static RPCHelpMan lockunspent()
     for (unsigned int idx = 0; idx < output_params.size(); idx++) {
         const UniValue& o = output_params[idx].get_obj();
 
-        // MW: TODO - Support locking MWEB output commitments
+        // MW: TODO - Support locking MWEB output hashes
         RPCTypeCheckObj(o,
             {
                 {"txid", UniValueType(UniValue::VSTR)},
@@ -2330,7 +2330,7 @@ static RPCHelpMan listlockunspent()
             o.pushKV("txid", outpt.hash.GetHex());
             o.pushKV("vout", (int)outpt.n);
         } else {
-            o.pushKV("commit", boost::get<Commitment>(output).ToHex());
+            o.pushKV("mweb_out", boost::get<mw::Hash>(output).ToHex());
         }
 
         ret.push_back(o);

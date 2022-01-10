@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mw/models/crypto/Commitment.h>
 #include <mw/models/tx/UTXO.h>
 #include <mw/interfaces/db_interface.h>
 #include <unordered_map>
@@ -17,11 +16,11 @@ public:
 	~CoinDB();
 
 	//
-	// Retrieve UTXOs for the given commitments.
-	// If there are multiple UTXOs for a commitment, the most recent will be returned.
+	// Retrieve UTXOs with matching output hashes.
+	// If there are multiple UTXOs for an output hash, the most recent will be returned.
 	//
-	std::unordered_map<Commitment, UTXO::CPtr> GetUTXOs(
-		const std::vector<Commitment>& commitments
+	std::unordered_map<mw::Hash, UTXO::CPtr> GetUTXOs(
+		const std::vector<mw::Hash>& output_hashes
 	) const;
 
 	//
@@ -34,7 +33,7 @@ public:
 	// If there are multiple UTXOs for a commitment, the most recent will be removed.
 	// DatabaseException thrown if no UTXOs are found fo a commitment.
 	//
-	void RemoveUTXOs(const std::vector<Commitment>& commitment);
+	void RemoveUTXOs(const std::vector<mw::Hash>& output_hashes);
 
 	//
 	// Removes all of the UTXOs from the database.

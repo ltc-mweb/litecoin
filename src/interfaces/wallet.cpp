@@ -49,7 +49,7 @@ WalletTxOut MakeWalletTxOut(CWallet& wallet,
 
     if (output.IsMWEB()) {
         mw::Coin coin;
-        if (wallet.GetCoin(output.GetCommitment(), coin)) {
+        if (wallet.GetCoin(output.ToMWEB(), coin)) {
             result.address = wallet.GetMWWallet()->GetStealthAddress(coin.address_index);
             result.nValue = coin.amount;
         }
@@ -65,7 +65,7 @@ WalletTxOut MakeWalletTxOut(CWallet& wallet, const COutputCoin& coin)
 {
     WalletTxOut result;
     if (coin.IsMWEB()) {
-        result.txout = CTxOutput(boost::get<Commitment>(coin.GetIndex()));
+        result.txout = CTxOutput(boost::get<mw::Hash>(coin.GetIndex()));
     } else {
         assert(!coin.GetAddress().IsMWEB());
         result.txout = CTxOutput(coin.GetIndex(), CTxOut(coin.GetValue(), coin.GetAddress().GetScript()));
@@ -275,10 +275,10 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetDestValues(prefix);
     }
-    bool findCoin(const Commitment& output_commit, mw::Coin& coin) override
+    bool findCoin(const mw::Hash& output_hash, mw::Coin& coin) override
     {
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetCoin(output_commit, coin);
+        return m_wallet->GetCoin(output_hash, coin);
     }
     void lockCoin(const OutputIndex& output) override
     {

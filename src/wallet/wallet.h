@@ -496,7 +496,7 @@ public:
     {
         std::vector<CTxOutput> outputs = tx->GetOutputs();
         if (mweb_wtx_info && mweb_wtx_info->received_coin) {
-            outputs.push_back(CTxOutput{mweb_wtx_info->received_coin->commitment});
+            outputs.push_back(CTxOutput{mweb_wtx_info->received_coin->hash});
         }
 
         return outputs;
@@ -671,7 +671,7 @@ struct COutputCoin {
 
     OutputIndex GetIndex() const
     {
-        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.commitment;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.hash;
 
         const COutput& out = boost::get<COutput>(m_output);
         return COutPoint(out.tx->GetHash(), out.i);
@@ -755,8 +755,8 @@ private:
     /**
      * Used to keep track of which CWalletTx an MWEB output came from.
      */
-    std::map<Commitment, uint256> mapOutputCommits GUARDED_BY(cs_wallet);
-    void AddToOutputCommits(const CWalletTx& wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    std::map<mw::Hash, uint256> mapOutputsMWEB GUARDED_BY(cs_wallet);
+    void AddMWEBOrigins(const CWalletTx& wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /**
      * Add a transaction to the wallet, or update it.  pIndex and posInBlock should
@@ -1383,7 +1383,7 @@ public:
     ScriptPubKeyMan* AddWalletDescriptor(WalletDescriptor& desc, const FlatSigningProvider& signing_provider, const std::string& label, bool internal);
 
 
-    bool GetCoin(const Commitment& output_commit, mw::Coin& coin) const;
+    bool GetCoin(const mw::Hash& output_hash, mw::Coin& coin) const;
 
     CAmount GetValue(const CTxOutput& output) const;
     bool ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const;

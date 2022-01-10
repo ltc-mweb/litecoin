@@ -857,10 +857,9 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
                             oldFeeRate.ToString()));
             }
 
-            for (const CTxInput& txin : mi->GetTx().GetInputs())
-            {
+            for (const CTxInput& txin : mi->GetTx().GetInputs()) {
                 if (txin.IsMWEB()) {
-                    auto parent_iter = m_pool.mapTxOutputs_MWEB.find(txin.GetCommitment());
+                    auto parent_iter = m_pool.mapTxOutputs_MWEB.find(txin.ToMWEB());
                     if (parent_iter != m_pool.mapTxOutputs_MWEB.end()) {
                         setConflictsParents.insert(parent_iter->second->GetHash());
                     }

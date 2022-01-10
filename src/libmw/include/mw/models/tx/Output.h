@@ -195,3 +195,12 @@ private:
 
     mw::Hash m_hash;
 };
+
+// Sorts by output hash
+static const struct
+{
+    bool operator()(const Output& a, const Output& b) const
+    {
+        return a.GetHash() < b.GetHash();
+    }
+} OutputSort;

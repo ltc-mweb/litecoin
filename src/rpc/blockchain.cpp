@@ -225,13 +225,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         for (const auto& input : block.mweb_block.m_block->GetInputs()) {
             if (txDetails) {
                 UniValue objInput(UniValue::VOBJ);
+                objInput.pushKV("output_hash", input.GetOutputHash().ToHex());
                 objInput.pushKV("commit", input.GetCommitment().ToHex());
                 objInput.pushKV("input_pubkey", input.GetInputPubKey().ToHex());
                 objInput.pushKV("output_pubkey", input.GetOutputPubKey().ToHex());
                 objInput.pushKV("sig", input.GetSignature().ToHex());
                 inputs.push_back(objInput);
             } else {
-                inputs.push_back(input.GetCommitment().ToHex());
+                inputs.push_back(input.GetOutputHash().ToHex());
             }
         }
         mweb_block.pushKV("inputs", inputs);
@@ -241,12 +242,13 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         for (const auto& output : block.mweb_block.m_block->GetOutputs()) {
             if (txDetails) {
                 UniValue objOutput(UniValue::VOBJ);
+                objOutput.pushKV("hash", output.GetHash().ToHex());
                 objOutput.pushKV("commit", output.GetCommitment().ToHex());
                 objOutput.pushKV("range_proof", HexStr(output.GetRangeProof()->Serialized()));
                 objOutput.pushKV("message", HexStr(output.GetOutputMessage().Serialized()));
                 outputs.push_back(objOutput);
             } else {
-                outputs.push_back(output.GetCommitment().ToHex());
+                outputs.push_back(output.GetHash().ToHex());
             }
         }
         mweb_block.pushKV("outputs", outputs);
@@ -256,6 +258,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         for (const auto& kernel : block.mweb_block.m_block->GetKernels()) {
             if (txDetails) {
                 UniValue objKernel(UniValue::VOBJ);
+                objKernel.pushKV("hash", kernel.GetHash().ToHex());
                 objKernel.pushKV("features", kernel.GetFeatures());
                 objKernel.pushKV("commit", kernel.GetCommitment().ToHex());
                 objKernel.pushKV("fee", kernel.GetFee());
@@ -563,10 +566,10 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
             setDepends.insert(txin.prevout.hash.ToString());
     }
 
-    std::set<Commitment> input_commits = tx.mweb_tx.GetInputCommits();
+    std::set<mw::Hash> spent_hashes = tx.mweb_tx.GetSpentHashes();
     uint256 created_tx_hash;
-    for (const Commitment& input_commit : input_commits) {
-        if (pool.GetCreatedTx(input_commit, created_tx_hash)) {
+    for (const mw::Hash& spent_hash : spent_hashes) {
+        if (pool.GetCreatedTx(spent_hash, created_tx_hash)) {
             setDepends.insert(created_tx_hash.ToString());
         }
     }
@@ -606,20 +609,20 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
         mweb_info.pushKV("pegouts", pegouts);
 
         // Inputs
-        UniValue input_commits(UniValue::VARR);
-        for (const Commitment& input_commit : tx.mweb_tx.GetInputCommits()) {
-            input_commits.push_back(input_commit.ToHex());
+        UniValue spent_hashes(UniValue::VARR);
+        for (const mw::Hash& spent_hash : tx.mweb_tx.GetSpentHashes()) {
+            spent_hashes.push_back(spent_hash.ToHex());
         }
 
-        mweb_info.pushKV("inputs", input_commits);
+        mweb_info.pushKV("inputs", spent_hashes);
 
         // Outputs
-        UniValue output_commits(UniValue::VARR);
-        for (const Commitment& output_commit : tx.mweb_tx.GetOutputCommits()) {
-            output_commits.push_back(output_commit.ToHex());
+        UniValue output_hashes(UniValue::VARR);
+        for (const mw::Hash& output_hash : tx.mweb_tx.GetOutputHashes()) {
+            output_hashes.push_back(output_hash.ToHex());
         }
 
-        mweb_info.pushKV("outputs", output_commits);
+        mweb_info.pushKV("outputs", output_hashes);
 
         info.pushKV("mweb", mweb_info);
     }

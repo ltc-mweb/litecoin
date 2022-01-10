@@ -81,28 +81,31 @@ void TxBody::Validate() const
     }
 
     // Verify inputs, outputs, kernels, and owner signatures are sorted
-    if (!std::is_sorted(m_inputs.cbegin(), m_inputs.cend(), SortByCommitment)
-        || !std::is_sorted(m_outputs.cbegin(), m_outputs.cend(), SortByCommitment)
+    if (!std::is_sorted(m_inputs.cbegin(), m_inputs.cend(), InputSort)
+        || !std::is_sorted(m_outputs.cbegin(), m_outputs.cend(), OutputSort)
         || !std::is_sorted(m_kernels.cbegin(), m_kernels.cend(), KernelSort))
     {
         ThrowValidation(EConsensusError::NOT_SORTED);
     }
 
-    // Verify no duplicate input commitments
-    std::unordered_set<Commitment> input_commits = Commitments::SetFrom(m_inputs);
-    if (input_commits.size() != m_inputs.size()) {
+    auto contains_duplicates = [](const std::vector<mw::Hash>& hashes) -> bool {
+        std::unordered_set<mw::Hash> set_hashes;
+        std::copy(hashes.begin(), hashes.end(), std::inserter(set_hashes, set_hashes.end()));
+        return set_hashes.size() != hashes.size();
+    };
+
+    // Verify no duplicate spends
+    if (contains_duplicates(GetSpentHashes())) {
         ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate output commitments
-    std::unordered_set<Commitment> output_commits = Commitments::SetFrom(m_outputs);
-    if (output_commits.size() != m_outputs.size()) {
+    // Verify no duplicate output hashes
+    if (contains_duplicates(GetOutputHashes())) {
         ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate kernel commitments
-    std::unordered_set<Commitment> kernel_commits = Commitments::SetFrom(m_kernels);
-    if (kernel_commits.size() != m_kernels.size()) {
+    // Verify no duplicate kernel hashes
+    if (contains_duplicates(GetKernelHashes())) {
         ThrowValidation(EConsensusError::DUPLICATES);
     }
 

@@ -28,13 +28,13 @@ BOOST_AUTO_TEST_CASE(Aggregate)
 
     std::vector<Input> inputs = tx1->GetInputs();
     inputs.insert(inputs.end(), tx2->GetInputs().begin(), tx2->GetInputs().end());
-    std::sort(inputs.begin(), inputs.end(), SortByCommitment);
+    std::sort(inputs.begin(), inputs.end(), InputSort);
     BOOST_REQUIRE(pAggregated->GetInputs().size() == 3);
     BOOST_REQUIRE(pAggregated->GetInputs() == inputs);
 
     std::vector<Output> outputs = tx1->GetOutputs();
     outputs.insert(outputs.end(), tx2->GetOutputs().begin(), tx2->GetOutputs().end());
-    std::sort(outputs.begin(), outputs.end(), SortByCommitment);
+    std::sort(outputs.begin(), outputs.end(), OutputSort);
     BOOST_REQUIRE(pAggregated->GetOutputs().size() == 2);
     BOOST_REQUIRE(pAggregated->GetOutputs() == outputs);
 

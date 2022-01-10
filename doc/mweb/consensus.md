@@ -2,26 +2,22 @@
 
 ## Rules
 
-#### Output Uniqueness
+#### Transaction Uniqueness
 
-* Output commitments in the UTXO set shall be unique at all times.
-* A block shall not be included when it contains an output commitment which already exists in the UTXO set.
-  * Block is still invalid even if it also contains an input with said commitment.
-* A block shall not contain 2 outputs with the same commitment.
-  * Block is still invalid even if it also contains an input with said commitment.
-* A block *could* contain an input which spends an output created in the same block, provided the commitment was not already in the UTXO set.
+* Output hashes in the UTXO set shall be unique at all times.
+* A block shall not be included when it contains an output hash which already exists in the UTXO set.
+  * Block is still invalid even if it also contains an input with said output hash.
+* A block shall not contain 2 outputs with the same hash.
+  * Block is still invalid even if it also contains an input with said output hash.
+* A block *could* contain an input which spends an output created in the same block, provided the output hash was not already in the UTXO set.
   * To better support payment proofs, the outputs shall still be added to the TXO MMR, but shall be marked as spent.
----
-
-#### Kernel Uniqueness
-
-* A block shall not contain 2 kernels with the same commitment.
+* A block shall not contain 2 kernels with the same hash.
 ---
 
 #### Ordering
 
-* Inputs in a block shall be in ascending order by their raw commitment value.
-* Outputs in a block shall be in ascending order by their raw commitment value.
+* Inputs in a block shall be in ascending order by their raw output hash value.
+* Outputs in a block shall be in ascending order by their raw output hash value.
 * Kernels in a block shall list pegins first, and then be ordered in ascending order by their raw hashed value.
 * Signed owner messages shall be in ascending order by their raw hashed value.
 ---
@@ -44,12 +40,11 @@
 
 #### Signatures
 
-* Each kernel shall have a valid signature of the `signature_message` for the kernel's `commitment`.
+* Each kernel shall have a valid signature of the `signature_message` for the kernel's `commitment`. # TODO: FIX THIS
   * See [kernels.md](./kernels.md) for `signature_message` serialization format
-* Each input shall have a valid signature of the message "MWEB" for the input's `commitment`.
+* Each input shall have a valid signature of the message "MWEB" for the `hash` of the output it spends. # TODO: FIX THIS
 * Each output shall have a valid signature of the `output_message` for the output's `sender_pubkey`.
-  * `output_message` is serialized as `(features | receiver_pubkey |pub_nonce | encrypted_data)`
-* Each signed owner message shall be a valid signature of the hash of a kernel in the block.
+  * `output_message` is serialized as `(commitment||receiver_pubkey||key_exchange_pubkey||view_tag||masked_value||masked_nonce||sender_pubkey||range_proof_hash)`
 ---
 
 #### Bulletproofs
@@ -67,7 +62,7 @@
 #### Owner Sums
 
 * The sum of all receiver pubkeys for the inputs in a block, plus the sum of all owner pubkeys in the block, plus the `total_owner_offset*G` of the block shall equal the sum of all output sender pubkeys in the block.
-  * `sum(input.receiver_pubkey) + sum(owner_pubkey) + (block.total_owner_offset*G) = sum(output.sender_pubkey)`
+  * `sum(input.receiver_pubkey) + sum(owner_pubkey) + (block.total_owner_offset*G) = sum(output.sender_pubkey)` # TODO: FIX THIS
 ---
 
 #### Pegging-Out

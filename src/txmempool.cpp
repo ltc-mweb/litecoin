@@ -400,7 +400,7 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
         mapNextTx.insert(std::make_pair(input.GetIndex(), &tx));
 
         if (input.IsMWEB()) {
-            auto parentIter = mapTxOutputs_MWEB.find(input.GetCommitment());
+            auto parentIter = mapTxOutputs_MWEB.find(input.ToMWEB());
             if (parentIter != mapTxOutputs_MWEB.end()) {
                 setParentTransactions.insert(parentIter->second->GetHash());
             }
@@ -410,8 +410,8 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
     }
 
     // MWEB: Add transaction to mapTxOutputs_MWEB for each output
-    for (const Commitment& output_commit : tx.mweb_tx.GetOutputCommits()) {
-        mapTxOutputs_MWEB.insert(std::make_pair(output_commit, &tx));
+    for (const mw::Hash& output_hash : tx.mweb_tx.GetOutputHashes()) {
+        mapTxOutputs_MWEB.insert(std::make_pair(output_hash, &tx));
     }
 
     // Don't bother worrying about child transactions of this one.
@@ -455,8 +455,8 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
         mapNextTx.erase(txin.GetIndex());
 
     // MWEB: Remove transaction from mapTxOutputs_MWEB for each output
-    for (const Commitment& output_commit : it->GetTx().mweb_tx.GetOutputCommits()) {
-        mapTxOutputs_MWEB.erase(output_commit);
+    for (const mw::Hash& output_hash : it->GetTx().mweb_tx.GetOutputHashes()) {
+        mapTxOutputs_MWEB.erase(output_hash);
     }
 
     RemoveUnbroadcastTx(hash, true /* add logging because unchecked */ );
