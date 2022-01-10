@@ -582,6 +582,10 @@ void CWallet::AddToSpends(const uint256& wtxid)
     for (const CTxInput& input : thisTx.tx->GetInputs()) {
         AddToSpends(input.GetIndex(), wtxid);
     }
+
+    if (!!thisTx.mweb_wtx_info && !!thisTx.mweb_wtx_info->spent_input) {
+        AddToSpends(*thisTx.mweb_wtx_info->spent_input, wtxid);
+    }
 }
 
 void CWallet::AddToOutputCommits(const CWalletTx& wtx)
@@ -1251,7 +1255,11 @@ void CWallet::blockConnected(const CBlock& block, int height)
         mw::Coin coin;
         for (const Commitment& input_commit : block.mweb_block.GetInputCommits()) {
             if (GetCoin(input_commit, coin) && !IsSpent(input_commit)) {
-                // MW: TODO - Create spend
+                AddToWallet(
+                    MakeTransactionRef(),
+                    boost::make_optional<MWEB::WalletTxInfo>(input_commit),
+                    {CWalletTx::Status::CONFIRMED, height, block_hash, 0}
+                );
             }
         }
 
@@ -1293,7 +1301,7 @@ void CWallet::blockDisconnected(const CBlock& block, int height)
         for (const Commitment& input_commit : block.mweb_block.GetInputCommits()) {
             if (GetCoin(input_commit, coin)) {
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(input_commit);
-                // MW: TODO - We just choose the first spend. In the future, we may need a better approach for handling conflicted txs
+                // MWEB: We just choose the first spend. In the future, we may need a better approach for handling conflicted txs
                 if (range.first != range.second) {
                     auto ptx = mapWallet.find(range.first->second)->second.tx;
                     SyncTransaction(ptx, {CWalletTx::Status::UNCONFIRMED, /* block height */ 0, /* block hash */ {}, /* index */ 0});
@@ -1742,12 +1750,15 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
 
     // Compute fee:
     CAmount nDebit = GetDebit(filter);
-    // MW: TODO - Need to handle self-sends.
 
     LOCK(pwallet->cs_wallet);
     // Sent/received.
     for (const CTxOutput& txout : tx->GetOutputs())
     {
+        if (!txout.IsMWEB() && txout.GetScriptPubKey().IsMWEBPegin()) {
+            continue;
+        }
+
         isminetype fIsMine = pwallet->IsMine(txout);
         // Only need to handle txouts if AT LEAST one of these is true:
         //   1) they debit from us (sent)

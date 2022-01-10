@@ -184,7 +184,6 @@ public:
         auto output_type = OutputType::BECH32;
         auto reserve_dest = std::make_shared<ReserveDestination>(m_wallet.get(), output_type);
         if (reserve_dest->GetReservedDestination(dest, true)) {
-            // MW: TODO - m_wallet->learnRelatedScripts(newKey, output_type);
             return reserve_dest;
         }
 
