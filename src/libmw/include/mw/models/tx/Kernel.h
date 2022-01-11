@@ -209,13 +209,13 @@ private:
     mw::Hash m_hash;
 };
 
-// Sorts by net supply increase [pegin - (fee + pegout)] with highest increase first, then sorts by commitment.
+// Sorts by net supply increase [pegin - (fee + pegout)] with highest increase first, then sorts by hash.
 static const struct
 {
     bool operator()(const Kernel& a, const Kernel& b) const
     {
         CAmount a_pegin = a.GetSupplyChange();
         CAmount b_pegin = b.GetSupplyChange();
-        return (a_pegin > b_pegin) || (a_pegin == b_pegin && a.GetCommitment() < b.GetCommitment());
+        return (a_pegin > b_pegin) || (a_pegin == b_pegin && a.GetHash() < b.GetHash());
     }
 } KernelSort;
