@@ -9,11 +9,12 @@ The following feature bits are currently supported, though more could be added i
 * `PEGIN_FEATURE_BIT` = `0x02`
 * `PEGOUT_FEATURE_BIT` = `0x04`
 * `HEIGHT_LOCK_FEATURE_BIT` = `0x08`
-* `EXTRA_DATA_FEATURE_BIT` = `0x10`
+* `STEALTH_EXCESS_FEATURE_BIT` = `0x10`
+* `EXTRA_DATA_FEATURE_BIT` = `0x20`
 
 For each feature bit that's set, the corresponding feature rules apply to that kernel.
 
-***NOTE**: Only `FEE_FEATURE_BIT`, `PEGIN_FEATURE_BIT`, `PEGOUT_FEATURE_BIT`, and `HEIGHT_LOCK_FEATURE_BIT` are considered "standard" features.
+***NOTE**: Only `FEE_FEATURE_BIT`, `PEGIN_FEATURE_BIT`, `PEGOUT_FEATURE_BIT`, `HEIGHT_LOCK_FEATURE_BIT`, and `STEALTH_EXCESS_FEATURE_BIT` are considered "standard" features.
 Transactions specifying the `EXTRA_DATA_FEATURE_BIT` or any higher feature bits are unlikely to be forwarded along the p2p network, nor are they likely to be included by most miners.
 This may change in future releases.*
 
@@ -38,6 +39,11 @@ The miner shall add an output to the integrating transaction (`HogEx`) for the p
 Kernels specifying the `HEIGHT_LOCK_FEATURE_BIT` shall contain a (non-negative `var_int`) lock height field.
 The kernel shall not be included in any block earlier than the lock height specified.
 
+#### Stealth Excess
+
+Kernels specifying the `STEALTH_EXCESS_FEATURE_BIT` shall contain a (compressed public key) stealth excess (`E'`) field.
+The stealth excess will also be used when signing the kernel.
+
 #### Extra Data
 
 Kernels specifying the `EXTRA_DATA_FEATURE_BIT` shall contain a (u8) size field between 0 and 100, followed by the number of bytes specified.
@@ -45,9 +51,11 @@ There are currently no consensus rules enforced on the contents of the data, tho
 
 ## Signature
 
-The kernel shall contain a valid signature for the kernel commitment. The signed message shall be for the feature byte followed by all included feature fields.
+The kernel shall contain a valid signature for the kernel commitment (`E`). The signed message shall be for the feature byte followed by all included feature fields.
 
 *Example: If the kernel's feature byte is 0x03 (`FEE_FEATURE_BIT` | `PEGIN_FEATURE_BIT`), the message signed shall be: `(0x03 | VARINT(fee) | VARINT(pegin_amount))`*
+
+If the `STEALTH_EXCESS_FEATURE_BIT` is set, instead of signing the kernel with just the kernel excess (`E`), it shall be signed with `BLAKE3(E||E')*E + E'`.
 
 ## Soft Forks
 
