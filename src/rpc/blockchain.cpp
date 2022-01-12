@@ -225,14 +225,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         for (const auto& input : block.mweb_block.m_block->GetInputs()) {
             if (txDetails) {
                 UniValue objInput(UniValue::VOBJ);
-                objInput.pushKV("output_hash", input.GetOutputHash().ToHex());
+                objInput.pushKV("output_id", input.GetOutputID().ToHex());
                 objInput.pushKV("commit", input.GetCommitment().ToHex());
                 objInput.pushKV("input_pubkey", input.GetInputPubKey().ToHex());
                 objInput.pushKV("output_pubkey", input.GetOutputPubKey().ToHex());
                 objInput.pushKV("sig", input.GetSignature().ToHex());
                 inputs.push_back(objInput);
             } else {
-                inputs.push_back(input.GetOutputHash().ToHex());
+                inputs.push_back(input.GetOutputID().ToHex());
             }
         }
         mweb_block.pushKV("inputs", inputs);
@@ -242,13 +242,13 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         for (const auto& output : block.mweb_block.m_block->GetOutputs()) {
             if (txDetails) {
                 UniValue objOutput(UniValue::VOBJ);
-                objOutput.pushKV("hash", output.GetHash().ToHex());
+                objOutput.pushKV("output_id", output.GetOutputID().ToHex());
                 objOutput.pushKV("commit", output.GetCommitment().ToHex());
                 objOutput.pushKV("range_proof", HexStr(output.GetRangeProof()->Serialized()));
                 objOutput.pushKV("message", HexStr(output.GetOutputMessage().Serialized()));
                 outputs.push_back(objOutput);
             } else {
-                outputs.push_back(output.GetHash().ToHex());
+                outputs.push_back(output.GetOutputID().ToHex());
             }
         }
         mweb_block.pushKV("outputs", outputs);
@@ -258,7 +258,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         for (const auto& kernel : block.mweb_block.m_block->GetKernels()) {
             if (txDetails) {
                 UniValue objKernel(UniValue::VOBJ);
-                objKernel.pushKV("hash", kernel.GetHash().ToHex());
+                objKernel.pushKV("kernel_id", kernel.GetKernelID().ToHex());
                 objKernel.pushKV("features", kernel.GetFeatures());
                 objKernel.pushKV("commit", kernel.GetCommitment().ToHex());
                 objKernel.pushKV("fee", kernel.GetFee());
@@ -566,10 +566,9 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
             setDepends.insert(txin.prevout.hash.ToString());
     }
 
-    std::set<mw::Hash> spent_hashes = tx.mweb_tx.GetSpentHashes();
     uint256 created_tx_hash;
-    for (const mw::Hash& spent_hash : spent_hashes) {
-        if (pool.GetCreatedTx(spent_hash, created_tx_hash)) {
+    for (const mw::Hash& spent_id : tx.mweb_tx.GetSpentIDs()) {
+        if (pool.GetCreatedTx(spent_id, created_tx_hash)) {
             setDepends.insert(created_tx_hash.ToString());
         }
     }
@@ -591,7 +590,7 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
         for (const PegInCoin& pegin : tx.mweb_tx.GetPegIns()) {
             UniValue pegin_uni(UniValue::VOBJ);
             pegin_uni.pushKV("amount", pegin.GetAmount());
-            pegin_uni.pushKV("kernel_hash", pegin.GetKernelHash().ToHex());
+            pegin_uni.pushKV("kernel_id", pegin.GetKernelID().ToHex());
             pegins.push_back(pegin_uni);
         }
 
@@ -609,20 +608,20 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
         mweb_info.pushKV("pegouts", pegouts);
 
         // Inputs
-        UniValue spent_hashes(UniValue::VARR);
-        for (const mw::Hash& spent_hash : tx.mweb_tx.GetSpentHashes()) {
-            spent_hashes.push_back(spent_hash.ToHex());
+        UniValue spent_ids(UniValue::VARR);
+        for (const mw::Hash& spent_id : tx.mweb_tx.GetSpentIDs()) {
+            spent_ids.push_back(spent_id.ToHex());
         }
 
-        mweb_info.pushKV("inputs", spent_hashes);
+        mweb_info.pushKV("inputs", spent_ids);
 
         // Outputs
-        UniValue output_hashes(UniValue::VARR);
-        for (const mw::Hash& output_hash : tx.mweb_tx.GetOutputHashes()) {
-            output_hashes.push_back(output_hash.ToHex());
+        UniValue output_ids(UniValue::VARR);
+        for (const mw::Hash& output_id : tx.mweb_tx.GetOutputIDs()) {
+            output_ids.push_back(output_id.ToHex());
         }
 
-        mweb_info.pushKV("outputs", output_hashes);
+        mweb_info.pushKV("outputs", output_ids);
 
         info.pushKV("mweb", mweb_info);
     }

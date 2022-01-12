@@ -590,13 +590,13 @@ void CWallet::AddToSpends(const uint256& wtxid)
 
 void CWallet::AddMWEBOrigins(const CWalletTx& wtx)
 {
-    for (const mw::Hash& output_hash : wtx.tx->mweb_tx.GetOutputHashes()) {
-        mapOutputsMWEB.insert(std::make_pair(output_hash, wtx.GetHash()));
+    for (const mw::Hash& output_id : wtx.tx->mweb_tx.GetOutputIDs()) {
+        mapOutputsMWEB.insert(std::make_pair(output_id, wtx.GetHash()));
     }
 
     if (wtx.mweb_wtx_info && wtx.mweb_wtx_info->received_coin) {
-        const mw::Hash& output_hash = wtx.mweb_wtx_info->received_coin->hash;
-        mapOutputsMWEB.insert(std::make_pair(output_hash, wtx.GetHash()));
+        const mw::Hash& output_id = wtx.mweb_wtx_info->received_coin->output_id;
+        mapOutputsMWEB.insert(std::make_pair(output_id, wtx.GetHash()));
     }
 }
 
@@ -1252,20 +1252,20 @@ void CWallet::blockConnected(const CBlock& block, int height)
 
     if (!block.mweb_block.IsNull()) {
         mw::Coin coin;
-        for (const mw::Hash& spent_hash : block.mweb_block.GetSpentHashes()) {
-            if (GetCoin(spent_hash, coin) && !IsSpent(spent_hash)) {
+        for (const mw::Hash& spent_id : block.mweb_block.GetSpentIDs()) {
+            if (GetCoin(spent_id, coin) && !IsSpent(spent_id)) {
                 AddToWallet(
                     MakeTransactionRef(),
-                    boost::make_optional<MWEB::WalletTxInfo>(spent_hash),
+                    boost::make_optional<MWEB::WalletTxInfo>(spent_id),
                     {CWalletTx::Status::CONFIRMED, height, block_hash, 0}
                 );
             }
         }
 
         mw::Coin mweb_coin;
-        for (const mw::Hash& output_hash : block.mweb_block.GetOutputHashes()) {
-            if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_hash, mweb_coin)) {
-                auto wtx = FindWalletTx(output_hash);
+        for (const mw::Hash& output_id : block.mweb_block.GetOutputIDs()) {
+            if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_id, mweb_coin)) {
+                auto wtx = FindWalletTx(output_id);
                 if (wtx != nullptr) {
                     SyncTransaction(wtx->tx, {CWalletTx::Status::CONFIRMED, height, block_hash, wtx->m_confirm.nIndex});
                     transactionRemovedFromMempool(wtx->tx, MemPoolRemovalReason::BLOCK, 0 /* mempool_sequence */);
@@ -1297,9 +1297,9 @@ void CWallet::blockDisconnected(const CBlock& block, int height)
 
     if (!block.mweb_block.IsNull()) {
         mw::Coin coin;
-        for (const mw::Hash& spent_hash : block.mweb_block.GetSpentHashes()) {
-            if (GetCoin(spent_hash, coin)) {
-                std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(spent_hash);
+        for (const mw::Hash& spent_id : block.mweb_block.GetSpentIDs()) {
+            if (GetCoin(spent_id, coin)) {
+                std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(spent_id);
                 // MWEB: We just choose the first spend. In the future, we may need a better approach for handling conflicted txs
                 if (range.first != range.second) {
                     auto ptx = mapWallet.find(range.first->second)->second.tx;
@@ -1308,9 +1308,9 @@ void CWallet::blockDisconnected(const CBlock& block, int height)
             }
         }
 
-        for (const mw::Hash& output_hash : block.mweb_block.GetOutputHashes()) {
-            if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_hash, coin)) {
-                auto wtx = FindWalletTx(output_hash);
+        for (const mw::Hash& output_id : block.mweb_block.GetOutputIDs()) {
+            if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_id, coin)) {
+                auto wtx = FindWalletTx(output_id);
                 if (wtx != nullptr) {
                     SyncTransaction(wtx->tx, {CWalletTx::Status::UNCONFIRMED, /* block height */ 0, /* block hash */ {}, /* index */ 0});
                 }
@@ -1900,18 +1900,18 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             }
 
             if (!block.mweb_block.IsNull()) {
-                for (const mw::Hash& spent_hash : block.mweb_block.GetSpentHashes()) {
-                    if (IsMine(CTxInput(spent_hash))) {
-                        // MW: TODO - Check for zapped transactions with matching spent hashes
+                for (const mw::Hash& spent_id : block.mweb_block.GetSpentIDs()) {
+                    if (IsMine(CTxInput(spent_id))) {
+                        // MW: TODO - Check for zapped transactions with matching spent IDs
                         AddToWallet(
                             MakeTransactionRef(),
-                            boost::make_optional<MWEB::WalletTxInfo>(spent_hash),
+                            boost::make_optional<MWEB::WalletTxInfo>(spent_id),
                             {CWalletTx::Status::CONFIRMED, block_height, block_hash, 0},
                             nullptr,
                             false
                         );
 
-                        CWalletTx* prev = FindPrevTx(spent_hash);
+                        CWalletTx* prev = FindPrevTx(spent_id);
                         if (prev != nullptr) {
                             prev->MarkDirty();
                         }
@@ -1919,9 +1919,9 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                 }
 
                 mw::Coin mweb_coin;
-                for (const mw::Hash& output_hash : block.mweb_block.GetOutputHashes()) {
-                    if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_hash, mweb_coin)) {
-                        // MW: TODO - Check for zapped transactions with matching output hashes
+                for (const mw::Hash& output_id : block.mweb_block.GetOutputIDs()) {
+                    if (mweb_wallet->RewindOutput(block.mweb_block.m_block, output_id, mweb_coin)) {
+                        // MW: TODO - Check for zapped transactions with matching output IDs
                         AddToWallet(
                             MakeTransactionRef(),
                             boost::make_optional<MWEB::WalletTxInfo>(mweb_coin),
@@ -4284,9 +4284,9 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
     return ret;
 }
 
-bool CWallet::GetCoin(const mw::Hash& output_hash, mw::Coin& coin) const
+bool CWallet::GetCoin(const mw::Hash& output_id, mw::Coin& coin) const
 {
-    return mweb_wallet->GetCoin(output_hash, coin);
+    return mweb_wallet->GetCoin(output_id, coin);
 }
 
 CAmount CWallet::GetValue(const CTxOutput& output) const

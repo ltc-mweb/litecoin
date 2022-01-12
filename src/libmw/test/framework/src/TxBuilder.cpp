@@ -12,7 +12,7 @@ TxBuilder::TxBuilder()
 
 TxBuilder& TxBuilder::AddInput(const TxOutput& input)
 {
-    return AddInput(input.GetAmount(), SecretKey::Random(), input.GetBlind(), input.GetHash());
+    return AddInput(input.GetAmount(), SecretKey::Random(), input.GetBlind(), input.GetOutputID());
 }
 
 TxBuilder& TxBuilder::AddInput(const CAmount amount)
@@ -24,7 +24,7 @@ TxBuilder& TxBuilder::AddInput(
     const CAmount amount,
     const SecretKey& privkey,
     const BlindingFactor& blind,
-    const mw::Hash& output_hash)
+    const mw::Hash& output_id)
 {
     m_kernelOffset.Sub(blind);
     m_stealthOffset.Sub(privkey);
@@ -33,7 +33,7 @@ TxBuilder& TxBuilder::AddInput(
     m_stealthOffset.Add(input_key);
 
     Commitment commitment = Commitment::Blinded(blind, amount);
-    m_inputs.push_back(Input::Create(output_hash, commitment, input_key, privkey));
+    m_inputs.push_back(Input::Create(output_id, commitment, input_key, privkey));
     m_amount += (int64_t)amount;
     return *this;
 }

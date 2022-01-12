@@ -19,7 +19,7 @@ public:
     const mmr::LeafIndex& GetLeafIndex() const noexcept { return m_leafIdx; }
     const Output& GetOutput() const noexcept { return m_output; }
 
-    const mw::Hash& GetOutputHash() const noexcept { return m_output.GetHash(); }
+    const mw::Hash& GetOutputID() const noexcept { return m_output.GetOutputID(); }
     const Commitment& GetCommitment() const noexcept { return m_output.GetCommitment(); }
     const PublicKey& GetReceiverPubKey() const noexcept { return m_output.GetReceiverPubKey(); }
     const RangeProof::CPtr& GetRangeProof() const noexcept { return m_output.GetRangeProof(); }

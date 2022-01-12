@@ -275,10 +275,10 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetDestValues(prefix);
     }
-    bool findCoin(const mw::Hash& output_hash, mw::Coin& coin) override
+    bool findCoin(const mw::Hash& output_id, mw::Coin& coin) override
     {
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetCoin(output_hash, coin);
+        return m_wallet->GetCoin(output_id, coin);
     }
     void lockCoin(const OutputIndex& output) override
     {

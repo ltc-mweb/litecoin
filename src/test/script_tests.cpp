@@ -1504,13 +1504,13 @@ static CScriptWitness ScriptWitnessFromJSON(const UniValue& univalue)
 BOOST_AUTO_TEST_CASE(script_mweb_pegin)
 {
     CScript script;
-    mw::Hash kernel_hash = SecretKey::Random().vec();
+    mw::Hash kernel_id = SecretKey::Random().vec();
 
-    script << OP_9 << kernel_hash.vec();
+    script << OP_9 << kernel_id.vec();
 
-    mw::Hash kernel_hash2;
-    BOOST_CHECK(script.IsMWEBPegin(&kernel_hash2));
-    BOOST_CHECK(kernel_hash == kernel_hash2);
+    mw::Hash kernel_id2;
+    BOOST_CHECK(script.IsMWEBPegin(&kernel_id2));
+    BOOST_CHECK(kernel_id == kernel_id2);
 }
 
 #if defined(HAVE_CONSENSUS_LIB)

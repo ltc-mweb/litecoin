@@ -410,8 +410,8 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
     }
 
     // MWEB: Add transaction to mapTxOutputs_MWEB for each output
-    for (const mw::Hash& output_hash : tx.mweb_tx.GetOutputHashes()) {
-        mapTxOutputs_MWEB.insert(std::make_pair(output_hash, &tx));
+    for (const mw::Hash& output_id : tx.mweb_tx.GetOutputIDs()) {
+        mapTxOutputs_MWEB.insert(std::make_pair(output_id, &tx));
     }
 
     // Don't bother worrying about child transactions of this one.
@@ -455,8 +455,8 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
         mapNextTx.erase(txin.GetIndex());
 
     // MWEB: Remove transaction from mapTxOutputs_MWEB for each output
-    for (const mw::Hash& output_hash : it->GetTx().mweb_tx.GetOutputHashes()) {
-        mapTxOutputs_MWEB.erase(output_hash);
+    for (const mw::Hash& output_id : it->GetTx().mweb_tx.GetOutputIDs()) {
+        mapTxOutputs_MWEB.erase(output_id);
     }
 
     RemoveUnbroadcastTx(hash, true /* add logging because unchecked */ );
@@ -610,14 +610,14 @@ void CTxMemPool::removeForBlock(const CBlock& block, unsigned int nBlockHeight, 
     // MWEB: Check for transactions with kernels included in the block
     std::vector<CTransactionRef> txs = block.vtx;
     if (!block.mweb_block.IsNull()) {
-        auto block_kernels = block.mweb_block.GetKernelHashes();
+        auto block_kernels = block.mweb_block.GetKernelIDs();
         for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
             if (!it->GetTx().HasMWEBTx()) continue;
 
             const auto& tx_kernels = it->GetTx().mweb_tx.m_transaction->GetKernels();
             bool remove_tx = std::any_of(tx_kernels.begin(), tx_kernels.end(),
                 [&block_kernels](const Kernel& tx_kernel) {
-                    return block_kernels.count(tx_kernel.GetHash()) != 0;
+                    return block_kernels.count(tx_kernel.GetKernelID()) != 0;
                 }
             );
             if (remove_tx) {

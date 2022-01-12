@@ -537,7 +537,7 @@ public:
     bool IsPayToScriptHash() const;
     bool IsPayToWitnessScriptHash() const;
     bool IsWitnessProgram(int& version, std::vector<unsigned char>& program) const;
-    bool IsMWEBPegin(mw::Hash* const kernel_hash = nullptr) const;
+    bool IsMWEBPegin(mw::Hash* const kernel_id = nullptr) const;
 
     /** Called by IsStandardTx and P2SH/BIP62 VerifyScript (which makes it consensus-critical). */
     bool IsPushOnly(const_iterator pc) const;

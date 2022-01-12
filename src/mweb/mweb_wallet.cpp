@@ -21,9 +21,9 @@ std::vector<mw::Coin> Wallet::RewindOutputs(const CTransaction& tx)
 }
 
 bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
-        const mw::Hash& output_hash, mw::Coin& coin)
+        const mw::Hash& output_id, mw::Coin& coin)
 {
-    if (GetCoin(output_hash, coin)) {
+    if (GetCoin(output_id, coin)) {
         return true;
     }
 
@@ -36,7 +36,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     if (parent.type() == typeid(mw::Block::CPtr)) {
         const mw::Block::CPtr& block = boost::get<mw::Block::CPtr>(parent);
         for (const Output& output : block->GetOutputs()) {
-            if (output.GetHash() == output_hash) {
+            if (output.GetOutputID() == output_id) {
                 rewound = keychain->RewindOutput(output, coin);
                 break;
             }
@@ -44,7 +44,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     } else {
         const mw::Transaction::CPtr& tx = boost::get<mw::Transaction::CPtr>(parent);
         for (const Output& output : tx->GetOutputs()) {
-            if (output.GetHash() == output_hash) {
+            if (output.GetOutputID() == output_id) {
                 rewound = keychain->RewindOutput(output, coin);
                 break;
             }
@@ -52,7 +52,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
     }
 
     if (rewound) {
-        m_coins[coin.hash] = coin;
+        m_coins[coin.output_id] = coin;
         WalletBatch(m_pWallet->GetDatabase()).WriteCoin(coin);
     }
 
@@ -73,12 +73,12 @@ StealthAddress Wallet::GetStealthAddress(const uint32_t index) const
 
 void Wallet::LoadToWallet(const mw::Coin& coin)
 {
-    m_coins[coin.hash] = coin;
+    m_coins[coin.output_id] = coin;
 }
 
-bool Wallet::GetCoin(const mw::Hash& output_hash, mw::Coin& coin) const
+bool Wallet::GetCoin(const mw::Hash& output_id, mw::Coin& coin) const
 {
-    auto iter = m_coins.find(output_hash);
+    auto iter = m_coins.find(output_id);
     if (iter != m_coins.end()) {
         coin = iter->second;
         return true;

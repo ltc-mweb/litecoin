@@ -12,16 +12,16 @@ class PegInCoin : public Traits::ISerializable, public Traits::IPrintable
 {
 public:
     PegInCoin() = default;
-    PegInCoin(const CAmount amount, mw::Hash kernel_hash)
-        : m_amount(amount), m_kernelHash(std::move(kernel_hash)) { }
+    PegInCoin(const CAmount amount, mw::Hash kernel_id)
+        : m_amount(amount), m_kernelID(std::move(kernel_id)) {}
 
     bool operator==(const PegInCoin& rhs) const noexcept
     {
-        return m_amount == rhs.m_amount && m_kernelHash == rhs.m_kernelHash;
+        return m_amount == rhs.m_amount && m_kernelID == rhs.m_kernelID;
     }
 
     CAmount GetAmount() const noexcept { return m_amount; }
-    const mw::Hash& GetKernelHash() const noexcept { return m_kernelHash; }
+    const mw::Hash& GetKernelID() const noexcept { return m_kernelID; }
 
     //
     // Serialization/Deserialization
@@ -29,15 +29,15 @@ public:
     IMPL_SERIALIZABLE(PegInCoin, obj)
     {
         READWRITE(VARINT_MODE(obj.m_amount, VarIntMode::NONNEGATIVE_SIGNED));
-        READWRITE(obj.m_kernelHash);
+        READWRITE(obj.m_kernelID);
     }
 
     std::string Format() const noexcept final
     {
-        return StringUtil::Format("PegInCoin(kernel_hash: {}, amount: {})", m_kernelHash, m_amount);
+        return StringUtil::Format("PegInCoin(kernel_id: {}, amount: {})", m_kernelID, m_amount);
     }
 
 private:
     CAmount m_amount;
-    mw::Hash m_kernelHash;
+    mw::Hash m_kernelID;
 };

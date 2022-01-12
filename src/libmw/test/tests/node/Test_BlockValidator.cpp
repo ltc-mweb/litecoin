@@ -21,9 +21,9 @@ BOOST_FIXTURE_TEST_SUITE(TestBlockValidator, MWEBTestingSetup)
 // * Unsorted inputs
 // - Unsorted outputs
 // - Unsorted kernels
-// * Duplicate spent hashes
-// * Duplicate outputs
-// * Duplicate kernels
+// * Duplicate spent IDs
+// * Duplicate output IDs
+// * Duplicate kernel IDs
 // * Invalid input signature
 // * Invalid output signature
 // * Invalid kernel signature
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_OutputSorting)
     outputs[0] = outputs[1];
     outputs[1] = tmp;
 
-    BOOST_REQUIRE(outputs[0].GetHash() > outputs[1].GetHash());
+    BOOST_REQUIRE(outputs[0].GetOutputID() > outputs[1].GetOutputID());
     mw::Block::CPtr pUnsortedBlock = mw::MutBlock(pBlock)
         .SetOutputs(std::move(outputs))
         .Build();

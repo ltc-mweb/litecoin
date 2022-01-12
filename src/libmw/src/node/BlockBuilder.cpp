@@ -29,14 +29,14 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
     }
 
     // Verify pegin kernels are unique
-    std::unordered_set<mw::Hash> pegin_hashes;
+    std::unordered_set<mw::Hash> pegin_ids;
     for (const PegInCoin& pegin : pegins) {
-        if (pegin_hashes.find(pegin.GetKernelHash()) != pegin_hashes.end()) {
+        if (pegin_ids.find(pegin.GetKernelID()) != pegin_ids.end()) {
             LOG_ERROR("Duplicate pegin kernels");
             return false;
         }
 
-        pegin_hashes.insert(pegin.GetKernelHash());
+        pegin_ids.insert(pegin.GetKernelID());
     }
 
     // Verify pegin outputs are included
@@ -47,8 +47,8 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
     }
 
     for (const PegInCoin& pegin : pegin_coins) {
-        if (pegin_hashes.find(pegin.GetKernelHash()) == pegin_hashes.end()) {
-            LOG_ERROR_F("Pegin kernel {} not found", pegin.GetKernelHash());
+        if (pegin_ids.find(pegin.GetKernelID()) == pegin_ids.end()) {
+            LOG_ERROR_F("Pegin kernel {} not found", pegin.GetKernelID());
             return false;
         }
     }
@@ -62,16 +62,16 @@ bool BlockBuilder::AddTransaction(const Transaction::CPtr& pTransaction, const s
 
     // Make sure all inputs are available.
     for (const Input& input : pTransaction->GetInputs()) {
-        if (m_pCoinsView->GetUTXOs(input.GetOutputHash()).empty()) {
-            LOG_ERROR_F("Input {} not found on chain", input.GetOutputHash());
+        if (m_pCoinsView->GetUTXOs(input.GetOutputID()).empty()) {
+            LOG_ERROR_F("Input {} not found on chain", input.GetOutputID());
             return false;
         }
     }
 
     // Make sure no duplicate outputs already on chain.
     for (const Output& output : pTransaction->GetOutputs()) {
-        if (!m_pCoinsView->GetUTXOs(output.GetHash()).empty()) {
-            LOG_ERROR_F("Output {} already on chain", output.GetHash());
+        if (!m_pCoinsView->GetUTXOs(output.GetOutputID()).empty()) {
+            LOG_ERROR_F("Output {} already on chain", output.GetOutputID());
             return false;
         }
     }

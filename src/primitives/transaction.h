@@ -135,8 +135,8 @@ typedef boost::variant<COutPoint, mw::Hash> OutputIndex;
 class CTxInput
 {
 public:
-    CTxInput(mw::Hash output_hash)
-        : m_input(std::move(output_hash)) {}
+    CTxInput(mw::Hash output_id)
+        : m_input(std::move(output_id)) {}
     CTxInput(CTxIn txin)
         : m_input(std::move(txin)) {}
 
@@ -213,14 +213,14 @@ public:
 class CTransaction;
 
 /// <summary>
-/// A generic transaction output that could either be an MWEB output hash or a canonical CTxOut.
+/// A generic transaction output that could either be an MWEB output ID or a canonical CTxOut.
 /// </summary>
 class CTxOutput
 {
 public:
     CTxOutput() = default;
-    CTxOutput(mw::Hash output_hash)
-        : m_idx(output_hash), m_txout(boost::none) {}
+    CTxOutput(mw::Hash output_id)
+        : m_idx(std::move(output_id)), m_txout(boost::none) {}
     CTxOutput(OutputIndex idx, CTxOut txout)
         : m_idx(std::move(idx)), m_txout(std::move(txout)) {}
 
@@ -488,12 +488,12 @@ public:
     /// <summary>
     /// Constructs a CTxOutput for the specified output.
     /// </summary>
-    /// <param name="idx">The index of the output. This could either be an output hash or a valid canonical output index.</param>
+    /// <param name="idx">The index of the output. This could either be an output ID or a valid canonical output index.</param>
     /// <returns>The CTxOutput object.</returns>
     CTxOutput GetOutput(const OutputIndex& idx) const noexcept;
 
     /// <summary>
-    /// Builds a vector of CTxOutputs, starting with the canoncial outputs (CTxOut), followed by the MWEB output hashes.
+    /// Builds a vector of CTxOutputs, starting with the canoncial outputs (CTxOut), followed by the MWEB output IDs.
     /// </summary>
     /// <returns>A vector of all of the transaction's outputs.</returns>
     std::vector<CTxOutput> GetOutputs() const noexcept;

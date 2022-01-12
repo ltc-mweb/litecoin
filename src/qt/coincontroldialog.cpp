@@ -379,10 +379,10 @@ void CoinControlDialog::radioListMode(bool checked)
 CInputCoin CoinControlDialog::BuildInputCoin(QTreeWidgetItem* item)
 {
     if (IsMWEB(item)) {
-        mw::Hash output_hash = mw::Hash::FromHex(item->data(COLUMN_ADDRESS, MWEBOutRole).toString().toStdString());
+        mw::Hash output_id = mw::Hash::FromHex(item->data(COLUMN_ADDRESS, MWEBOutRole).toString().toStdString());
         
         mw::Coin coin;
-        bool found = model->wallet().findCoin(output_hash, coin);
+        bool found = model->wallet().findCoin(output_id, coin);
         assert(found);
         return CInputCoin(coin);
     } else {
@@ -725,8 +725,8 @@ void CoinControlDialog::updateView()
                 // vout index
                 itemOutput->setData(COLUMN_ADDRESS, VOutRole, outpoint.n);
             } else {
-                const mw::Hash& output_hash = boost::get<mw::Hash>(out.output_index);
-                itemOutput->setData(COLUMN_ADDRESS, MWEBOutRole, QString::fromStdString(output_hash.ToHex()));
+                const mw::Hash& output_id = boost::get<mw::Hash>(out.output_index);
+                itemOutput->setData(COLUMN_ADDRESS, MWEBOutRole, QString::fromStdString(output_id.ToHex()));
             }
 
              // disable locked coins

@@ -67,13 +67,14 @@ public:
     //
     // Operators
     //
-    bool operator<(const Kernel& rhs) const { return GetHash() < rhs.GetHash(); }
-    bool operator==(const Kernel& rhs) const { return GetHash() == rhs.GetHash(); }
-    bool operator!=(const Kernel& rhs) const { return GetHash() != rhs.GetHash(); }
+    bool operator<(const Kernel& rhs) const { return GetKernelID() < rhs.GetKernelID(); }
+    bool operator==(const Kernel& rhs) const { return GetKernelID() == rhs.GetKernelID(); }
+    bool operator!=(const Kernel& rhs) const { return GetKernelID() != rhs.GetKernelID(); }
 
     //
     // Getters
     //
+    const mw::Hash& GetKernelID() const noexcept { return m_hash; }
     uint8_t GetFeatures() const noexcept { return m_features; }
     CAmount GetFee() const noexcept { return m_fee.value_or(0); }
     int32_t GetLockHeight() const noexcept { return m_lockHeight.value_or(0); }

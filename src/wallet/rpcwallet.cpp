@@ -2227,7 +2227,7 @@ static RPCHelpMan lockunspent()
     for (unsigned int idx = 0; idx < output_params.size(); idx++) {
         const UniValue& o = output_params[idx].get_obj();
 
-        // MW: TODO - Support locking MWEB output hashes
+        // MW: TODO - Support locking MWEB output IDs
         RPCTypeCheckObj(o,
             {
                 {"txid", UniValueType(UniValue::VSTR)},

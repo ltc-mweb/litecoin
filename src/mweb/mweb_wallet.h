@@ -29,12 +29,12 @@ public:
 
     bool IsSupported() const { return GetKeychain() != nullptr; }
     bool IsChange(const StealthAddress& address) const;
-    bool GetCoin(const mw::Hash& output_hash, mw::Coin& coin) const;
+    bool GetCoin(const mw::Hash& output_id, mw::Coin& coin) const;
 
     std::vector<mw::Coin> RewindOutputs(const CTransaction& tx);
     bool RewindOutput(
         const boost::variant<mw::Block::CPtr, mw::Transaction::CPtr>& parent,
-        const mw::Hash& output_hash,
+        const mw::Hash& output_id,
         mw::Coin& coin
     );
     StealthAddress GetStealthAddress(const uint32_t index) const;
@@ -85,10 +85,10 @@ struct WalletTxInfo
             READWRITE(coin);
             SER_READ(obj, obj.received_coin = boost::make_optional<mw::Coin>(std::move(coin)));
         } else {
-            mw::Hash out_hash;
-            SER_WRITE(obj, out_hash = *obj.spent_input);
-            READWRITE(out_hash);
-            SER_READ(obj, obj.spent_input = boost::make_optional<mw::Hash>(std::move(out_hash)));
+            mw::Hash output_id;
+            SER_WRITE(obj, output_id = *obj.spent_input);
+            READWRITE(output_id);
+            SER_READ(obj, obj.spent_input = boost::make_optional<mw::Hash>(std::move(output_id)));
         }
 
         SER_READ(obj, obj.hash = SerializeHash(obj));

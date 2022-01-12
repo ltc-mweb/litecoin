@@ -234,15 +234,15 @@ bool CScript::IsWitnessProgram(int& version, std::vector<unsigned char>& program
     return false;
 }
 
-bool CScript::IsMWEBPegin(mw::Hash* const kernel_hash) const
+bool CScript::IsMWEBPegin(mw::Hash* const kernel_id) const
 {
     // MW: TODO - This will also return true for HogEx. Should we use a different version for HogEx Hash?
     int version;
     std::vector<uint8_t> program;
     if (IsWitnessProgram(version, program)) {
         if (version == MWEB_WITNESS_VERSION && program.size() == WITNESS_MWEB_PEGIN_SIZE) {
-            if (kernel_hash != nullptr) {
-                *kernel_hash = mw::Hash(std::move(program));
+            if (kernel_id != nullptr) {
+                *kernel_id = mw::Hash(std::move(program));
             }
 
             return true;

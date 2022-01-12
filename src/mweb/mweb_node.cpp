@@ -42,9 +42,9 @@ bool Node::CheckBlock(const CBlock& block, BlockValidationState& state)
     std::vector<PegInCoin> pegins;
     for (size_t i = 0; i < block.vtx.size() - 1; i++) {
         for (const CTxOut& out : block.vtx[i]->vout) {
-            mw::Hash kernel_hash;
-            if (out.scriptPubKey.IsMWEBPegin(&kernel_hash)) {
-                pegins.push_back(PegInCoin{out.nValue, std::move(kernel_hash)});
+            mw::Hash kernel_id;
+            if (out.scriptPubKey.IsMWEBPegin(&kernel_id)) {
+                pegins.push_back(PegInCoin{out.nValue, std::move(kernel_id)});
             }
         }
     }

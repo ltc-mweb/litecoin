@@ -49,8 +49,8 @@ std::string Transaction::Print() const noexcept
 {
     auto print_kernel = [](const Kernel& kernel) -> std::string {
         return StringUtil::Format(
-            "kern(hash:{}, commit:{}, pegin: {}, pegout: {}, fee: {})",
-            kernel.GetHash(),
+            "kern(kernel_id:{}, commit:{}, pegin: {}, pegout: {}, fee: {})",
+            kernel.GetKernelID(),
             kernel.GetCommitment(),
             kernel.GetPegIn(),
             kernel.GetPegOut() ? kernel.GetPegOut().value().GetAmount() : 0,

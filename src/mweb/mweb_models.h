@@ -46,46 +46,46 @@ struct Block {
         return IsNull() ? -1 : m_block->GetHeight();
     }
 
-    std::vector<mw::Hash> GetSpentHashes() const
+    std::vector<mw::Hash> GetSpentIDs() const
     {
         if (IsNull()) {
             return std::vector<mw::Hash>{};
         }
 
-        std::vector<mw::Hash> spent_hashes;
+        std::vector<mw::Hash> spent_ids;
         for (const Input& input : m_block->GetInputs()) {
-            spent_hashes.push_back(input.GetOutputHash());
+            spent_ids.push_back(input.GetOutputID());
         }
 
-        return spent_hashes;
+        return spent_ids;
     }
 
-    std::vector<mw::Hash> GetOutputHashes() const
+    std::vector<mw::Hash> GetOutputIDs() const
     {
         if (IsNull()) {
             return std::vector<mw::Hash>{};
         }
 
-        std::vector<mw::Hash> output_hashes;
+        std::vector<mw::Hash> output_ids;
         for (const Output& output : m_block->GetOutputs()) {
-            output_hashes.push_back(output.GetHash());
+            output_ids.push_back(output.GetOutputID());
         }
 
-        return output_hashes;
+        return output_ids;
     }
 
-    std::set<mw::Hash> GetKernelHashes() const
+    std::set<mw::Hash> GetKernelIDs() const
     {
         if (IsNull()) {
             return std::set<mw::Hash>{};
         }
 
-        std::set<mw::Hash> kernel_hashes;
+        std::set<mw::Hash> kernel_ids;
         for (const Kernel& kernel : m_block->GetKernels()) {
-            kernel_hashes.insert(kernel.GetHash());
+            kernel_ids.insert(kernel.GetKernelID());
         }
 
-        return kernel_hashes;
+        return kernel_ids;
     }
 
     SERIALIZE_METHODS(Block, obj)
@@ -107,32 +107,32 @@ struct Tx {
     Tx(const mw::Transaction::CPtr& tx)
         : m_transaction(tx) {}
 
-    std::set<mw::Hash> GetSpentHashes() const noexcept
+    std::set<mw::Hash> GetSpentIDs() const noexcept
     {
         if (IsNull()) {
             return std::set<mw::Hash>{};
         }
 
-        std::set<mw::Hash> spent_hashes;
+        std::set<mw::Hash> spent_ids;
         for (const Input& input : m_transaction->GetInputs()) {
-            spent_hashes.insert(input.GetOutputHash());
+            spent_ids.insert(input.GetOutputID());
         }
 
-        return spent_hashes;
+        return spent_ids;
     }
 
-    std::set<mw::Hash> GetOutputHashes() const noexcept
+    std::set<mw::Hash> GetOutputIDs() const noexcept
     {
         if (IsNull()) {
             return std::set<mw::Hash>{};
         }
 
-        std::set<mw::Hash> output_hashes;
+        std::set<mw::Hash> output_ids;
         for (const Output& output : m_transaction->GetOutputs()) {
-            output_hashes.insert(output.GetHash());
+            output_ids.insert(output.GetOutputID());
         }
 
-        return output_hashes;
+        return output_ids;
     }
 
     std::vector<PegInCoin> GetPegIns() const noexcept
@@ -144,7 +144,7 @@ struct Tx {
         std::vector<PegInCoin> pegins;
         for (const Kernel& kernel : m_transaction->GetKernels()) {
             if (kernel.HasPegIn()) {
-                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetHash()});
+                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetKernelID()});
             }
         }
 

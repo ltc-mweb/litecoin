@@ -32,7 +32,7 @@ public:
     PegInCoin GetPegInCoin() const
     {
         const auto& kernel = m_pTransaction->GetKernels().front();
-        return PegInCoin(kernel.GetPegIn(), kernel.GetHash());
+        return PegInCoin(kernel.GetPegIn(), kernel.GetKernelID());
     }
 
     PegOutCoin GetPegOutCoin() const

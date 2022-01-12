@@ -40,7 +40,7 @@ public:
     virtual bool IsCache() const noexcept = 0;
 
     // Virtual functions
-    virtual std::vector<UTXO::CPtr> GetUTXOs(const mw::Hash& output_hash) const = 0;
+    virtual std::vector<UTXO::CPtr> GetUTXOs(const mw::Hash& output_id) const = 0;
     virtual void WriteBatch(
         const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
@@ -53,17 +53,17 @@ public:
     /// <summary>
     /// Checks if there's a unspent coin in the view with a matching commitment.
     /// </summary>
-    /// <param name="output_hash">The hash of the UTXO to look for.</param>
+    /// <param name="output_id">The output ID of the UTXO to look for.</param>
     /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
-    bool HasCoin(const mw::Hash& output_hash) const noexcept { return !GetUTXOs(output_hash).empty(); }
+    bool HasCoin(const mw::Hash& output_id) const noexcept { return !GetUTXOs(output_id).empty(); }
 
     /// <summary>
     /// Checks if there's a unspent coin with a matching commitment in the view that has not been flushed to the parent.
     /// This is useful for checking if a coin is in the mempool but not yet on chain.
     /// </summary>
-    /// <param name="output_hash">The hash of the coin to look for.</param>
+    /// <param name="output_id">The output ID of the coin to look for.</param>
     /// <returns>True if there's a matching unspent coin. Otherwise, false.</returns>
-    virtual bool HasCoinInCache(const mw::Hash& output_hash) const noexcept = 0;
+    virtual bool HasCoinInCache(const mw::Hash& output_id) const noexcept = 0;
 
     /// <summary>
     /// Cleanup any old MMR files that no longer reflect the latest flushed state.
@@ -85,7 +85,7 @@ public:
 
     bool IsCache() const noexcept final { return true; }
 
-    std::vector<UTXO::CPtr> GetUTXOs(const mw::Hash& output_hash) const noexcept final;
+    std::vector<UTXO::CPtr> GetUTXOs(const mw::Hash& output_id) const noexcept final;
 
     /// <summary>
     /// Validates and connects the block to the end of the chain.
@@ -118,14 +118,14 @@ public:
 
     mw::Block::Ptr BuildNextBlock(const uint64_t height, const std::vector<mw::Transaction::CPtr>& transactions);
 
-    bool HasCoinInCache(const mw::Hash& output_hash) const noexcept final;
+    bool HasCoinInCache(const mw::Hash& output_id) const noexcept final;
 
     ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
     IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
 private:
     void AddUTXO(const uint64_t header_height, const Output& output);
-    UTXO SpendUTXO(const mw::Hash& output_hash);
+    UTXO SpendUTXO(const mw::Hash& output_id);
 
     ICoinsView::Ptr m_pBase;
 
@@ -148,7 +148,7 @@ public:
 
     bool IsCache() const noexcept final { return false; }
 
-    std::vector<UTXO::CPtr> GetUTXOs(const mw::Hash& output_hash) const final;
+    std::vector<UTXO::CPtr> GetUTXOs(const mw::Hash& output_id) const final;
     void WriteBatch(
         const mw::DBBatch::UPtr& pBatch,
         const CoinsViewUpdates& updates,
@@ -159,7 +159,7 @@ public:
     ILeafSet::Ptr GetLeafSet() const noexcept final { return m_pLeafSet; }
     IMMR::Ptr GetOutputPMMR() const noexcept final { return m_pOutputPMMR; }
 
-    bool HasCoinInCache(const mw::Hash& output_hash) const noexcept final { return false; }
+    bool HasCoinInCache(const mw::Hash& output_id) const noexcept final { return false; }
 
 private:
     CoinsViewDB(
@@ -173,8 +173,8 @@ private:
 
     void AddUTXO(CoinDB& coinDB, const Output& output);
     void AddUTXO(CoinDB& coinDB, const UTXO::CPtr& pUTXO);
-    void SpendUTXO(CoinDB& coinDB, const mw::Hash& output_hash);
-    std::vector<UTXO::CPtr> GetUTXOs(const CoinDB& coinDB, const mw::Hash& output_hash) const;
+    void SpendUTXO(CoinDB& coinDB, const mw::Hash& output_id);
+    std::vector<UTXO::CPtr> GetUTXOs(const CoinDB& coinDB, const mw::Hash& output_id) const;
 
     LeafSet::Ptr m_pLeafSet;
     PMMR::Ptr m_pOutputPMMR;

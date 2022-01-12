@@ -11,12 +11,12 @@ BOOST_FIXTURE_TEST_SUITE(TestInput, MWEBTestingSetup)
 
 BOOST_AUTO_TEST_CASE(PlainTxInput)
 {
-    mw::Hash output_hash = SecretKey::Random().GetBigInt();
+    mw::Hash output_id = SecretKey::Random().GetBigInt();
     Commitment commit = Commitment::Random();
     PublicKey input_pubkey = PublicKey::Random();
     PublicKey output_pubkey = PublicKey::Random();
     Signature signature(SecretKey64::Random().GetBigInt());
-    Input input(output_hash, commit, input_pubkey, output_pubkey, signature);
+    Input input(output_id, commit, input_pubkey, output_pubkey, signature);
 
     //
     // Serialization
@@ -25,9 +25,9 @@ BOOST_AUTO_TEST_CASE(PlainTxInput)
         std::vector<uint8_t> serialized = input.Serialized();
 
         CDataStream deserializer(serialized, SER_DISK, PROTOCOL_VERSION);
-        mw::Hash output_hash2;
-        deserializer >> output_hash2;
-        BOOST_REQUIRE(output_hash2 == output_hash);
+        mw::Hash output_id2;
+        deserializer >> output_id2;
+        BOOST_REQUIRE(output_id2 == output_id);
 
         Commitment commit2;
         deserializer >> commit2;
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(PlainTxInput)
     // Getters
     //
     {
-        BOOST_REQUIRE(input.GetOutputHash() == output_hash);
+        BOOST_REQUIRE(input.GetOutputID() == output_id);
         BOOST_REQUIRE(input.GetCommitment() == commit);
         BOOST_REQUIRE(input.GetInputPubKey() == input_pubkey);
         BOOST_REQUIRE(input.GetOutputPubKey() == output_pubkey);

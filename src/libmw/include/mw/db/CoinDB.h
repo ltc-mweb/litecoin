@@ -16,11 +16,11 @@ public:
 	~CoinDB();
 
 	//
-	// Retrieve UTXOs with matching output hashes.
-	// If there are multiple UTXOs for an output hash, the most recent will be returned.
+	// Retrieve UTXOs with matching output IDs.
+	// If there are multiple UTXOs for an output ID, the most recent will be returned.
 	//
 	std::unordered_map<mw::Hash, UTXO::CPtr> GetUTXOs(
-		const std::vector<mw::Hash>& output_hashes
+		const std::vector<mw::Hash>& output_ids
 	) const;
 
 	//
@@ -29,11 +29,11 @@ public:
 	void AddUTXOs(const std::vector<UTXO::CPtr>& utxos);
 
 	//
-	// Removes the UTXOs for the given commitments.
-	// If there are multiple UTXOs for a commitment, the most recent will be removed.
-	// DatabaseException thrown if no UTXOs are found fo a commitment.
+	// Removes the UTXOs for the given output IDs.
+	// If there are multiple UTXOs for an output ID, the most recent will be removed.
+	// DatabaseException thrown if no UTXOs are found for an output ID.
 	//
-	void RemoveUTXOs(const std::vector<mw::Hash>& output_hashes);
+        void RemoveUTXOs(const std::vector<mw::Hash>& output_ids);
 
 	//
 	// Removes all of the UTXOs from the database.

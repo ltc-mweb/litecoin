@@ -136,6 +136,7 @@ public:
     //
     // Getters
     //
+    const mw::Hash& GetOutputID() const noexcept { return m_hash; }
     const Commitment& GetCommitment() const noexcept final { return m_commitment; }
     const RangeProof::CPtr& GetRangeProof() const noexcept { return m_pProof; }
     const OutputMessage& GetOutputMessage() const noexcept { return m_message; }
@@ -196,11 +197,11 @@ private:
     mw::Hash m_hash;
 };
 
-// Sorts by output hash
+// Sorts by output ID (hash)
 static const struct
 {
     bool operator()(const Output& a, const Output& b) const
     {
-        return a.GetHash() < b.GetHash();
+        return a.GetOutputID() < b.GetOutputID();
     }
 } OutputSort;

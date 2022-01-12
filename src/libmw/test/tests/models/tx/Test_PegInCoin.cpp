@@ -12,8 +12,8 @@ BOOST_FIXTURE_TEST_SUITE(TestPegInCoin, MWEBTestingSetup)
 BOOST_AUTO_TEST_CASE(TxPegInCoin)
 {
     CAmount amount = 123;
-    mw::Hash kernel_hash = SecretKey::Random().vec();
-    PegInCoin pegInCoin(amount, kernel_hash);
+    mw::Hash kernel_id = SecretKey::Random().vec();
+    PegInCoin pegInCoin(amount, kernel_id);
 
     //
     // Serialization
@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(TxPegInCoin)
     //
     {
         BOOST_REQUIRE(pegInCoin.GetAmount() == amount);
-        BOOST_REQUIRE(pegInCoin.GetKernelHash() == kernel_hash);
+        BOOST_REQUIRE(pegInCoin.GetKernelID() == kernel_id);
     }
 }
 

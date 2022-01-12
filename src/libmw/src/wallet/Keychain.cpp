@@ -53,7 +53,7 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
     coin.key = boost::make_optional(std::move(private_key));
     coin.blind = boost::make_optional(mask.GetRawBlind());
     coin.amount = value;
-    coin.hash = output.GetHash();
+    coin.output_id = output.GetOutputID();
 
     return true;
 }

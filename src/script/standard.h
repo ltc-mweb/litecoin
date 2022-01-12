@@ -272,7 +272,7 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys);
 
 bool IsPegInOutput(const CTxOutput& output);
 
-CScript GetScriptForPegin(const mw::Hash& kernel_hash);
+CScript GetScriptForPegin(const mw::Hash& kernel_id);
 
 class DestinationAddr
 {

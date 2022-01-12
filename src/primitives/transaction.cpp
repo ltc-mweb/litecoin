@@ -145,8 +145,8 @@ std::vector<CTxInput> CTransaction::GetInputs() const noexcept
         inputs.push_back(txin);
     }
 
-    for (const mw::Hash& spent_hash : mweb_tx.GetSpentHashes()) {
-        inputs.push_back(spent_hash);
+    for (const mw::Hash& spent_id : mweb_tx.GetSpentIDs()) {
+        inputs.push_back(spent_id);
     }
 
     return inputs;
@@ -177,8 +177,8 @@ std::vector<CTxOutput> CTransaction::GetOutputs() const noexcept
         outputs.push_back(CTxOutput{COutPoint(GetHash(), n), vout[n]});
     }
 
-    for (const mw::Hash& out_hash : mweb_tx.GetOutputHashes()) {
-        outputs.push_back(CTxOutput{std::move(out_hash)});
+    for (const mw::Hash& output_id : mweb_tx.GetOutputIDs()) {
+        outputs.push_back(CTxOutput{output_id});
     }
 
     return outputs;

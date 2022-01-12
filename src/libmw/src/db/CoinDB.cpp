@@ -8,14 +8,14 @@ CoinDB::CoinDB(mw::DBWrapper* pDBWrapper, mw::DBBatch* pBatch)
 
 CoinDB::~CoinDB() { }
 
-std::unordered_map<mw::Hash, UTXO::CPtr> CoinDB::GetUTXOs(const std::vector<mw::Hash>& output_hashes) const
+std::unordered_map<mw::Hash, UTXO::CPtr> CoinDB::GetUTXOs(const std::vector<mw::Hash>& output_ids) const
 {
     std::unordered_map<mw::Hash, UTXO::CPtr> utxos;
 
-    for (const mw::Hash& output_hash : output_hashes) {
-        auto pUTXO = m_pDatabase->Get<UTXO>(UTXO_TABLE, output_hash.ToHex());
+    for (const mw::Hash& output_id : output_ids) {
+        auto pUTXO = m_pDatabase->Get<UTXO>(UTXO_TABLE, output_id.ToHex());
         if (pUTXO != nullptr) {
-            utxos.insert({output_hash, pUTXO->item});
+            utxos.insert({output_id, pUTXO->item});
         }
     }
 
@@ -28,16 +28,16 @@ void CoinDB::AddUTXOs(const std::vector<UTXO::CPtr>& utxos)
     std::transform(
         utxos.cbegin(), utxos.cend(),
         std::back_inserter(entries),
-        [](const UTXO::CPtr& pUTXO) { return DBEntry<UTXO>(pUTXO->GetOutputHash().ToHex(), pUTXO); }
+        [](const UTXO::CPtr& pUTXO) { return DBEntry<UTXO>(pUTXO->GetOutputID().ToHex(), pUTXO); }
     );
 
     m_pDatabase->Put(UTXO_TABLE, entries);
 }
 
-void CoinDB::RemoveUTXOs(const std::vector<mw::Hash>& output_hashes)
+void CoinDB::RemoveUTXOs(const std::vector<mw::Hash>& output_ids)
 {
-    for (const mw::Hash& output_hash : output_hashes) {
-        m_pDatabase->Delete(UTXO_TABLE, output_hash.ToHex());
+    for (const mw::Hash& output_id : output_ids) {
+        m_pDatabase->Delete(UTXO_TABLE, output_id.ToHex());
     }
 }
 

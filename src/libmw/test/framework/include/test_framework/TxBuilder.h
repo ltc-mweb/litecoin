@@ -24,7 +24,7 @@ public:
         const CAmount amount,
         const SecretKey& privkey,
         const BlindingFactor& blind,
-        const mw::Hash& output_hash
+        const mw::Hash& output_id
     );
 
     TxBuilder& AddOutput(const CAmount amount);

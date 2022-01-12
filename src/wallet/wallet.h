@@ -496,7 +496,7 @@ public:
     {
         std::vector<CTxOutput> outputs = tx->GetOutputs();
         if (mweb_wtx_info && mweb_wtx_info->received_coin) {
-            outputs.push_back(CTxOutput{mweb_wtx_info->received_coin->hash});
+            outputs.push_back(CTxOutput{mweb_wtx_info->received_coin->output_id});
         }
 
         return outputs;
@@ -671,7 +671,7 @@ struct COutputCoin {
 
     OutputIndex GetIndex() const
     {
-        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.hash;
+        if (IsMWEB()) return boost::get<MWOutput>(m_output).coin.output_id;
 
         const COutput& out = boost::get<COutput>(m_output);
         return COutPoint(out.tx->GetHash(), out.i);
@@ -1382,8 +1382,8 @@ public:
     //! Add a descriptor to the wallet, return a ScriptPubKeyMan & associated output type
     ScriptPubKeyMan* AddWalletDescriptor(WalletDescriptor& desc, const FlatSigningProvider& signing_provider, const std::string& label, bool internal);
 
-
-    bool GetCoin(const mw::Hash& output_hash, mw::Coin& coin) const;
+    // MWEB: BEGIN
+    bool GetCoin(const mw::Hash& output_id, mw::Coin& coin) const;
 
     CAmount GetValue(const CTxOutput& output) const;
     bool ExtractOutputDestination(const CTxOutput& output, CTxDestination& dest) const;
@@ -1394,6 +1394,7 @@ public:
     CWalletTx* FindPrevTx(const CTxInput& input);
 
     const std::shared_ptr<MWEB::Wallet>& GetMWWallet() const noexcept { return mweb_wallet; }
+    // MWEB: END
 };
 
 /**

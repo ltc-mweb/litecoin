@@ -11,7 +11,7 @@ std::vector<PegInCoin> TxBody::GetPegIns() const noexcept
     std::vector<PegInCoin> pegins;
     for (const Kernel& kernel : m_kernels) {
         if (kernel.HasPegIn()) {
-            pegins.push_back(PegInCoin(kernel.GetPegIn(), kernel.GetHash()));
+            pegins.push_back(PegInCoin(kernel.GetPegIn(), kernel.GetKernelID()));
         }
     }
 
@@ -95,17 +95,17 @@ void TxBody::Validate() const
     };
 
     // Verify no duplicate spends
-    if (contains_duplicates(GetSpentHashes())) {
+    if (contains_duplicates(GetSpentIDs())) {
         ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate output hashes
-    if (contains_duplicates(GetOutputHashes())) {
+    // Verify no duplicate output IDs
+    if (contains_duplicates(GetOutputIDs())) {
         ThrowValidation(EConsensusError::DUPLICATES);
     }
 
-    // Verify no duplicate kernel hashes
-    if (contains_duplicates(GetKernelHashes())) {
+    // Verify no duplicate kernel IDs
+    if (contains_duplicates(GetKernelIDs())) {
         ThrowValidation(EConsensusError::DUPLICATES);
     }
 

@@ -16,11 +16,11 @@ CoinsViewCache::CoinsViewCache(const ICoinsView::Ptr& pBase)
       m_pOutputPMMR(std::make_unique<PMMRCache>(pBase->GetOutputPMMR())),
       m_pUpdates(std::make_shared<CoinsViewUpdates>()) {}
 
-std::vector<UTXO::CPtr> CoinsViewCache::GetUTXOs(const mw::Hash& output_hash) const noexcept
+std::vector<UTXO::CPtr> CoinsViewCache::GetUTXOs(const mw::Hash& output_id) const noexcept
 {
-    std::vector<UTXO::CPtr> utxos = m_pBase->GetUTXOs(output_hash);
+    std::vector<UTXO::CPtr> utxos = m_pBase->GetUTXOs(output_id);
 
-    std::vector<CoinAction> actions = m_pUpdates->GetActions(output_hash);
+    std::vector<CoinAction> actions = m_pUpdates->GetActions(output_id);
     for (const CoinAction& action : actions) {
         if (action.pUTXO != nullptr) {
             utxos.push_back(action.pUTXO);
@@ -47,7 +47,7 @@ mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::CPtr& pBlock)
     std::for_each(
         pBlock->GetInputs().cbegin(), pBlock->GetInputs().cend(),
         [this, &coinsSpent](const Input& input) {
-            UTXO spentUTXO = SpendUTXO(input.GetOutputHash());
+            UTXO spentUTXO = SpendUTXO(input.GetOutputID());
             if (spentUTXO.GetReceiverPubKey() != input.GetOutputPubKey()) {
                 ThrowValidation(EConsensusError::UTXO_MISMATCH);
             }
@@ -61,7 +61,7 @@ mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::CPtr& pBlock)
         pBlock->GetOutputs().cbegin(), pBlock->GetOutputs().cend(),
         [this, &pBlock, &coinsAdded](const Output& output) {
             AddUTXO(pBlock->GetHeight(), output);
-            coinsAdded.push_back(output.GetHash());
+            coinsAdded.push_back(output.GetOutputID());
         }
     );
 
@@ -130,7 +130,7 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
 
     std::for_each(
         pTransaction->GetInputs().cbegin(), pTransaction->GetInputs().cend(),
-        [this](const Input& input) { SpendUTXO(input.GetOutputHash()); } // MW: TODO - Do we need to check the UTXO's receiver public key? Presumably, that was already done.
+        [this](const Input& input) { SpendUTXO(input.GetOutputID()); } // MW: TODO - Do we need to check the UTXO's receiver public key? Presumably, that was already done.
     );
 
     const uint64_t output_mmr_size = m_pOutputPMMR->GetNumLeaves();
@@ -164,9 +164,9 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
     return std::make_shared<mw::Block>(pHeader, pTransaction->GetBody());
 }
 
-bool CoinsViewCache::HasCoinInCache(const mw::Hash& output_hash) const noexcept
+bool CoinsViewCache::HasCoinInCache(const mw::Hash& output_id) const noexcept
 {
-    std::vector<CoinAction> actions = m_pUpdates->GetActions(output_hash);
+    std::vector<CoinAction> actions = m_pUpdates->GetActions(output_id);
     if (!actions.empty()) {
         return actions.back().pUTXO != nullptr;
     }
@@ -176,7 +176,7 @@ bool CoinsViewCache::HasCoinInCache(const mw::Hash& output_hash) const noexcept
 
 void CoinsViewCache::AddUTXO(const uint64_t header_height, const Output& output)
 {
-    mmr::LeafIndex leafIdx = m_pOutputPMMR->Add(output.GetHash());
+    mmr::LeafIndex leafIdx = m_pOutputPMMR->Add(output.GetOutputID());
     m_pLeafSet->Add(leafIdx);
 
     auto pUTXO = std::make_shared<UTXO>(header_height, std::move(leafIdx), output);
@@ -184,15 +184,15 @@ void CoinsViewCache::AddUTXO(const uint64_t header_height, const Output& output)
     m_pUpdates->AddUTXO(pUTXO);
 }
 
-UTXO CoinsViewCache::SpendUTXO(const mw::Hash& output_hash)
+UTXO CoinsViewCache::SpendUTXO(const mw::Hash& output_id)
 {
-    std::vector<UTXO::CPtr> utxos = GetUTXOs(output_hash);
+    std::vector<UTXO::CPtr> utxos = GetUTXOs(output_id);
     if (utxos.empty() || !m_pLeafSet->Contains(utxos.back()->GetLeafIndex())) {
         ThrowValidation(EConsensusError::UTXO_MISSING);
     }
 
     m_pLeafSet->Remove(utxos.back()->GetLeafIndex());
-    m_pUpdates->SpendUTXO(output_hash);
+    m_pUpdates->SpendUTXO(output_id);
 
     return *utxos.back();
 }
@@ -202,10 +202,10 @@ void CoinsViewCache::WriteBatch(const std::unique_ptr<mw::DBBatch>&, const Coins
     SetBestHeader(pHeader);
 
     for (const auto& actions : updates.GetActions()) {
-        const mw::Hash& output_hash = actions.first;
+        const mw::Hash& output_id = actions.first;
         for (const auto& action : actions.second) {
             if (action.IsSpend()) {
-                m_pUpdates->SpendUTXO(output_hash);
+                m_pUpdates->SpendUTXO(output_id);
             } else {
                 m_pUpdates->AddUTXO(action.pUTXO);
             }

@@ -55,14 +55,14 @@ BOOST_AUTO_TEST_CASE(Create)
     BOOST_REQUIRE(signed_msg.GetPublicKey() == PublicKey::From(sender_key));
     BOOST_REQUIRE(Schnorr::BatchVerify({ signed_msg }));
 
-    // Verify Hash
-    mw::Hash expected_hash = Hasher()
+    // Verify Output ID
+    mw::Hash expected_id = Hasher()
         .Append(output.GetCommitment())
         .Append(output.GetOutputMessage().GetHash())
         .Append(output.GetRangeProof()->GetHash())
         .Append(output.GetSignature())
         .hash();
-    BOOST_REQUIRE(output.GetHash() == expected_hash);
+    BOOST_REQUIRE(output.GetOutputID() == expected_id);
 
     // Getters
     BOOST_REQUIRE(output.GetCommitment() == expected_commit);

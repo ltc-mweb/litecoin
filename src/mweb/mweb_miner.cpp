@@ -97,7 +97,7 @@ template <>
 struct hash<PegInCoin> {
     size_t operator()(const PegInCoin& pegin) const
     {
-        return boost::hash_value(pegin.GetKernelHash().vec()) + boost::hash_value(pegin.GetAmount());
+        return boost::hash_value(pegin.GetKernelID().vec()) + boost::hash_value(pegin.GetAmount());
     }
 };
 } // namespace std
@@ -107,9 +107,9 @@ bool Miner::ValidatePegIns(const CTransactionRef& pTx, const std::vector<PegInCo
     std::unordered_set<PegInCoin> pegin_set(pegins.cbegin(), pegins.cend());
 
     for (const CTxOut& output : pTx->vout) {
-        mw::Hash kernel_hash;
-        if (output.scriptPubKey.IsMWEBPegin(&kernel_hash)) {
-            PegInCoin pegin(output.nValue, std::move(kernel_hash));
+        mw::Hash kernel_id;
+        if (output.scriptPubKey.IsMWEBPegin(&kernel_id)) {
+            PegInCoin pegin(output.nValue, std::move(kernel_id));
             if (pegin_set.erase(pegin) != 1) {
                 return false;
             }

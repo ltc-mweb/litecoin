@@ -46,7 +46,7 @@ void BlockValidator::ValidatePegInCoins(
     std::for_each(
         pegInCoins.cbegin(), pegInCoins.cend(),
         [&pegInAmounts](const PegInCoin& coin) {
-            pegInAmounts.insert({ coin.GetKernelHash(), coin.GetAmount() });
+            pegInAmounts.insert({coin.GetKernelID(), coin.GetAmount()});
         }
     );
 
@@ -56,7 +56,7 @@ void BlockValidator::ValidatePegInCoins(
     }
 
     for (const auto& pegin : pegin_coins) {
-        auto pIter = pegInAmounts.find(pegin.GetKernelHash());
+        auto pIter = pegInAmounts.find(pegin.GetKernelID());
         if (pIter == pegInAmounts.end() || pegin.GetAmount() != pIter->second) {
             ThrowValidation(EConsensusError::PEGIN_MISMATCH);
         }
