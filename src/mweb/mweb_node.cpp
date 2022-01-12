@@ -121,7 +121,7 @@ bool Node::ContextualCheckBlock(const CBlock& block, const Consensus::Params& co
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "extra-hogex-input", "HogEx contains unexpected input(s)");
     }
 
-    // MWEB: For HogEx transaction, the fee must be equal to the total fee of the extension block.
+    // For HogEx transaction, the fee must be equal to the total fee of the extension block.
     CAmount hogex_fee = hogex_input_amount - pHogEx->GetValueOut();
     if (hogex_fee != block.mweb_block.GetTotalFee()) {
         return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-txns-mweb-fee-mismatch", "MWEB::Node::ContextualCheckBlock(): HogEx fee does not match MWEB fee.");

@@ -1,9 +1,27 @@
 # Data Storage
 
-In addition to extending the existing `CBlock` and `CBlockUndo` objects already used in Litecoin, the following data stores are created and used by the MWEB.
+In addition to extending the existing `CBlock` and `CTransaction` objects already used in Litecoin, the following data stores are created or modified for MWEB.
+
+### CBlockUndo
+
+After a new block is connected, a `rev<index>.dat` file is created that describes how to remove or "undo" the block from the chain state.
+When performing a reorg, the undo file can be processed, which will revert the UTXO set back to the way it was just before the block.
+
+To support undo-ing MWEB blocks, we''ve added a new `mw::BlockUndo` object to `CBlockUndo`, which gets serialized at the end.
+This contains the following fields:
+
+* `prev_header` - the existing MWEB header
+* `utxos_spent` - vector of `UTXO`''s that were spent in the block
+* `utxos_added` - vector of coin IDs (hashes) that were added in the block
+
+To revert the block from the chain state, the node removes the matching `UTXO`''s in `utxos_added`, adds back the `UTXO`''s in `utxos_spent`, and sets `prev_header` as the chain tip.
+
+NOTE: For backward compatibility, when deserializing a `CBlockUndo`, we first must look up the size of the `CBlockUndo` object.
+After deserializing vtxundo (the vector of `CTxUndo`''s), if more data remains, assume it''s the `mw::BlockUndo` object.
+If no more data remains, assume the `CBlockUndo` does not have MWEB data.
+An `UnserializeBlockUndo` function was added to handle this.
 
 ### UTXOs
-
 ##### CoinDB (leveldb)
 
 Litecoin's leveldb instance is used to maintain a UTXO table (prefix: 'U') with `UTXO` objects, consisting of the following data fields:
@@ -14,7 +32,6 @@ Litecoin's leveldb instance is used to maintain a UTXO table (prefix: 'U') with 
 * output - The full `Output` object, including the rangeproof and owner data.
 
 ### PMMRs
-
 ##### MMR Info (leveldb)
 Litecoin's leveldb instance is used to maintain an MMR Info table (prefix: "M") with `MMRInfo` objects consisting of the following data fields:
 
