@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(Create)
     BlindingFactor blind;
     SecretKey sender_key = SecretKey::Random();
     Output output = Output::Create(
-        blind,
+        &blind,
         sender_key,
         receiver_subaddr,
         amount

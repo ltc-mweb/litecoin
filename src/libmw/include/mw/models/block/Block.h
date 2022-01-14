@@ -48,7 +48,7 @@ public:
 
     int32_t GetHeight() const noexcept { return m_pHeader->GetHeight(); }
     const BlindingFactor& GetKernelOffset() const noexcept { return m_pHeader->GetKernelOffset(); }
-    const BlindingFactor& GetOwnerOffset() const noexcept { return m_pHeader->GetOwnerOffset(); }
+    const BlindingFactor& GetStealthOffset() const noexcept { return m_pHeader->GetStealthOffset(); }
 
     CAmount GetTotalFee() const noexcept { return m_body.GetTotalFee(); }
     std::vector<PegInCoin> GetPegIns() const noexcept { return m_body.GetPegIns(); }

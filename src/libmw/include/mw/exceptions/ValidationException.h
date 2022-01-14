@@ -11,7 +11,7 @@ enum class EConsensusError
     DUPLICATES,
     BLOCK_WEIGHT,
     BLOCK_SUMS,
-    OWNER_SUMS,
+    STEALTH_SUMS,
     INVALID_SIG,
     BULLETPROOF,
     PEGIN_MISMATCH,
@@ -49,8 +49,8 @@ private:
                 return "BLOCK_WEIGHT";
             case EConsensusError::BLOCK_SUMS:
                 return "BLOCK_SUMS";
-            case EConsensusError::OWNER_SUMS:
-                return "OWNER_SUMS";
+            case EConsensusError::STEALTH_SUMS:
+                return "STEALTH_SUMS";
             case EConsensusError::INVALID_SIG:
                 return "INVALID_SIG";
             case EConsensusError::BULLETPROOF:

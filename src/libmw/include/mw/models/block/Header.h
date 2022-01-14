@@ -33,7 +33,7 @@ public:
         mw::Hash kernelRoot,
 		mw::Hash leafsetRoot,
         BlindingFactor kernelOffset,
-        BlindingFactor ownerOffset,
+        BlindingFactor stealthOffset,
         const uint64_t outputMMRSize,
         const uint64_t kernelMMRSize
     )
@@ -42,7 +42,7 @@ public:
         m_kernelRoot(std::move(kernelRoot)),
 		m_leafsetRoot(std::move(leafsetRoot)),
         m_kernelOffset(std::move(kernelOffset)),
-        m_ownerOffset(std::move(ownerOffset)),
+        m_stealthOffset(std::move(stealthOffset)),
         m_outputMMRSize(outputMMRSize),
         m_kernelMMRSize(kernelMMRSize)
     {
@@ -63,7 +63,7 @@ public:
     const mw::Hash& GetKernelRoot() const noexcept { return m_kernelRoot; }
 	const mw::Hash& GetLeafsetRoot() const noexcept { return m_leafsetRoot; }
     const BlindingFactor& GetKernelOffset() const noexcept { return m_kernelOffset; }
-    const BlindingFactor& GetOwnerOffset() const noexcept { return m_ownerOffset; }
+    const BlindingFactor& GetStealthOffset() const noexcept { return m_stealthOffset; }
     uint64_t GetNumTXOs() const noexcept { return m_outputMMRSize; }
     uint64_t GetNumKernels() const noexcept { return m_kernelMMRSize; }
 
@@ -84,7 +84,7 @@ public:
         READWRITE(obj.m_kernelRoot);
         READWRITE(obj.m_leafsetRoot);
         READWRITE(obj.m_kernelOffset);
-        READWRITE(obj.m_ownerOffset);
+        READWRITE(obj.m_stealthOffset);
         READWRITE(VARINT(obj.m_outputMMRSize));
         READWRITE(VARINT(obj.m_kernelMMRSize));
         SER_READ(obj, obj.m_hash = Hashed(obj));
@@ -96,7 +96,7 @@ private:
     mw::Hash m_kernelRoot;
 	mw::Hash m_leafsetRoot;
     BlindingFactor m_kernelOffset;
-    BlindingFactor m_ownerOffset;
+    BlindingFactor m_stealthOffset;
     uint64_t m_outputMMRSize;
     uint64_t m_kernelMMRSize;
 
@@ -116,7 +116,7 @@ public:
           m_kernelRoot(pHeader->GetKernelRoot()),
           m_leafsetRoot(pHeader->GetLeafsetRoot()),
           m_kernelOffset(pHeader->GetKernelOffset()),
-          m_stealthOffset(pHeader->GetOwnerOffset()),
+          m_stealthOffset(pHeader->GetStealthOffset()),
           m_numOutputs(pHeader->GetNumTXOs()),
           m_numKernels(pHeader->GetNumKernels()) { }
 

@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(Block)
         kernel_mmr.Root(),
         mw::Hash::FromHex("002102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20"),
         BlindingFactor(pTransaction->GetKernelOffset()),
-        BlindingFactor(pTransaction->GetOwnerOffset()),
+        BlindingFactor(pTransaction->GetStealthOffset()),
         pTransaction->GetOutputs().size(),
         pTransaction->GetKernels().size()
     );
@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(Block)
     BOOST_REQUIRE(block.GetKernels() == pTransaction->GetKernels());
     BOOST_REQUIRE(block.GetHeight() == pHeader->GetHeight());
     BOOST_REQUIRE(block.GetKernelOffset() == pHeader->GetKernelOffset());
-    BOOST_REQUIRE(block.GetOwnerOffset() == pHeader->GetOwnerOffset());
+    BOOST_REQUIRE(block.GetStealthOffset() == pHeader->GetStealthOffset());
 
     BOOST_REQUIRE(block.GetPegIns() == pTransaction->GetPegIns());
     BOOST_REQUIRE(block.GetPegInAmount() == 30);

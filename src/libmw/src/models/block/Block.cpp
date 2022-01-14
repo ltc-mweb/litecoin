@@ -11,7 +11,7 @@ void mw::Block::Validate() const
 
     m_body.Validate();
 
-    StealthSumValidator::Validate(m_pHeader->GetOwnerOffset(), m_body);
+    StealthSumValidator::Validate(m_pHeader->GetStealthOffset(), m_body);
 
     MemMMR kernel_mmr;
     std::for_each(

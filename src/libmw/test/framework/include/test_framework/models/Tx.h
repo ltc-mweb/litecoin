@@ -24,7 +24,7 @@ public:
     const std::vector<TxOutput>& GetOutputs() const noexcept { return m_outputs; }
 
     const BlindingFactor& GetKernelOffset() const noexcept { return m_pTransaction->GetKernelOffset(); }
-    const BlindingFactor& GetOwnerOffset() const noexcept { return m_pTransaction->GetOwnerOffset(); }
+    const BlindingFactor& GetStealthOffset() const noexcept { return m_pTransaction->GetStealthOffset(); }
 
     std::vector<PegInCoin> GetPegIns() const noexcept { return m_pTransaction->GetPegIns(); }
     std::vector<PegOutCoin> GetPegOuts() const noexcept { return m_pTransaction->GetPegOuts(); }

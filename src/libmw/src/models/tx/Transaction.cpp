@@ -6,7 +6,7 @@ using namespace mw;
 
 Transaction::CPtr Transaction::Create(
     BlindingFactor kernel_offset,
-    BlindingFactor owner_offset,
+    BlindingFactor stealth_offset,
     std::vector<Input> inputs,
     std::vector<Output> outputs,
     std::vector<Kernel> kernels)
@@ -17,7 +17,7 @@ Transaction::CPtr Transaction::Create(
 
     return std::make_shared<mw::Transaction>(
         std::move(kernel_offset),
-        std::move(owner_offset),
+        std::move(stealth_offset),
         TxBody{
             std::move(inputs),
             std::move(outputs),
@@ -42,7 +42,7 @@ void Transaction::Validate() const
     m_body.Validate();
 
     KernelSumValidator::ValidateForTx(*this);
-    StealthSumValidator::Validate(m_ownerOffset, m_body);
+    StealthSumValidator::Validate(m_stealthOffset, m_body);
 }
 
 std::string Transaction::Print() const noexcept

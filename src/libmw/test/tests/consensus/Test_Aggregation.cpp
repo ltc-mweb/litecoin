@@ -50,11 +50,11 @@ BOOST_AUTO_TEST_CASE(Aggregate)
         .Total();
     BOOST_REQUIRE(pAggregated->GetKernelOffset() == kernel_offset);
 
-    BlindingFactor owner_offset = Blinds()
-        .Add(tx1->GetOwnerOffset())
-        .Add(tx2->GetOwnerOffset())
+    BlindingFactor stealth_offset = Blinds()
+        .Add(tx1->GetStealthOffset())
+        .Add(tx2->GetStealthOffset())
         .Total();
-    BOOST_REQUIRE(pAggregated->GetOwnerOffset() == owner_offset);
+    BOOST_REQUIRE(pAggregated->GetStealthOffset() == stealth_offset);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

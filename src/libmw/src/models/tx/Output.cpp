@@ -6,7 +6,7 @@
 #include <mw/crypto/Schnorr.h>
 
 Output Output::Create(
-    BlindingFactor& blind_out,
+    BlindingFactor* blind_out,
     const SecretKey& sender_privkey,
     const StealthAddress& receiver_addr,
     const uint64_t value)
@@ -35,12 +35,12 @@ Output Output::Create(
 
     // Calc blinding factor and mask nonce and amount.
     OutputMask mask = OutputMask::FromShared(t);
-    blind_out = mask.BlindSwitch(value);
+    BlindingFactor blind = mask.BlindSwitch(value);
     uint64_t mv = mask.MaskValue(value);
     BigInt<16> mn = mask.MaskNonce(n);
 
     // Commitment 'C' = r*G + v*H
-    Commitment output_commit = Commitment::Blinded(blind_out, value);
+    Commitment output_commit = Commitment::Blinded(blind, value);
 
     // Calculate the ephemeral send pubkey 'Ks' = ks*G
     PublicKey Ks = Keys::From(sender_privkey).PubKey();
@@ -50,7 +50,7 @@ Output Output::Create(
     // Probably best to store sender_key so sender can identify all outputs they've sent?
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(
         value,
-        SecretKey(blind_out.vec()),
+        SecretKey(blind.vec()),
         SecretKey::Random(),
         SecretKey::Random(),
         ProofMessage{},
@@ -64,6 +64,10 @@ Output Output::Create(
         .Append(pRangeProof->GetHash())
         .hash();
     Signature signature = Schnorr::Sign(sender_privkey.data(), sig_message);
+
+    if (blind_out != nullptr) {
+        *blind_out = blind;
+    }
 
     return Output{
         std::move(output_commit),

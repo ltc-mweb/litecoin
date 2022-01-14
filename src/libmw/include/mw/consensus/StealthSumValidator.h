@@ -13,7 +13,7 @@ public:
     // 
     // sum(K_s) + sum(K_i) - sum(K_o) = sum(E') + x'*G
     //
-    static void Validate(const BlindingFactor& owner_offset, const TxBody& body)
+    static void Validate(const BlindingFactor& stealth_offset, const TxBody& body)
     {
         std::vector<PublicKey> lhs_keys, rhs_keys;
 
@@ -50,8 +50,8 @@ public:
         );
 
 
-        if (!owner_offset.IsZero()) {
-            rhs_keys.push_back(PublicKeys::Calculate(owner_offset.GetBigInt()));
+        if (!stealth_offset.IsZero()) {
+            rhs_keys.push_back(PublicKeys::Calculate(stealth_offset.GetBigInt()));
         }
 
         PublicKey rhs_total;
@@ -61,7 +61,7 @@ public:
 
         // sum(K_s) + sum(K_i) = sum(E') + x'*G + sum(K_o)
         if (lhs_total != rhs_total) {
-            ThrowValidation(EConsensusError::OWNER_SUMS);
+            ThrowValidation(EConsensusError::STEALTH_SUMS);
         }
     }
 };

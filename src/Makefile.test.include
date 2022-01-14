@@ -318,6 +318,7 @@ BITCOIN_TEST_SUITE += \
 BITCOIN_TESTS += \
   libmw/test/tests/consensus/Test_Aggregation.cpp \
   libmw/test/tests/consensus/Test_KernelSumValidator.cpp \
+  libmw/test/tests/consensus/Test_StealthSumValidator.cpp \
   libmw/test/tests/consensus/Test_Weight.cpp \
   libmw/test/tests/crypto/Test_AddCommitments.cpp \
   libmw/test/tests/crypto/Test_AggSig.cpp \

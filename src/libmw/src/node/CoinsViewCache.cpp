@@ -144,7 +144,7 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
         });
     }
 
-    BlindingFactor owner_offset = pTransaction->GetOwnerOffset();
+    BlindingFactor stealth_offset = pTransaction->GetStealthOffset();
 
     auto pHeader = std::make_shared<mw::Header>(
         height,
@@ -152,7 +152,7 @@ mw::Block::Ptr CoinsViewCache::BuildNextBlock(const uint64_t height, const std::
         std::move(kernel_root),
         std::move(leafset_root),
         std::move(kernel_offset),
-        std::move(owner_offset),
+        std::move(stealth_offset),
         output_mmr_size,
         kernel_mmr_size
     );

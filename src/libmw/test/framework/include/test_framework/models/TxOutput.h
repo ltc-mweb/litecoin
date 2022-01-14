@@ -19,7 +19,7 @@ public:
         const uint64_t amount)
     {
         BlindingFactor blinding_factor;
-        Output output = Output::Create(blinding_factor, sender_privkey, receiver_addr, amount);
+        Output output = Output::Create(&blinding_factor, sender_privkey, receiver_addr, amount);
 
         return TxOutput{ std::move(blinding_factor), amount, std::move(output) };
     }

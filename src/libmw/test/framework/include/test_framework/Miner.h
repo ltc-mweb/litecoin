@@ -40,7 +40,7 @@ public:
             kernel_offset = Pedersen::AddBlindingFactors({ kernel_offset, m_blocks.back().GetKernelOffset() });
         }
 
-        auto owner_offset = pTransaction->GetOwnerOffset();
+        auto stealth_offset = pTransaction->GetStealthOffset();
 
         auto kernelMMR = GetKernelMMR(pTransaction->GetKernels());
         auto outputMMR = GetOutputMMR(pTransaction->GetOutputs());
@@ -52,7 +52,7 @@ public:
             kernelMMR->Root(),
             pLeafSet->Root(),
             std::move(kernel_offset),
-            std::move(owner_offset),
+            std::move(stealth_offset),
             outputMMR->GetNumLeaves(),
             kernelMMR->GetNumLeaves()
         );

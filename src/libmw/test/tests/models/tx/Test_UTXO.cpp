@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(TxUTXO)
     CAmount amount = 12345;
     BlindingFactor blind;
     Output output = Output::Create(
-        blind,
+        &blind,
         SecretKey::Random(),
         StealthAddress::Random(),
         amount

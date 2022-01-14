@@ -67,9 +67,8 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
         boost::none
     );
 
-    // Total owner offset is split between raw owner_offset and the owner_sig's key.
-    // sum(output.sender_key) - sum(input.key) = owner_offset + sum(owner_sig.key)
-    BlindingFactor owner_offset = Blinds()
+    // Calculate stealth_offset
+    BlindingFactor stealth_offset = Blinds()
         .Add(outputs.total_key)
         .Add(inputs.total_key)
         .Sub(stealth_blind)
@@ -78,7 +77,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     // Build the transaction
     return mw::Transaction::Create(
         std::move(kernel_offset),
-        std::move(owner_offset),
+        std::move(stealth_offset),
         std::move(inputs.inputs),
         std::move(outputs.outputs),
         std::vector<Kernel>{ std::move(kernel) }
@@ -130,7 +129,7 @@ TxBuilder::Outputs TxBuilder::CreateOutputs(const std::vector<mw::Recipient>& re
             BlindingFactor blind;
             SecretKey ephemeral_key = SecretKey::Random();
             Output output = Output::Create(
-                blind,
+                &blind,
                 ephemeral_key,
                 recipient.address,
                 recipient.amount

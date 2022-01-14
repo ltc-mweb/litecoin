@@ -6,6 +6,11 @@ class Blinds
 {
 public:
     Blinds() = default;
+    Blinds(BlindingFactor blind)
+        : m_positive{std::move(blind)}, m_negative{} { }
+
+    static Blinds From(BlindingFactor blind) { return Blinds(std::move(blind)); }
+    static Blinds From(const SecretKey& key) { return Blinds(BlindingFactor(key)); }
 
     Blinds& Add(BlindingFactor blind)
     {
@@ -21,7 +26,7 @@ public:
 
     Blinds& Add(const SecretKey& key)
     {
-        m_positive.push_back(BlindingFactor(key.GetBigInt()));
+        m_positive.push_back(BlindingFactor(key));
         return *this;
     }
 

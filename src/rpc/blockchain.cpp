@@ -142,7 +142,7 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
         mweb_header.pushKV("hash", blockindex->mweb_header->GetHash().ToHex());
         mweb_header.pushKV("height", blockindex->mweb_header->GetHeight());
         mweb_header.pushKV("kernel_offset", blockindex->mweb_header->GetKernelOffset().ToHex());
-        mweb_header.pushKV("owner_offset", blockindex->mweb_header->GetOwnerOffset().ToHex());
+        mweb_header.pushKV("stealth_offset", blockindex->mweb_header->GetStealthOffset().ToHex());
         mweb_header.pushKV("num_kernels", blockindex->mweb_header->GetNumKernels());
         mweb_header.pushKV("num_txos", blockindex->mweb_header->GetNumTXOs());
         mweb_header.pushKV("kernel_root", blockindex->mweb_header->GetKernelRoot().ToHex());
@@ -208,7 +208,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         mweb_block.pushKV("hash", block.mweb_block.GetMWEBHeader()->GetHash().ToHex());
         mweb_block.pushKV("height", block.mweb_block.GetMWEBHeader()->GetHeight());
         mweb_block.pushKV("kernel_offset", block.mweb_block.GetMWEBHeader()->GetKernelOffset().ToHex());
-        mweb_block.pushKV("owner_offset", block.mweb_block.GetMWEBHeader()->GetOwnerOffset().ToHex());
+        mweb_block.pushKV("stealth_offset", block.mweb_block.GetMWEBHeader()->GetStealthOffset().ToHex());
         mweb_block.pushKV("num_kernels", block.mweb_block.GetMWEBHeader()->GetNumKernels());
         mweb_block.pushKV("num_txos", block.mweb_block.GetMWEBHeader()->GetNumTXOs());
         mweb_block.pushKV("kernel_root", block.mweb_block.GetMWEBHeader()->GetKernelRoot().ToHex());

@@ -24,7 +24,7 @@ public:
         std::vector<Output> outputs;
         std::vector<Kernel> kernels;
         std::vector<BlindingFactor> kernel_offsets;
-        std::vector<BlindingFactor> owner_offsets;
+        std::vector<BlindingFactor> stealth_offsets;
 
         // collect all the inputs, outputs, kernels, and owner sigs from the txs
         for (const mw::Transaction::CPtr& pTransaction : transactions) {
@@ -47,17 +47,17 @@ public:
             );
 
             kernel_offsets.push_back(pTransaction->GetKernelOffset());
-            owner_offsets.push_back(pTransaction->GetOwnerOffset());
+            stealth_offsets.push_back(pTransaction->GetStealthOffset());
         }
 
         // Sum the offsets up to give us an aggregate offsets for the transaction.
         BlindingFactor kernel_offset = Pedersen::AddBlindingFactors(kernel_offsets);
-        BlindingFactor owner_offset = Pedersen::AddBlindingFactors(owner_offsets);
+        BlindingFactor stealth_offset = Pedersen::AddBlindingFactors(stealth_offsets);
 
         // Build a new aggregate tx
         return mw::Transaction::Create(
             std::move(kernel_offset),
-            std::move(owner_offset),
+            std::move(stealth_offset),
             std::move(inputs),
             std::move(outputs),
             std::move(kernels)

@@ -32,8 +32,8 @@ public:
     //
     // Constructors
     //
-    Transaction(BlindingFactor kernel_offset, BlindingFactor owner_offset, TxBody body)
-        : m_kernelOffset(std::move(kernel_offset)), m_ownerOffset(std::move(owner_offset)), m_body(std::move(body))
+    Transaction(BlindingFactor kernel_offset, BlindingFactor stealth_offset, TxBody body)
+        : m_kernelOffset(std::move(kernel_offset)), m_stealthOffset(std::move(stealth_offset)), m_body(std::move(body))
     {
         m_hash = Hashed(*this);
     }
@@ -70,7 +70,7 @@ public:
     // Getters
     //
     const BlindingFactor& GetKernelOffset() const noexcept { return m_kernelOffset; }
-    const BlindingFactor& GetOwnerOffset() const noexcept { return m_ownerOffset; }
+    const BlindingFactor& GetStealthOffset() const noexcept { return m_stealthOffset; }
     const TxBody& GetBody() const noexcept { return m_body; }
     const std::vector<Input>& GetInputs() const noexcept { return m_body.GetInputs(); }
     const std::vector<Output>& GetOutputs() const noexcept { return m_body.GetOutputs(); }
@@ -93,7 +93,7 @@ public:
     IMPL_SERIALIZABLE(Transaction, obj)
     {
         READWRITE(obj.m_kernelOffset);
-        READWRITE(obj.m_ownerOffset);
+        READWRITE(obj.m_stealthOffset);
         READWRITE(obj.m_body);
         SER_READ(obj, obj.m_hash = Hashed(obj));
 
@@ -119,7 +119,7 @@ private:
     // The kernel "offset" k2 excess is k1G after splitting the key k = k1 + k2.
     BlindingFactor m_kernelOffset;
 
-    BlindingFactor m_ownerOffset;
+    BlindingFactor m_stealthOffset;
 
     // The transaction body.
     TxBody m_body;

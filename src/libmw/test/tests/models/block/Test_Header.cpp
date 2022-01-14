@@ -18,25 +18,25 @@ BOOST_AUTO_TEST_CASE(Header)
     mw::Hash kernelRoot = mw::Hash::FromHex("002102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20");
     mw::Hash leafsetRoot = mw::Hash::FromHex("003102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20");
     BlindingFactor kernelOffset = BigInt<32>::FromHex("004102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20");
-    BlindingFactor ownerOffset = BigInt<32>::FromHex("005102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20");
+    BlindingFactor stealth_offset = BigInt<32>::FromHex("005102030405060708090A0B0C0D0E0F1112131415161718191A1B1C1D1E1F20");
 
     mw::Header header(
         height,
-        mw::Hash(outputRoot),
-        mw::Hash(kernelRoot),
-        mw::Hash(leafsetRoot),
-        BlindingFactor(kernelOffset),
-        BlindingFactor(ownerOffset),
+        outputRoot,
+        kernelRoot,
+        leafsetRoot,
+        kernelOffset,
+        stealth_offset,
         outputMMRSize,
         kernelMMRSize
     );
     mw::Header header2(
         height + 1,
-        mw::Hash(outputRoot),
-        mw::Hash(kernelRoot),
-        mw::Hash(leafsetRoot),
-        BlindingFactor(kernelOffset),
-        BlindingFactor(ownerOffset),
+        outputRoot,
+        kernelRoot,
+        leafsetRoot,
+        kernelOffset,
+        stealth_offset,
         outputMMRSize,
         kernelMMRSize
     );
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(Header)
     BOOST_REQUIRE(header.GetKernelRoot() == kernelRoot);
     BOOST_REQUIRE(header.GetLeafsetRoot() == leafsetRoot);
     BOOST_REQUIRE(header.GetKernelOffset() == kernelOffset);
-    BOOST_REQUIRE(header.GetOwnerOffset() == ownerOffset);
+    BOOST_REQUIRE(header.GetStealthOffset() == stealth_offset);
     BOOST_REQUIRE(header.GetNumTXOs() == outputMMRSize);
     BOOST_REQUIRE(header.GetNumKernels() == kernelMMRSize);
     BOOST_REQUIRE_EQUAL(header.Format(), "688fed89903b3f312daa3f04fe94994c67f3d0688482cdd5ada2851c0b70d7de");

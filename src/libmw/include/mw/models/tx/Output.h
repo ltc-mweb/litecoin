@@ -114,7 +114,7 @@ public:
     // Factory
     //
     static Output Create(
-        BlindingFactor& blind_out,
+        BlindingFactor* blind_out,
         const SecretKey& sender_privkey,
         const StealthAddress& receiver_addr,
         const uint64_t value

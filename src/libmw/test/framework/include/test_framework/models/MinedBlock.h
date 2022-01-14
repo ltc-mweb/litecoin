@@ -20,7 +20,7 @@ public:
     const mw::Block::Ptr& GetBlock() const noexcept { return m_pBlock; }
 
     const BlindingFactor& GetKernelOffset() const noexcept { return m_pBlock->GetKernelOffset(); }
-    const BlindingFactor& GetOwnerOffset() const noexcept { return m_pBlock->GetOwnerOffset(); }
+    const BlindingFactor& GetStealthOffset() const noexcept { return m_pBlock->GetStealthOffset(); }
 
 private:
     mw::Block::Ptr m_pBlock;
