@@ -563,6 +563,12 @@ void CTxMemPool::removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMem
                     txToRemove.insert(it);
                     break;
                 }
+
+                // MWEB: Remove pegout if immature
+                if (coin.IsPegout() && ((signed long)nMemPoolHeight) - coin.nHeight < PEGOUT_MATURITY) {
+                    txToRemove.insert(it);
+                    break;
+                }
             }
         }
         if (!validLP) {
@@ -979,7 +985,7 @@ bool CCoinsViewMemPool::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     CTransactionRef ptx = mempool.get(outpoint.hash);
     if (ptx) {
         if (outpoint.n < ptx->vout.size()) {
-            coin = Coin(ptx->vout[outpoint.n], MEMPOOL_HEIGHT, false);
+            coin = Coin(ptx->vout[outpoint.n], MEMPOOL_HEIGHT, false, false); // MW: TODO - Is it safe to always pass in false for fPegout?
             return true;
         } else {
             return false;

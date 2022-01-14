@@ -2075,7 +2075,7 @@ CAmount CWalletTx::GetDebit(const isminefilter& filter) const
 CAmount CWalletTx::GetCredit(const isminefilter& filter) const
 {
     // Must wait until coinbase is safely deep enough in the chain before valuing it
-    if (IsImmatureCoinBase())
+    if (IsImmature())
         return 0;
 
     CAmount credit = 0;
@@ -2091,7 +2091,7 @@ CAmount CWalletTx::GetCredit(const isminefilter& filter) const
 
 CAmount CWalletTx::GetImmatureCredit(bool fUseCache) const
 {
-    if (IsImmatureCoinBase() && IsInMainChain()) {
+    if (IsImmature() && IsInMainChain()) {
         return GetCachableAmount(IMMATURE_CREDIT, ISMINE_SPENDABLE, !fUseCache);
     }
 
@@ -2107,7 +2107,7 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache, const isminefilter& filter
     bool allow_cache = (filter & ISMINE_ALL) && (filter & ISMINE_ALL) != ISMINE_ALL;
 
     // Must wait until coinbase is safely deep enough in the chain before valuing it
-    if (IsImmatureCoinBase())
+    if (IsImmature())
         return 0;
 
     if (fUseCache && allow_cache && m_amounts[AVAILABLE_CREDIT].m_cached[filter]) {
@@ -2135,7 +2135,7 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache, const isminefilter& filter
 
 CAmount CWalletTx::GetImmatureWatchOnlyCredit(const bool fUseCache) const
 {
-    if (IsImmatureCoinBase() && IsInMainChain()) {
+    if (IsImmature() && IsInMainChain()) {
         return GetCachableAmount(IMMATURE_CREDIT, ISMINE_WATCH_ONLY, !fUseCache);
     }
 
@@ -2350,7 +2350,7 @@ void CWallet::AvailableCoins(std::vector<COutputCoin>& vCoins, bool fOnlySafe, c
             continue;
         }
 
-        if (wtx.IsImmatureCoinBase())
+        if (wtx.IsImmature())
             continue;
 
         int nDepth = wtx.GetDepthInMainChain();
@@ -2708,7 +2708,7 @@ bool CWallet::SignTransaction(CMutableTransaction& tx) const
             return false;
         }
         const CWalletTx& wtx = mi->second;
-        coins[input.prevout] = Coin(wtx.tx->vout[input.prevout.n], wtx.m_confirm.block_height, wtx.IsCoinBase());
+        coins[input.prevout] = Coin(wtx.tx->vout[input.prevout.n], wtx.m_confirm.block_height, wtx.IsCoinBase(), wtx.IsHogEx());
     }
     std::map<int, std::string> input_errors;
     return SignTransaction(tx, coins, SIGHASH_ALL, input_errors);
@@ -3140,7 +3140,7 @@ std::map<CTxDestination, CAmount> CWallet::GetAddressBalances() const
             if (!IsTrusted(wtx, trusted_parents))
                 continue;
 
-            if (wtx.IsImmatureCoinBase())
+            if (wtx.IsImmature())
                 continue;
 
             int nDepth = wtx.GetDepthInMainChain();
@@ -3895,16 +3895,20 @@ int CWalletTx::GetDepthInMainChain() const
 
 int CWalletTx::GetBlocksToMaturity() const
 {
-    if (!IsCoinBase())
+    if (!IsCoinBase() && !IsHogEx())
         return 0;
     int chain_depth = GetDepthInMainChain();
     assert(chain_depth >= 0); // coinbase tx should not be conflicted
-    return std::max(0, (COINBASE_MATURITY+1) - chain_depth);
+    if (IsCoinBase()) {
+        return std::max(0, (COINBASE_MATURITY + 1) - chain_depth);
+    } else {
+        return std::max(0, (PEGOUT_MATURITY + 1) - chain_depth);
+    }
 }
 
-bool CWalletTx::IsImmatureCoinBase() const
+bool CWalletTx::IsImmature() const
 {
-    // note GetBlocksToMaturity is 0 for non-coinbase tx
+    // note GetBlocksToMaturity is 0 for non-coinbase tx and non-hogex tx
     return GetBlocksToMaturity() > 0;
 }
 
