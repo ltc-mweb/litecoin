@@ -18,8 +18,8 @@ CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 bool CCoinsView::HaveCoin(const OutputIndex& index) const
 {
     if (index.type() == typeid(mw::Hash)) {
-        if (!GetMWView()) return false;
-        return GetMWView()->HasCoin(boost::get<mw::Hash>(index));
+        if (!GetMWEBView()) return false;
+        return GetMWEBView()->HasCoin(boost::get<mw::Hash>(index));
     } else {
         Coin coin;
         return GetCoin(boost::get<COutPoint>(index), coin);
@@ -35,11 +35,11 @@ void CCoinsViewBacked::SetBackend(CCoinsView& viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) { return base->BatchWrite(mapCoins, hashBlock, derivedView); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
-mw::ICoinsView::Ptr CCoinsViewBacked::GetMWView() const { return base->GetMWView(); }
+mw::ICoinsView::Ptr CCoinsViewBacked::GetMWEBView() const { return base->GetMWEBView(); }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
-CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0), mweb_view(baseIn->GetMWView() ? std::make_shared<mw::CoinsViewCache>(baseIn->GetMWView()) : nullptr) {}
+CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0), mweb_view(baseIn->GetMWEBView() ? std::make_shared<mw::CoinsViewCache>(baseIn->GetMWEBView()) : nullptr) {}
 
 size_t CCoinsViewCache::DynamicMemoryUsage() const {
     return memusage::DynamicUsage(cacheCoins) + cachedCoinsUsage;
@@ -145,7 +145,7 @@ const Coin& CCoinsViewCache::AccessCoin(const COutPoint &outpoint) const {
 
 bool CCoinsViewCache::HaveCoin(const OutputIndex& index) const {
     if (index.type() == typeid(mw::Hash)) {
-        return GetMWView()->HasCoin(boost::get<mw::Hash>(index));
+        return GetMWEBView()->HasCoin(boost::get<mw::Hash>(index));
     } else {
         CCoinsMap::const_iterator it = FetchCoin(boost::get<COutPoint>(index));
         return (it != cacheCoins.end() && !it->second.coin.IsSpent());
@@ -154,7 +154,7 @@ bool CCoinsViewCache::HaveCoin(const OutputIndex& index) const {
 
 bool CCoinsViewCache::HaveCoinInCache(const OutputIndex& index) const {
     if (index.type() == typeid(mw::Hash)) {
-        return GetMWView()->HasCoinInCache(boost::get<mw::Hash>(index));
+        return GetMWEBView()->HasCoinInCache(boost::get<mw::Hash>(index));
     } else {
         CCoinsMap::const_iterator it = cacheCoins.find(boost::get<COutPoint>(index));
         return (it != cacheCoins.end() && !it->second.coin.IsSpent());
@@ -170,7 +170,7 @@ uint256 CCoinsViewCache::GetBestBlock() const {
 
 void CCoinsViewCache::SetBackend(CCoinsView& viewIn) {
     base = &viewIn;
-    mweb_view = viewIn.GetMWView() ? std::make_shared<mw::CoinsViewCache>(viewIn.GetMWView()) : nullptr;
+    mweb_view = viewIn.GetMWEBView() ? std::make_shared<mw::CoinsViewCache>(viewIn.GetMWEBView()) : nullptr;
 }
 
 void CCoinsViewCache::SetBestBlock(const uint256 &hashBlockIn) {

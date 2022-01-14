@@ -64,7 +64,7 @@ public:
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }
 
-    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& mwView) override
+    bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& mweb_view) override
     {
         for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); ) {
             if (it->second.flags & CCoinsCacheEntry::DIRTY) {
@@ -82,7 +82,7 @@ public:
         return true;
     }
     
-    mw::ICoinsView::Ptr GetMWView() const override
+    mw::ICoinsView::Ptr GetMWEBView() const override
     {
         return mweb_view_;
     }
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
         FilePath{GetDataDir()},
         {nullptr},
         nullptr);
-    db_base.SetMWView(mweb_view);
+    db_base.SetMWEBView(mweb_view);
     SimulationTest(&db_base, true);
 }
 
@@ -652,7 +652,7 @@ public:
             {nullptr},
             nullptr
         );
-        root->SetMWView(mweb_view);
+        root->SetMWEBView(mweb_view);
         return root;
     }
 
@@ -834,7 +834,7 @@ void CheckWriteCoins(CAmount parent_value, CAmount child_value, CAmount expected
     CAmount result_value;
     char result_flags;
     try {
-        WriteCoinsViewEntry(test.cache, test.cache.GetMWView() ? std::make_shared<mw::CoinsViewCache>(test.cache.GetMWView()) : nullptr, child_value, child_flags);
+        WriteCoinsViewEntry(test.cache, test.cache.GetMWEBView() ? std::make_shared<mw::CoinsViewCache>(test.cache.GetMWEBView()) : nullptr, child_value, child_flags);
         test.cache.SelfTest();
         GetCoinsMapEntry(test.cache.map(), result_value, result_flags);
     } catch (std::logic_error&) {

@@ -64,8 +64,8 @@ public:
     bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     CDBWrapper* GetDB() noexcept { return m_db.get(); }
-    void SetMWView(const mw::ICoinsView::Ptr& view) { mweb_view = view; }
-    mw::ICoinsView::Ptr GetMWView() const final { return mweb_view; }
+    void SetMWEBView(const mw::ICoinsView::Ptr& view) { mweb_view = view; }
+    mw::ICoinsView::Ptr GetMWEBView() const final { return mweb_view; }
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();

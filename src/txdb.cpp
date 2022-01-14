@@ -61,7 +61,7 @@ bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
 
 bool CCoinsViewDB::HaveCoin(const OutputIndex& index) const {
     if (index.type() == typeid(mw::Hash)) {
-        return GetMWView()->HasCoin(boost::get<mw::Hash>(index));
+        return GetMWEBView()->HasCoin(boost::get<mw::Hash>(index));
     } else {
         return m_db->Exists(CoinEntry(boost::get<COutPoint>(&index)));
     }

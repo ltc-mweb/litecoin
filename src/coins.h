@@ -212,7 +212,7 @@ public:
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }
 
-    virtual mw::ICoinsView::Ptr GetMWView() const { return nullptr; }
+    virtual mw::ICoinsView::Ptr GetMWEBView() const { return nullptr; }
 };
 
 
@@ -232,7 +232,7 @@ public:
     bool BatchWrite(CCoinsMap& mapCoins, const uint256& hashBlock, const mw::CoinsViewCache::Ptr& derivedView) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    mw::ICoinsView::Ptr GetMWView() const override;
+    mw::ICoinsView::Ptr GetMWEBView() const override;
 };
 
 
@@ -271,7 +271,7 @@ public:
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
 
-    mw::ICoinsView::Ptr GetMWView() const final { return mweb_view; }
+    mw::ICoinsView::Ptr GetMWEBView() const final { return mweb_view; }
     mw::CoinsViewCache::Ptr GetMWEBCacheView() const { return mweb_view; }
 
     /**

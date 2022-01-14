@@ -1310,7 +1310,7 @@ void CChainState::InitCoinsDB(
         block.mweb_block.GetMWEBHeader(),
         std::make_shared<MWEB::DBWrapper>(CoinsDB().GetDB())
     );
-    CoinsDB().SetMWView(mweb_dbview);
+    CoinsDB().SetMWEBView(mweb_dbview);
 }
 
 void CChainState::InitCoinsCache(size_t cache_size_bytes)
