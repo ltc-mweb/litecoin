@@ -1,5 +1,6 @@
 #include <mw/node/BlockValidator.h>
 #include <mw/exceptions/ValidationException.h>
+#include <set>
 #include <unordered_map>
 
 bool BlockValidator::ValidateBlock(
@@ -67,23 +68,19 @@ void BlockValidator::ValidatePegOutCoins(
     const mw::Block::CPtr& pBlock,
     const std::vector<PegOutCoin>& pegOutCoins)
 {
-    std::map<CScript, CAmount> pegOutAmounts;
-    std::for_each(
-        pegOutCoins.cbegin(), pegOutCoins.cend(),
-        [&pegOutAmounts](const PegOutCoin& coin) {
-            pegOutAmounts.insert({ coin.GetScriptPubKey(), coin.GetAmount() });
-        }
-    );
-
-    auto pegout_coins = pBlock->GetPegOuts();
-    if (pegout_coins.size() != pegOutAmounts.size()) {
+    std::vector<PegOutCoin> mweb_pegouts = pBlock->GetPegOuts();
+    if (mweb_pegouts.size() != pegOutCoins.size()) {
         ThrowValidation(EConsensusError::PEGOUT_MISMATCH);
     }
 
-    for (const auto& pegout : pegout_coins) {
-        auto pIter = pegOutAmounts.find(pegout.GetScriptPubKey());
-        if (pIter == pegOutAmounts.end() || pegout.GetAmount() != pIter->second) {
+    // We use a multiset since there can be multiple pegouts with the same scriptPubKey and amount.
+    std::multiset<PegOutCoin> hogex_pegouts(pegOutCoins.begin(), pegOutCoins.end());
+    for (const auto& pegout : mweb_pegouts) {
+        auto iter = hogex_pegouts.find(pegout);
+        if (iter == hogex_pegouts.end()) {
             ThrowValidation(EConsensusError::PEGOUT_MISMATCH);
         }
+        
+        hogex_pegouts.erase(iter);
     }
 }

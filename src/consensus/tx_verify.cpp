@@ -209,9 +209,10 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
             }
 
             // MW: TODO - Test this
-            if (utxos.front()->GetOutput().GetReceiverPubKey() != input.GetOutputPubKey()) {
+            const Output& utxo = utxos.front()->GetOutput();
+            if (utxo.GetReceiverPubKey() != input.GetOutputPubKey() || utxo.GetCommitment() != input.GetCommitment()) {
                 return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-input-mismatch",
-                                     strprintf("%s: MWEB input pubkey mismatch", __func__));
+                                     strprintf("%s: MWEB input doesn't match UTXO", __func__));
             }
         }
 

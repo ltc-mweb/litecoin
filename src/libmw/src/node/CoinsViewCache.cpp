@@ -48,10 +48,6 @@ mw::BlockUndo::CPtr CoinsViewCache::ApplyBlock(const mw::Block::CPtr& pBlock)
         pBlock->GetInputs().cbegin(), pBlock->GetInputs().cend(),
         [this, &coinsSpent](const Input& input) {
             UTXO spentUTXO = SpendUTXO(input.GetOutputID());
-            if (spentUTXO.GetReceiverPubKey() != input.GetOutputPubKey()) {
-                ThrowValidation(EConsensusError::UTXO_MISMATCH);
-            }
-
             coinsSpent.push_back(std::move(spentUTXO));
         }
     );

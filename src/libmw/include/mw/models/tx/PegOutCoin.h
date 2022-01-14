@@ -16,6 +16,20 @@ public:
     PegOutCoin(const CAmount amount, CScript scriptPubKey)
         : m_amount(amount), m_scriptPubKey(std::move(scriptPubKey)) { }
 
+    bool operator<(const PegOutCoin& rhs) const noexcept
+    {
+        if (m_amount != rhs.m_amount) {
+            return m_amount < rhs.m_amount;
+        }
+
+        return m_scriptPubKey < rhs.m_scriptPubKey;
+    }
+
+    bool operator!=(const PegOutCoin& rhs) const noexcept
+    {
+        return m_amount != rhs.m_amount || m_scriptPubKey != rhs.m_scriptPubKey;
+    }
+
     bool operator==(const PegOutCoin& rhs) const noexcept
     {
         return m_amount == rhs.m_amount && m_scriptPubKey == rhs.m_scriptPubKey;
@@ -35,7 +49,7 @@ public:
 
     std::string Format() const noexcept final
     {
-        return StringUtil::Format("PegOutCoin(pubkey:{}, amount:{})", HexStr(m_scriptPubKey), m_amount);
+        return StringUtil::Format("PegOutCoin(scriptPubKey:{}, amount:{})", HexStr(m_scriptPubKey), m_amount);
     }
 
 private:
