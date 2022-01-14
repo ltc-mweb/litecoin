@@ -319,7 +319,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
                 throw std::ios_base::failure("Missing HogEx output");
             }
 
-            /* If the mw flag is set, but there are no mw txs, assume HogEx txn. */
+            /* If the MWEB flag is set, but there are no MWEB txs, assume HogEx txn. */
             tx.m_hogEx = true;
         }
     }

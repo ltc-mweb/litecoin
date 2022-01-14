@@ -660,7 +660,7 @@ litecoin_bin_ldadd = \
   $(LIBSECP256K1) \
   $(LIBMW)
 
-litecoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(SQLITE_LIBS) $(MW_LIBS)
+litecoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(SQLITE_LIBS) $(MWEB_LIBS)
 
 litecoind_SOURCES = $(litecoin_daemon_sources)
 litecoind_CPPFLAGS = $(litecoin_bin_cppflags)
@@ -690,7 +690,7 @@ litecoin_cli_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
-litecoin_cli_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS) $(MW_LIBS)
+litecoin_cli_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS) $(MWEB_LIBS)
 #
 
 # bitcoin-tx binary #
@@ -712,7 +712,7 @@ litecoin_tx_LDADD = \
   $(LIBSECP256K1) \
   $(LIBMW)
 
-litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MW_LIBS)
+litecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(MWEB_LIBS)
 
 # bitcoin-wallet binary #
 litecoin_wallet_SOURCES = bitcoin-wallet.cpp
@@ -739,7 +739,7 @@ if GLIBC_BACK_COMPAT
 endif
 
 libbitcoinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libbitcoinconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS) $(MW_LIBS)
+libbitcoinconsensus_la_LIBADD = $(LIBSECP256K1) $(CRYPTO_LIBS) $(MWEB_LIBS)
 libbitcoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1-zkp/include -DBUILD_BITCOIN_INTERNAL $(SSL_CFLAGS) $(LIBMW_CPPFLAGS)
 libbitcoinconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 

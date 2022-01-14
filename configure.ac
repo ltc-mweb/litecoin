@@ -1415,7 +1415,7 @@ if test "x$use_zmq" = xyes; then
 fi
 
 
-AC_CHECK_LIB([fmt],[main],MW_LIBS=-lfmt,AC_MSG_ERROR(libfmt missing))
+AC_CHECK_LIB([fmt],[main],MWEB_LIBS=-lfmt,AC_MSG_ERROR(libfmt missing))
 
 dnl univalue check
 
@@ -1723,7 +1723,7 @@ AC_SUBST(EVENT_LIBS)
 AC_SUBST(EVENT_PTHREADS_LIBS)
 AC_SUBST(ZMQ_LIBS)
 AC_SUBST(QR_LIBS)
-AC_SUBST(MW_LIBS)
+AC_SUBST(MWEB_LIBS)
 AC_SUBST(HAVE_GMTIME_R)
 AC_SUBST(HAVE_FDATASYNC)
 AC_SUBST(HAVE_FULLFSYNC)

@@ -153,10 +153,10 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     //
     // Add New HogAddr
     //
-    mw::Block::Ptr mw_block = mweb_builder->BuildBlock();
+    mw::Block::Ptr mweb_block = mweb_builder->BuildBlock();
 
     CTxOut hogAddr;
-    hogAddr.scriptPubKey = CScript() << OP_9 << mw_block->GetHash().vec();
+    hogAddr.scriptPubKey = CScript() << OP_9 << mweb_block->GetHash().vec();
     hogAddr.nValue = previous_amount + mweb_amount_change;
     assert(MoneyRange(hogAddr.nValue));
     hogExTransaction.vout.push_back(std::move(hogAddr));
@@ -172,7 +172,7 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     // Update block & template
     //
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
-    pblock->mweb_block = Block(mw_block);
+    pblock->mweb_block = Block(mweb_block);
     pblocktemplate->vTxFees.push_back(0);
     
     pblocktemplate->vTxSigOpsCost.push_back(0);

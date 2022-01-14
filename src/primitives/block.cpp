@@ -39,6 +39,7 @@ std::string CBlock::ToString() const
     return s.str();
 }
 
+// Returns the hogex (integrating) transaction, if it exists.
 CTransactionRef CBlock::GetHogEx() const noexcept
 {
     if (vtx.size() >= 2 && vtx.back()->IsHogEx()) {
@@ -49,6 +50,8 @@ CTransactionRef CBlock::GetHogEx() const noexcept
     return nullptr;
 }
 
+// Parses the scriptPubKey of the hogex transaction to retrieve MWEB header hash.
+// If no hogex is found, or the first scriptPubKey is not a valid MWEB header witness program, returns empty hash.
 uint256 CBlock::GetMWEBHash() const noexcept
 {
     auto pHogEx = GetHogEx();

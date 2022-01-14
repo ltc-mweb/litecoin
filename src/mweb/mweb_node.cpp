@@ -18,11 +18,14 @@ bool Node::CheckBlock(const CBlock& block, BlockValidationState& state)
         return true;
     }
 
+    // Retrieve the MWEB header hash from the HogEx transaction.
+    // A non-zero MWEB header hash means the HogEx was found, and its scriptPubKey was a valid hash.
     uint256 mweb256 = block.GetMWEBHash();
     if (mweb256 == uint256()) {
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-hogex", "HogEx missing or invalid");
     }
 
+    // Only the last transaction in the block should be marked as the HogEx.
     for (size_t i = 0; i < block.vtx.size() - 1; i++) {
         if (block.vtx[i]->IsHogEx()) {
             return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-hogex-position", "hogex in wrong position");
@@ -39,27 +42,36 @@ bool Node::CheckBlock(const CBlock& block, BlockValidationState& state)
         }
     }
 
-    std::vector<PegInCoin> pegins;
-    for (size_t i = 0; i < block.vtx.size() - 1; i++) {
+    // Find all pegin scriptPubKeys in the block.
+    // We don't support pegins in the coinbase tx or the HogEx tx, so skip those.
+    std::vector<PegInCoin> block_pegins;
+    for (size_t i = 1; i < block.vtx.size() - 1; i++) {
         for (const CTxOut& out : block.vtx[i]->vout) {
             mw::Hash kernel_id;
             if (out.scriptPubKey.IsMWEBPegin(&kernel_id)) {
-                pegins.push_back(PegInCoin{out.nValue, std::move(kernel_id)});
+                block_pegins.push_back(PegInCoin{out.nValue, std::move(kernel_id)});
             }
         }
     }
 
+    // Retrieve the HogEx transaction from the block.
+    // Since we've already checked the MWEB header hash, we know that the HogEx exists.
     auto pHogEx = block.GetHogEx();
     assert(pHogEx != nullptr);
 
-    std::vector<PegOutCoin> pegouts;
+    // Find all pegout outputs in the HogEx transaction.
+    // The first output is not a pegout. It contains the MWEB balance and header hash.
+    // The remaining outputs are all pegouts.
+    std::vector<PegOutCoin> hogex_pegouts;
     for (size_t i = 1; i < pHogEx->vout.size(); i++) {
         const CScript& pubkey = pHogEx->vout[i].scriptPubKey;
-        pegouts.push_back(PegOutCoin(pHogEx->vout[i].nValue, {pubkey.begin(), pubkey.end()}));
+        hogex_pegouts.push_back(PegOutCoin(pHogEx->vout[i].nValue, {pubkey.begin(), pubkey.end()}));
     }
 
-    if (!BlockValidator::ValidateBlock(block.mweb_block.m_block, mw::Hash(mweb256.begin()), pegins, pegouts)) {
-        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-blk-mw", "BlockValidator::ValidateBlock failed");
+    // Call into the libmw context-free block validator to validate the TxBody,
+    // and verify that the header hash, pegins, and pegouts all match.
+    if (!BlockValidator::ValidateBlock(block.mweb_block.m_block, mw::Hash(mweb256.begin()), block_pegins, hogex_pegouts)) {
+        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-blk-mweb", "BlockValidator::ValidateBlock failed");
     }
 
     return true;
@@ -76,30 +88,49 @@ bool Node::ContextualCheckBlock(const CBlock& block, const Consensus::Params& co
         return true;
     }
 
+    // If we've reached this point, MWEB has been activated, so all blocks must contain an mweb_block.
     if (block.mweb_block.IsNull()) {
         return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "mweb-missing", "MWEB::Node::ContextualCheckBlock(): MWEB activated but extension block not found");
     }
 
+    // Verify that the MWEB block's height is correct.
     if (block.mweb_block.GetHeight() != (pindexPrev->nHeight + 1)) {
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "mweb-height-mismatch", "MWEB::Node::ConnectBlock(): Invalid MWEB block height");
     }
 
+    // CheckBlock is always called before ContextualCheckBlock, so we know the HogEx exists.
     auto pHogEx = block.GetHogEx();
     assert(pHogEx != nullptr);
 
-    size_t next_pegin_idx = 0;
-    if (IsMWEBEnabled(pindexPrev->pprev, consensus_params)) {
-        const COutPoint& prev_hogex_out = pHogEx->vin[next_pegin_idx++].prevout;
+    // Verify that the first input of the HogEx tx spends the first output of the previous block's HogEx tx.
+    // There is one important exception case we must handle, though.
+    // The very first HogEx tx won't have a previous one to spend.
+    // For that special case, this check will be skipped, and its first input will be treated as a pegin.
+    const bool is_first_hogex = !IsMWEBEnabled(pindexPrev->pprev, consensus_params);
+    if (!is_first_hogex) {
+        const COutPoint& prev_hogex_out = pHogEx->vin.front().prevout;
         if (prev_hogex_out.n != 0 || pindexPrev->hogex_hash != prev_hogex_out.hash) {
             return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "invalid-hogex-input", "First input of HogEx does not point to previous HogEx");
         }
     }
 
+    // For the very first HogEx transaction, all inputs are pegins, so start at index of 0.
+    // For all other HogEx transaction, the first input is not a pegin, so start looking for pegins at index 1.
+    size_t next_pegin_idx = is_first_hogex ? 0 : 1;
+
+    // Loop through the block's txs looking for all outputs with pegin scriptPubKeys (skip Coinbase & HogEx which don't support pegins).
+    // While looping though, we perform 2 tasks:
+    // 
+    // 1. Calculate the total value of the HogEx inputs (hogex_input_amount).
+    // This is the previous HogEx's first output amount (pIndexPrev->mweb_amount) plus the sum of all pegin output amounts.
+    // 
+    // 2. Verify the HogEx inputs (ignoring the input that spends previous HogEx output) exactly match the pegin outputs.
     CAmount hogex_input_amount = pindexPrev->mweb_amount;
     for (size_t nTx = 1; nTx < block.vtx.size() - 1; nTx++) {
         const CTransactionRef& pTx = block.vtx[nTx];
         for (size_t nOut = 0; nOut < pTx->vout.size(); nOut++) {
-            if (pTx->vout[nOut].scriptPubKey.IsMWEBPegin()) {
+            const CTxOut& output = pTx->vout[nOut];
+            if (output.scriptPubKey.IsMWEBPegin()) {
                 if (pHogEx->vin.size() <= next_pegin_idx) {
                     return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "pegins-missing", "Pegins missing from HogEx");
                 }
@@ -109,7 +140,7 @@ bool Node::ContextualCheckBlock(const CBlock& block, const Consensus::Params& co
                     return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "pegin-mismatch", "HogEx pegins do not match block's pegins");
                 }
 
-                hogex_input_amount += pTx->vout[nOut].nValue;
+                hogex_input_amount += output.nValue;
                 if (!MoneyRange(hogex_input_amount)) {
                     return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "accumulated-pegin-outofrange", "MWEB::Node::ContextualCheckBlock(): accumulated pegin amount for the block out of range.");
                 }
@@ -117,17 +148,21 @@ bool Node::ContextualCheckBlock(const CBlock& block, const Consensus::Params& co
         }
     }
 
+    // 'next_pegin_idx' should equal the size of pHogEx->vin, meaning all HogEx inputs match the pegin outputs.
+    // If it's not equal, that means we have more HogEx inputs than pegin outputs.
     if (next_pegin_idx != pHogEx->vin.size()) {
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "extra-hogex-input", "HogEx contains unexpected input(s)");
     }
 
-    // For HogEx transaction, the fee must be equal to the total fee of the extension block.
+    // For the HogEx transaction, the fee must be equal to the total fee of the extension block.
     CAmount hogex_fee = hogex_input_amount - pHogEx->GetValueOut();
-    if (hogex_fee != block.mweb_block.GetTotalFee()) {
+    if (!MoneyRange(hogex_fee) || hogex_fee != block.mweb_block.GetTotalFee()) {
         return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-txns-mweb-fee-mismatch", "MWEB::Node::ContextualCheckBlock(): HogEx fee does not match MWEB fee.");
     }
 
-    // Check HogEx transaction: `new value == (prev value + pegins) - (pegouts + fees)`
+    // Verify that the value of the first HogEx output matches the expected new value of the MWEB.
+    // This is calculated simply as: 'mweb_amount = previous_amount + supply_change' 
+    // where 'supply_change = (pegins - pegouts) - fees'
     CAmount mweb_amount = pindexPrev->mweb_amount + block.mweb_block.GetSupplyChange();
     if (mweb_amount != block.GetMWEBAmount()) {
         return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "mweb-amount-mismatch", "MWEB::Node::ContextualCheckBlock(): HogEx amount does not match expected MWEB amount");
@@ -138,6 +173,7 @@ bool Node::ContextualCheckBlock(const CBlock& block, const Consensus::Params& co
 
 bool Node::ConnectBlock(const CBlock& block, const Consensus::Params& consensus_params, const CBlockIndex* pindexPrev, CBlockUndo& blockundo, mw::CoinsViewCache& mweb_view, BlockValidationState& state)
 {
+    // ContextualCheckBlock should've already been called, so this is just a belt-and-suspenders check.
     if (!ContextualCheckBlock(block, consensus_params, pindexPrev, state)) {
         return false;
     }
@@ -146,8 +182,8 @@ bool Node::ConnectBlock(const CBlock& block, const Consensus::Params& consensus_
         try {
             blockundo.mwundo = mweb_view.ApplyBlock(block.mweb_block.m_block);
         } catch (const std::exception& e) {
-            // MW: TODO - Distinguish between invalid blocks and mutated blocks
-            return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "mweb-connect-failed", strprintf("MWEB::Node::ConnectBlock(): Failed to connect mw block: %s", e.what()));
+            // MWEB: Need to distinguish between invalid blocks and mutated blocks
+            return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "mweb-connect-failed", strprintf("MWEB::Node::ConnectBlock(): Failed to connect MWEB block: %s", e.what()));
         }
     }
 
@@ -156,14 +192,26 @@ bool Node::ConnectBlock(const CBlock& block, const Consensus::Params& consensus_
 
 bool Node::CheckTransaction(const CTransaction& tx, TxValidationState& state)
 {
-    if (tx.IsCoinBase() || tx.IsHogEx()) {
-        for (size_t i = tx.IsHogEx() ? 1 : 0; i < tx.vout.size(); i++) {
+    // Verify that there are no pegin outputs in the coinbase transaction.
+    if (tx.IsCoinBase()) {
+        for (size_t i = 0; i < tx.vout.size(); i++) {
             if (tx.vout[i].scriptPubKey.IsMWEBPegin()) {
-                return state.Invalid(TxValidationResult::TX_CONSENSUS, strprintf("bad-%s-contains-pegin", tx.IsHogEx() ? "hogex" : "cb"));
+                return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-cb-contains-pegin");
             }
         }
     }
 
+    // Verify that there are no pegin outputs in the HogEx transaction.
+    // We skip the first output since pegin scripts and MWEB header hash scripts use the same script format.
+    if (tx.IsHogEx()) {
+        for (size_t i = 1; i < tx.vout.size(); i++) {
+            if (tx.vout[i].scriptPubKey.IsMWEBPegin()) {
+                return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-hogex-contains-pegin");
+            }
+        }
+    }
+
+    // If the transaction has MWEB data, call the libmw transaction validation logic.
     if (tx.HasMWEBTx()) {
         try {
             tx.mweb_tx.m_transaction->Validate();
