@@ -613,7 +613,8 @@ void CTxMemPool::removeForBlock(const CBlock& block, unsigned int nBlockHeight, 
             entries.push_back(&*i);
     }
 
-    // MWEB: Check for transactions with kernels included in the block
+    // MWEB: Check for transactions with kernels included in the block.
+    // If we add a map of txs by kernel hash in the future, this can be made more efficient.
     std::vector<CTransactionRef> txs = block.vtx;
     if (!block.mweb_block.IsNull()) {
         auto block_kernels = block.mweb_block.GetKernelIDs();
@@ -629,6 +630,7 @@ void CTxMemPool::removeForBlock(const CBlock& block, unsigned int nBlockHeight, 
             if (remove_tx) {
                 entries.push_back(&*it);
                 txs.push_back(it->GetSharedTx());
+                // MW: TODO - Add to LRU cache of recently removed txs (by kernel hash)
             }
         }
     }
@@ -970,9 +972,16 @@ CTxMemPool::setEntries CTxMemPool::GetIterSet(const std::set<uint256>& hashes) c
 
 bool CTxMemPool::HasNoInputsOf(const CTransaction &tx) const
 {
-    for (unsigned int i = 0; i < tx.vin.size(); i++)
-        if (exists(tx.vin[i].prevout.hash))
+    for (const CTxInput& input : tx.GetInputs()) {
+        if (input.IsMWEB()) {
+            if (mapTxOutputs_MWEB.find(input.ToMWEB()) != mapTxOutputs_MWEB.end()) {
+                return false;
+            }
+        } else if (exists(input.GetTxIn().prevout.hash)) {
             return false;
+        }
+    }
+
     return true;
 }
 
