@@ -121,6 +121,20 @@ struct Tx {
         return spent_ids;
     }
 
+    std::set<mw::Hash> GetKernelIDs() const noexcept
+    {
+        if (IsNull()) {
+            return std::set<mw::Hash>{};
+        }
+
+        std::set<mw::Hash> kernel_ids;
+        for (const Kernel& kernel : m_transaction->GetKernels()) {
+            kernel_ids.insert(kernel.GetKernelID());
+        }
+
+        return kernel_ids;
+    }
+
     std::set<mw::Hash> GetOutputIDs() const noexcept
     {
         if (IsNull()) {

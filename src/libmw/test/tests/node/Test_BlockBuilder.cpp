@@ -57,7 +57,6 @@ BOOST_AUTO_TEST_CASE(BlockBuilder)
     BOOST_CHECK(built_block->GetKernels().front() == builder_tx1.GetKernels().front());
     bool block_valid = BlockValidator::ValidateBlock(
         built_block,
-        built_block->GetHash(),
         std::vector<PegInCoin>{ builder_tx1.GetPegInCoin() },
         std::vector<PegOutCoin>{}
     );

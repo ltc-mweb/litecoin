@@ -89,7 +89,7 @@ public:
         READWRITEAS(CBlockHeader, obj);
         READWRITE(obj.vtx);
         if (!(s.GetVersion() & SERIALIZE_NO_MWEB)) {
-            if (obj.GetHogEx() != nullptr) {
+            if (obj.vtx.size() >= 2 && obj.vtx.back()->IsHogEx()) {
                 READWRITE(obj.mweb_block);
             }
         }
@@ -117,9 +117,8 @@ public:
 
     std::string ToString() const;
 
+    // Returns the hogex (integrating) transaction, if it exists.
     CTransactionRef GetHogEx() const noexcept;
-    uint256 GetMWEBHash() const noexcept;
-    CAmount GetMWEBAmount() const noexcept;
 };
 
 /** Describes a place in the block chain to another node such that if the

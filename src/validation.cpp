@@ -576,6 +576,11 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         return false; // state filled in by CheckTransaction
     }
 
+    // MWEB: Check MWEB tx
+    if (!MWEB::Node::CheckTransaction(tx, state)) {
+        return false;
+    }
+
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
         return state.Invalid(TxValidationResult::TX_CONSENSUS, "coinbase");
@@ -2266,11 +2271,12 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
 
     // MWEB: Update BlockIndex
     if (!block.mweb_block.IsNull()) {
+        auto pHogEx = block.GetHogEx();
         if ((pindex->nStatus & BLOCK_HAVE_MWEB) == 0) {
             pindex->nStatus |= BLOCK_HAVE_MWEB;
             pindex->mweb_header = block.mweb_block.GetMWEBHeader();
-            pindex->hogex_hash = block.GetHogEx()->GetHash();
-            pindex->mweb_amount = block.GetMWEBAmount();
+            pindex->hogex_hash = pHogEx->GetHash();
+            pindex->mweb_amount = pHogEx->vout.front().nValue;
             setDirtyBlockIndex.insert(pindex);
         }
     }

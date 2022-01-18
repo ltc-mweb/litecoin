@@ -5,38 +5,22 @@
 
 bool BlockValidator::ValidateBlock(
     const mw::Block::CPtr& pBlock,
-    const mw::Hash& mweb_hash,
     const std::vector<PegInCoin>& pegInCoins,
     const std::vector<PegOutCoin>& pegOutCoins) noexcept
 {
     assert(pBlock != nullptr);
 
     try {
-        BlockValidator().Validate(pBlock, mweb_hash, pegInCoins, pegOutCoins);
+        pBlock->Validate();
+
+        ValidatePegInCoins(pBlock, pegInCoins);
+        ValidatePegOutCoins(pBlock, pegOutCoins);
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR_F("Failed to validate {}. Error: {}", *pBlock, e);
     }
 
     return false;
-}
-
-void BlockValidator::Validate(
-    const mw::Block::CPtr& pBlock,
-    const mw::Hash& mweb_hash,
-    const std::vector<PegInCoin>& pegInCoins,
-    const std::vector<PegOutCoin>& pegOutCoins)
-{
-    assert(pBlock != nullptr);
-
-    if (pBlock->GetHash() != mweb_hash) {
-        ThrowValidation(EConsensusError::HASH_MISMATCH);
-    }
-
-    pBlock->Validate();
-
-    ValidatePegInCoins(pBlock, pegInCoins);
-    ValidatePegOutCoins(pBlock, pegOutCoins);
 }
 
 void BlockValidator::ValidatePegInCoins(

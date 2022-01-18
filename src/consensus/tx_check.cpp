@@ -6,15 +6,9 @@
 
 #include <primitives/transaction.h>
 #include <consensus/validation.h>
-#include <mweb/mweb_node.h>
 
 bool CheckTransaction(const CTransaction& tx, TxValidationState& state)
 {
-    // MWEB: Check MWEB tx
-    if (!MWEB::Node::CheckTransaction(tx, state)) {
-        return false;
-    }
-
     // Basic checks that don't depend on any context
     if (!tx.IsMWEBOnly()) {
         if (tx.vin.empty())

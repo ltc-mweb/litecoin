@@ -9,25 +9,17 @@ public:
 
     static bool ValidateBlock(
         const mw::Block::CPtr& pBlock,
-        const mw::Hash& mweb_hash,
         const std::vector<PegInCoin>& pegInCoins,
         const std::vector<PegOutCoin>& pegOutCoins
     ) noexcept;
 
 private:
-    void Validate(
-        const mw::Block::CPtr& pBlock,
-        const mw::Hash& mweb_hash,
-        const std::vector<PegInCoin>& pegInCoins,
-        const std::vector<PegOutCoin>& pegOutCoins
-    );
-
-    void ValidatePegInCoins(
+    static void ValidatePegInCoins(
         const mw::Block::CPtr& pBlock,
         const std::vector<PegInCoin>& pegInCoins
     );
 
-    void ValidatePegOutCoins(
+    static void ValidatePegOutCoins(
         const mw::Block::CPtr& pBlock,
         const std::vector<PegOutCoin>& pegOutCoins
     );

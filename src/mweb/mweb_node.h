@@ -13,6 +13,7 @@ class TxValidationState;
 
 namespace MWEB {
 
+// MW: TODO - Fix function summaries now that we've rearranged the checks.
 class Node
 {
 public:
@@ -92,11 +93,16 @@ public:
     /// * No invalid duplicate inputs, outputs, or kernels
     /// * All signatures and rangeproofs are valid
     /// * Kernel features are valid
+    /// 
+    /// WARNING: Don't apply this when validating blocks that pre-date MWEB activation.
     /// </summary>
     /// <param name="tx">The CTransaction to validate.</param>
     /// <param name="state">The CValidationState to update if validation fails.</param>
     /// <returns>True if all validation checks succeed.</returns>
     static bool CheckTransaction(const CTransaction& tx, TxValidationState& state);
+
+private:
+    static bool ValidateMWEBBlock(const CBlock& block);
 };
 
 }

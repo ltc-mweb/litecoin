@@ -11,7 +11,6 @@
 BOOST_FIXTURE_TEST_SUITE(TestBlockValidator, MWEBTestingSetup)
 
 // MW: TODO - Write tests for invalid blocks:
-// - Hash mismatch
 // - Pegin mismatch
 // - Pegout mismatch
 // - Num kernels mismatch
@@ -40,7 +39,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_ValidBlock)
 
     bool is_valid = BlockValidator::ValidateBlock(
         pBlock,
-        pBlock->GetHash(),
         std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
         std::vector<PegOutCoin>{pegout_tx.GetPegOutCoin()}
     );
@@ -51,27 +49,10 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_ValidBlock)
 
     is_valid = BlockValidator::ValidateBlock(
         pEmptyBlock,
-        pEmptyBlock->GetHash(),
         std::vector<PegInCoin>{},
         std::vector<PegOutCoin>{}
     );
     BOOST_CHECK(is_valid);
-}
-
-BOOST_AUTO_TEST_CASE(BlockValidator_Test_HashMismatch)
-{
-    test::Miner miner(GetDataDir());
-
-    test::Tx pegin_tx = test::Tx::CreatePegIn(5'000'000);
-    mw::Block::CPtr pBlock = miner.MineBlock(1, { pegin_tx }).GetBlock();
-
-    bool is_valid = BlockValidator::ValidateBlock(
-        pBlock,
-        SecretKey::Random().GetBigInt(),
-        std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
-        std::vector<PegOutCoin>{}
-    );
-    BOOST_CHECK(!is_valid);
 }
 
 BOOST_AUTO_TEST_CASE(BlockValidator_Test_PeginMismatch)
@@ -84,7 +65,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_PeginMismatch)
 
         bool is_valid = BlockValidator::ValidateBlock(
             pBlock,
-            pBlock->GetHash(),
             std::vector<PegInCoin>{},
             std::vector<PegOutCoin>{}
         );
@@ -97,7 +77,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_PeginMismatch)
 
         bool is_valid = BlockValidator::ValidateBlock(
             pBlock,
-            pBlock->GetHash(),
             std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
             std::vector<PegOutCoin>{}
         );
@@ -116,7 +95,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_PegoutMismatch)
 
         bool is_valid = BlockValidator::ValidateBlock(
             pBlock,
-            pBlock->GetHash(),
             std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
             std::vector<PegOutCoin>{}
         );
@@ -130,7 +108,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_PegoutMismatch)
 
         bool is_valid = BlockValidator::ValidateBlock(
             pBlock,
-            pBlock->GetHash(),
             std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
             std::vector<PegOutCoin>{pegout_tx.GetPegOutCoin()}
         );
@@ -147,7 +124,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_KernelMismatch)
 
     bool is_valid = BlockValidator::ValidateBlock(
         pBlock,
-        pBlock->GetHash(),
         std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
         std::vector<PegOutCoin>{}
     );
@@ -163,7 +139,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_KernelMismatch)
 
     is_valid = BlockValidator::ValidateBlock(
         pBlockKernelRootMismatch,
-        pBlockKernelRootMismatch->GetHash(),
         std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
         std::vector<PegOutCoin>{}
     );
@@ -180,7 +155,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_KernelMismatch)
 
     is_valid = BlockValidator::ValidateBlock(
         pBlockNumKernelsMismatch,
-        pBlockNumKernelsMismatch->GetHash(),
         std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
         std::vector<PegOutCoin>{}
     );
@@ -196,7 +170,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_InvalidStealthExcess)
 
     bool is_valid = BlockValidator::ValidateBlock(
         pBlock,
-        pBlock->GetHash(),
         std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
         std::vector<PegOutCoin>{});
     BOOST_CHECK(is_valid);
@@ -211,7 +184,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_InvalidStealthExcess)
 
     is_valid = BlockValidator::ValidateBlock(
         pBlockKernelRootMismatch,
-        pBlockKernelRootMismatch->GetHash(),
         std::vector<PegInCoin>{pegin_tx.GetPegInCoin()},
         std::vector<PegOutCoin>{}
     );
@@ -231,7 +203,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_OutputSorting)
 
     bool is_valid = BlockValidator::ValidateBlock(
         pBlock,
-        pBlock->GetHash(),
         tx.GetPegIns(),
         tx.GetPegOuts()
     );
@@ -250,7 +221,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_OutputSorting)
 
     is_valid = BlockValidator::ValidateBlock(
         pUnsortedBlock,
-        pUnsortedBlock->GetHash(),
         tx.GetPegIns(),
         tx.GetPegOuts()
     );
@@ -270,7 +240,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_KernelSorting)
 
     bool is_valid = BlockValidator::ValidateBlock(
         pBlock,
-        pBlock->GetHash(),
         tx.GetPegIns(),
         tx.GetPegOuts()
     );
@@ -289,7 +258,6 @@ BOOST_AUTO_TEST_CASE(BlockValidator_Test_KernelSorting)
 
     is_valid = BlockValidator::ValidateBlock(
         pUnsortedBlock,
-        pUnsortedBlock->GetHash(),
         tx.GetPegIns(),
         tx.GetPegOuts()
     );

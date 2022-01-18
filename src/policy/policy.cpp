@@ -8,6 +8,7 @@
 #include <policy/policy.h>
 
 #include <consensus/validation.h>
+#include <mweb/mweb_policy.h>
 #include <coins.h>
 #include <span.h>
 
@@ -140,12 +141,9 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
         return false;
     }
 
-    // MWEB: Check MWEB transaction for non-standard kernel features
-    if (tx.HasMWEBTx()) {
-        if (!tx.mweb_tx.m_transaction->IsStandard()) {
-            reason = "non-standard-mweb-tx";
-            return false;
-        }
+    // MWEB: Check MWEB standard transaction policies
+    if (!MWEB::Policy::IsStandardTx(tx, reason)) {
+        return false;
     }
 
     return true;

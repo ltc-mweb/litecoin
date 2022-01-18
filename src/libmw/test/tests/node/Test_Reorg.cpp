@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(ReorgChain)
     ///////////////////////
     test::Tx block1_tx1 = test::Tx::CreatePegIn(1000);
     auto block1 = miner.MineBlock(160, { block1_tx1 });
-    BOOST_REQUIRE(BlockValidator::ValidateBlock(block1.GetBlock(), block1.GetHash(), { block1_tx1.GetPegInCoin() }, {}));
+    BOOST_REQUIRE(BlockValidator::ValidateBlock(block1.GetBlock(), { block1_tx1.GetPegInCoin() }, {}));
     pCachedView->ApplyBlock(block1.GetBlock());
 
     const auto& block1_tx1_output1 = block1_tx1.GetOutputs()[0];
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(ReorgChain)
     ///////////////////////
     test::Tx block2_tx1 = test::Tx::CreatePegIn(500);
     auto block2 = miner.MineBlock(161, { block2_tx1 });
-    BOOST_REQUIRE(BlockValidator::ValidateBlock(block2.GetBlock(), block2.GetHash(), { block2_tx1.GetPegInCoin() }, {}));
+    BOOST_REQUIRE(BlockValidator::ValidateBlock(block2.GetBlock(), { block2_tx1.GetPegInCoin() }, {}));
     mw::BlockUndo::CPtr undoBlock2 = pCachedView->ApplyBlock(block2.GetBlock());
 
     const auto& block2_tx1_output1 = block2_tx1.GetOutputs()[0];
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(ReorgChain)
     ///////////////////////
     test::Tx block3_tx1 = test::Tx::CreatePegIn(1500);
     auto block3 = miner.MineBlock(161, { block3_tx1 });
-    BOOST_REQUIRE(BlockValidator::ValidateBlock(block3.GetBlock(), block3.GetHash(), {block3_tx1.GetPegInCoin()}, {}));
+    BOOST_REQUIRE(BlockValidator::ValidateBlock(block3.GetBlock(), {block3_tx1.GetPegInCoin()}, {}));
     pCachedView->ApplyBlock(block3.GetBlock());
 
     const auto& block3_tx1_output1 = block3_tx1.GetOutputs()[0];

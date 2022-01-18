@@ -251,6 +251,23 @@ bool CScript::IsMWEBPegin(mw::Hash* const kernel_id) const
     return false;
 }
 
+bool CScript::IsMWEBHogAddr(mw::Hash* const header_hash) const
+{
+    int version;
+    std::vector<uint8_t> program;
+    if (IsWitnessProgram(version, program)) {
+        if (version == MWEB_HOG_ADDR_WITNESS_VERSION && program.size() == WITNESS_MWEB_HEADERHASH_SIZE) {
+            if (header_hash != nullptr) {
+                *header_hash = mw::Hash(std::move(program));
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool CScript::IsPushOnly(const_iterator pc) const
 {
     while (pc < end())
