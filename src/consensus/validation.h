@@ -152,7 +152,7 @@ static inline int64_t GetTransactionWeight(const CTransaction& tx)
         pegout_weight += ::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR;
     }
 
-    if (tx.vin.empty() && tx.vout.empty() && tx.HasMWEBTx()) {
+    if (tx.IsMWEBOnly()) {
         return pegout_weight;
     }
 

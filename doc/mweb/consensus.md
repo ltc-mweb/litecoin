@@ -122,6 +122,7 @@
   * Each pegin kernel must have a corresponding pegin output on the canonical LTC side where the value is <code>v<sub>pegin</sub></code>, witness version is 9, and witness program is the kernel ID (<code>K<sub>ID</sub></code>).
 * The total MWEB supply (<code>v<sup>T</sup></code>) shall increase by the sum of the block's pegins (<code>v<sub>pegin</sub></code>), and decrease by the sum of the block's pegouts (<code>v<sub>pegout</sub></code>) and the sum of all fees (`f`).
   * <code>v<sup>T</sup><sub>new</sub> = v<sup>T</sup><sub>prev</sub> + &Sigma;v<sub>pegin</sub> - (&Sigma;v<sub>pegout</sub> + &Sigma;f)</code>
+* Pegged-out coins require 6 blocks to mature before they can be spent.
 ---
 
 #### Block Weight

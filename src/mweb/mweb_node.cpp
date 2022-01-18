@@ -192,21 +192,11 @@ bool Node::ConnectBlock(const CBlock& block, const Consensus::Params& consensus_
 
 bool Node::CheckTransaction(const CTransaction& tx, TxValidationState& state)
 {
-    // Verify that there are no pegin outputs in the coinbase transaction.
-    if (tx.IsCoinBase()) {
-        for (size_t i = 0; i < tx.vout.size(); i++) {
-            if (tx.vout[i].scriptPubKey.IsMWEBPegin()) {
-                return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-cb-contains-pegin");
-            }
-        }
-    }
-
-    // Verify that there are no pegin outputs in the HogEx transaction.
-    // We skip the first output since pegin scripts and MWEB header hash scripts use the same script format.
-    if (tx.IsHogEx()) {
-        for (size_t i = 1; i < tx.vout.size(); i++) {
-            if (tx.vout[i].scriptPubKey.IsMWEBPegin()) {
-                return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-hogex-contains-pegin");
+    // Verify that there are no pegin outputs in the coinbase or HogEx transactions.
+    if (tx.IsCoinBase() || tx.IsHogEx()) {
+        for (const CTxOut& out : tx.vout) {
+            if (out.scriptPubKey.IsMWEBPegin()) {
+                return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-tx-unexpected-pegin");
             }
         }
     }

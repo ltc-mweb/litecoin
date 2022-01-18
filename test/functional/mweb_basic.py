@@ -89,6 +89,18 @@ class MWEBBasicTest(BitcoinTestFramework):
         assert_equal(len(utxos), 1)
         assert sum(x['amount'] for x in utxos) < 1
 
+        self.log.info("Mine 5 blocks. Peg-out maturity is 6 blocks, so coins shouldn't be available yet.")
+        self.nodes[1].generate(5)
+        self.sync_all()
+
+        self.log.info("Check for UTXO on node 1")
+        utxos = self.nodes[1].listunspent(addresses=[addr2])
+        assert_equal(len(utxos), 0)
+        
+        self.log.info("Mine 1 more block. Peg-out coins should mature.")
+        self.nodes[1].generate(1)
+        self.sync_all()
+
         self.log.info("Check for UTXO on node 1")
         utxos = self.nodes[1].listunspent(addresses=[addr2])
         assert_equal(len(utxos), 1)

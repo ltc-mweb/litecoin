@@ -473,6 +473,12 @@ public:
     bool IsHogEx() const noexcept { return m_hogEx; }
 
     /// <summary>
+    /// Determines whether the transaction is strictly MWEB-to-MWEB, with no canonical transaction data.
+    /// </summary>
+    /// <returns>True if the tx is MWEB-to-MWEB only.</returns>
+    bool IsMWEBOnly() const noexcept { return HasMWEBTx() && vin.empty() && vout.empty(); }
+
+    /// <summary>
     /// Builds a vector of CTxInputs, starting with the canoncial inputs (CTxIn), followed by the MWEB input hashes.
     /// </summary>
     /// <returns>A vector of all of the transaction's inputs.</returns>

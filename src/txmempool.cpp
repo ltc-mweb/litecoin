@@ -985,7 +985,7 @@ bool CCoinsViewMemPool::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     CTransactionRef ptx = mempool.get(outpoint.hash);
     if (ptx) {
         if (outpoint.n < ptx->vout.size()) {
-            coin = Coin(ptx->vout[outpoint.n], MEMPOOL_HEIGHT, false, false); // MW: TODO - Is it safe to always pass in false for fPegout?
+            coin = Coin(ptx->vout[outpoint.n], MEMPOOL_HEIGHT, false, ptx->mweb_tx.HasPegOut());
             return true;
         } else {
             return false;

@@ -59,7 +59,7 @@ uint256 CBlock::GetMWEBHash() const noexcept
         int version;
         std::vector<unsigned char> program;
         if (pHogEx->vout.front().scriptPubKey.IsWitnessProgram(version, program)) {
-            if (program.size() == WITNESS_MWEB_HEADERHASH_SIZE && version == MWEB_WITNESS_VERSION) {
+            if (program.size() == WITNESS_MWEB_HEADERHASH_SIZE && version == MWEB_HOG_ADDR_WITNESS_VERSION) {
                 return uint256(program);
             }
         }

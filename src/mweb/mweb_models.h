@@ -151,6 +151,19 @@ struct Tx {
         return pegins;
     }
 
+    bool HasPegOut() const noexcept
+    {
+        if (IsNull()) {
+            return false;
+        }
+
+        const std::vector<Kernel>& kernels = m_transaction->GetKernels();
+        return std::any_of(
+            kernels.cbegin(), kernels.cend(),
+            [](const Kernel& kernel) { return kernel.HasPegOut(); }
+        );
+    }
+
     std::vector<PegOutCoin> GetPegOuts() const noexcept
     {
         if (IsNull()) {

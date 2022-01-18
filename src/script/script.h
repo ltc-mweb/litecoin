@@ -26,8 +26,11 @@ static constexpr size_t WITNESS_MWEB_HEADERHASH_SIZE = 32;
 // MWEB: Size of the witness program for peg-in transactions
 static constexpr size_t WITNESS_MWEB_PEGIN_SIZE = 32;
 
-// MWEB: Version of MWEB witness programs
-static constexpr int MWEB_WITNESS_VERSION = 9;
+// MWEB: Version of MWEB witness programs for HogAddr outputs
+static constexpr int MWEB_HOG_ADDR_WITNESS_VERSION = 8;
+
+// MWEB: Version of MWEB witness programs for peg-in transactions
+static constexpr int MWEB_PEGIN_WITNESS_VERSION = 9;
 
 // Maximum number of bytes pushable to the stack
 static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520;

@@ -15,7 +15,7 @@ public:
     //
     static void Validate(const BlindingFactor& stealth_offset, const TxBody& body)
     {
-        std::vector<PublicKey> lhs_keys, rhs_keys;
+        std::vector<PublicKey> lhs_keys;
 
         //
         // sum(K_s) + sum(K_i)
@@ -38,11 +38,7 @@ public:
         //
         // sum(E') + x'*G + sum(K_o)
         //
-        std::vector<PublicKey> stealth_excesses = body.GetStealthExcesses();
-        std::transform(
-            stealth_excesses.cbegin(), stealth_excesses.cend(), std::back_inserter(rhs_keys),
-            [](const PublicKey& stealth_excess) { return stealth_excess; }
-        );
+        std::vector<PublicKey> rhs_keys = body.GetStealthExcesses();
 
         std::transform(
             body.GetInputs().cbegin(), body.GetInputs().cend(), std::back_inserter(rhs_keys),

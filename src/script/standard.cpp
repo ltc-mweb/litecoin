@@ -138,10 +138,11 @@ TxoutType Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned c
             vSolutionsRet.push_back(std::move(witnessprogram));
             return TxoutType::WITNESS_V1_TAPROOT;
         }
-        if (witnessversion == MWEB_WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_PEGIN_SIZE) {
+        if (witnessversion == MWEB_PEGIN_WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_PEGIN_SIZE) {
             vSolutionsRet.push_back(witnessprogram);
             return TxoutType::WITNESS_MWEB_PEGIN;
         }
+        // MW: TODO - Do we need a TxoutType::WITNESS_MWEB_HOGADDR?
         if (witnessversion != 0) {
             vSolutionsRet.push_back(std::vector<unsigned char>{(unsigned char)witnessversion});
             vSolutionsRet.push_back(std::move(witnessprogram));
@@ -333,7 +334,7 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys)
 CScript GetScriptForPegin(const mw::Hash& kernel_id)
 {
     CScript script;
-    script << CScript::EncodeOP_N(MWEB_WITNESS_VERSION);
+    script << CScript::EncodeOP_N(MWEB_PEGIN_WITNESS_VERSION);
     script << kernel_id.vec();
     return script;
 }

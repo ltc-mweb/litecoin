@@ -610,10 +610,13 @@ private:
     std::set<uint256> m_unbroadcast_txids GUARDED_BY(cs);
 
 public:
+    /**
+     * Maps outputs to mempool transactions that spend them.
+     */
     std::map<OutputIndex, const CTransaction*> mapNextTx GUARDED_BY(cs);
 
     /**
-     * Maps output IDs to the transactions that create them.
+     * Maps MWEB output IDs to mempool transactions that create them.
      */
     std::map<mw::Hash, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
 	

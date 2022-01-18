@@ -16,9 +16,7 @@ bool CheckTransaction(const CTransaction& tx, TxValidationState& state)
     }
 
     // Basic checks that don't depend on any context
-    if (tx.HasMWEBTx() && tx.vin.empty() && tx.vout.empty()) {
-        // Do nothing. An MWEB tx with 0 inputs & 0 outputs is valid.
-    } else {
+    if (!tx.IsMWEBOnly()) {
         if (tx.vin.empty())
             return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-vin-empty");
         if (tx.vout.empty())
