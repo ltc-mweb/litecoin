@@ -18,32 +18,35 @@ class StealthAddress;
 ////////////////////////////////////////
 // OUTPUT MESSAGE
 ////////////////////////////////////////
-class OutputMessage : public Traits::ISerializable, public Traits::IHashable // MW: TODO - Should we version these?
+class OutputMessage : public Traits::ISerializable, public Traits::IHashable
 {
 public:
     //
     // Constructors
     //
     OutputMessage(
-        PublicKey receiverPubKey_,
+        uint8_t features_,
         PublicKey keyExchangePubKey_,
         uint8_t viewTag_,
         uint64_t maskedValue_,
-        BigInt<16> maskedNonce_,
-        PublicKey senderPubKey_
+        BigInt<16> maskedNonce_
     ) : 
-        receiverPubKey(std::move(receiverPubKey_)),
-        keyExchangePubKey(std::move(keyExchangePubKey_)),
-        viewTag(viewTag_),
-        maskedValue(maskedValue_),
-        maskedNonce(std::move(maskedNonce_)),
-        senderPubKey(std::move(senderPubKey_))
+        features(features_),
+        key_exchange_pubkey(std::move(keyExchangePubKey_)),
+        view_tag(viewTag_),
+        masked_value(maskedValue_),
+        masked_nonce(std::move(maskedNonce_))
     {
         m_hash = Hashed(*this);
     }
     OutputMessage(const OutputMessage& output_message) = default;
     OutputMessage(OutputMessage&& output_message) noexcept = default;
     OutputMessage() = default;
+
+    enum FeatureBit {
+        STANDARD_FIELDS_FEATURE_BIT = 0x01,
+        EXTRA_DATA_FEATURE_BIT = 0x02
+    };
 
     //
     // Operators
@@ -53,21 +56,28 @@ public:
     bool operator<(const OutputMessage& output_message) const noexcept { return m_hash < output_message.m_hash; }
     bool operator==(const OutputMessage& output_message) const noexcept { return m_hash == output_message.m_hash; }
 
-    PublicKey receiverPubKey;
-    PublicKey keyExchangePubKey;
-    uint8_t viewTag;
-    uint64_t maskedValue;
-    BigInt<16> maskedNonce;
-    PublicKey senderPubKey;
+    uint8_t features;
+    PublicKey key_exchange_pubkey;
+    uint8_t view_tag;
+    uint64_t masked_value;
+    BigInt<16> masked_nonce;
+    std::vector<uint8_t> extra_data;
 
     IMPL_SERIALIZABLE(OutputMessage, obj)
     {
-        READWRITE(obj.receiverPubKey);
-        READWRITE(obj.keyExchangePubKey);
-        READWRITE(obj.viewTag);
-        READWRITE(obj.maskedValue);
-        READWRITE(obj.maskedNonce);
-        READWRITE(obj.senderPubKey);
+        READWRITE(obj.features);
+
+        if (obj.features & STANDARD_FIELDS_FEATURE_BIT) {
+            READWRITE(obj.key_exchange_pubkey);
+            READWRITE(obj.view_tag);
+            READWRITE(obj.masked_value);
+            READWRITE(obj.masked_nonce);
+        }
+
+        if (obj.features & EXTRA_DATA_FEATURE_BIT) {
+            READWRITE(obj.extra_data);
+        }
+
         SER_READ(obj, obj.m_hash = Hashed(obj));
     }
 
@@ -94,11 +104,15 @@ public:
     //
     Output(
         Commitment commitment,
+        PublicKey senderPubKey,
+        PublicKey receiverPubKey,
         OutputMessage message,
         const RangeProof::CPtr& pProof,
         Signature signature
     ) :
         m_commitment(std::move(commitment)),
+        m_senderPubKey(std::move(senderPubKey)),
+        m_receiverPubKey(std::move(receiverPubKey)),
         m_message(std::move(message)),
         m_pProof(pProof),
         m_signature(std::move(signature))
@@ -138,19 +152,21 @@ public:
     //
     const mw::Hash& GetOutputID() const noexcept { return m_hash; }
     const Commitment& GetCommitment() const noexcept final { return m_commitment; }
+    const PublicKey& GetSenderPubKey() const noexcept { return m_senderPubKey; }
+    const PublicKey& GetReceiverPubKey() const noexcept { return m_receiverPubKey; }
     const RangeProof::CPtr& GetRangeProof() const noexcept { return m_pProof; }
     const OutputMessage& GetOutputMessage() const noexcept { return m_message; }
     const Signature& GetSignature() const noexcept { return m_signature; }
 
-    const PublicKey& GetReceiverPubKey() const noexcept { return m_message.receiverPubKey; }
-    const PublicKey& GetKeyExchangePubKey() const noexcept { return m_message.keyExchangePubKey; }
-    uint8_t GetViewTag() const noexcept { return m_message.viewTag; }
-    uint64_t GetMaskedValue() const noexcept { return m_message.maskedValue; }
-    const BigInt<16>& GetMaskedNonce() const noexcept { return m_message.maskedNonce; }
-    const PublicKey& GetSenderPubKey() const noexcept { return m_message.senderPubKey; }
+    bool IsStandard() const noexcept { return m_message.features == OutputMessage::STANDARD_FIELDS_FEATURE_BIT; }
+    uint8_t GetFeatures() const noexcept { return m_message.features; }
+    const PublicKey& GetKeyExchangePubKey() const noexcept { return m_message.key_exchange_pubkey; }
+    uint8_t GetViewTag() const noexcept { return m_message.view_tag; }
+    uint64_t GetMaskedValue() const noexcept { return m_message.masked_value; }
+    const BigInt<16>& GetMaskedNonce() const noexcept { return m_message.masked_nonce; }
 
-    const PublicKey& Ko() const noexcept { return m_message.receiverPubKey; }
-    const PublicKey& Ke() const noexcept { return m_message.keyExchangePubKey; }
+    const PublicKey& Ko() const noexcept { return m_receiverPubKey; }
+    const PublicKey& Ke() const noexcept { return m_message.key_exchange_pubkey; }
 
     SignedMessage BuildSignedMsg() const noexcept;
     ProofData BuildProofData() const noexcept;
@@ -161,6 +177,8 @@ public:
     IMPL_SERIALIZABLE(Output, obj)
     {
         READWRITE(obj.m_commitment);
+        READWRITE(obj.m_senderPubKey);
+        READWRITE(obj.m_receiverPubKey);
         READWRITE(obj.m_message);
         READWRITE(obj.m_pProof);
         READWRITE(obj.m_signature);
@@ -183,6 +201,8 @@ private:
     {
         return Hasher()
             .Append(m_commitment)
+            .Append(m_senderPubKey)
+            .Append(m_receiverPubKey)
             .Append(m_message.GetHash())
             .Append(m_pProof->GetHash())
             .Append(m_signature)
@@ -190,6 +210,8 @@ private:
     }
 
     Commitment m_commitment;
+    PublicKey m_senderPubKey;
+    PublicKey m_receiverPubKey;
     OutputMessage m_message;
     RangeProof::CPtr m_pProof;
     Signature m_signature;

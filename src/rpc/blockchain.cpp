@@ -244,6 +244,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
                 UniValue objOutput(UniValue::VOBJ);
                 objOutput.pushKV("output_id", output.GetOutputID().ToHex());
                 objOutput.pushKV("commit", output.GetCommitment().ToHex());
+                objOutput.pushKV("sender_pubkey", output.GetSenderPubKey().ToHex());
+                objOutput.pushKV("receiver_pubkey", output.GetReceiverPubKey().ToHex());
                 objOutput.pushKV("range_proof", HexStr(output.GetRangeProof()->Serialized()));
                 objOutput.pushKV("message", HexStr(output.GetOutputMessage().Serialized()));
                 outputs.push_back(objOutput);

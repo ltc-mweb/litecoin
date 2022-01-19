@@ -214,7 +214,6 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, TxValidationState& state, 
                     strprintf("%s: MWEB inputs missing", __func__));
             }
 
-            // MW: TODO - Test this
             const Output& utxo = utxos.front()->GetOutput();
             if (utxo.GetReceiverPubKey() != input.GetOutputPubKey() || utxo.GetCommitment() != input.GetCommitment()) {
                 return state.Invalid(TxValidationResult::TX_CONSENSUS, "bad-txns-input-mismatch",

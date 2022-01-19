@@ -34,6 +34,12 @@ bool Transaction::IsStandard() const noexcept
         }
     }
 
+    for (const Output& output : GetOutputs()) {
+        if (!output.IsStandard()) {
+            return false;
+        }
+    }
+
     return true;
 }
 

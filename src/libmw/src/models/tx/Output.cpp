@@ -11,6 +11,9 @@ Output Output::Create(
     const StealthAddress& receiver_addr,
     const uint64_t value)
 {
+    // We only support standard feature fields for now
+    const uint8_t features = OutputMessage::STANDARD_FIELDS_FEATURE_BIT;
+
     // Generate 128-bit secret nonce 'n' = Hash128(T_nonce, sender_privkey)
     BigInt<16> n(Hashed(EHashTag::NONCE, sender_privkey).data());
 
@@ -45,7 +48,7 @@ Output Output::Create(
     // Calculate the ephemeral send pubkey 'Ks' = ks*G
     PublicKey Ks = Keys::From(sender_privkey).PubKey();
 
-    OutputMessage message{Ko, Ke, t[0], mv, mn, Ks};
+    OutputMessage message{features, Ke, t[0], mv, mn};
 
     // Probably best to store sender_key so sender can identify all outputs they've sent?
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(
@@ -60,7 +63,9 @@ Output Output::Create(
     // Sign the output
     mw::Hash sig_message = Hasher()
         .Append(output_commit)
-        .Append(message)
+        .Append(Ks)
+        .Append(Ko)
+        .Append(message.GetHash())
         .Append(pRangeProof->GetHash())
         .hash();
     Signature signature = Schnorr::Sign(sender_privkey.data(), sig_message);
@@ -71,6 +76,8 @@ Output Output::Create(
 
     return Output{
         std::move(output_commit),
+        std::move(Ks),
+        std::move(Ko),
         std::move(message),
         pRangeProof,
         std::move(signature)
@@ -81,10 +88,12 @@ SignedMessage Output::BuildSignedMsg() const noexcept
 {
     mw::Hash hashed_msg = Hasher()
         .Append(m_commitment)
-        .Append(m_message) // MW: TODO - Use message hash instead?
+        .Append(m_senderPubKey)
+        .Append(m_receiverPubKey)
+        .Append(m_message.GetHash())
         .Append(m_pProof->GetHash())
         .hash();
-    return SignedMessage{ std::move(hashed_msg), m_message.senderPubKey, m_signature };
+    return SignedMessage{ std::move(hashed_msg), m_senderPubKey, m_signature };
 }
 
 ProofData Output::BuildProofData() const noexcept

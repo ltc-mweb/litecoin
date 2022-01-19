@@ -58,6 +58,8 @@ BOOST_AUTO_TEST_CASE(Create)
     // Verify Output ID
     mw::Hash expected_id = Hasher()
         .Append(output.GetCommitment())
+        .Append(output.GetSenderPubKey())
+        .Append(output.GetReceiverPubKey())
         .Append(output.GetOutputMessage().GetHash())
         .Append(output.GetRangeProof()->GetHash())
         .Append(output.GetSignature())
