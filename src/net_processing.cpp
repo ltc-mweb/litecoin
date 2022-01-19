@@ -328,7 +328,7 @@ struct CNodeState {
     //! Whether this peer can give us witnesses
     bool fHaveWitness;
     //! Whether this peer can give us MWEB data
-    bool fHaveMW;
+    bool fHaveMWEB;
     //! Whether this peer wants witnesses in cmpctblocks/blocktxns
     bool fWantsCmpctWitness;
     //! Whether this peer wants MWEB transactions in cmpctblocks/blocktxns
@@ -411,7 +411,7 @@ struct CNodeState {
         fPreferHeaderAndIDs = false;
         fProvidesHeaderAndIDs = false;
         fHaveWitness = false;
-        fHaveMW = false;
+        fHaveMWEB = false;
         fWantsCmpctWitness = false;
         fWantsCmpctMWEB = false;
         fSupportsDesiredCmpctVersion = false;
@@ -745,7 +745,7 @@ static void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vec
                 // We wouldn't download this block or its descendants from this peer.
                 return;
             }
-            if (!State(nodeid)->fHaveMW && IsMWEBEnabled(pindex->pprev, consensusParams)) {
+            if (!State(nodeid)->fHaveMWEB && IsMWEBEnabled(pindex->pprev, consensusParams)) {
                 // MWEB: Can't download this block from this peer.
                 return;
             }
@@ -1794,7 +1794,7 @@ static uint32_t GetFetchFlags(const CNode& pfrom) EXCLUSIVE_LOCKS_REQUIRED(cs_ma
     if ((pfrom.GetLocalServices() & NODE_WITNESS) && State(pfrom.GetId())->fHaveWitness) {
         nFetchFlags |= MSG_WITNESS_FLAG;
     }
-    if ((pfrom.GetLocalServices() & NODE_MWEB) && State(pfrom.GetId())->fHaveMW) {
+    if ((pfrom.GetLocalServices() & NODE_MWEB) && State(pfrom.GetId())->fHaveMWEB) {
         nFetchFlags |= MSG_MWEB_FLAG;
     }
     return nFetchFlags;
@@ -1922,7 +1922,7 @@ void PeerManager::ProcessHeadersMessage(CNode& pfrom, const std::vector<CBlockHe
                 if (!(pindexWalk->nStatus & BLOCK_HAVE_DATA) &&
                         !mapBlocksInFlight.count(pindexWalk->GetBlockHash()) &&
                         (!IsWitnessEnabled(pindexWalk->pprev, m_chainparams.GetConsensus()) || State(pfrom.GetId())->fHaveWitness) &&
-                        (!IsMWEBEnabled(pindexWalk->pprev, m_chainparams.GetConsensus()) || State(pfrom.GetId())->fHaveMW)) {
+                        (!IsMWEBEnabled(pindexWalk->pprev, m_chainparams.GetConsensus()) || State(pfrom.GetId())->fHaveMWEB)) {
                     // We don't have this block, and it's not yet in flight.
                     vToFetch.push_back(pindexWalk);
                 }
@@ -2438,7 +2438,7 @@ void PeerManager::ProcessMessage(CNode& pfrom, const std::string& msg_type, CDat
             State(pfrom.GetId())->fHaveWitness = true;
 
             if (nServices & NODE_MWEB) {
-                State(pfrom.GetId())->fHaveMW = true;
+                State(pfrom.GetId())->fHaveMWEB = true;
             }
         }
 
