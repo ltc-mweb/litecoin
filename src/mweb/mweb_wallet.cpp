@@ -53,7 +53,7 @@ bool Wallet::RewindOutput(const boost::variant<mw::Block::CPtr, mw::Transaction:
 
     if (rewound) {
         m_coins[coin.output_id] = coin;
-        WalletBatch(m_pWallet->GetDatabase()).WriteCoin(coin);
+        WalletBatch(m_pWallet->GetDatabase()).WriteMWEBCoin(coin);
     }
 
     return rewound;

@@ -148,7 +148,7 @@ bool WalletBatch::WriteCScript(const uint160& hash, const CScript& redeemScript)
     return WriteIC(std::make_pair(DBKeys::CSCRIPT, hash), redeemScript, false);
 }
 
-bool WalletBatch::WriteCoin(const mw::Coin& coin)
+bool WalletBatch::WriteMWEBCoin(const mw::Coin& coin)
 {
     // MW: TODO - Handle multiple coins with matching output IDs
     return WriteIC(std::make_pair(DBKeys::COIN, coin.output_id), coin, true);

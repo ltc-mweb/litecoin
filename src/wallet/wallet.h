@@ -418,6 +418,7 @@ public:
         mapValue.erase("spent");
         mapValue.erase("n");
         mapValue.erase("timesmart");
+        mapValue.erase("mweb_info");
     }
 
     void SetTx(CTransactionRef arg)
