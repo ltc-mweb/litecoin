@@ -14,6 +14,7 @@ enum class EHashTag : char
     NONCE = 'N',
     OUT_KEY = 'O',
     SEND_KEY = 'S',
+    TAG = 'T',
     NONCE_MASK = 'X',
     VALUE_MASK = 'Y'
 };

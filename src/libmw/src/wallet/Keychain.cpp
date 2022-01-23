@@ -12,11 +12,13 @@ bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
         return false;
     }
 
-    SecretKey t = Hashed(EHashTag::DERIVE, output.Ke().Mul(GetScanSecret()));
-    if (t[0] != output.GetViewTag()) {
+    PublicKey shared_secret = output.Ke().Mul(GetScanSecret());
+    uint8_t view_tag = Hashed(EHashTag::TAG, shared_secret)[0];
+    if (view_tag != output.GetViewTag()) {
         return false;
     }
 
+    SecretKey t = Hashed(EHashTag::DERIVE, shared_secret);
     PublicKey B_i = output.Ko().Div(Hashed(EHashTag::OUT_KEY, t));
 
     // Check if B_i belongs to wallet

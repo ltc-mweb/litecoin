@@ -26,8 +26,9 @@ Output Output::Create(
         .hash();
 
     // Derive shared secret 't' = H(T_derive, s*A)
+    PublicKey sA = receiver_addr.A().Mul(s);
     SecretKey t = Hasher(EHashTag::DERIVE)
-        .Append(receiver_addr.A().Mul(s))
+        .Append(sA)
         .hash();
 
     // Construct one-time public key for receiver 'Ko' = H(T_outkey, t)*B
@@ -48,7 +49,10 @@ Output Output::Create(
     // Calculate the ephemeral send pubkey 'Ks' = ks*G
     PublicKey Ks = Keys::From(sender_privkey).PubKey();
 
-    OutputMessage message{features, Ke, t[0], mv, mn};
+    // Derive view tag as first byte of H(T_tag, sA)
+    uint8_t view_tag = Hashed(EHashTag::TAG, sA)[0];
+
+    OutputMessage message{features, Ke, view_tag, mv, mn};
 
     // Probably best to store sender_key so sender can identify all outputs they've sent?
     RangeProof::CPtr pRangeProof = Bulletproofs::Generate(

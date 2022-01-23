@@ -74,10 +74,10 @@ BOOST_AUTO_TEST_CASE(Create)
     //
     {
         // Check view tag
-        SecretKey t = Hashed(EHashTag::DERIVE, output.Ke().Mul(a));
-        BOOST_REQUIRE(t[0] == output.GetViewTag());
+        BOOST_REQUIRE(Hashed(EHashTag::TAG, output.Ke().Mul(a))[0] == output.GetViewTag());
 
         // Make sure B belongs to wallet
+        SecretKey t = Hashed(EHashTag::DERIVE, output.Ke().Mul(a));
         BOOST_REQUIRE(receiver_subaddr.B() == output.Ko().Div(Hashed(EHashTag::OUT_KEY, t)));
 
         SecretKey r = Hashed(EHashTag::BLIND, t);
