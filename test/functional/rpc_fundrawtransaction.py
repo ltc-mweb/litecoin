@@ -533,6 +533,12 @@ class RawTransactionsTest(BitcoinTestFramework):
             }])
             self.nodes[1].walletlock()
 
+        # MWEB: We don't update hd seed when encrypting wallet, so new keypool was not generated.
+        # We need to refill keypool manually.
+        self.nodes[1].walletpassphrase('test', 10)
+        self.nodes[1].keypoolrefill(1)
+        self.nodes[1].walletlock()
+
         # Drain the keypool.
         self.nodes[1].getnewaddress()
         self.nodes[1].getrawchangeaddress()

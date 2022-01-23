@@ -56,8 +56,9 @@ def read_dump(file_name, addrs, script_addrs, hd_master_addr_old):
                     # ensure the old master is still available
                     assert hd_master_addr_old == addr
                 elif keytype == "hdseed=1":
-                    # ensure we have generated a new hd master key
-                    assert hd_master_addr_old != addr
+                    if hd_master_addr_old != None:
+                        # MWEB: No new seed is generated when encrypting, so assert hd master key is unchanged
+                        assert hd_master_addr_old == addr
                     hd_master_addr_ret = addr
                 elif keytype == "script=1":
                     # scripts don't have keypaths
@@ -191,7 +192,7 @@ class WalletDumpTest(BitcoinTestFramework):
         assert_equal(found_bech32_addr, test_addr_count)  # all keys must be in the dump
         assert_equal(found_script_addr, 1)
         assert_equal(found_mweb_addr, test_addr_count)
-        assert_equal(found_addr_chg, 90 * 3 + 4)  # old reserve keys are marked as change now
+        assert_equal(found_addr_chg, 0 + 2)  # 0 blocks were mined plus 2 initial MWEB keys (CHANGE and PEG-IN)
         assert_equal(found_addr_rsv, 90 * 3)
 
         # Overwriting should fail
