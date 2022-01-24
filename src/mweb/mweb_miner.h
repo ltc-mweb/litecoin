@@ -21,7 +21,8 @@ private:
     // MWEB Attributes
     mw::BlockBuilder::Ptr mweb_builder;
     CAmount mweb_amount_change;
-    CAmount mweb_fees;
+    CAmount hogex_fees;
+    int64_t hogex_sigops;
     std::vector<CTxIn> hogex_inputs;
     std::vector<CTxOut> hogex_outputs;
 };

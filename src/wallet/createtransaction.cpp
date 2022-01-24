@@ -272,8 +272,8 @@ static bool AttemptCoinSelection(
         // First try to construct an MWEB-to-MWEB transaction
         CoinSelectionParams mweb_to_mweb = coin_selection_params;
         mweb_to_mweb.input_preference = InputPreference::MWEB_ONLY;
-        mweb_to_mweb.mweb_change_output_weight = Weight::OUTPUT_WEIGHT;
-        mweb_to_mweb.mweb_nochange_weight = Weight::Calculate(1, 1, recipients.size());
+        mweb_to_mweb.mweb_change_output_weight = Weight::STANDARD_OUTPUT_WEIGHT;
+        mweb_to_mweb.mweb_nochange_weight = Weight::KERNEL_WITH_STEALTH_WEIGHT + (recipients.size() * Weight::STANDARD_OUTPUT_WEIGHT);
         mweb_to_mweb.change_output_size = 0;
         mweb_to_mweb.change_spend_size = 0;
         mweb_to_mweb.tx_noinputs_size = 0;
@@ -287,8 +287,8 @@ static bool AttemptCoinSelection(
         const bool change_on_mweb = IsChangeOnMWEB(wallet, MWEB::TxType::PEGIN, recipients, coin_control.destChange);
         CoinSelectionParams params_pegin = coin_selection_params;
         params_pegin.input_preference = InputPreference::ANY;
-        params_pegin.mweb_change_output_weight = change_on_mweb ? Weight::OUTPUT_WEIGHT : 0;
-        params_pegin.mweb_nochange_weight = Weight::Calculate(1, 1, recipients.size());
+        params_pegin.mweb_change_output_weight = change_on_mweb ? Weight::STANDARD_OUTPUT_WEIGHT : 0;
+        params_pegin.mweb_nochange_weight = Weight::KERNEL_WITH_STEALTH_WEIGHT + (recipients.size() * Weight::STANDARD_OUTPUT_WEIGHT);
         params_pegin.change_output_size = change_on_mweb ? 0 : coin_selection_params.change_output_size;
         params_pegin.change_spend_size = change_on_mweb ? 0 : coin_selection_params.change_spend_size;
         bnb_used = false;
@@ -308,11 +308,16 @@ static bool AttemptCoinSelection(
             return true;
         }
 
+        // Only supports pegging-out to one address
+        if (recipients.size() > 1) {
+            return false;
+        }
+
         // If LTC-to-LTC fails, create a peg-out transaction
         CoinSelectionParams params_pegout = coin_selection_params;
         params_pegout.input_preference = InputPreference::ANY;
-        params_pegout.mweb_change_output_weight = Weight::OUTPUT_WEIGHT;
-        params_pegout.mweb_nochange_weight = Weight::KERNEL_WEIGHT + Weight::STEALTH_EXCESS_WEIGHT;
+        params_pegout.mweb_change_output_weight = Weight::STANDARD_OUTPUT_WEIGHT;
+        params_pegout.mweb_nochange_weight = Weight::CalcKernelWeight(true, recipients.front().GetScript());
         params_pegout.change_output_size = 0;
         params_pegout.change_spend_size = 0;
         bnb_used = false;
@@ -406,7 +411,7 @@ bool CreateTransactionEx(
 
             CoinSelectionParams coin_selection_params; // Parameters for coin selection, init with dummy
             coin_selection_params.change_output_size = GetSerializeSize(change_prototype_txout);
-            coin_selection_params.mweb_change_output_weight = Weight::OUTPUT_WEIGHT;
+            coin_selection_params.mweb_change_output_weight = Weight::STANDARD_OUTPUT_WEIGHT;
 
             // Set discard feerate
             coin_selection_params.m_discard_feerate = GetDiscardRate(wallet);
@@ -477,16 +482,16 @@ bool CreateTransactionEx(
                 change_on_mweb = IsChangeOnMWEB(wallet, mweb_type, vecSend, coin_control.destChange);
 
                 if (mweb_type != MWEB::TxType::LTC_TO_LTC) {
-                    size_t mweb_outputs = 0;
                     if (mweb_type == MWEB::TxType::PEGIN || mweb_type == MWEB::TxType::MWEB_TO_MWEB) {
-                        ++mweb_outputs; // MW: FUTURE - Look at actual recipients list, but for now we only support 1 MWEB recipient.
+                        mweb_weight += Weight::STANDARD_OUTPUT_WEIGHT; // MW: FUTURE - Look at actual recipients list, but for now we only support 1 MWEB recipient.
                     }
                     
                     if (change_on_mweb) {
-                        ++mweb_outputs;
+                        mweb_weight += Weight::STANDARD_OUTPUT_WEIGHT;
                     }
 
-                    mweb_weight = GetMWEBWeight(mweb_outputs, 1, 1);
+                    CScript pegout_script = (mweb_type == MWEB::TxType::PEGOUT) ? vecSend.front().GetScript() : CScript();
+                    mweb_weight += Weight::CalcKernelWeight(true, pegout_script);
 
                     // We don't support multiple recipients for MWEB txs yet,
                     // so the only possible LTC outputs are pegins & change.

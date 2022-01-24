@@ -155,14 +155,7 @@ struct Tx {
             return std::vector<PegInCoin>{};
         }
 
-        std::vector<PegInCoin> pegins;
-        for (const Kernel& kernel : m_transaction->GetKernels()) {
-            if (kernel.HasPegIn()) {
-                pegins.emplace_back(PegInCoin{kernel.GetPegIn(), kernel.GetKernelID()});
-            }
-        }
-
-        return pegins;
+        return m_transaction->GetPegIns();
     }
 
     bool HasPegOut() const noexcept
@@ -184,14 +177,7 @@ struct Tx {
             return std::vector<PegOutCoin>{};
         }
 
-        std::vector<PegOutCoin> pegouts;
-        for (const Kernel& kernel : m_transaction->GetKernels()) {
-            if (kernel.HasPegOut()) {
-                pegouts.emplace_back(kernel.GetPegOut().value());
-            }
-        }
-
-        return pegouts;
+        return m_transaction->GetPegOuts();
     }
 
     uint64_t GetMWEBWeight() const noexcept

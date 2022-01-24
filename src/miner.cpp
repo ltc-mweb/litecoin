@@ -245,27 +245,25 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
 
 void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
-    CTransactionRef pTx = iter->GetSharedTx();
-    if (pTx->HasMWEBTx()) {
-        if (!mweb_miner.AddMWEBTransaction(iter)) {
-            return;
-        }
-
-        if (pTx->vin.empty()) {
-            inBlock.insert(iter);
-            return;
-        }
-
-        CMutableTransaction mutable_tx(*pTx);
-        mutable_tx.mweb_tx.SetNull();
-        pTx = MakeTransactionRef(std::move(mutable_tx));
+    if (iter->GetTx().HasMWEBTx() && !mweb_miner.AddMWEBTransaction(iter)) {
+        return;
     }
 
-    pblocktemplate->block.vtx.emplace_back(pTx);
-    pblocktemplate->vTxFees.push_back(iter->GetFee());
-    pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
+    CTransactionRef pTx = iter->GetSharedTx();
+    if (!pTx->IsMWEBOnly()) {
+        if (pTx->HasMWEBTx()) {
+            CMutableTransaction mutable_tx(*pTx);
+            mutable_tx.mweb_tx.SetNull();
+            pTx = MakeTransactionRef(std::move(mutable_tx));
+        }
+
+        pblocktemplate->block.vtx.emplace_back(pTx);
+        pblocktemplate->vTxFees.push_back(iter->GetFee());
+        pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
+        ++nBlockTx;
+    }
+
     nBlockWeight += iter->GetTxWeight();
-    ++nBlockTx;
     nBlockSigOpsCost += iter->GetSigOpCost();
     nBlockMWEBWeight += iter->GetMWEBWeight();
     nFees += iter->GetFee();

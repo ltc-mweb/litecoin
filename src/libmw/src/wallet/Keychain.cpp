@@ -8,7 +8,7 @@ MW_NAMESPACE
 
 bool Keychain::RewindOutput(const Output& output, mw::Coin& coin) const
 {
-    if (!(output.GetFeatures() & OutputMessage::STANDARD_FIELDS_FEATURE_BIT)) {
+    if (!output.HasStandardFields()) {
         return false;
     }
 

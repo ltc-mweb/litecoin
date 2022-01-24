@@ -112,8 +112,6 @@ int64_t GetVirtualTransactionSize(int64_t nWeight, int64_t nSigOpCost, unsigned 
 int64_t GetVirtualTransactionSize(const CTransaction& tx, int64_t nSigOpCost, unsigned int bytes_per_sigop);
 int64_t GetVirtualTransactionInputSize(const CTxIn& tx, int64_t nSigOpCost, unsigned int bytes_per_sigop);
 
-int64_t GetMWEBWeight(size_t nOutputs, size_t nKernels, size_t nOwnerSigs);
-
 static inline int64_t GetVirtualTransactionSize(const CTransaction& tx)
 {
     return GetVirtualTransactionSize(tx, 0, 0);

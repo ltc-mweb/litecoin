@@ -13,7 +13,8 @@ using namespace MWEB;
 void Miner::NewBlock(const uint64_t nHeight)
 {
     mweb_builder = std::make_shared<mw::BlockBuilder>(nHeight, ::ChainstateActive().CoinsTip().GetMWEBView());
-    mweb_fees = 0;
+    hogex_fees = 0;
+    hogex_sigops = 0;
     mweb_amount_change = 0;
     hogex_inputs.clear();
     hogex_outputs.clear();
@@ -86,8 +87,12 @@ bool Miner::AddMWEBTransaction(CTxMemPool::txiter iter)
 
     hogex_inputs.insert(hogex_inputs.end(), vin.cbegin(), vin.cend());
     hogex_outputs.insert(hogex_outputs.end(), vout.cbegin(), vout.cend());
-    mweb_fees += tx_fee;
     mweb_amount_change += (CAmount(pegin_amount) - CAmount(pegout_amount + tx_fee));
+
+    if (pTx->IsMWEBOnly()) {
+        hogex_fees += tx_fee;
+        hogex_sigops += iter->GetSigOpCost();
+    }
 
     return true;
 }
@@ -172,8 +177,8 @@ void Miner::AddHogExTransaction(const CBlockIndex* pIndexPrev, CBlock* pblock, C
     // Update block & template
     //
     pblock->vtx.emplace_back(MakeTransactionRef(std::move(hogExTransaction)));
-    pblock->mweb_block = Block(mweb_block);
-    pblocktemplate->vTxFees.push_back(0);
-    
-    pblocktemplate->vTxSigOpsCost.push_back(0);
+    pblock->mweb_block = MWEB::Block(mweb_block);
+
+    pblocktemplate->vTxFees.push_back(hogex_fees);
+    pblocktemplate->vTxSigOpsCost.push_back(hogex_sigops);
 }
