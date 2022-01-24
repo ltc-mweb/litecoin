@@ -121,11 +121,6 @@ bool VerifyRecipients(const std::vector<CRecipient>& vecSend, bilingual_str& err
             return false;
         }
 
-        if (recipient.IsMWEB() && recipient.fSubtractFeeFromAmount) { // MW: TODO - Can we support this now?
-            error = _("Subtract fee from amount is not yet supported for MWEB transactions");
-            return false;
-        }
-
         if (nValue < 0 || recipient.nAmount < 0) {
             error = _("Transaction amounts must not be negative");
             return false;
