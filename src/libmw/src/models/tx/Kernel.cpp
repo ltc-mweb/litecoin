@@ -7,13 +7,13 @@ Kernel Kernel::Create(
     const boost::optional<SecretKey>& stealth_blind,
     const boost::optional<CAmount>& fee,
     const boost::optional<CAmount>& pegin_amount,
-    const boost::optional<PegOutCoin>& pegout,
+    const std::vector<PegOutCoin>& pegouts,
     const boost::optional<int32_t>& lock_height)
 {
     const uint8_t features_byte =
         (fee ? FEE_FEATURE_BIT : 0) |
         (pegin_amount ? PEGIN_FEATURE_BIT : 0) |
-        (pegout ? PEGOUT_FEATURE_BIT : 0) |
+        (pegouts.empty() ? 0 : PEGOUT_FEATURE_BIT) |
         (lock_height ? HEIGHT_LOCK_FEATURE_BIT : 0) |
         (stealth_blind ? STEALTH_EXCESS_FEATURE_BIT : 0);
 
@@ -39,7 +39,7 @@ Kernel Kernel::Create(
         stealth_excess,
         fee,
         pegin_amount,
-        pegout,
+        pegouts,
         lock_height,
         {}
     );
@@ -48,7 +48,7 @@ Kernel Kernel::Create(
         features_byte,
         fee,
         pegin_amount,
-        pegout,
+        pegouts,
         lock_height,
         std::move(stealth_excess),
         std::vector<uint8_t>{},
@@ -77,7 +77,7 @@ SignedMessage Kernel::BuildSignedMsg() const
         m_stealthExcess,
         m_fee,
         m_pegin,
-        m_pegout,
+        m_pegouts,
         m_lockHeight,
         m_extraData
     );
@@ -90,7 +90,7 @@ mw::Hash Kernel::GetSignatureMessage(
     const boost::optional<PublicKey>& stealth_commitment,
     const boost::optional<CAmount>& fee,
     const boost::optional<CAmount>& pegin_amount,
-    const boost::optional<PegOutCoin>& pegout,
+    const std::vector<PegOutCoin>& pegouts,
     const boost::optional<int32_t>& lock_height,
     const std::vector<uint8_t>& extra_data)
 {
@@ -105,8 +105,8 @@ mw::Hash Kernel::GetSignatureMessage(
         ::WriteVarInt<Hasher, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, pegin_amount.value());
     }
 
-    if (pegout) {
-        s << pegout.value();
+    if (!pegouts.empty()) {
+        s << pegouts;
     }
 
     if (lock_height) {

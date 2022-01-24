@@ -12,10 +12,6 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
     const boost::optional<CAmount>& pegin_amount,
     const CAmount fee)
 {
-    if (pegouts.size() > 1) {
-        throw std::runtime_error("Only supporting one pegout at this time.");
-    }
-
     CAmount pegout_total = std::accumulate(
         pegouts.cbegin(), pegouts.cend(), (CAmount)0,
         [](CAmount sum, const PegOutCoin& pegout) { return sum + pegout.GetAmount(); }
@@ -63,7 +59,7 @@ mw::Transaction::CPtr TxBuilder::BuildTx(
         boost::make_optional(stealth_blind),
         fee,
         pegin_amount,
-        pegouts.empty() ? boost::none : boost::make_optional(pegouts.front()),
+        pegouts,
         boost::none
     );
 

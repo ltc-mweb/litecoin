@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(ValidateStealthSum)
         stealth_excess_no_offset,           // stealth excess
         boost::none,                        // fee
         boost::none,                        // pegin_amount
-        boost::none,                        // pegout
+        std::vector<PegOutCoin>{},          // pegout
         boost::none                         // lock_height
     );
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(ValidateStealthSum)
         stealth_excess_with_offset,         // stealth excess
         boost::none,                        // fee
         boost::none,                        // pegin_amount
-        boost::none,                        // pegout
+        std::vector<PegOutCoin>{},          // pegout
         boost::none                         // lock_height
     );
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(ValidateStealthSum)
         boost::none,                        // stealth excess
         boost::none,                        // fee
         boost::none,                        // pegin_amount
-        boost::none,                        // pegout
+        std::vector<PegOutCoin>{},          // pegout
         boost::none                         // lock_height
     );
 

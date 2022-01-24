@@ -74,7 +74,7 @@ TxBuilder& TxBuilder::AddPlainKernel(const CAmount fee, const bool add_stealth_e
         stealth_excess,
         fee,
         boost::none,
-        boost::none,
+        std::vector<PegOutCoin>{},
         boost::none
     );
 
@@ -99,7 +99,7 @@ TxBuilder& TxBuilder::AddPeginKernel(const CAmount amount, const boost::optional
         stealth_excess,
         fee,
         amount,
-        boost::none,
+        std::vector<PegOutCoin>{},
         boost::none
     );
 
@@ -119,13 +119,14 @@ TxBuilder& TxBuilder::AddPegoutKernel(const CAmount amount, const CAmount fee, c
         stealth_excess = SecretKey::Random();
         m_stealthOffset.Sub(stealth_excess.value());
     }
-
+    
+    PegOutCoin pegout(amount, CScript{ ltc_address.begin(), ltc_address.end() });
     Kernel kernel = Kernel::Create(
         kernel_excess,
         stealth_excess,
         fee,
         boost::none,
-        PegOutCoin(amount, CScript(ltc_address.begin(), ltc_address.end())),
+        std::vector<PegOutCoin>{ pegout },
         boost::none
     );
 

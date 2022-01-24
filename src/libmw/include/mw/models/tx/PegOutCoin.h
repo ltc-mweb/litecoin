@@ -45,6 +45,12 @@ public:
     {
         READWRITE(VARINT_MODE(obj.m_amount, VarIntMode::NONNEGATIVE_SIGNED));
         READWRITE(obj.m_scriptPubKey);
+
+        if (ser_action.ForRead()) {
+            if (obj.m_scriptPubKey.empty()) {
+                throw std::ios_base::failure("Pegout scriptPubKey must not be empty");
+            }
+        }
     }
 
     std::string Format() const noexcept final

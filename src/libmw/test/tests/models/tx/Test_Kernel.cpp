@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel_Test)
 {
     CAmount fee = 1000;
     BlindingFactor excess_blind = BlindingFactor::Random();
-    Kernel kernel = Kernel::Create(excess_blind, boost::none, fee, boost::none, boost::none, boost::none);
+    Kernel kernel = Kernel::Create(excess_blind, boost::none, fee, boost::none, std::vector<PegOutCoin>{}, boost::none);
 
     //
     // Serialization
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(PlainKernel_Test)
         BOOST_REQUIRE(!kernel.HasPegOut());
         BOOST_REQUIRE(!kernel.HasStealthExcess());
         BOOST_REQUIRE(kernel.GetPegIn() == 0);
-        BOOST_REQUIRE(kernel.GetPegOut() == boost::none);
+        BOOST_REQUIRE(kernel.GetPegOuts().empty());
         BOOST_REQUIRE(kernel.GetLockHeight() == 0);
         BOOST_REQUIRE(kernel.GetFee() == fee);
         BOOST_REQUIRE(kernel.GetCommitment() == Commitment::Blinded(excess_blind, 0));
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
         Kernel::FEE_FEATURE_BIT | Kernel::PEGIN_FEATURE_BIT | Kernel::PEGOUT_FEATURE_BIT | Kernel::HEIGHT_LOCK_FEATURE_BIT | Kernel::STEALTH_EXCESS_FEATURE_BIT,
         fee,
         pegin,
-        boost::make_optional(PegOutCoin(2000, CScript(rand2.data(), rand2.data() + rand2.size()))),
+        std::vector<PegOutCoin>{PegOutCoin(2000, CScript(rand2.data(), rand2.data() + rand2.size()))},
         lock_height,
         PublicKey::Random(),
         std::vector<uint8_t>{},
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
         Kernel::ALL_FEATURE_BITS,
         fee,
         pegin,
-        boost::make_optional(PegOutCoin(2000, CScript(rand3.data(), rand3.data() + rand3.size()))),
+        std::vector<PegOutCoin>{PegOutCoin(2000, CScript(rand3.data(), rand3.data() + rand3.size()))},
         lock_height,
         PublicKey::Random(),
         secret_key_t<20>::Random().vec(),
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(NonStandardKernel_Test)
         0x20,
         boost::none,
         boost::none,
-        boost::none,
+        std::vector<PegOutCoin>{},
         boost::none,
         PublicKey::Random(),
         std::vector<uint8_t>{},

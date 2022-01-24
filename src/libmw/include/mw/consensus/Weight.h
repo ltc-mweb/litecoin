@@ -29,7 +29,7 @@ public:
             [](size_t sum, const Kernel& kernel) {
                 size_t kern_weight = CalcKernelWeight(
                     kernel.HasStealthExcess(),
-                    kernel.HasPegOut() ? kernel.GetPegOut().value().GetScriptPubKey() : CScript(),
+                    kernel.GetPegOuts(),
                     kernel.GetExtraData()
                 );
                 return sum + kern_weight;
@@ -52,14 +52,32 @@ public:
     }
 
     static size_t CalcKernelWeight(
-        const bool stealth_excess,
-        const CScript& scriptPubKey = CScript{},
+        const bool has_stealth_excess,
+        const CScript& pegout_script = CScript{},
         const std::vector<uint8_t>& extra_data = {})
     {
         // Kernels with a stealth excess cost extra.
-        size_t base_weight = stealth_excess ? KERNEL_WITH_STEALTH_WEIGHT : BASE_KERNEL_WEIGHT;
+        size_t base_weight = has_stealth_excess ? KERNEL_WITH_STEALTH_WEIGHT : BASE_KERNEL_WEIGHT;
 
-        return base_weight + ExtraBytesToWeight(extra_data.size() + scriptPubKey.size());
+        return base_weight + ExtraBytesToWeight(pegout_script.size()) + ExtraBytesToWeight(extra_data.size());
+    }
+
+    static size_t CalcKernelWeight(
+        const bool has_stealth_excess,
+        const std::vector<PegOutCoin>& pegouts = {},
+        const std::vector<uint8_t>& extra_data = {})
+    {
+        // Kernels with a stealth excess cost extra.
+        size_t base_weight = has_stealth_excess ? KERNEL_WITH_STEALTH_WEIGHT : BASE_KERNEL_WEIGHT;
+
+        size_t pegout_weight = std::accumulate(
+            pegouts.begin(), pegouts.end(), (size_t)0,
+            [](size_t sum, const PegOutCoin& pegout) {
+                return sum + ExtraBytesToWeight(pegout.GetScriptPubKey().size());
+            }
+        );
+
+        return base_weight + pegout_weight + ExtraBytesToWeight(extra_data.size());
     }
 
     // Outputs have a weight of 'BASE_OUTPUT_WEIGHT' plus 2 weight for standard fields, and 1 weight for every 'BYTES_PER_WEIGHT' extra_data bytes

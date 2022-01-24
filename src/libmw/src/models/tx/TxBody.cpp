@@ -30,8 +30,8 @@ std::vector<PegOutCoin> TxBody::GetPegOuts() const noexcept
 {
     std::vector<PegOutCoin> pegouts;
     for (const Kernel& kernel : m_kernels) {
-        if (kernel.HasPegOut()) {
-            pegouts.push_back(kernel.GetPegOut().value());
+        for (PegOutCoin pegout : kernel.GetPegOuts()) {
+            pegouts.push_back(std::move(pegout));
         }
     }
     return pegouts;

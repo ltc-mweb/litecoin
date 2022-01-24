@@ -59,7 +59,7 @@ std::string Transaction::Print() const noexcept
             kernel.GetKernelID(),
             kernel.GetCommitment(),
             kernel.GetPegIn(),
-            kernel.GetPegOut() ? kernel.GetPegOut().value().GetAmount() : 0,
+            kernel.GetPegOutAmount(),
             kernel.GetFee()
         );
     };

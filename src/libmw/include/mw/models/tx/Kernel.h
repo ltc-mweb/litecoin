@@ -11,6 +11,7 @@
 #include <mw/models/tx/PegOutCoin.h>
 #include <amount.h>
 #include <boost/optional.hpp>
+#include <numeric>
 
 class Kernel :
     public Traits::ICommitted,
@@ -23,7 +24,7 @@ public:
         const uint8_t features,
         boost::optional<CAmount> fee,
         boost::optional<CAmount> pegin,
-        boost::optional<PegOutCoin> pegout,
+        std::vector<PegOutCoin> pegouts,
         boost::optional<int32_t> lockHeight,
         boost::optional<PublicKey> stealthExcess,
         std::vector<uint8_t> extraData,
@@ -32,7 +33,7 @@ public:
     ) : m_features(features),
         m_fee(fee),
         m_pegin(pegin),
-        m_pegout(std::move(pegout)),
+        m_pegouts(std::move(pegouts)),
         m_lockHeight(lockHeight),
         m_stealthExcess(std::move(stealthExcess)),
         m_extraData(std::move(extraData)),
@@ -60,7 +61,7 @@ public:
         const boost::optional<SecretKey>& stealth_blind,
         const boost::optional<CAmount>& fee,
         const boost::optional<CAmount>& pegin_amount,
-        const boost::optional<PegOutCoin>& pegout,
+        const std::vector<PegOutCoin>& pegouts,
         const boost::optional<int32_t>& lock_height
     );
 
@@ -92,22 +93,29 @@ public:
         const boost::optional<PublicKey>& stealth_commitment,
         const boost::optional<CAmount>& fee,
         const boost::optional<CAmount>& pegin_amount,
-        const boost::optional<PegOutCoin>& pegout,
+        const std::vector<PegOutCoin>& pegouts,
         const boost::optional<int32_t>& lock_height,
         const std::vector<uint8_t>& extra_data
     );
 
     bool HasPegIn() const noexcept { return !!m_pegin; }
-    bool HasPegOut() const noexcept { return !!m_pegout; }
+    bool HasPegOut() const noexcept { return !m_pegouts.empty(); }
     bool HasStealthExcess() const noexcept { return !!m_stealthExcess; }
 
     CAmount GetPegIn() const noexcept { return m_pegin.value_or(0); }
-    const boost::optional<PegOutCoin>& GetPegOut() const noexcept { return m_pegout; }
+    const std::vector<PegOutCoin>& GetPegOuts() const noexcept { return m_pegouts; }
+
+    CAmount GetPegOutAmount() const noexcept
+    {
+        return std::accumulate(
+            m_pegouts.cbegin(), m_pegouts.cend(), (CAmount)0,
+            [](CAmount sum, const PegOutCoin& pegout) { return sum + pegout.GetAmount(); }
+        );
+    }
 
     CAmount GetSupplyChange() const noexcept
     {
-        return (m_pegin.value_or(0) - m_fee.value_or(0)) -
-            (m_pegout ? m_pegout.value().GetAmount() : 0);
+        return (m_pegin.value_or(0) - m_fee.value_or(0)) - GetPegOutAmount();
     }
 
     //
@@ -128,8 +136,8 @@ public:
             ::WriteVarInt<Stream, VarIntMode::NONNEGATIVE_SIGNED, CAmount>(s, m_pegin.value());
         }
 
-        if (m_pegout) {
-            s << m_pegout.value();
+        if (!m_pegouts.empty()) {
+            s << m_pegouts;
         }
 
         if (m_lockHeight) {
@@ -161,9 +169,7 @@ public:
         }
 
         if (m_features & PEGOUT_FEATURE_BIT) {
-            PegOutCoin pegout;
-            s >> pegout;
-            m_pegout = boost::make_optional(std::move(pegout));
+            s >>m_pegouts;
         }
 
         if (m_features & HEIGHT_LOCK_FEATURE_BIT) {
@@ -195,7 +201,7 @@ private:
     uint8_t m_features;
     boost::optional<CAmount> m_fee;
     boost::optional<CAmount> m_pegin;
-    boost::optional<PegOutCoin> m_pegout;
+    std::vector<PegOutCoin> m_pegouts;
     boost::optional<int32_t> m_lockHeight;
     boost::optional<PublicKey> m_stealthExcess;
     std::vector<uint8_t> m_extraData;

@@ -38,7 +38,7 @@ public:
     PegOutCoin GetPegOutCoin() const
     {
         const auto& kernel = m_pTransaction->GetKernels().front();
-        return kernel.GetPegOut().value();
+        return kernel.GetPegOuts().front();
     }
 
 private:

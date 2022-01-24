@@ -9,13 +9,13 @@
 
 BOOST_FIXTURE_TEST_SUITE(TestWeight, MWEBTestingSetup)
 
-static Kernel CreateKernel(const bool with_stealth, const boost::optional<PegOutCoin>& pegout = boost::none)
+static Kernel CreateKernel(const bool with_stealth, const std::vector<PegOutCoin>& pegouts = {})
 {
     return Kernel(
         0,
         boost::none,
         boost::none,
-        pegout,
+        pegouts,
         boost::none,
         with_stealth ? boost::make_optional(PublicKey()) : boost::none,
         std::vector<uint8_t>{},

@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(ValidateForBlockWithoutBuilder)
 
     // Add kernel
     const CAmount fee = 500'000;
-    kernels.push_back(Kernel::Create(excess, boost::none, fee, boost::none, boost::none, boost::none));
+    kernels.push_back(Kernel::Create(excess, boost::none, fee, boost::none, std::vector<PegOutCoin>{}, boost::none));
 
     // Create Transaction
     auto pTransaction = mw::Transaction::Create(
