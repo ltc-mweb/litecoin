@@ -2691,8 +2691,8 @@ void PeerManager::ProcessMessage(CNode& pfrom, const std::string& msg_type, CDat
                 State(pfrom.GetId())->fPreferHeaderAndIDs = fAnnounceUsingCMPCTBLOCK;
             if (!State(pfrom.GetId())->fSupportsDesiredCmpctVersion) {
                 if (pfrom.GetLocalServices() & NODE_MWEB)
-                    State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 3);
-                if (pfrom.GetLocalServices() & NODE_WITNESS)
+                    State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 3); 
+                else if (pfrom.GetLocalServices() & NODE_WITNESS)
                     State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 2);
                 else
                     State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 1);
