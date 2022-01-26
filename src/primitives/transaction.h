@@ -552,6 +552,7 @@ struct CMutableTransaction
     }
 
     bool HasMWEBTx() const noexcept { return !mweb_tx.IsNull(); }
+    bool IsMWEBOnly() const noexcept { return HasMWEBTx() && vin.empty() && vout.empty(); }
 };
 
 typedef std::shared_ptr<const CTransaction> CTransactionRef;

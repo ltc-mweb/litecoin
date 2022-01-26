@@ -53,3 +53,13 @@ def make_utxo(node, amount, confirmed=True, scriptPubKey=DUMMY_P2WPKH_SCRIPT):
             mempool_size = new_size
 
     return COutPoint(int(txid, 16), 0)
+
+def setup_mweb_chain(node):
+    # Create all pre-MWEB blocks
+    node.generate(431)
+
+    # Pegin some coins
+    node.sendtoaddress(node.getnewaddress(address_type='mweb'), 1)
+
+    # Create some blocks - activate MWEB
+    node.generate(1)

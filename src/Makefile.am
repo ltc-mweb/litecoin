@@ -24,6 +24,7 @@ BITCOIN_INCLUDES=-I$(builddir) $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFL
 
 BITCOIN_INCLUDES += -I$(srcdir)/secp256k1-zkp/include
 BITCOIN_INCLUDES += -I$(srcdir)/libmw/include
+BITCOIN_INCLUDES += -I$(srcdir)/libmw/deps/caches/include
 BITCOIN_INCLUDES += -I$(srcdir)/libmw/deps/ghc/include
 BITCOIN_INCLUDES += -I$(srcdir)/libmw/deps/mio/include
 BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
@@ -107,7 +108,7 @@ if BUILD_BITCOIN_WALLET
 endif
 endif
 
-LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/caches/include -I$(srcdir)/libmw/deps/crypto/include  -I$(srcdir)/libmw/deps/ghc/include -I$(srcdir)/libmw/deps/mio/include
+LIBMW_CPPFLAGS = -I$(srcdir) -I$(srcdir)/libmw/include -I$(srcdir)/libmw/deps/crypto/include
 libmw_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LIBMW_CPPFLAGS)
 libmw_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libmw_a_SOURCES = \
@@ -697,7 +698,7 @@ litecoin_cli_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS) $(MWEB_LIBS)
 
 # bitcoin-tx binary #
 litecoin_tx_SOURCES = bitcoin-tx.cpp
-litecoin_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+litecoin_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(CACHES_CPPFLAGS)
 litecoin_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 litecoin_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 

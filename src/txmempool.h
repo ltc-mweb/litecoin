@@ -27,6 +27,7 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
+#include <caches/Cache.h>
 
 class CBlock;
 class CBlockIndex;
@@ -35,6 +36,9 @@ extern RecursiveMutex cs_main;
 
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
 static const uint32_t MEMPOOL_HEIGHT = 0x7FFFFFFF;
+
+/** Default size of CMemPool's recentTxsByKernel cache */
+static const unsigned int DEFAULT_MEMPOOL_MWEB_CACHE_SIZE = 1000;
 
 struct LockPoints
 {
@@ -619,6 +623,11 @@ public:
      * Maps MWEB output IDs to mempool transactions that create them.
      */
     std::map<mw::Hash, const CTransaction*> mapTxOutputs_MWEB GUARDED_BY(cs);
+
+    /**
+     * FIFO cache of txs recently removed from the mempool keyed by kernel ID.
+     */
+    FIFOCache<mw::Hash, CTransactionRef> recentTxsByKernel GUARDED_BY(cs){DEFAULT_MEMPOOL_MWEB_CACHE_SIZE};
 	
     std::map<uint256, CAmount> mapDeltas;
 
@@ -990,8 +999,10 @@ struct DisconnectedBlockTransactions {
 
     void addTransaction(const CTransactionRef& tx)
     {
-        queuedTx.insert(tx);
-        cachedInnerUsage += RecursiveDynamicUsage(tx);
+        if (queuedTx.find(tx->GetHash()) == queuedTx.end()) {
+            queuedTx.insert(tx);
+            cachedInnerUsage += RecursiveDynamicUsage(tx);
+        }
     }
 
     // Remove entries based on txid_index, and update memory usage.

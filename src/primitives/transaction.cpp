@@ -61,7 +61,7 @@ CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), 
 
 uint256 CMutableTransaction::GetHash() const
 {
-    if (HasMWEBTx() && vin.empty()) {
+    if (IsMWEBOnly()) {
         const auto& kernels = mweb_tx.m_transaction->GetKernels();
         if (!kernels.empty()) {
             return uint256(kernels.front().GetHash().vec());
@@ -73,7 +73,7 @@ uint256 CMutableTransaction::GetHash() const
 
 uint256 CTransaction::ComputeHash() const
 {
-    if (HasMWEBTx() && vin.empty()) {
+    if (IsMWEBOnly()) {
         const auto& kernels = mweb_tx.m_transaction->GetKernels();
         if (!kernels.empty()) {
             return uint256(kernels.front().GetHash().vec());

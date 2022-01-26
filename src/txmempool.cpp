@@ -450,13 +450,23 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
         GetMainSignals().TransactionRemovedFromMempool(it->GetSharedTx(), reason, mempool_sequence);
     }
 
-    const uint256 hash = it->GetTx().GetHash();
-    for (const CTxInput& txin : it->GetTx().GetInputs())
+    CTransactionRef ptx = it->GetSharedTx();
+
+    const uint256 hash = ptx->GetHash();
+    for (const CTxInput& txin : ptx->GetInputs())
         mapNextTx.erase(txin.GetIndex());
 
     // MWEB: Remove transaction from mapTxOutputs_MWEB for each output
-    for (const mw::Hash& output_id : it->GetTx().mweb_tx.GetOutputIDs()) {
+    for (const mw::Hash& output_id : ptx->mweb_tx.GetOutputIDs()) {
         mapTxOutputs_MWEB.erase(output_id);
+    }
+
+    // MWEB: When removing MWEB transactions from the mempool after a block is connected,
+    // cache the original tx in recentTxsByKernel, in case we need to replay it during a reorg.
+    if (reason == MemPoolRemovalReason::BLOCK || reason == MemPoolRemovalReason::REORG) {
+        for (const mw::Hash& kernel_id : ptx->mweb_tx.GetKernelIDs()) {
+            recentTxsByKernel.Put(kernel_id, ptx);
+        }
     }
 
     RemoveUnbroadcastTx(hash, true /* add logging because unchecked */ );
@@ -619,18 +629,18 @@ void CTxMemPool::removeForBlock(const CBlock& block, unsigned int nBlockHeight, 
     if (!block.mweb_block.IsNull()) {
         auto block_kernels = block.mweb_block.GetKernelIDs();
         for (txiter it = mapTx.begin(); it != mapTx.end(); ++it) {
-            if (!it->GetTx().HasMWEBTx()) continue;
+            CTransactionRef ptx = it->GetSharedTx();
+            if (!ptx->HasMWEBTx()) continue;
 
-            const auto& tx_kernels = it->GetTx().mweb_tx.m_transaction->GetKernels();
+            const auto& tx_kernels = ptx->mweb_tx.GetKernelIDs();
             bool remove_tx = std::any_of(tx_kernels.begin(), tx_kernels.end(),
-                [&block_kernels](const Kernel& tx_kernel) {
-                    return block_kernels.count(tx_kernel.GetKernelID()) != 0;
+                [&block_kernels](const mw::Hash& kernel_id) {
+                    return block_kernels.count(kernel_id) != 0;
                 }
             );
             if (remove_tx) {
                 entries.push_back(&*it);
-                txs.push_back(it->GetSharedTx());
-                // MW: TODO - Add to LRU cache of recently removed txs (by kernel hash)
+                txs.push_back(ptx);
             }
         }
     }

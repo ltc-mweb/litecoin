@@ -246,6 +246,7 @@ BASE_SCRIPTS = [
     'feature_dersig.py',
     'feature_cltv.py',
     'mweb_basic.py',
+    'mweb_reorg.py',
     'rpc_uptime.py',
     'wallet_resendwallettransactions.py',
     'wallet_resendwallettransactions.py --descriptors',

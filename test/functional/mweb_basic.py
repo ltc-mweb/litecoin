@@ -16,9 +16,8 @@ class MWEBBasicTest(BitcoinTestFramework):
         self.skip_if_no_wallet()
 
     def run_test(self):
-        self.log.info("Create some blocks")
+        self.log.info("Create all pre-MWEB blocks")
         self.nodes[0].generate(431)
-        self.sync_all()
 
         self.log.info("Pegin some coins")
         addr0 = self.nodes[0].getnewaddress(address_type='mweb')

@@ -391,7 +391,7 @@ static void UpdateMempoolForReorg(CTxMemPool& mempool, DisconnectedBlockTransact
             // If the transaction doesn't make it in to the mempool, remove any
             // transactions that depend on it (which would now be orphans).
             mempool.removeRecursive(**it, MemPoolRemovalReason::REORG);
-        } else if (mempool.exists((*it)->GetHash())) { // MW: TODO - Handle MWEB-to-MWEB txs
+        } else if (mempool.exists((*it)->GetHash())) {
             vHashUpdate.push_back((*it)->GetHash());
         }
         ++it;
@@ -2595,8 +2595,15 @@ bool CChainState::DisconnectTip(BlockValidationState& state, const CChainParams&
         return false;
 
     if (disconnectpool) {
+        // MWEB: For each kernel, lookup kernel's txs in FIFO cache and add them back to the mempool.
+        for (const mw::Hash& kernel_id : block.mweb_block.GetKernelIDs()) {
+            if (m_mempool.recentTxsByKernel.Cached(kernel_id)) {
+                CTransactionRef ptx = m_mempool.recentTxsByKernel.Get(kernel_id);
+                disconnectpool->addTransaction(ptx);
+            }
+        }
+
         // Save transactions to re-add to mempool at end of reorg
-        // MW: TODO - For each non-pegin kernel, lookup kernel's txs in LRU cache (need to create)
         for (auto it = block.vtx.rbegin(); it != block.vtx.rend(); ++it) {
             disconnectpool->addTransaction(*it);
         }
