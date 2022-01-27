@@ -112,8 +112,35 @@ public:
 
     bool IsStandard() const noexcept;
     void Validate() const;
+    
+    std::string Print() const noexcept
+    {
+        auto print_kernel = [](const Kernel& kernel) -> std::string {
+            return StringUtil::Format(
+                "kern(kernel_id:{}, commit:{}, pegin: {}, pegout: {}, fee: {})",
+                kernel.GetKernelID(),
+                kernel.GetCommitment(),
+                kernel.GetPegIn(),
+                kernel.GetPegOutAmount(),
+                kernel.GetFee()
+            );
+        };
+        std::string kernels_str = std::accumulate(
+            GetKernels().begin(), GetKernels().end(), std::string{},
+            [&print_kernel](std::string str, const Kernel& kern) {
+                return str.empty() ? print_kernel(kern) : std::move(str) + ", " + print_kernel(kern);
+            }
+        );
 
-    std::string Print() const noexcept;
+        return StringUtil::Format(
+            "tx(hash:{}, offset:{}, kernels:[{}], inputs:{}, outputs:{})",
+            GetHash(),
+            GetKernelOffset().ToHex(),
+            kernels_str,
+            GetInputCommits(),
+            GetOutputCommits()
+        );
+    }
 
 private:
     // The kernel "offset" k2 excess is k1G after splitting the key k = k1 + k2.
