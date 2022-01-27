@@ -362,6 +362,7 @@ bool CreateTransactionEx(
     uint64_t mweb_weight = 0;
     MWEB::TxType mweb_type = MWEB::TxType::LTC_TO_LTC;
     bool change_on_mweb = false;
+    CAmount mweb_fee = 0;
 
     int nBytes;
     {
@@ -524,7 +525,7 @@ bool CreateTransactionEx(
 
                 // Add Dummy peg-in script
                 if (ContainsPegIn(mweb_type, setCoins)) {
-                    txNew.vout.push_back(CTxOut(0, GetScriptForPegin(mw::Hash())));
+                    txNew.vout.push_back(CTxOut(MAX_MONEY, GetScriptForPegin(mw::Hash())));
                 }
 
                 // Dummy fill vin for maximum size estimation
@@ -544,6 +545,16 @@ bool CreateTransactionEx(
                     LogPrintf("Transaction failed to sign: %s", CTransaction(txNew).ToString().c_str());
                     error = _("Signing transaction failed");
                     return false;
+                }
+
+                mweb_fee = GetMinimumFee(wallet, 0, mweb_weight, coin_control, &feeCalc);
+                if (mweb_type == MWEB::TxType::PEGOUT) {
+                    CTxOut pegout_output(vecSend.front().nAmount, vecSend.front().receiver.GetScript());
+                    size_t pegout_weight = ::GetSerializeSize(pegout_output, PROTOCOL_VERSION) * WITNESS_SCALE_FACTOR;
+                    size_t pegout_bytes = GetVirtualTransactionSize(pegout_weight, 0, 0);
+
+                    mweb_fee = GetMinimumFee(wallet, pegout_bytes, mweb_weight, coin_control, &feeCalc);
+                    nBytes += pegout_bytes;
                 }
 
                 nFeeNeeded = coin_selection_params.m_effective_feerate.GetTotalFee(nBytes, mweb_weight);
@@ -642,15 +653,6 @@ bool CreateTransactionEx(
             if (!coin.IsMWEB()) {
                 txNew.vin.push_back(CTxIn(boost::get<COutPoint>(coin.GetIndex()), CScript(), nSequence));
             }
-        }
-
-        CAmount mweb_fee = wallet.chain().relayMinFee().GetMWEBFee(mweb_weight);
-        if (mweb_type == MWEB::TxType::PEGOUT) {
-            CTxOut pegout_output(vecSend.front().nAmount, vecSend.front().receiver.GetScript());
-            nBytes += ::GetSerializeSize(pegout_output, PROTOCOL_VERSION);
-            LogPrintf("Pegout bytes: %d", ::GetSerializeSize(pegout_output, PROTOCOL_VERSION));
-
-            mweb_fee += GetMinimumFee(wallet, nBytes, mweb_weight, coin_control, &feeCalc);
         }
 
         if (!MWEB::Transact::CreateTx(wallet.GetMWWallet(), txNew, selected_coins, vecSend, nFeeRet, mweb_fee, change_on_mweb)) {

@@ -63,3 +63,11 @@ def setup_mweb_chain(node):
 
     # Create some blocks - activate MWEB
     node.generate(1)
+
+def get_hog_addr_txout(node):
+    best_block = node.getblock(node.getbestblockhash(), 2)
+
+    hogex_tx = best_block['tx'][-1] # TODO: Should validate that the tx is marked as a hogex tx
+    hog_addr = hogex_tx['vout'][0]
+
+    return CTxOut(hog_addr['value'], hog_addr['scriptPubKey'])

@@ -51,11 +51,16 @@ bool Transact::CreateTx(
     std::vector<mw::Recipient> receivers;
     std::vector<PegOutCoin> pegouts;
     for (const CRecipient& recipient : recipients) {
+        CAmount recipient_amount = recipient.nAmount;
+        if (recipient.fSubtractFeeFromAmount) {
+            recipient_amount -= ltc_fee;
+        }
+
         if (recipient.IsMWEB()) {
-            receivers.push_back(mw::Recipient{recipient.nAmount, recipient.GetMWEBAddress()});
+            receivers.push_back(mw::Recipient{recipient_amount, recipient.GetMWEBAddress()});
         } else {
             PegOutCoin pegout_recipient(
-                recipient.nAmount,
+                recipient_amount,
                 recipient.receiver.GetScript()
             );
             pegouts.push_back(std::move(pegout_recipient));
@@ -74,8 +79,8 @@ bool Transact::CreateTx(
     if (include_mweb_change) {
         CAmount recipient_amount = std::accumulate(
             recipients.cbegin(), recipients.cend(), CAmount(0),
-            [](CAmount amount, const CRecipient& recipient) {
-                return recipient.nAmount + amount;
+            [ltc_fee](CAmount amount, const CRecipient& recipient) {
+                return amount + (recipient.nAmount - (recipient.fSubtractFeeFromAmount ? ltc_fee : 0));
             }
         );
 
