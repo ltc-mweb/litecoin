@@ -14,13 +14,15 @@ public:
     static constexpr size_t STEALTH_EXCESS_WEIGHT = 1;
     static constexpr size_t KERNEL_WITH_STEALTH_WEIGHT = BASE_KERNEL_WEIGHT + STEALTH_EXCESS_WEIGHT;
 
-    static constexpr size_t BASE_OUTPUT_WEIGHT = 16;
-    static constexpr size_t STANDARD_OUTPUT_FIELDS_WEIGHT = 2;
+    static constexpr size_t BASE_OUTPUT_WEIGHT = 17;
+    static constexpr size_t STANDARD_OUTPUT_FIELDS_WEIGHT = 1;
     static constexpr size_t STANDARD_OUTPUT_WEIGHT = BASE_OUTPUT_WEIGHT + STANDARD_OUTPUT_FIELDS_WEIGHT;
 
     static constexpr size_t MAX_NUM_INPUTS = 50'000;
     static constexpr size_t INPUT_BYTES = 195;
-    static constexpr size_t MAX_MWEB_BYTES = 0; // MW: TODO - Calculate this
+    static constexpr size_t MAX_MWEB_BYTES = 180 + (3 * 5) + // 180 bytes per header and 5 bytes each for input, output, and kernel vec size
+        (MAX_NUM_INPUTS * INPUT_BYTES) + // 50k inputs at 195 bytes each
+        (mw::MAX_BLOCK_WEIGHT * 60); // Ignoring inputs, no tx component is ever more than 60 bytes per unit of weight 
 
     static size_t Calculate(const TxBody& tx_body)
     {
