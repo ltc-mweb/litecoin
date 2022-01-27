@@ -58,6 +58,7 @@ std::string GetTxnOutputType(TxoutType t)
     case TxoutType::WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
     case TxoutType::WITNESS_V1_TAPROOT: return "witness_v1_taproot";
     case TxoutType::WITNESS_MWEB_PEGIN: return "witness_mweb_pegin";
+    case TxoutType::WITNESS_MWEB_HOGADDR: return "witness_mweb_hogaddr";
     case TxoutType::WITNESS_UNKNOWN: return "witness_unknown";
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -142,7 +143,10 @@ TxoutType Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned c
             vSolutionsRet.push_back(witnessprogram);
             return TxoutType::WITNESS_MWEB_PEGIN;
         }
-        // MW: TODO - Do we need a TxoutType::WITNESS_MWEB_HOGADDR?
+        if (witnessversion == MWEB_HOG_ADDR_WITNESS_VERSION && witnessprogram.size() == WITNESS_MWEB_HEADERHASH_SIZE) {
+            vSolutionsRet.push_back(witnessprogram);
+            return TxoutType::WITNESS_MWEB_HOGADDR;
+        }
         if (witnessversion != 0) {
             vSolutionsRet.push_back(std::vector<unsigned char>{(unsigned char)witnessversion});
             vSolutionsRet.push_back(std::move(witnessprogram));

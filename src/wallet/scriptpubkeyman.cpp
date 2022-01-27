@@ -127,6 +127,7 @@ IsMineResult IsMineInner(const LegacyScriptPubKeyMan& keystore, const CScript& s
     case TxoutType::WITNESS_UNKNOWN:
     case TxoutType::WITNESS_V1_TAPROOT:
     case TxoutType::WITNESS_MWEB_PEGIN:
+    case TxoutType::WITNESS_MWEB_HOGADDR:
         break;
     case TxoutType::PUBKEY:
         keyID = CPubKey(vSolutions[0]).GetID();
