@@ -609,7 +609,6 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     if (!CheckFinalTx(tx, STANDARD_LOCKTIME_VERIFY_FLAGS))
         return state.Invalid(TxValidationResult::TX_PREMATURE_SPEND, "non-final");
 
-    // MW: TODO - Check kernel hashes
     // is it already in the memory pool?
     if (m_pool.exists(hash)) {
         return state.Invalid(TxValidationResult::TX_CONFLICT, "txn-already-in-mempool");

@@ -2144,7 +2144,6 @@ static RPCHelpMan encryptwallet()
         throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
     }
 
-    // MW: TODO - If an MWEB wallet was already generated, we need to fail until we're able to support multiple seeds.
     if (!pwallet->EncryptWallet(strWalletPass)) {
         throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: Failed to encrypt the wallet.");
     }

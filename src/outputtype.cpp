@@ -118,7 +118,7 @@ CTxDestination AddAndGetDestinationForScript(FillableSigningProvider& keystore, 
         }
     }
     case OutputType::MWEB:
-        return CNoDestination(); // MW: TODO - Pass in scan_secret
+        return CNoDestination();
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }

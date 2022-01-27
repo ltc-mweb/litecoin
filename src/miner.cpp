@@ -258,6 +258,8 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
         }
 
         pblocktemplate->block.vtx.emplace_back(pTx);
+        // MWEB: Should probably recalculate fee (for vTxFees) and sigopcost (for vTxSigOpsCost) without MWEB data?
+        // Then we could use actual fee and sigop cost for hogex.
         pblocktemplate->vTxFees.push_back(iter->GetFee());
         pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());
         ++nBlockTx;

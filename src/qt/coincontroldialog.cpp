@@ -634,7 +634,7 @@ void CoinControlDialog::updateView()
     for (const auto& coins : model->wallet().listCoins()) {
         CCoinControlWidgetItem* itemWalletAddress{nullptr};
         QString sWalletAddress = QString::fromStdString(EncodeDestination(coins.first));
-        QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress); // MW: TODO - Check if peg-in, change, etc.
+        QString sWalletLabel = model->getAddressTableModel()->labelForAddress(sWalletAddress); // MWEB: We need to check if peg-in, change, etc.
         if (sWalletLabel.isEmpty())
             sWalletLabel = tr("(no label)");
 
